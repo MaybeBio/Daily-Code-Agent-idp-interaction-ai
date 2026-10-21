@@ -1,14 +1,12 @@
-topic: idr-repos
-title: IDR 相关仓库追踪
-# 课题词(领域定义)不在这里——它硬编码在 prompts.yaml 的 score/system 与 code_card/system 里。
-# 换课题时改 prompts.yaml 的这两处措辞,以及下面的 search.queries / 命名。
+topic: idp-interaction-ai
+title: 无序蛋白互作 × AI
 # 抓取窗口长度(天)。窗口 = [运行日-window_days, 运行日-1](不含运行当天),
 # search/merge/cards/issue 四处同源;cards 会把它写进每条记录,站点据此分组。
 window_days: 7
-site_base_url: ""
+site_base_url: https://MaybeBio.github.io/Daily-Code-Agent-Template-idp-interaction-ai
 # 本模板仓库的 owner/name + 默认分支,用于构造 wiki 快照的 GitHub blob 链接
 # (指向 code/{repo}/wikis/{date}/{source}/llms.txt)。
-github_repo: MaybeBio/Daily-Code-Agent-Template
+github_repo: MaybeBio/Daily-Code-Agent-Template-idp-interaction-ai
 github_branch: main
 search_placeholder: 如 相分离、intrinsically disordered、Python
 llm:
