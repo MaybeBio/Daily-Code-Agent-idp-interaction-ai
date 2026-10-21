@@ -1,0 +1,266 @@
+[
+  {
+    "full_name": "yukti-khanna/idr-interaction-analysis",
+    "score": 9,
+    "one_liner": "该仓库提供面向IDR配对相互作用的CALVADOS模拟工作流，计算B22值并构建序列特征表，直接服务于无序蛋白互作的物理模拟与机制分析。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "louetadelie1/MSM",
+    "score": 9,
+    "one_liner": "该仓库实现基于MD轨迹构建MSM，分析小分子在无序蛋白表面的结合状态、路径与亲和力，直接面向IDP参与的分子互作机制建模，方法为物理模拟与统计模型，高度匹配课题。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "louetadelie1/sequence_to_binding_paths",
+    "score": 9,
+    "one_liner": "该仓库提供基于序列的IDP小分子结合路径预测工具，用ESM-2嵌入和Boltz-2距离训练MLP预测残基三元组平衡群体，并聚类构建结合口袋网络，直接面向IDP分子互作机制建模，方法为AI+MD，高度匹配课题。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "yukti-khanna/idr-interaction-predict",
+    "score": 8,
+    "one_liner": "该仓库提供基于序列描述符和MLP集成模型预测rAHD与RG/RGG无序蛋白间互作强度的工具，直接面向IDP/IDR介导的分子互作机制建模，方法上使用AI模型，但未涉及物理模拟或结构建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "amgualdron/idp-bulk",
+    "score": 8,
+    "one_liner": "该仓库提供面向固有无序蛋白单链的粗粒化分子动力学模拟与构象分析流水线，虽未直接建模分子互作，但为IDP构象系综生成与物理模拟方法提供了可直接使用的工具基础。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "fancytroture/condensate_simulation_data",
+    "score": 8,
+    "one_liner": "该仓库提供FUS/A1/TDP-43 LCD无序蛋白凝聚体的温度依赖分子动力学模拟、VAMPNet/MSM分析及图生成代码，直接面向IDR介导的相分离互作机制建模，方法上结合物理模拟与AI，但聚焦凝聚体而非广义无序分子互作。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "xcslyx/pygamd_v_me_50_meal",
+    "score": 7,
+    "one_liner": "这是一个面向生物大分子凝聚体模拟的pygamd分子动力学脚本工具，支持蛋白质/DNA/RNA粗粒化建模与接触图、Rg等互作相关分析，虽未明确聚焦IDP/IDR，但方法可迁移至无序蛋白互作研究。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "hamidrezabehjoo/asyn-allatom",
+    "score": 7,
+    "one_liner": "该仓库是面向α-突触核蛋白等IDP的全原子MD模拟流水线，专注于IDP构象系综的长时间模拟，但未涉及分子互作机制建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "BoHuangLab/CELL-FM",
+    "score": 7,
+    "one_liner": "CELL-FM 是一个从蛋白序列生成细胞荧光图像的生成模型，其 CondenSeq 应用直接面向无序肽的凝聚体形成（LLPS）分析，属于 IDP 相关互作场景，但核心是图像生成而非互作机制建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "jaredhidalgo/BayesFRET",
+    "score": 7,
+    "one_liner": "BayesFRET 是一个基于 HDP-HMM 贝叶斯方法分析 smFRET 数据、估计无序蛋白构象状态数及行为的 GUI 工具，直接面向 IDP 构象分析，但聚焦单分子构象状态而非分子互作机制建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "JuliaMolSim/Molly.jl",
+    "score": 6,
+    "one_liner": "Molly.jl 是一个通用分子动力学模拟的 Julia 包，支持可微模拟和多种力场，虽不专门针对 IDP/IDR 互作，但其物理模拟方法可迁移用于无序蛋白互作建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "ok",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "AspirinCode/awesome-AI4MolConformation-MD",
+    "score": 6,
+    "one_liner": "这是一个AI4分子构象与分子动力学方法的综述资源列表，涵盖IDP构象系综和分子互作相关方法，但缺乏实质代码实现，属于可参考的资源清单。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "ELELAB/MAVISp_automatization",
+    "score": 6,
+    "one_liner": "该仓库是MAVISp癌症突变注释流程的Snakemake自动化管道，包含IDP/IDR专用目标规则，但核心面向突变效应预测而非无序蛋白互作机制建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "abdulksidani-png/AnHydra",
+    "score": 6,
+    "one_liner": "AnHydra 是一个基于 ESM-2 和 CNN 的 IDP 家族分类器，用于识别耐干燥保护性无序蛋白（如 LEA/dehydrin），虽聚焦 IDP 分类而非直接互作机制建模，但其方法可迁移至无序蛋白互作预测。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "BioKT/Skills-BIOKT",
+    "score": 6,
+    "one_liner": "该仓库是面向分子模拟与计算生物化学的 Claude Code 技能集，涵盖 GROMACS/AMBER 模拟、增强采样等物理模拟方法，且实验室背景明确涉及 IDP 与耦合折叠-结合，但仓库本身未直接实现 IDP 互作机制建模工具，方法可迁移但对象与互作聚焦不足。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "Abubakar-Saeed/Abubakar-Saeed",
+    "score": 6,
+    "one_liner": "该仓库是研究者主页，展示其基于可解释理化图编码的BioGraphX系列工作，其中BioGraphX-IDP面向无序蛋白预测，但未提供可直接使用的工具或代码，且不聚焦分子互作机制建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "Natalija-Stepurko/bioemu-saxs-campaign",
+    "score": 6,
+    "one_liner": "该仓库评估BioEmu-1生成的蛋白质构象系综与SAXS实验数据的吻合度，重点分析无序蛋白的尺寸偏差，涉及无序蛋白构象与实验数据的互作验证，但非直接面向分子互作机制建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "srayanta24/CoFolding_SM",
+    "score": 6,
+    "one_liner": "该仓库是一个在单GPU上运行的共折叠与抗体设计工具，基于Boltz-2/OpenFold3等AI模型预测蛋白复合物结构并生成抗体，虽不专门针对IDP/IDR，但其共折叠和互作建模方法可迁移至无序蛋白互作研究。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "gzerze/ddft_for_biomolecular_condensates",
+    "score": 6,
+    "one_liner": "该仓库实现基于序列依赖RPA+FH自由能的DDFT框架，模拟生物分子凝聚体的非平衡演化，面向IDP/IDR参与的相分离场景，但未聚焦分子互作机制建模，方法为物理模拟而非AI。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "ta-rekt/Droplet",
+    "score": 6,
+    "one_liner": "该仓库实现晶格蒙特卡洛与连续介质管道模拟生物分子凝聚体及增强子-启动子感知，涉及无序蛋白相关相分离与互作机制，但核心偏向凝聚体相行为而非IDP/IDR分子互作建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "Xuanting168/PhaseLACE",
+    "score": 6,
+    "one_liner": "PhaseLACE 是一个基于蛋白语言模型和构象表征的 LLPS 相关蛋白预测工具，虽聚焦相分离而非直接建模无序蛋白分子互作机制，但其序列-构象联合建模思路对 IDP/IDR 互作预测有可迁移价值。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "wyqmath/ConformEval",
+    "score": 5,
+    "one_liner": "ConformEval 是一个评估蛋白语言模型在打结、折叠转换和无序预测任务上表现的基准，包含无序预测但非面向 IDP 分子互作机制建模，方法可迁移。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "mesdaghi/genome_annotation_quality_nextflow_pipeline",
+    "score": 5,
+    "one_liner": "该仓库是一个基因组注释质量评估的Nextflow流水线，集成了Metapredict无序蛋白预测和Protenix结构预测，但核心目标是注释质控而非无序蛋白互作机制建模。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  },
+  {
+    "full_name": "integrativemodeling/ecm29",
+    "score": 5,
+    "one_liner": "该仓库用整合结构建模定位Ecm29在蛋白酶体上的位置，虽涉及无序区域预测和蛋白复合物互作建模，但核心对象非IDP/IDR介导的互作机制，方法可迁移但匹配度中等。",
+    "clone_ok": true,
+    "wikis": {
+      "deepwiki": "not_indexed",
+      "codewiki": "failed",
+      "zread": "failed"
+    }
+  }
+]
