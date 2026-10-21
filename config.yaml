@@ -1,0 +1,62 @@
+topic: idr-repos
+title: IDR 相关仓库追踪
+# 课题词(领域定义)不在这里——它硬编码在 prompts.yaml 的 score/system 与 code_card/system 里。
+# 换课题时改 prompts.yaml 的这两处措辞,以及下面的 search.queries / 命名。
+# 抓取窗口长度(天)。窗口 = [运行日-window_days, 运行日-1](不含运行当天),
+# search/merge/cards/issue 四处同源;cards 会把它写进每条记录,站点据此分组。
+window_days: 7
+site_base_url: ""
+# 本模板仓库的 owner/name + 默认分支,用于构造 wiki 快照的 GitHub blob 链接
+# (指向 code/{repo}/wikis/{date}/{source}/llms.txt)。
+github_repo: MaybeBio/Daily-Code-Agent-Template
+github_branch: main
+search_placeholder: 如 相分离、intrinsically disordered、Python
+llm:
+  concurrency: 8
+  min_score: 5
+archive:
+  # degit + repowiki-cli 的网络并发数。串行太慢(55 仓库 ~4h),太高会触发
+  # repowiki(deepwiki/zread)限流 —— 实测串行时仍有 47/55 wiki 失败,故取低并发。
+  concurrency: 4
+daily:
+  enable_repo_table: true
+  watchlists:
+    users: monitor/lists/users.txt
+    users_core: monitor/lists/users_core.txt
+    orgs: monitor/lists/orgs.txt
+search:
+  config: queries/search_repos.yaml
+  # GitHub 仓库搜索:多查询并集(逐条查询后按 full_name 去重)。换课题时改这里。
+  # ⚠️ 为什么拆成多条、而不是一条 `A OR B OR C ... in:字段`:
+  #    GitHub 硬限制「每条查询最多 5 个 AND/OR/NOT 运算符」,超过直接报
+  #    "More than five AND / OR / NOT operators were used"。备选短语一多(本项目 8~9 个),
+  #    单条 OR 会被拒绝,只能拆成多条(每条 ≤6 项)各自查询、按 full_name 取并集。
+  #    (AI4Bio 那条 OR 是 5 个词=4 个 OR,恰好卡在上限内;再加一项就会挂。)
+  #    `in:` 是字段限定、OR 是词间逻辑,两者可共存;`in:` 作用于整条查询(与位置无关)。
+  # ⚠️ 每条查询都用「引号短语 + in:name,description,readme,topics」:
+  #    裸词是 AND(单词都出现)而非固定词组,召回翻倍但多是噪声;
+  #    裸 3 字母缩写(IDR/IDP/LLPS)会被子串命中(如 Idris2/iDRAC/"Idrogeologica"),
+  #    且加引号也挡不住子串,故一律避开裸缩写;
+  #    含 readme:召回更高(实测 8 条短语并集 18→192 个候选),契合"宽召回 → 打分过滤";
+  #    代价是每周多 ~174 个候选进 LLM 打分,且多是"README 里顺带提一句"的蹭词噪声
+  #    (awesome 清单、黑洞/天体生物、CVE 复现等)。带 --updated 时间窗后 readme 不会超限
+  #    (单短语约几十~百余条)。想省 LLM 成本时,把 search.queries 里的 readme, 去掉即可。
+  queries:
+    - '"intrinsically disordered" in:name,description,readme,topics'
+    - '"disordered protein" in:name,description,readme,topics'
+    - '"disordered proteins" in:name,description,readme,topics'
+    - '"disordered region" in:name,description,readme,topics'
+    - '"disordered regions" in:name,description,readme,topics'
+    - '"biomolecular condensate" in:name,description,readme,topics'
+    - '"biomolecular condensates" in:name,description,readme,topics'
+    - '"phase separation" in:name,description,readme,topics'
+    # topic: 是「仓库标签」精确匹配(非子串),是补充召回最稳的一路。但只能用全称 topic ——
+    # 缩写 topic 被别的含义占满(topic:idp=Identity Provider、topic:idr=印尼盾/Image Data
+    # Resource、topic:idps=入侵检测系统),加进来全是噪声。(具体命中数见 2026-10-06 探测。)
+    - 'topic:intrinsically-disordered-proteins'   # 18
+    - 'topic:intrinsically-disordered-regions'    # 4
+    - 'topic:disordered-proteins'                 # 6
+    - 'topic:protein-disorder'                    # 10
+    - 'topic:biomolecular-condensates'            # 7
+    - 'topic:llps'                                # 8
+    - 'topic:phase-separation'                    # 19(含少量软物质物理,由打分阶段过滤)

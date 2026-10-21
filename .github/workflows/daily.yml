@@ -1,0 +1,48 @@
+name: daily-feed
+on:
+  # 每日 06:00(上海时区)自动触发。daily 只负责沉淀每日 feed;weekly(周日 08:00)merge 时按
+  # [run-window_days, run-1] 取窗口内的 feed(不含运行当天),所以当天 feed 会被下一次运行纳入。
+  schedule:
+    - cron: "0 6 * * *"
+      timezone: "Asia/Shanghai"
+  workflow_dispatch: {}
+concurrency: {group: daily-feed, cancel-in-progress: false}
+permissions: {contents: write, issues: write}
+env:
+  TZ: Asia/Shanghai
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: {python-version: '3.11'}
+      - run: pip install ghresearcher -r requirements.txt
+      - run: python scripts/daily.py --config config.yaml --issue-body /tmp/issue.md --issue-title /tmp/issue.title
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "daily: $(date +%F)"
+            # main 可能已前进(手动 push / 上一次运行),rebase 后再推;push 失败重试容忍远端瞬时抖动。
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash
+              if git push; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                exit 1
+              fi
+              sleep $((attempt * 5))
+            done
+          fi
+      - name: open issue
+        run: |
+          if [ -s /tmp/issue.md ]; then
+            gh issue create --title "$(cat /tmp/issue.title)" --body-file /tmp/issue.md || true
+          fi

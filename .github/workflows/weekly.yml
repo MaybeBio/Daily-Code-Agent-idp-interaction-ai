@@ -1,0 +1,57 @@
+name: weekly-discovery
+on:
+  # 每周日 08:00（上海时区）自动触发；跑在自然周末尾，首页才能显示完整一周。
+  schedule:
+    - cron: "0 8 * * 0"
+      timezone: "Asia/Shanghai"
+  workflow_dispatch: {}
+concurrency: {group: weekly-discovery, cancel-in-progress: false}
+permissions: {contents: write, issues: write}
+env:
+  TZ: Asia/Shanghai
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: {python-version: '3.11'}
+      - run: pip install ghresearcher pyrepowiki-cli -r requirements.txt
+      - run: npm install -g degit
+      - run: command -v repowiki-cli && command -v degit
+      - name: weekly
+        run: bash scripts/run_weekly.sh
+        env:
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          ZREAD_TOKEN: ${{ secrets.ZREAD_TOKEN }}
+      - name: open issue
+        run: |
+          : > data/latest_issue.txt
+          if [ -s /tmp/issue.md ]; then
+            url=$(gh issue create --title "$(cat /tmp/issue.title)" --body-file /tmp/issue.md) && echo "$url" > data/latest_issue.txt || true
+          fi
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "weekly: $(date +%F)"
+            # main 可能已前进(手动 push / 上一次运行),rebase 后再推;push 失败重试容忍远端瞬时抖动。
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash
+              if git push; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                exit 1
+              fi
+              sleep $((attempt * 5))
+            done
+          fi

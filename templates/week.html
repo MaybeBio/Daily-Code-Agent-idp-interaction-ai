@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ window_start }} ~ {{ window_end }} · {{ SITE_TITLE }}{% endblock %}
+{% block content %}
+<h1>归档 <span class="window-tag">{{ window_start }} ~ {{ window_end }}</span></h1>
+<p class="muted">本期 {{ repos|length }} 个仓库 · 按相关度评分排序</p>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="legend">
+      <h3>相关度评分</h3>
+      <div class="row"><span class="dot high"></span>高<span class="range">8–10</span></div>
+      <div class="row"><span class="dot mid"></span>中<span class="range">5–7</span></div>
+      <div class="row"><span class="dot low"></span>低<span class="range">0–4</span></div>
+    </div>
+  </aside>
+  <div class="content">
+    <div class="repo-list">
+      {% for r in repos %}{% set card_index = loop.index %}{% set card_link = 'weeks/' ~ window_end ~ '/repos/' ~ repo_dir_name(r.full_name) ~ '/' %}{% include "_code_card.html" %}{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

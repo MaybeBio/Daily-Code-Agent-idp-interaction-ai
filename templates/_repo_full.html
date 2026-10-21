@@ -1,0 +1,36 @@
+<article class="repo">
+  <div class="repo-head">
+    <span class="score score-{{ score_tier(repo.score) }}">{{ repo.score if repo.score is not none else "-" }}</span>
+    <div>
+      <h1>{{ repo.full_name }}</h1>
+      <div class="meta">
+        {% if repo.language %}<span class="lang">{{ repo.language }}</span>{% endif %}
+        {% if repo.stars %}<span class="stars">★ {{ repo.stars }}</span>{% endif %}
+        · {{ (repo.pushed_at or "")[:10] }}
+      </div>
+      {% if repo.one_liner %}<p class="one-liner">{{ repo.one_liner }}</p>{% endif %}
+      <div class="repo-links">
+        <a href="{{ repo.url }}">GitHub</a>
+        {% for s in WIKI_SOURCES %}
+          <a href="{{ wiki_url(s, repo.full_name) }}">{{ s }}</a>
+          {% set snap = wiki_snapshot_url(s, repo.full_name, repo.wiki_dates.get(s, "")) %}
+          {% if snap %}<a href="{{ snap }}">{{ s }} 快照</a>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% if repo.card %}
+  <section>
+    <h2>Code Card</h2>
+    <div class="md">{{ repo.card | md | safe }}</div>
+  </section>
+  {% endif %}
+  {% if repo.readme %}
+  <section>
+    <details>
+      <summary>README 原文</summary>
+      <div class="md">{{ repo.readme | md | safe }}</div>
+    </details>
+  </section>
+  {% endif %}
+</article>

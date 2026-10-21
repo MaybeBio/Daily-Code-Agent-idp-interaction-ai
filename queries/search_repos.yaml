@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────────────────────
+# gh search 通用参数 —— 本文件与课题无关，换课题时原样照抄，一般不用改。
+#
+# 这里放的键会被 ghresearcher 原样转成 `gh` 的 flag（如 limit → --limit），
+# 所以只能放 gh 认识的字段；写错一个未知键（比如 queries）就会变成 `--queries` 直接报错。
+# 真正的「查询串」不在这里，而在 config.yaml 的 search.queries（多查询并集，
+# 由 scripts/search.py 逐条执行、按 full_name 去重）。
+# ─────────────────────────────────────────────────────────────
+
+# 搜索对象类型：repos / issues / prs / code / commits。本项目固定 repos。
+item_type: repos
+
+# 每条查询最多返回多少条（gh 上限 1000）。因为有 --updated 时间窗，实际命中通常远小于此，
+# 500 只是个安全上限（防止某条宽查询一次拉爆）。这是本文件里唯一你可能想调的字段。
+limit: 500
+
+# 排序键。⚠️ 必须保持 updated：gh search 没有「按 push 时间排序」的选项，
+# 而本项目的 pushed_at 过滤策略正是靠 --updated 圈出「超集」，再在客户端按 pushedAt 精筛。
+# 换成 stars 之类会破坏这个时间窗语义。
+sort: updated
+
+# 排序方向：desc（最新在前）/ asc。配合 sort: updated，一般不用改。
+order: desc
+
+# gh 返回哪些字段。⚠️ 这份其实是冗余的：
+#   scripts/search.py 自己也会显式传 `--json`（内容 = search.py 里的 FIELDS），命令行优先，
+#   所以流水线实际生效的是 search.py 的 FIELDS；本文件这份只在「单独跑
+#   ghresearcher search --config …」时用。
+#   ⇒ 若要增删字段，两处都要改：本文件 + scripts/search.py 的 FIELDS，保持完全一致。
+# 字段含义：
+#   fullName        仓库全名 owner/repo
+#   url             仓库网页地址
+#   language        主语言
+#   stargazersCount star 数
+#   description     仓库描述
+#   pushedAt        最后一次 push 时间（客户端过滤 pushed_at 用的就是它）
+json: ["fullName", "url", "language", "stargazersCount", "description", "pushedAt"]
