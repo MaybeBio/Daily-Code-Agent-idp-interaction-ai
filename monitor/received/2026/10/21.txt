@@ -1,0 +1,16 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu...
+
+2026-10-21 15:45:24 | ⭐️ sirius777coder starred JiangLabPrinceton/MESSI
+2026-10-21 13:50:14 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [15f5244] (expanded) Close anki-0w1: refactor the S2 sentence guards and document the flow
+2026-10-21 12:42:05 | 🚀 torvalds pushed to torvalds/linux
+    - [2c455dd] (expanded) smb client: fix mis-merge with fileattr_set taking a const idmap
+2026-10-21 11:37:45 | 🚀 tyang816 pushed to tyang816/Awesome-TCM-LLM
+    - [7179d36] (expanded) Update README and catalog with new TCM resources and model details
+2026-10-21 03:10:31 | ⭐️ Immortals-33 starred JiangLabPrinceton/MESSI
+2026-10-20 23:17:52 | ⭐️ meneshail starred microsoft/bioemu2
+2026-10-20 19:25:02 | ⭐️ sirius777coder starred microsoft/bioemu2
+2026-10-20 06:55:07 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [009f9f4] (expanded) Record the deck rename issue in the beads export
+2026-10-20 00:37:01 | 🚀 gitesei pushed to gitesei/MEM-CALVADOS
+    - [aaefe67] (expanded) Add vecto angle analysis

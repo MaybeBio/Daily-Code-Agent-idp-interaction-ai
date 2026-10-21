@@ -1,0 +1,116 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 252936,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "microsoft/bioemu2",
+    "who": [
+      "Junjie-Zhu",
+      "meneshail",
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 294,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/microsoft/bioemu2"
+  },
+  {
+    "full_name": "tyang816/Awesome-TCM-LLM",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 123,
+    "language": "Python",
+    "description": "开源中医大模型、数据、新闻、专利合集 (Open-source Traditional Chinese Medical Large Language Models, Datasets, News and Patents hub.)",
+    "url": "https://github.com/tyang816/Awesome-TCM-LLM"
+  },
+  {
+    "full_name": "genesistherapeutics/pairmixer",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 35,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/genesistherapeutics/pairmixer"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "alexholehouse",
+      "ryanemenecker"
+    ],
+    "event": "mixed",
+    "stars": 21,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "JiangLabPrinceton/MESSI",
+    "who": [
+      "Immortals-33",
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 10,
+    "language": "Python",
+    "description": "protein deimmunization with a discrete diffusion model",
+    "url": "https://github.com/JiangLabPrinceton/MESSI"
+  },
+  {
+    "full_name": "THGLab/KinConfBench",
+    "who": [
+      "mlpoiuhbn"
+    ],
+    "event": "star",
+    "stars": 6,
+    "language": "Python",
+    "description": "Official Repo for KinConfBench",
+    "url": "https://github.com/THGLab/KinConfBench"
+  },
+  {
+    "full_name": "gitesei/MEM-CALVADOS",
+    "who": [
+      "gitesei"
+    ],
+    "event": "push",
+    "stars": 2,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/gitesei/MEM-CALVADOS"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "boscoh/anki-tools",
+    "who": [
+      "boscoh"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/anki-tools"
+  }
+]

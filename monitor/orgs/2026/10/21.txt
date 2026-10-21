@@ -1,0 +1,12 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-10-21 12:24:57 | 🚀 alexholehouse pushed to idptools/parrot
+    - [44979f4] (expanded) Updated changelog
+2026-10-21 06:02:31 | 🚀 ryanemenecker pushed to idptools/parrot
+    - [d840e58] (expanded) added optional fininte gradient checks, gradient clipping, resume run capacity, run reporting, checkpointing, opt in AMP, huber, and more control over LR
+2026-10-20 19:25:05 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [f22e8d4] (expanded) tracker data 2026-10-20
+2026-10-20 11:52:09 | ⭐️ mlpoiuhbn starred THGLab/KinConfBench
+2026-10-20 06:36:39 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [b024321] (expanded) tracker data 2026-10-19
+2026-10-20 00:51:25 | 🔹 ryanemenecker performed DeleteEvent on idptools/parrot
