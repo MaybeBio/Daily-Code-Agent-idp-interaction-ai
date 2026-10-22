@@ -1,0 +1,34 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu...
+
+2026-10-22 05:23:17 | 🚀 boscoh pushed to boscoh/agentseed
+    - [13d8714] (expanded) Remove bold from HTTP method in logs
+2026-10-22 05:13:39 | 🔀 hadley merged PR in tidyverse/haven
+2026-10-22 04:29:02 | 🔹 hadley performed PullRequestReviewEvent on RConsortium/S7
+2026-10-22 04:29:02 | 🔹 hadley performed PullRequestReviewEvent on RConsortium/S7
+2026-10-22 04:28:00 | 🔹 hadley performed PullRequestReviewCommentEvent on RConsortium/S7
+2026-10-22 04:27:40 | 🔹 hadley performed PullRequestReviewCommentEvent on RConsortium/S7
+2026-10-22 04:26:52 | 🔹 hadley performed PullRequestReviewCommentEvent on RConsortium/S7
+2026-10-22 04:24:59 | 🔹 hadley performed PullRequestReviewCommentEvent on RConsortium/S7
+2026-10-22 04:24:07 | 🔹 hadley performed PullRequestReviewCommentEvent on RConsortium/S7
+2026-10-22 04:04:01 | 🚀 torvalds pushed to torvalds/linux
+    - [9ba46df] (expanded) Merge tag 'bitmap-for-v7.4-rc1' of https://github.com/norov/linux
+2026-10-22 01:45:51 | 🚀 hadley pushed to hadley/eatGADS
+    - [fe30180] (expanded) Let too-long variable labels error instead of truncating
+2026-10-22 01:45:24 | 💬 hadley created issue 'Make it possible to use a roclet from the package that defines it' in r-lib/roxygen2
+2026-10-21 21:02:35 | ⭐️ sirius777coder starred RosettaCommons/RFD4-Proteina
+2026-10-21 17:50:32 | ⭐️ Immortals-33 starred RosettaCommons/RFD4-Proteina
+2026-10-21 17:40:44 | ⭐️ venzera starred KULL-Centre/_2024_cagiada_stability
+2026-10-21 17:38:20 | ⭐️ Zuricho starred RosettaCommons/RFD4-Proteina
+2026-10-21 15:45:24 | ⭐️ sirius777coder starred JiangLabPrinceton/MESSI
+2026-10-21 11:37:45 | 🚀 tyang816 pushed to tyang816/Awesome-TCM-LLM
+    - [7179d36] (expanded) Update README and catalog with new TCM resources and model details
+2026-10-21 07:45:19 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [eb95d23] (expanded) Shorten file-edit rule in AGENTS.md
+2026-10-21 06:58:47 | 🚀 boscoh pushed to boscoh/gigmap
+    - [a7763f4] (expanded) Log events as aligned key/value blocks
+2026-10-21 06:43:43 | 🚀 hadley pushed to hadley/parquetize
+    - [7cba45b] (expanded) Remove spurious formatting changes
+2026-10-21 06:41:06 | 🆕 hadley created branch 'fix-object-size-s7' at hadley/parquetize
+2026-10-21 05:36:35 | 🚀 torvalds pushed to torvalds/linux
+    - [0e13591] (expanded) Merge tag 'x86_sev_for_v7.4_rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+2026-10-21 03:10:31 | ⭐️ Immortals-33 starred JiangLabPrinceton/MESSI

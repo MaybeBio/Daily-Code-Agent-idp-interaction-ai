@@ -1,0 +1,16 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-10-22 04:56:03 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [8df9928] (expanded) tracker data 2026-10-21
+2026-10-22 03:33:21 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [fad7283] (expanded) tracker data 2026-10-21
+2026-10-22 03:16:43 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [6aef805] (expanded) tracker data 2026-10-21
+2026-10-22 00:41:18 | 💬 dependabot created issue 'Bump @modelcontextprotocol/sdk and @angular/cli in /dome-ml-osai-ui' in BioComputingUP/OSAI_ecosystem
+2026-10-21 19:00:08 | ⭐️ yesirn starred THGLab/HiQBind
+2026-10-21 12:24:57 | 🚀 alexholehouse pushed to idptools/parrot
+    - [44979f4] (expanded) Updated changelog
+2026-10-21 06:43:59 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [e1fd89f] (expanded) tracker data 2026-10-20
+2026-10-21 06:02:31 | 🚀 ryanemenecker pushed to idptools/parrot
+    - [d840e58] (expanded) added optional fininte gradient checks, gradient clipping, resume run capacity, run reporting, checkpointing, opt in AMP, huber, and more control over LR

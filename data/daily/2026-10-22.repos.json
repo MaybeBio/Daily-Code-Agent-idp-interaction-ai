@@ -1,0 +1,193 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 253049,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "r-lib/roxygen2",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 664,
+    "language": "R",
+    "description": "Generate R package documentation from inline R comments",
+    "url": "https://github.com/r-lib/roxygen2"
+  },
+  {
+    "full_name": "RConsortium/S7",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 495,
+    "language": "R",
+    "description": "S7: a new OO system for R",
+    "url": "https://github.com/RConsortium/S7"
+  },
+  {
+    "full_name": "tidyverse/haven",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 457,
+    "language": "C",
+    "description": "Read SPSS, Stata and SAS files from R",
+    "url": "https://github.com/tidyverse/haven"
+  },
+  {
+    "full_name": "RosettaCommons/RFD4-Proteina",
+    "who": [
+      "Immortals-33",
+      "Zuricho",
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 223,
+    "language": "Python",
+    "description": "Generative protein design with rich conditioning. ",
+    "url": "https://github.com/RosettaCommons/RFD4-Proteina"
+  },
+  {
+    "full_name": "tyang816/Awesome-TCM-LLM",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 123,
+    "language": "Python",
+    "description": "开源中医大模型、数据、新闻、专利合集 (Open-source Traditional Chinese Medical Large Language Models, Datasets, News and Patents hub.)",
+    "url": "https://github.com/tyang816/Awesome-TCM-LLM"
+  },
+  {
+    "full_name": "THGLab/HiQBind",
+    "who": [
+      "yesirn"
+    ],
+    "event": "star",
+    "stars": 90,
+    "language": "Jupyter Notebook",
+    "description": "Workflow to clean up and fix structural problems in protein-ligand binding datasets",
+    "url": "https://github.com/THGLab/HiQBind"
+  },
+  {
+    "full_name": "KULL-Centre/_2024_cagiada_stability",
+    "who": [
+      "venzera"
+    ],
+    "event": "star",
+    "stars": 75,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/_2024_cagiada_stability"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "alexholehouse",
+      "ryanemenecker"
+    ],
+    "event": "push",
+    "stars": 21,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "JiangLabPrinceton/MESSI",
+    "who": [
+      "Immortals-33",
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 12,
+    "language": "Python",
+    "description": "protein deimmunization with a discrete diffusion model",
+    "url": "https://github.com/JiangLabPrinceton/MESSI"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "BioComputingUP/OSAI_ecosystem",
+    "who": [
+      "dependabot"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "HTML",
+    "description": "A community-curated list of Open and Sustainable AI (OSAI) ecosystem components mapped to practical recommendations to guide their use for research. ",
+    "url": "https://github.com/BioComputingUP/OSAI_ecosystem"
+  },
+  {
+    "full_name": "boscoh/agentseed",
+    "who": [
+      "boscoh"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "The minimal agent in a chatbox",
+    "url": "https://github.com/boscoh/agentseed"
+  },
+  {
+    "full_name": "hadley/eatGADS",
+    "who": [
+      "hadley"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "",
+    "description": "",
+    "url": "https://github.com/hadley/eatGADS"
+  },
+  {
+    "full_name": "boscoh/anki-tools",
+    "who": [
+      "boscoh"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/anki-tools"
+  },
+  {
+    "full_name": "boscoh/gigmap",
+    "who": [
+      "boscoh"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/gigmap"
+  },
+  {
+    "full_name": "hadley/parquetize",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 0,
+    "language": "",
+    "description": "R package that allows to convert databases of different formats to parquet format",
+    "url": "https://github.com/hadley/parquetize"
+  }
+]
