@@ -1,0 +1,150 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 253176,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "google-deepmind/alphafold",
+    "who": [
+      "leojacking-hub"
+    ],
+    "event": "star",
+    "stars": 14905,
+    "language": "Python",
+    "description": "Open source code for AlphaFold 2.",
+    "url": "https://github.com/google-deepmind/alphafold"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "leojacking-hub"
+    ],
+    "event": "star",
+    "stars": 8669,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "github-actions"
+    ],
+    "event": "other",
+    "stars": 1570,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Multramate",
+      "VictorLiwentao",
+      "felixpernegger",
+      "mo271",
+      "veljjanoski"
+    ],
+    "event": "mixed",
+    "stars": 1332,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "RosettaCommons/RFD4-Proteina",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 348,
+    "language": "Python",
+    "description": "Generative protein design with rich conditioning. ",
+    "url": "https://github.com/RosettaCommons/RFD4-Proteina"
+  },
+  {
+    "full_name": "bytedance/AnewOmni",
+    "who": [
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 109,
+    "language": "Python",
+    "description": "Codes for our paper \"Programming Biomolecular Interactions with All-Atom Generative Model\"",
+    "url": "https://github.com/bytedance/AnewOmni"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "push",
+    "stars": 21,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "mingchen-li/ThermoFormer",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 9,
+    "language": "Python",
+    "description": "Source code of ThermoFormer (Foundation Models for Science Workshop, NeurIPS 2024.)",
+    "url": "https://github.com/mingchen-li/ThermoFormer"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "BioComputingUP/OSAI_ecosystem",
+    "who": [
+      "dependabot",
+      "gavinf97"
+    ],
+    "event": "mixed",
+    "stars": 0,
+    "language": "HTML",
+    "description": "A community-curated list of Open and Sustainable AI (OSAI) ecosystem components mapped to practical recommendations to guide their use for research. ",
+    "url": "https://github.com/BioComputingUP/OSAI_ecosystem"
+  },
+  {
+    "full_name": "KULL-Centre/_2026_streit_hx",
+    "who": [
+      "julian-streit"
+    ],
+    "event": "other",
+    "stars": 0,
+    "language": "",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/_2026_streit_hx"
+  },
+  {
+    "full_name": "KULL-Centre/HXEnsemble",
+    "who": [
+      "julian-streit"
+    ],
+    "event": "other",
+    "stars": 0,
+    "language": "",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/HXEnsemble"
+  }
+]
