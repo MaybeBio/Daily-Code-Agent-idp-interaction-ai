@@ -1,9 +1,9 @@
 name: daily-feed
 on:
-  # 每日 06:00(上海时区)自动触发。daily 只负责沉淀每日 feed;weekly(周日 08:00)merge 时按
+  # 每日 05:00(上海时区)自动触发。daily 只负责沉淀每日 feed;weekly(周日 08:00)merge 时按
   # [run-window_days, run-1] 取窗口内的 feed(不含运行当天),所以当天 feed 会被下一次运行纳入。
   schedule:
-    - cron: "0 6 * * *"
+    - cron: "0 5 * * *"
       timezone: "Asia/Shanghai"
   workflow_dispatch: {}
 concurrency: {group: daily-feed, cancel-in-progress: false}
