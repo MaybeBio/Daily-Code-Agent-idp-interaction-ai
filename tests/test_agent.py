@@ -58,3 +58,16 @@ def test_is_permanent_by_status(code, perm):
 
 def test_is_permanent_ignores_non_openai_error():
     assert agent._is_permanent(RuntimeError("x")) is False
+
+def test_make_client_sets_request_timeout_and_disables_sdk_retries(monkeypatch):
+    seen = {}
+    def fake_openai(**kw):
+        seen.update(kw)
+        return object()
+    monkeypatch.setattr(agent, "OpenAI", fake_openai)
+    monkeypatch.setenv("LLM_BASE_URL", "http://x")
+    monkeypatch.setenv("LLM_API_KEY", "k")
+    agent.make_client()
+    # 不设的话 SDK 默认 600s/请求 + 2 次自动重试,卡住的请求会拖垮整步
+    assert seen["timeout"] == agent.REQUEST_TIMEOUT_SECONDS
+    assert seen["max_retries"] == 0

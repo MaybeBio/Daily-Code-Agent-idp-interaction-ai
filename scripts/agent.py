@@ -4,12 +4,18 @@ from openai import OpenAI, APIStatusError
 
 DEFAULT_MODEL = "deepseek-chat"
 
+# 单次请求超时。不传 timeout 时 openai SDK 默认 600s 且自带 2 次自动重试:
+# 一个卡住的请求最坏能占 30 分钟,并发里几个一起卡,整步就会静默跑满 timeout-minutes。
+# 这里压到 90s 并关掉 SDK 重试,退避统一交给 _retry_json。
+REQUEST_TIMEOUT_SECONDS = 90
+
 def load_prompts(path: str) -> dict:
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 def make_client() -> OpenAI:
-    return OpenAI(base_url=os.environ["LLM_BASE_URL"], api_key=os.environ["LLM_API_KEY"])
+    return OpenAI(base_url=os.environ["LLM_BASE_URL"], api_key=os.environ["LLM_API_KEY"],
+                  timeout=REQUEST_TIMEOUT_SECONDS, max_retries=0)
 
 def model_name() -> str:
     return os.environ.get("LLM_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL

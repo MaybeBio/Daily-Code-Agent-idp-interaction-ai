@@ -82,6 +82,19 @@ def test_run_retries_transient_then_succeeds(monkeypatch):
     assert gh.run(["gh", "api", "x"]) == "ok"
     assert calls["n"] == 3
 
+def test_run_passes_timeout_and_gives_up_on_timeout(monkeypatch):
+    calls = {"n": 0, "kw": {}}
+    def fake_run(cmd, **kw):
+        calls["n"] += 1
+        calls["kw"] = kw
+        raise subprocess.TimeoutExpired(cmd, kw.get("timeout"))
+    monkeypatch.setattr(gh.subprocess, "run", fake_run)
+    monkeypatch.setattr(gh.time, "sleep", lambda s: None)
+    with pytest.raises(subprocess.TimeoutExpired):
+        gh.run(["gh", "api", "x"])
+    assert calls["n"] == 1                                  # 挂住的调用不重试
+    assert calls["kw"]["timeout"] == gh.CALL_TIMEOUT_SECONDS
+
 def test_run_gives_up_immediately_on_permanent(monkeypatch):
     calls = {"n": 0}
     def fake_run(cmd, **kw):

@@ -1,4 +1,4 @@
-import argparse, os, sys
+import argparse, os, sys, time
 from datetime import date as _date, timedelta
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts import common, search, merge, score  # noqa: E402
@@ -11,12 +11,17 @@ def run(cfg: dict, run_date: str) -> list[dict]:
     [run-window_days, run-1] 选片,且不会和 weekly 自己产出的 scored/{运行日}.json 撞名。
     """
     covered = (_date.fromisoformat(run_date) - timedelta(days=1)).isoformat()
-    search.run(cfg, covered, f">={covered}", covered)
+    t0 = time.time()
+    found = search.run(cfg, covered, f">={covered}", covered)
+    print(f"[ingest] search {covered}: {len(found)} ({time.time() - t0:.0f}s)", flush=True)
     # window_days=0 + include_run_day:只取运行当天那份 feed —— 它装的是「昨天」的事件,
     # 正好和上面这次搜索覆盖的 pushed_at 对齐(不把前一天 feed 重复算一遍)。
-    merge.run(cfg, run_date, window_days=0, include_run_day=True,
-              search_date=covered, out_date=covered)
-    return score.run(cfg, covered)
+    merged = merge.run(cfg, run_date, window_days=0, include_run_day=True,
+                       search_date=covered, out_date=covered)
+    print(f"[ingest] candidates {covered}: {len(merged)} ({time.time() - t0:.0f}s)", flush=True)
+    rows = score.run(cfg, covered)
+    print(f"[ingest] scored {covered}: {len(rows)} ({time.time() - t0:.0f}s)", flush=True)
+    return rows
 
 
 def main():

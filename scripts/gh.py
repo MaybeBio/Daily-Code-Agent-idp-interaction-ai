@@ -38,12 +38,19 @@ def _error_text(err):
     return str(err).lower()
 
 def _is_permanent(err):
-    return any(m in _error_text(err) for m in _PERMANENT_MARKERS)
+    # 超时也按永久失败处理:重试一个挂住的调用只会再挂一次,单仓库放弃即可。
+    return isinstance(err, subprocess.TimeoutExpired) or any(
+        m in _error_text(err) for m in _PERMANENT_MARKERS)
+
+# 每个 gh 调用最多等 120s。没有这个上限时一个挂住的请求会永久占住线程,
+# 整个 ThreadPoolExecutor 就此卡死(表现为 action 静默跑到 timeout-minutes)。
+CALL_TIMEOUT_SECONDS = 120
 
 def run(cmd: list[str], **kw) -> str:
     kw.setdefault("capture_output", True)
     kw.setdefault("text", True)
     kw.setdefault("check", True)
+    kw.setdefault("timeout", CALL_TIMEOUT_SECONDS)
     attempts = kw.pop("attempts", 5)
     for i in range(attempts):
         try:
