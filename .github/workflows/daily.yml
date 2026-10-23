@@ -1,7 +1,8 @@
 name: daily-feed
 on:
   # 每日 05:00(上海时区)自动触发。daily 只负责沉淀每日 feed;weekly(周日 08:00)merge 时按
-  # [run-window_days, run-1] 取窗口内的 feed(不含运行当天),所以当天 feed 会被下一次运行纳入。
+  # [run-window_days, run-1] 取窗口内的 feed(不含运行当天),所以当天 feed 会被下一次运行纳入
+  # 之所以设置为5点是因为设置6点的话因为github延迟一般会导致8点多才开始跑，而我一天办公时间是早上8点开始，可以适当前调
   schedule:
     - cron: "0 5 * * *"
       timezone: "Asia/Shanghai"
@@ -14,12 +15,25 @@ env:
 jobs:
   run:
     runs-on: ubuntu-latest
+    # 本课题是 ingest.mode=weekly,daily 只跑 monitor + commit(ingest 步骤直接 no-op),几分钟内结束。
+    # 设 60 是安全网:撞到 60 说明某步卡死,让它失败留日志,而不是耗尽 GitHub 默认的 360 分钟。
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with: {python-version: '3.11'}
       - run: pip install ghresearcher -r requirements.txt
       - run: python scripts/daily.py --config config.yaml --issue-body /tmp/issue.md --issue-title /tmp/issue.title
+      # 仅当 config.yaml 的 ingest.mode=daily 时才真正执行;weekly 模式下脚本直接退出。
+      # 负责把「昨天」的搜索+打分增量做完,weekly 只聚合,避免一次打分几千个仓库超时。
+      - name: daily ingest
+        # 失败不阻断后面的 commit:当日 feed 仍要落库;缺失的 scored 由 weekly 聚合补跑。
+        continue-on-error: true
+        run: python scripts/ingest_daily.py --config config.yaml
+        env:
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
       - name: commit
         run: |
           git config user.name "github-actions[bot]"

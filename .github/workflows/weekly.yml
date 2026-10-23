@@ -13,7 +13,8 @@ env:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # weekly 模式下这是 search+score+archive 的总预算;daily 模式下只剩聚合+归档,通常更短。
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

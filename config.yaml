@@ -3,6 +3,14 @@ title: 无序蛋白互作 × AI
 # 抓取窗口长度(天)。窗口 = [运行日-window_days, 运行日-1](不含运行当天),
 # search/merge/cards/issue 四处同源;cards 会把它写进每条记录,站点据此分组。
 window_days: 7
+# 运行模式。
+#   weekly(默认): 周日一次跑完 search→merge→score→archive→cards→issue。
+#   daily:         每天只抓「昨天」并打分,周日只做 aggregate→archive→cards→issue。
+#                  仅当单周候选量很大(2000+)时才需要;本课题保持 weekly 即可。
+ingest:
+  mode: weekly
+  # 仅 daily 模式使用:weekly 聚合时最多补跑几个缺失日期。
+  max_backfill_days: 2
 site_base_url: https://MaybeBio.github.io/Daily-Code-Agent-idp-interaction-ai
 # 本模板仓库的 owner/name + 默认分支,用于构造 wiki 快照的 GitHub blob 链接
 # (指向 code/{repo}/wikis/{date}/{source}/llms.txt)。

@@ -1,9 +1,14 @@
-import argparse, os, sys
+import argparse, os, sys, time
 import yaml
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts import common, gh  # noqa: E402
 
 FIELDS = ["fullName", "url", "language", "stargazersCount", "description", "pushedAt"]
+
+# GitHub 搜索 API 对认证用户限流 30 请求/分钟(gh 内部还会翻页,一次查询可能发多个请求)。
+# 查询集有 20+ 条时连着跑会超限,尾部查询直接 HTTP 403。留间隔把整体压到限流以下,
+# 代价只是每条查询多等几秒(23 条约 1 分钟),远小于被 403 丢掉一路召回的损失。
+QUERY_INTERVAL_SECONDS = 3
 
 def _norm(d: dict) -> dict:
     return {"full_name": d.get("fullName", ""), "url": d.get("url", ""),
@@ -27,7 +32,9 @@ def run(cfg: dict, date: str, since: str, until: str | None = None) -> list[dict
     since_date = _bound_date(since)
     until_date = _bound_date(until)
     merged: dict[str, dict] = {}
-    for query in _queries(cfg["search"], qcfg):
+    for i, query in enumerate(_queries(cfg["search"], qcfg)):
+        if i:
+            time.sleep(QUERY_INTERVAL_SECONDS)
         try:
             results = gh.search_repos(qcfg, since, FIELDS, query=query)
         except Exception as e:

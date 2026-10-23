@@ -1,4 +1,10 @@
+import pytest
 from scripts import search
+
+@pytest.fixture(autouse=True)
+def _no_sleep(monkeypatch):
+    # 查询间隔只为避开 GitHub 限流,单测里别真等
+    monkeypatch.setattr(search.time, "sleep", lambda _s: None)
 
 def _qcfg(tmp_path, text="item_type: repos\nlimit: 500\n"):
     qdir = tmp_path / "queries"
@@ -62,3 +68,14 @@ def test_run_skips_failed_query(monkeypatch, tmp_path):
     cfg = {"search": {"config": cfgpath, "queries": ["bad in:name", "good in:name"]}}
     rows = search.run(cfg, "2026-10-04", ">=2026-09-27")
     assert [r["full_name"] for r in rows] == ["a/b"]   # 坏 query 跳过,好 query 仍出结果
+
+def test_run_sleeps_between_queries(monkeypatch, tmp_path):
+    monkeypatch.setattr(search.common, "ROOT", str(tmp_path))
+    cfgpath = _qcfg(tmp_path)
+    monkeypatch.setattr(search.gh, "search_repos", lambda *a, **k: [])
+    calls = []
+    monkeypatch.setattr(search.time, "sleep", lambda s: calls.append(s))
+    search.run({"search": {"config": cfgpath, "queries": ["A", "B", "C"]}},
+               "2026-10-04", ">=2026-09-27")
+    # 只在查询之间等:3 条查询 → 2 次,首条前不等
+    assert calls == [search.QUERY_INTERVAL_SECONDS] * 2
