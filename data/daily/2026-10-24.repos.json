@@ -1,0 +1,292 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 253300,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "schwitaaniyer",
+      "thebkcco"
+    ],
+    "event": "star",
+    "stars": 15840,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "SebasNorenaR",
+      "btaba",
+      "thebkcco"
+    ],
+    "event": "mixed",
+    "stars": 4258,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "google-deepmind/mctx",
+    "who": [
+      "google-cla"
+    ],
+    "event": "issue",
+    "stars": 2683,
+    "language": "Python",
+    "description": "Monte Carlo tree search in JAX",
+    "url": "https://github.com/google-deepmind/mctx"
+  },
+  {
+    "full_name": "google-deepmind/tapnet",
+    "who": [
+      "leoank"
+    ],
+    "event": "star",
+    "stars": 2236,
+    "language": "Jupyter Notebook",
+    "description": "Tracking Any Point (TAP)",
+    "url": "https://github.com/google-deepmind/tapnet"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "StafaH",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1569,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "mo271"
+    ],
+    "event": "issue",
+    "stars": 1334,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "copybara-service"
+    ],
+    "event": "pr",
+    "stars": 744,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "gesistsa/rio",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 621,
+    "language": "R",
+    "description": "🐟 A Swiss-Army Knife for Data I/O",
+    "url": "https://github.com/gesistsa/rio"
+  },
+  {
+    "full_name": "tidyverse/dbplyr",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 518,
+    "language": "R",
+    "description": "Database (DBI) backend for dplyr",
+    "url": "https://github.com/tidyverse/dbplyr"
+  },
+  {
+    "full_name": "tidyverse/haven",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 457,
+    "language": "C",
+    "description": "Read SPSS, Stata and SAS files from R",
+    "url": "https://github.com/tidyverse/haven"
+  },
+  {
+    "full_name": "evo-design/proto-language",
+    "who": [
+      "bviggiano"
+    ],
+    "event": "pr",
+    "stars": 211,
+    "language": "Python",
+    "description": "A high-level programming language for generative biology",
+    "url": "https://github.com/evo-design/proto-language"
+  },
+  {
+    "full_name": "evo-design/proto-tools",
+    "who": [
+      "bviggiano"
+    ],
+    "event": "mixed",
+    "stars": 136,
+    "language": "Python",
+    "description": "A universal infrastructure layer for generative biology",
+    "url": "https://github.com/evo-design/proto-tools"
+  },
+  {
+    "full_name": "tidyverse/data-dict",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 110,
+    "language": "Rust",
+    "description": "",
+    "url": "https://github.com/tidyverse/data-dict"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "nucloid1"
+    ],
+    "event": "star",
+    "stars": 79,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "posit-dev/commons",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 62,
+    "language": "Python",
+    "description": "AI Agents for Data Analysis",
+    "url": "https://github.com/posit-dev/commons"
+  },
+  {
+    "full_name": "feross/dotfiles",
+    "who": [
+      "feross"
+    ],
+    "event": "push",
+    "stars": 45,
+    "language": "Shell",
+    "description": "Configuration files for zsh, screen, git, ssh, sublime, dot dot dot",
+    "url": "https://github.com/feross/dotfiles"
+  },
+  {
+    "full_name": "kennethreitz/kennethreitz.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 16,
+    "language": "Python",
+    "description": "The source code of kennethreitz.org.",
+    "url": "https://github.com/kennethreitz/kennethreitz.org"
+  },
+  {
+    "full_name": "pharmaverse/teal.widgets",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 6,
+    "language": "R",
+    "description": "shiny widgets for teal applications",
+    "url": "https://github.com/pharmaverse/teal.widgets"
+  },
+  {
+    "full_name": "bergsmat/yamlet",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 4,
+    "language": "R",
+    "description": "Versatile Curation of Table Metadata",
+    "url": "https://github.com/bergsmat/yamlet"
+  },
+  {
+    "full_name": "dp-next/fastreg",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 4,
+    "language": "R",
+    "description": "Fast Conversion and Querying of Danish Registers with Parquet",
+    "url": "https://github.com/dp-next/fastreg"
+  },
+  {
+    "full_name": "beckerbenj/eatGADS",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 2,
+    "language": "R",
+    "description": "",
+    "url": "https://github.com/beckerbenj/eatGADS"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "evo-design/proto-gemini-extension",
+    "who": [
+      "bviggiano"
+    ],
+    "event": "other",
+    "stars": 0,
+    "language": "",
+    "description": "Google Gemini Extension for the Proto MCP https://proto.evodesign.org/docs/mcp/introduction",
+    "url": "https://github.com/evo-design/proto-gemini-extension"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "hadley/jmvReadWrite",
+    "who": [
+      "hadley"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "",
+    "description": "Routines to read and write (jamovi) OMV-files from R",
+    "url": "https://github.com/hadley/jmvReadWrite"
+  }
+]
