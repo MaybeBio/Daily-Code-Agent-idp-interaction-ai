@@ -1,0 +1,147 @@
+[
+  {
+    "full_name": "google-deepmind/open_spiel",
+    "who": [
+      "mahimn01",
+      "salim-assellalou"
+    ],
+    "event": "mixed",
+    "stars": 5556,
+    "language": "C++",
+    "description": "OpenSpiel is a collection of environments and algorithms for research in general reinforcement learning and search/planning in games.",
+    "url": "https://github.com/google-deepmind/open_spiel"
+  },
+  {
+    "full_name": "obsidianmd/pele",
+    "who": [
+      "kepano"
+    ],
+    "event": "push",
+    "stars": 3400,
+    "language": "TypeScript",
+    "description": "Renders Mermaid diagrams faster than you'd run from a volcano! 🌋 ",
+    "url": "https://github.com/obsidianmd/pele"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "zaebee"
+    ],
+    "event": "star",
+    "stars": 3328,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "github-actions",
+      "linrock"
+    ],
+    "event": "pr",
+    "stars": 1335,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "copybara-service"
+    ],
+    "event": "pr",
+    "stars": 744,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "feross/feross.org",
+    "who": [
+      "feross"
+    ],
+    "event": "mixed",
+    "stars": 81,
+    "language": "HTML",
+    "description": "Pure concentrated awesome (a.k.a. my blog)",
+    "url": "https://github.com/feross/feross.org"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "nucloid1"
+    ],
+    "event": "star",
+    "stars": 79,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "delalamo/SAbR",
+    "who": [
+      "delalamo"
+    ],
+    "event": "mixed",
+    "stars": 17,
+    "language": "Python",
+    "description": "Structure-based antibody renumbering",
+    "url": "https://github.com/delalamo/SAbR"
+  },
+  {
+    "full_name": "tyang816/tyang816.github.io",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 3,
+    "language": "HTML",
+    "description": "Homepage",
+    "url": "https://github.com/tyang816/tyang816.github.io"
+  },
+  {
+    "full_name": "xcflab/Astrolabe",
+    "who": [
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 1,
+    "language": "Python",
+    "description": "Astrolabe: Programmable all-atom biomolecular design through cross-context coordination and structural intervention.",
+    "url": "https://github.com/xcflab/Astrolabe"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 1,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "boscoh/anki-tools",
+    "who": [
+      "boscoh"
+    ],
+    "event": "mixed",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/anki-tools"
+  }
+]

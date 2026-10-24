@@ -1,0 +1,46 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-10-25 06:45:10 | 🔀 delalamo opened PR in delalamo/SAbR
+2026-10-25 06:40:48 | ⭐️ zaebee starred google-deepmind/science-skills
+2026-10-25 06:34:14 | 🐛 delalamo opened issue in delalamo/SAbR: 'Check sequence before renumbering CDRs when gaps are present there'
+2026-10-25 06:10:10 | 🔀 copybara-service merged PR in google-deepmind/torax
+2026-10-25 06:06:32 | 🔀 mahimn01 opened PR in google-deepmind/open_spiel
+2026-10-25 06:03:45 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-10-25 06:03:45 | 🔀 linrock opened PR in google-deepmind/formal-conjectures
+2026-10-25 06:02:46 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-10-25 06:02:46 | 🔀 linrock opened PR in google-deepmind/formal-conjectures
+2026-10-25 06:02:22 | 🍴 mahimn01 forked google-deepmind/open_spiel
+2026-10-25 06:02:05 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-10-25 06:02:05 | 🔀 linrock opened PR in google-deepmind/formal-conjectures
+2026-10-25 06:01:40 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-10-25 06:01:40 | 🔀 linrock opened PR in google-deepmind/formal-conjectures
+2026-10-25 05:58:58 | ⭐️ salim-assellalou starred google-deepmind/open_spiel
+2026-10-25 04:17:08 | 🚀 feross pushed to feross/feross.org
+    - [04e1c03] (expanded) Merge pull request #28 from feross/node-26
+2026-10-25 04:17:07 | 🔀 feross merged PR in feross/feross.org
+2026-10-25 03:26:39 | 🔀 feross opened PR in feross/feross.org
+2026-10-25 02:51:21 | 🚀 kepano pushed to obsidianmd/pele
+    - [4eff76f] (expanded) Release: 1.10.0
+2026-10-25 01:05:41 | 🚀 tyang816 pushed to tyang816/tyang816.github.io
+    - [f7c277f] (expanded) Sync the latest TCM catalog and let the overview introduction use the full width.
+2026-10-25 00:59:56 | 🚀 kepano pushed to obsidianmd/pele
+    - [3052498] (expanded) Release: 1.9.1
+2026-10-24 23:24:42 | ⭐️ sirius777coder starred xcflab/Astrolabe
+2026-10-24 21:17:03 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [fa6db76] (expanded) Close anki-p5s.8 and anki-p5s.7: Mandarin word core, spread mode retired
+2026-10-24 20:25:58 | 🔹 boscoh performed DeleteEvent on boscoh/anki-tools
+2026-10-24 20:25:55 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [ccd1acf] (expanded) Docs: Cantonese core deck, and K3 as a report
+2026-10-24 20:21:11 | 🆕 boscoh created branch 'yue-core' at boscoh/anki-tools
+2026-10-24 20:21:08 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [18262a8] (expanded) Spec: park the Cantonese core deck (M7); the LTL deck is too small
+2026-10-24 18:52:06 | 🚀 tyang816 pushed to tyang816/tyang816.github.io
+    - [f54b982] (expanded) Add the ISCB-China 2026 talk on cognitive reasoning for protein R&D agents.
+2026-10-24 14:55:34 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [502da25] (expanded) Export beads issues
+2026-10-24 14:38:35 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [f9b8206] (expanded) Export beads issues
+2026-10-24 01:14:25 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [db4f8c0] (expanded) Hero: new caduceus logo (512px webp), drop light card and old PNG
+2026-10-24 01:05:14 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [be91fbb] (expanded) Footer: drop DexScreener metadata note
