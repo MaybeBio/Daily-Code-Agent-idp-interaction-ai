@@ -1,0 +1,52 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-10-26 06:59:42 | ⭐️ ZekaiJ starred google-deepmind/disco_rl
+2026-10-26 06:37:55 | 💬 kennethreitz created issue 'Add Requests download history and public project observatory' in kennethreitz/requeststoken.org
+2026-10-26 06:33:58 | 🐛 mo271 closed issue in google-deepmind/formal-conjectures: 'Erdős 982: add the solved concyclic variant and Lean proof'
+2026-10-26 06:33:57 | 🔀 bengoechea merged PR in google-deepmind/formal-conjectures
+2026-10-26 06:33:57 | 🔀 AItoBit merged PR in google-deepmind/formal-conjectures
+2026-10-26 06:33:57 | 🔀 AItoBit merged PR in google-deepmind/formal-conjectures
+2026-10-26 06:33:56 | 🔀 arex1337 merged PR in google-deepmind/formal-conjectures
+2026-10-26 06:30:58 | 🔀 rwst merged PR in google-deepmind/formal-conjectures
+2026-10-26 06:25:40 | ⭐️ nicolehao34 starred google-deepmind/materials_discovery
+2026-10-26 06:14:09 | ⭐️ DillonZChen starred google-deepmind/reaf-sim
+2026-10-26 06:12:38 | ⭐️ albertlieyingadrian starred google-deepmind/alphagenome
+2026-10-26 06:03:25 | ⭐️ 7udwig starred google-deepmind/mujoco
+2026-10-26 05:58:27 | 💬 SnirBroshi created issue 'Formalize the matrix multiplication exponent conjecture' in google-deepmind/formal-conjectures
+2026-10-26 05:48:55 | 🔀 Sonica-B opened PR in google-deepmind/optax
+2026-10-26 05:44:37 | 🔀 feross opened PR in feross/mad-science-bot
+2026-10-26 05:43:06 | 💬 kennethreitz created issue 'Add Requests download history and public project observatory' in kennethreitz/requeststoken.org
+2026-10-26 05:41:52 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [aa96a6d] (expanded) Deploy tag 7681ea2 with Redis service
+2026-10-26 05:40:22 | 🍴 toekneema forked google-deepmind/mujoco_playground
+2026-10-26 05:39:59 | 🔀 kennethreitz merged PR in kennethreitz/requeststoken.org
+2026-10-26 05:39:58 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [7681ea2] (expanded) Merge pull request #3 from TheTradoor/feature/requests-observatory
+2026-10-26 05:38:58 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:38:36 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:38:08 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:37:38 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:36:37 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:35:14 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:35:13 | 🔀 mo271 labeled PR in google-deepmind/formal-conjectures
+2026-10-26 05:34:28 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:33:49 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:29:13 | ⭐️ destari starred google-deepmind/mujoco
+2026-10-26 05:26:57 | ⭐️ kennethreitz starred kennethreitz/acat
+2026-10-26 05:24:36 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:23:45 | 🔹 mo271 performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-26 05:21:00 | 💬 mo271 created issue 'Formalize the matrix multiplication exponent conjecture' in google-deepmind/formal-conjectures
+2026-10-26 05:19:35 | 🍴 SamuelSchultz124 forked evo-design/antiGen
+2026-10-26 05:12:19 | 💬 kennethreitz created issue 'Add Requests download history and public project observatory' in kennethreitz/requeststoken.org
+2026-10-26 05:05:52 | 🏷️  kennethreitz published release v0.1.1 in kennethreitz/acat
+2026-10-26 05:03:57 | ⭐️ Junchao-Zhu starred deepseek-ai/DeepInfer
+2026-10-26 05:00:44 | 🏷️  kennethreitz published release v0.1.0 in kennethreitz/acat
+2026-10-26 05:00:41 | 🚀 kennethreitz pushed to kennethreitz/acat
+    - [011d0d9] (expanded) Publish as acat-player (command stays acat)
+2026-10-25 07:03:59 | 🚀 boscoh pushed to boscoh/anki-tools
+    - [594e5d5] (expanded) Beads: remove stale and redundant issues
+2026-10-25 06:52:13 | 🚀 delalamo pushed to delalamo/SAbR
+    - [f5f19a7] (expanded) Read unresolved mmCIF metadata through MMCIF2Dict
+2026-10-25 06:44:57 | 🆕 delalamo created branch 'fix/unresolved-loop-numbering' at delalamo/SAbR
+2026-10-25 00:04:51 | 🚀 tyang816 pushed to tyang816/Awesome-TCM-LLM
+    - [460e8ba] (expanded) Update README and catalog with new TCM models and dataset details

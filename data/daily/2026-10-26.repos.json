@@ -1,0 +1,195 @@
+[
+  {
+    "full_name": "deepseek-ai/DeepInfer",
+    "who": [
+      "Junchao-Zhu"
+    ],
+    "event": "star",
+    "stars": 22375,
+    "language": "Python",
+    "description": "DeepInfer: High-performance, large-scale inference framework for DeepSeek models",
+    "url": "https://github.com/deepseek-ai/DeepInfer"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "7udwig",
+      "destari"
+    ],
+    "event": "star",
+    "stars": 15876,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/optax",
+    "who": [
+      "Sonica-B"
+    ],
+    "event": "pr",
+    "stars": 2358,
+    "language": "Python",
+    "description": "Optax is a gradient processing and optimization library for JAX.",
+    "url": "https://github.com/google-deepmind/optax"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_playground",
+    "who": [
+      "toekneema"
+    ],
+    "event": "fork",
+    "stars": 2261,
+    "language": "Python",
+    "description": "An open-source library for sim and real robot demos on top of MuJoCo.",
+    "url": "https://github.com/google-deepmind/mujoco_playground"
+  },
+  {
+    "full_name": "google-deepmind/alphagenome",
+    "who": [
+      "albertlieyingadrian"
+    ],
+    "event": "star",
+    "stars": 2200,
+    "language": "Python",
+    "description": "This API provides programmatic access to the AlphaGenome model developed by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/alphagenome"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "AItoBit",
+      "SnirBroshi",
+      "arex1337",
+      "bengoechea",
+      "mo271",
+      "rwst"
+    ],
+    "event": "mixed",
+    "stars": 1336,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/materials_discovery",
+    "who": [
+      "nicolehao34"
+    ],
+    "event": "star",
+    "stars": 1248,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/materials_discovery"
+  },
+  {
+    "full_name": "google-deepmind/disco_rl",
+    "who": [
+      "ZekaiJ"
+    ],
+    "event": "star",
+    "stars": 746,
+    "language": "Python",
+    "description": "Accompanying code for \"Discovering State-of-the-art Reinforcement Algorithms\" Nature publication",
+    "url": "https://github.com/google-deepmind/disco_rl"
+  },
+  {
+    "full_name": "tyang816/Awesome-TCM-LLM",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 128,
+    "language": "Python",
+    "description": "开源中医大模型、数据、新闻、专利合集 (Open-source Traditional Chinese Medical Large Language Models, Datasets, News and Patents hub.)",
+    "url": "https://github.com/tyang816/Awesome-TCM-LLM"
+  },
+  {
+    "full_name": "delalamo/SAbR",
+    "who": [
+      "delalamo"
+    ],
+    "event": "mixed",
+    "stars": 17,
+    "language": "Python",
+    "description": "Structure-based antibody renumbering",
+    "url": "https://github.com/delalamo/SAbR"
+  },
+  {
+    "full_name": "evo-design/antiGen",
+    "who": [
+      "SamuelSchultz124"
+    ],
+    "event": "fork",
+    "stars": 9,
+    "language": "C++",
+    "description": "Codebase for: Forecasting viral evolution from phylogenetic trees (Specht et al., 2026)",
+    "url": "https://github.com/evo-design/antiGen"
+  },
+  {
+    "full_name": "google-deepmind/reaf-sim",
+    "who": [
+      "DillonZChen"
+    ],
+    "event": "star",
+    "stars": 6,
+    "language": "Python",
+    "description": "simulation framework for real robot workflows",
+    "url": "https://github.com/google-deepmind/reaf-sim"
+  },
+  {
+    "full_name": "feross/mad-science-bot",
+    "who": [
+      "feross"
+    ],
+    "event": "pr",
+    "stars": 5,
+    "language": "JavaScript",
+    "description": "Mad science bot for Discord",
+    "url": "https://github.com/feross/mad-science-bot"
+  },
+  {
+    "full_name": "kennethreitz/acat",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 2,
+    "language": "Python",
+    "description": "cat prints files. acat plays them. Audio and video in your terminal, for humans.",
+    "url": "https://github.com/kennethreitz/acat"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 1,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "boscoh/anki-tools",
+    "who": [
+      "boscoh"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/anki-tools"
+  }
+]
