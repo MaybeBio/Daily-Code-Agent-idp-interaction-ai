@@ -370,27 +370,51 @@ def test_select_entries_keeps_source_drops_data():
         {"path": "docs/fig.png", "size": 10 ** 6},
         {"path": "vendor/sub", "size": 0, "type": "commit"},
     ]
-    keep, omitted = archive.select_entries(entries, "code", "README.md")
-    assert [k["path"] for k in keep] == \
-        ["src/a.py", "data/small.json", "Makefile", "README.md"]
+    keep, omitted = archive.select_entries(entries, "code")
+    assert [k["path"] for k in keep] == ["src/a.py", "Makefile", "README.md"]
     reasons = {o["path"]: o["reason"] for o in omitted}
-    assert reasons["data/big.json"] == "超过大小上限"
+    assert reasons["data/small.json"] == "后缀不在白名单"
+    assert reasons["data/big.json"] == "后缀不在白名单"
     assert reasons["weights/w.pt"] == "后缀不在白名单"
     assert reasons["docs/fig.png"] == "后缀不在白名单"
     assert reasons["vendor/sub"] == "子模块未拉取"
 
 def test_select_entries_readme_only():
-    entries = [{"path": "README.md", "size": 10}, {"path": "a.py", "size": 10}]
-    keep, omitted = archive.select_entries(entries, "readme", "README.md")
-    assert [k["path"] for k in keep] == ["README.md"]
-    assert omitted[0]["reason"] == "仅保留 README"
+    entries = [{"path": "README.md", "size": 10},
+               {"path": "README_zh.md", "size": 10},
+               {"path": "a.py", "size": 10}]
+    keep, omitted = archive.select_entries(entries, "readme")
+    assert [k["path"] for k in keep] == ["README.md", "README_zh.md"]
+    assert all(o["reason"] == "仅保留 README" for o in omitted)
 
-def test_pick_readme_prefers_root_then_github():
-    entries = [{"path": ".github/README.md", "size": 1},
-               {"path": "docs/README.md", "size": 1},
-               {"path": "README.rst", "size": 1}]
-    assert archive._pick_readme(entries) == "README.rst"
-    assert archive._pick_readme([{"path": "x/a.py", "size": 1}]) is None
+def test_readme_variants_classified_as_readme():
+    for p in ("README.md", "readme.txt", "README_zh.md", "README-zh-CN.md",
+              "README.ch.md", "ReadMe.MD", "README.rst", "README"):
+        assert archive._classify(p) == "readme", p
+
+def test_readme_generator_is_source_not_readme():
+    assert archive._classify("readme_generator.py") == "source"
+
+def test_build_names_and_prefixes():
+    for p in ("requirements.txt", "requirements-dev.txt", "environment.yml",
+              "constraints.txt", "pyproject.toml", "package.json",
+              "Cargo.toml", "Makefile", "Dockerfile", "setup.py"):
+        assert archive._classify(p) == "build", p
+
+def test_config_extensions_are_build():
+    for p in ("config.yaml", "settings.toml", "a.ini", "b.cfg", "c.conf",
+              "poetry.lock"):
+        assert archive._classify(p) == "build", p
+
+def test_docs_by_name_and_ext():
+    for p in ("LICENSE", "LICENSE.txt", "CHANGELOG.txt", "CONTRIBUTING.md",
+              "docs/guide.md", "paper.tex", "refs.bib"):
+        assert archive._classify(p) == "docs", p
+
+def test_generic_data_files_dropped():
+    for p in ("data/a.txt", "run.log", "data.csv", "data.tsv", "data.json",
+              "data.xml", "config.json"):
+        assert archive._classify(p) is None, p
 
 def test_sparse_pattern_escapes_glob_chars():
     assert archive._sparse_pattern("a/[x].py") == "/a/\\[x\\].py"
@@ -459,3 +483,79 @@ def test_write_manifest_lists_kept_and_omitted(tmp_path):
 def test_rewrite_md_skips_documenter_ref():
     md = "[x](@ref)\n[y](@ref foo)\n"
     assert archive.rewrite_md(md, "docs/a.md", "o/r") == md
+
+def test_select_entries_source_cap_is_2mb():
+    entries = [{"path": "big.py", "size": 3 * 1024 * 1024},
+               {"path": "ok.py", "size": 1024 * 1024}]
+    keep, omitted = archive.select_entries(entries, "code")
+    assert [k["path"] for k in keep] == ["ok.py"]
+    assert omitted == [{"path": "big.py", "size": 3 * 1024 * 1024,
+                        "reason": "超过大小上限"}]
+
+def test_ipynb_and_readme_unlimited():
+    entries = [{"path": "nb.ipynb", "size": 8 * 1024 * 1024},
+               {"path": "README.md", "size": 10 * 1024 * 1024},
+               {"path": "big.py", "size": 3 * 1024 * 1024}]
+    keep, omitted = archive.select_entries(entries, "code")
+    assert [k["path"] for k in keep] == ["nb.ipynb", "README.md"]
+    assert omitted == [{"path": "big.py", "size": 3 * 1024 * 1024,
+                        "reason": "超过大小上限"}]
+
+def test_docs_and_build_cap_is_1mb():
+    entries = [{"path": "docs/guide.md", "size": 2 * 1024 * 1024},
+               {"path": "docs/small.md", "size": 500 * 1024},
+               {"path": "config.yaml", "size": 2 * 1024 * 1024},
+               {"path": "config-small.yaml", "size": 100 * 1024}]
+    keep, omitted = archive.select_entries(entries, "code")
+    assert [k["path"] for k in keep] == ["docs/small.md", "config-small.yaml"]
+    assert {o["path"] for o in omitted} == {"docs/guide.md", "config.yaml"}
+
+def test_script_and_doc_extensions_whitelisted():
+    for p in ("run.pbs", "plot.plt", "notes.rmd", "a.mli", "job.slurm"):
+        assert archive._classify(p) is not None
+
+def test_render_tree_nested():
+    out = archive._render_tree(["src/a.py", "README.md"])
+    assert out.startswith("# 目录树")
+    assert "├── src/" in out
+    assert "│   └── a.py" in out
+    assert "└── README.md" in out
+
+def test_render_tree_empty():
+    assert "空仓库" in archive._render_tree([])
+
+def test_render_tree_truncates_to_limit():
+    out = archive._render_tree(["a.py", "b.py"], limit=1)
+    assert "共 2 个文件,只显示前 1 个" in out
+    assert "└── a.py" in out
+    assert "b.py" not in out
+
+def test_render_tree_truncated_note():
+    assert "已被 tree API 截断" in archive._render_tree(["a.py"], truncated=True)
+
+def test_copy_readme_writes_readme_and_tree(monkeypatch, tmp_path):
+    monkeypatch.setattr(archive.common, "ROOT", str(tmp_path))
+
+    def fake_json(cmd):
+        url = cmd[2]
+        if url == "repos/o/r/readme":
+            return {"name": "README.md",
+                    "content": archive.base64.b64encode(
+                        b"# Hi\n![x](./a.png)\n").decode(),
+                    "size": 10}
+        if url == "repos/o/r/git/trees/HEAD?recursive=1":
+            return {"tree": [{"path": "src/a.py", "type": "blob", "size": 1},
+                             {"path": "README.md", "type": "blob", "size": 1}],
+                    "truncated": False}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(archive, "_run_json", fake_json)
+    monkeypatch.setattr(archive, "_run_text", lambda cmd: "abc123def456")
+    base = tmp_path / "code" / "o__r"
+    assert archive._copy_readme("o/r", str(base / "code"), "2026-10-05") is True
+    readme = (base / "code" / "README.md").read_text()
+    assert "https://github.com/o/r/raw/HEAD/a.png" in readme
+    tree = (base / "code" / "TREE.md").read_text()
+    assert "src/" in tree and "a.py" in tree and "README.md" in tree
+    manifest = (base / "MANIFEST.md").read_text()
+    assert "TREE.md" in manifest and "abc123def456" in manifest

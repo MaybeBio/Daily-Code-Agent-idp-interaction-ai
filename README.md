@@ -333,7 +333,7 @@ python -m pytest -q
 <details>
 <summary><b>代码目录为什么不是完整仓库？</b></summary>
 
-`archive.repo_copy: code`（默认）把高分仓库当「代码语料」而不是备份：保留源码、构建文件与文档（后缀表在 `scripts/archive.py` 顶部），**数据、图片、权重、二进制一律不留**；数据/配置类单文件超过 256 KB 也不留——实测源码文件最大 0.45 MB，而 notebook / XML 能到 8 MB，砍掉的是后者。每个仓库的 `code/{repo}/MANIFEST.md` 由归档时自动生成：保留/省略的统计、体积最大的 20 个省略文件及其 `raw/HEAD` 取回链接都在里面，并明确写着「这是代码摘录，不是完整仓库」。
+`archive.repo_copy: code`（默认）把高分仓库当「代码语料」而不是备份：保留源码、构建文件与文档（后缀表在 `scripts/archive.py` 顶部），**数据、图片、权重、二进制一律不留**；数据/配置类单文件超过 256 KB、源码/文档/构建单文件超过 2 MB 也不留——实测 24 个仓库里源码最大 0.46 MB、文档最大 0.27 MB，而 notebook / XML 能到 8 MB，砍掉的都是后者。每个仓库的 `code/{repo}/MANIFEST.md` 由归档时自动生成：保留/省略的统计、体积最大的 20 个省略文件及其 `raw/HEAD` 取回链接都在里面，并明确写着「这是代码摘录，不是完整仓库」。
 
 下载走 `--filter=blob:none` 的 partial clone + sparse-checkout：先按 tree API 的 size 选文件，再只拉清单内的 blob。实测一个 655 MB 的仓库只下载 44 MB；一周 24 个仓库的语料约 35 MB（原来完整克隆是 1.1 GB）。README 和文档里的相对图片/链接会改写成 GitHub 绝对地址，所以图片即使没存下来也能正常渲染。需要完整仓库时把 `repo_copy` 改成 `full`；只要 README 则用 `readme`；tree API 被截断时自动退回完整克隆 + 本地裁剪。
 

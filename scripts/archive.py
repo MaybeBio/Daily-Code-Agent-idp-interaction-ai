@@ -20,41 +20,68 @@ SOURCE_EXTS = frozenset("""
 .c .h .cc .cpp .cxx .hpp .hxx .cu .cuh .ino
 .rs .go .zig
 .rb .php .pl .pm .lua .tcl
-.sh .bash .zsh .fish .ps1
-.swift .m .mm
+.sh .bash .zsh .fish .ps1 .csh .tcsh .awk
+.pbs .sbatch .slurm
+.swift .m .mm .ml .mli
 .cs .fs .fsx .vb
 .r .jl .hs .elm .ex .exs .erl .clj .cljs .cljc .dart
 .f .f77 .f90 .f95 .f03 .for
 .nf .smk .stan
-.proto .thrift .graphql .gql
+.plt .proto .thrift .graphql .gql
 .sql .cmake .mk .meson
-.md .mdx .markdown .rst
-.tex .sty .cls .bib
 .xsl .xslt
-.yaml .yml .toml .ini .cfg .conf .xml .json .ipynb .lock .txt
+.ipynb
 """.split())
 
-# 数据/配置类:体积可以很大(notebook 输出、XML 标注、JSON 数据),超过
-# DATA_MAX 就不留 —— 实测一个 24 仓库周里这一类就有 7.97 MB 的 notebook。
-DATA_EXTS = frozenset({".json", ".xml", ".txt", ".ipynb", ".lock",
-                       ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf"})
+# 文档格式:人读的说明/论文/讲义。通用文本(.txt/.log/.csv)不在此列。
+DOC_EXTS = frozenset({".md", ".mdx", ".markdown", ".rst", ".rmd", ".qmd",
+                      ".tex", ".sty", ".cls", ".bib", ".adoc", ".org"})
 
-DOC_EXTS = frozenset({".md", ".mdx", ".markdown", ".rst",
-                      ".tex", ".sty", ".cls", ".bib"})
+# 配置/声明式格式:环境与项目配置。大 JSON/XML 数据不在此列(仅按名保留清单)。
+BUILD_EXTS = frozenset({".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf", ".lock"})
 
-# 无后缀但有明确作用的构建文件(按文件名匹配,大小写不敏感)。
-FIXED_NAMES = frozenset({
+# 无后缀或特殊名的构建/依赖/环境清单(按文件名精确匹配,大小写不敏感)。
+BUILD_NAMES = frozenset({
     "makefile", "gnumakefile", "dockerfile", "containerfile",
     "cmakelists.txt", "snakefile", "justfile", "rakefile",
-    "gemfile", "pipfile", "procfile", "vagrantfile", "configure",
-    "build", "workspace", "module.bazel", "go.mod",
+    "gemfile", "procfile", "vagrantfile", "configure", "build",
+    "workspace", "module.bazel", "go.mod", "go.sum",
+    "pyproject.toml", "setup.py", "setup.cfg",
+    "package.json", "package-lock.json", "yarn.lock",
+    "cargo.toml", "cargo.lock",
+    "pipfile", "pipfile.lock", "poetry.lock",
+    "pom.xml", "build.xml", "settings.xml",
+    "tsconfig.json", "jsconfig.json", "manifest.json",
+    "composer.json", "composer.lock",
+    "build.gradle", "build.gradle.kts", "settings.gradle",
+    "meson.build", "makefile.am",
 })
 
-DATA_MAX = 256 * 1024          # 数据类单文件上限
-SOURCE_MAX = 5 * 1024 * 1024   # 源码/文档的保险丝:实测最大源码 0.45 MB
+# 依赖/环境清单的常见前缀(requirements*.txt / environment*.yml 等)。
+BUILD_PREFIXES = ("requirements", "constraints", "environment")
 
-_CLASS_LABEL = {"source": "源码", "docs": "文档", "build": "构建文件",
-                "data": "数据/配置", "readme": "README"}
+# 按文件名识别的文档(后缀可能是 .txt 或无后缀,如 LICENSE / CHANGELOG.txt)。
+DOC_NAMES = frozenset({
+    "license", "licence", "copying", "copying.lesser",
+    "notice", "changelog", "changes", "history", "news",
+    "contributing", "authors", "thanks",
+    "acknowledgements", "acknowledgments",
+    "security", "code_of_conduct", "codeowners",
+    "citation", "citations", "about", "support",
+    "maintainers", "governance",
+})
+
+SOURCE_CAP = 2 * 1024 * 1024   # 普通源码保险丝(实测最大 0.46 MB,2 MB 只挡 vendored 大包)
+DOCS_CAP = 1 * 1024 * 1024     # 文档上限(实测最大 0.27 MB)
+BUILD_CAP = 1 * 1024 * 1024    # 构建/配置上限(实测最大 79 KB)
+# README 与 .ipynb 不设上限:前者是核心材料,后者是「代码+结果」的完整产物,都该整留。
+
+# README 可带的后缀;语言/区域变体(README_zh.md 等)由 _is_readme 前缀判断。
+_PLAIN_EXTS = frozenset({"", ".md", ".markdown", ".rst", ".txt",
+                         ".adoc", ".org", ".html", ".htm"})
+
+_CLASS_LABEL = {"source": "源码", "build": "构建/配置", "docs": "文档",
+                "readme": "README", "tree": "目录树"}
 
 # 仓库在该 wiki 源上尚未被索引(404/not indexed),与瞬时网络故障区分。
 _NOT_INDEXED_MARKERS = (
@@ -169,23 +196,46 @@ def _fmt_size(n):
             return f"{n:.1f} {unit}"
     return f"{n:.1f} GB"
 
-def _classify(path, readme_path):
-    """→ (类别, 单文件上限)。类别为 None 表示不在白名单。"""
+def _is_readme(path):
+    """README 及其变体:README.md / readme.txt / README_zh.md / README-zh-CN.md 等。"""
     name = posixpath.basename(path).lower()
-    if path == readme_path:
-        return "readme", SOURCE_MAX        # README 是核心材料,不吃数据类的小上限
-    if name in FIXED_NAMES:
-        return "build", SOURCE_MAX
-    ext = _ext(path)
-    if ext in DATA_EXTS:
-        return "data", DATA_MAX
-    if ext in DOC_EXTS:
-        return "docs", SOURCE_MAX
-    if ext in SOURCE_EXTS:
-        return "source", SOURCE_MAX
-    return None, 0
+    return name.startswith("readme") and _ext(path) in _PLAIN_EXTS
 
-def select_entries(entries, mode="code", readme_path=None):
+def _classify(path):
+    """→ 类别名;None 表示不在白名单。"""
+    name = posixpath.basename(path).lower()
+    ext = _ext(path)
+    if _is_readme(path):
+        return "readme"
+    if name in BUILD_NAMES:
+        return "build"
+    if name.startswith(BUILD_PREFIXES) and \
+            ext in (".txt", ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".lock", ""):
+        return "build"
+    if ext in BUILD_EXTS:
+        return "build"
+    stem = name.split(".", 1)[0]
+    if (name in DOC_NAMES or stem in DOC_NAMES) and ext in _PLAIN_EXTS:
+        return "docs"
+    if ext in DOC_EXTS:
+        return "docs"
+    if ext in SOURCE_EXTS:
+        return "source"
+    return None
+
+def _cap(cls, path):
+    """单文件上限(字节);None 表示不限。"""
+    if cls == "readme":
+        return None
+    if cls == "source" and _ext(path) == ".ipynb":
+        return None
+    if cls == "docs":
+        return DOCS_CAP
+    if cls == "build":
+        return BUILD_CAP
+    return SOURCE_CAP
+
+def select_entries(entries, mode="code"):
     """按策略筛文件。entries: [{"path","size","type"?}]。
 
     返回 (keep, omitted),元素都带 path/size;keep 另带 class,omitted 带 reason。
@@ -197,34 +247,21 @@ def select_entries(entries, mode="code", readme_path=None):
             omitted.append({"path": path, "size": size, "reason": "子模块未拉取"})
             continue
         if mode == "readme":
-            if path == readme_path:
+            if _is_readme(path):
                 keep.append({"path": path, "size": size, "class": "readme"})
             else:
                 omitted.append({"path": path, "size": size, "reason": "仅保留 README"})
             continue
-        cls, cap = _classify(path, readme_path)
+        cls = _classify(path)
         if cls is None:
             omitted.append({"path": path, "size": size, "reason": "后缀不在白名单"})
-        elif size > cap:
+            continue
+        cap = _cap(cls, path)
+        if cap is not None and size > cap:
             omitted.append({"path": path, "size": size, "reason": "超过大小上限"})
         else:
             keep.append({"path": path, "size": size, "class": cls})
     return keep, omitted
-
-_README_RE = re.compile(r"^readme(\.(md|markdown|rst|txt))?$", re.I)
-
-def _pick_readme(entries):
-    """按 GitHub 的查找顺序(root → .github/ → docs/)挑 README。"""
-    names = [e["path"] for e in entries if e.get("type") != "commit"]
-    for prefix in ("", ".github/", "docs/"):
-        for p in names:
-            if posixpath.dirname(p) == prefix.rstrip("/") and \
-                    _README_RE.match(posixpath.basename(p)):
-                return p
-    for p in names:                      # 兜底:任意深度的 README
-        if _README_RE.match(posixpath.basename(p)):
-            return p
-    return None
 
 def _tree_api(full_name):
     """GitHub tree API:一次拿全量路径 + 每个 blob 的 size(不下载内容)。"""
@@ -375,7 +412,7 @@ def _group(items, key):
 
 def _ext_key(item):
     name = posixpath.basename(item["path"])
-    if name.lower() in FIXED_NAMES:
+    if name.lower() in BUILD_NAMES:
         return name
     return _ext(name) or "无后缀"
 
@@ -384,9 +421,9 @@ def _cell(path):
 
 def _write_manifest(base, full_name, mode, keep, omitted, commit, date=""):
     policy = {
-        "code": ("`repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建文件、"
-                 "文档;数据、二进制、图片、权重不保留。"),
-        "readme": "`repo_copy=readme` — 只保留 README,其余文件均未下载。",
+        "code": ("`repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置"
+                 "文件、README、文档;数据、二进制、图片、权重不保留。"),
+        "readme": "`repo_copy=readme` — 只保留 README 与目录树(TREE.md),其余文件均未下载。",
         "full": "`repo_copy=full` — 完整浅克隆(已删除 `.git`)。",
     }.get(mode, "")
     kept_n = len(keep)
@@ -426,8 +463,9 @@ def _write_manifest(base, full_name, mode, keep, omitted, commit, date=""):
     else:
         lines.append("(无)")
     if mode == "code":
-        lines += ["", "> 省略规则:数据/配置类单文件 >256 KB、源码单文件 >5 MB、"
-                  "图片/权重/数据表/二进制等不在白名单的后缀、以及子模块。"
+        lines += ["", "> 省略规则:普通源码 >2 MB、文档/构建配置 >1 MB(README 与 .ipynb "
+                  "不设限),或后缀不在白名单(图片/权重/数据表/二进制/通用 "
+                  ".txt/.log/.csv/.json/.xml 等)、以及子模块。"
                   "需要全文时按上表链接直接取回,或用 git 克隆上游仓库。"]
     lines += ["", "> 本清单由 `scripts/archive.py` 每次归档时自动生成并覆盖。", ""]
     with open(os.path.join(base, "MANIFEST.md"), "w", encoding="utf-8") as f:
@@ -461,8 +499,7 @@ def copy_corpus(full_name, dest, mode="code", date=""):
         if not ok:
             shutil.rmtree(dest, ignore_errors=True)
             return False
-        readme = _pick_readme(entries)
-        keep, omitted = select_entries(entries, mode, readme)
+        keep, omitted = select_entries(entries, mode)
         _checkout(dest, [k["path"] for k in keep])
         commit = _head_sha(dest)
         _rewrite_all_md(dest, keep, full_name)
@@ -482,8 +519,7 @@ def _copy_full_fallback(full_name, dest, mode, date):
         return False
     try:
         entries = _walk_entries(dest)
-        readme = _pick_readme(entries)
-        keep, omitted = select_entries(entries, mode, readme)
+        keep, omitted = select_entries(entries, mode)
         kept = {k["path"] for k in keep}
         for e in entries:
             if e["path"] not in kept:
@@ -524,16 +560,60 @@ def _copy_readme(full_name, dest, date=""):
     os.makedirs(dest, exist_ok=True)
     with open(os.path.join(dest, name), "w", encoding="utf-8") as f:
         f.write(content)
+    keep = [{"path": name, "size": int(j.get("size") or len(content)),
+             "class": "readme"}]
+    tree_text = ""
+    try:
+        entries, truncated = _tree_api(full_name)
+        tree_text = _render_tree([e["path"] for e in entries
+                                  if e.get("type") == "blob"], truncated)
+        with open(os.path.join(dest, "TREE.md"), "w", encoding="utf-8") as f:
+            f.write(tree_text)
+        keep.append({"path": "TREE.md", "size": len(tree_text.encode()),
+                     "class": "tree"})
+    except Exception as e:
+        print(f"[tree failed] {full_name}: {e}", file=sys.stderr)
     commit = ""
     try:
         commit = _run_text(["gh", "api", f"repos/{full_name}/commits/HEAD",
                             "--jq", ".sha"])
     except Exception:
         pass
-    _write_manifest(os.path.dirname(dest), full_name, "readme",
-                    [{"path": name, "size": int(j.get("size") or len(content)),
-                      "class": "readme"}], [], commit, date)
+    _write_manifest(os.path.dirname(dest), full_name, "readme", keep, [], commit, date)
     return True
+
+def _render_tree(paths, truncated=False, limit=3000):
+    """把路径列表渲染成缩进目录树。"""
+    paths = sorted(set(paths))
+    if not paths:
+        return "# 目录树\n\n(空仓库)\n"
+    lines = ["# 目录树", ""]
+    total = len(paths)
+    if truncated:
+        lines.append("> 目录过大,已被 tree API 截断,以下不完整。")
+    if total > limit:
+        lines.append(f"> 共 {total} 个文件,只显示前 {limit} 个。")
+        paths = paths[:limit]
+    root = {"dirs": {}, "files": []}
+    for p in paths:
+        parts = p.split("/")
+        node = root
+        for d in parts[:-1]:
+            node = node["dirs"].setdefault(d, {"dirs": {}, "files": []})
+        node["files"].append(parts[-1])
+
+    def walk(node, prefix):
+        dirs = sorted(node["dirs"])
+        files = sorted(node["files"])
+        entries = [(d, True) for d in dirs] + [(f, False) for f in files]
+        for i, (name, is_dir) in enumerate(entries):
+            last = i == len(entries) - 1
+            lines.append(prefix + ("└── " if last else "├── ") + name + ("/" if is_dir else ""))
+            if is_dir:
+                walk(node["dirs"][name], prefix + ("    " if last else "│   "))
+
+    walk(root, "")
+    return "\n".join(lines) + "\n"
 
 def _make_copy(mode, date):
     if mode == "full":
