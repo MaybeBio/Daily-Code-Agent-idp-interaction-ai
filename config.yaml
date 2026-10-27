@@ -21,6 +21,9 @@ llm:
   concurrency: 8
   min_score: 5
 archive:
+  # 高分仓库落盘方式:code=只保留代码语料(源码/构建/文档;数据类单文件>256 KB
+  # 不留),省略清单写在该仓库的 MANIFEST.md;full=完整浅克隆;readme=只留 README。
+  repo_copy: code
   # degit + repowiki-cli 的网络并发数。串行太慢(55 仓库 ~4h),太高会触发
   # repowiki(deepwiki/zread)限流 —— 实测串行时仍有 47/55 wiki 失败,故取低并发。
   concurrency: 4

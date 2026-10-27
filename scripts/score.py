@@ -24,7 +24,11 @@ def run(cfg, date, client=None, fetch=None, fetch_tree=None):
         nonlocal done
         try:
             res = _score_one(row, client, prompts, model, fetch, fetch_tree)
-        except Exception:
+        except Exception as e:
+            # 只留一行原因:并发下每个失败都打会让日志爆炸,但完全吞掉又没法判断
+            # 是限流、超时还是模型名错。
+            print(f"[score failed] {row.get('full_name')}: {type(e).__name__}: {str(e)[:120]}",
+                  flush=True)
             res = {"score": None, "one_liner": "[llm failed]"}
         with lock:
             done += 1

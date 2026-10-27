@@ -1,9 +1,60 @@
-import argparse, datetime as dt, json, os, random, shutil, subprocess, sys, time
+import argparse, base64, datetime as dt, json, os, posixpath, random, re, shutil, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import quote, unquote
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts import common  # noqa: E402
 
 WIKI_SOURCES = ["deepwiki", "codewiki", "zread"]
+
+# ── 代码摘录策略(repo_copy=code) ─────────────────────────────────────
+# 归档的目标是攒一份能被 RAG / skill 直接取用的代码语料,不是备份仓库:
+# 源码、构建文件、文档保留;数据、二进制、图片、权重一律不留,并在
+# MANIFEST.md 里写明省略了什么、去哪取回。
+# 后缀名单取自 ghresearcher.scraper._PROGRAMMING_EXTENSIONS(该表只用于目录树
+# 渲染,没有大小逻辑),去掉 .svg(多为成组图标/示意图),补上科研常用后缀。
+SOURCE_EXTS = frozenset("""
+.py .pyx .pxd .pyi .pyw .py3
+.js .jsx .mjs .cjs .ts .tsx .vue .svelte
+.html .htm .css .scss .sass .less
+.java .kt .kts .scala .groovy .gradle
+.c .h .cc .cpp .cxx .hpp .hxx .cu .cuh .ino
+.rs .go .zig
+.rb .php .pl .pm .lua .tcl
+.sh .bash .zsh .fish .ps1
+.swift .m .mm
+.cs .fs .fsx .vb
+.r .jl .hs .elm .ex .exs .erl .clj .cljs .cljc .dart
+.f .f77 .f90 .f95 .f03 .for
+.nf .smk .stan
+.proto .thrift .graphql .gql
+.sql .cmake .mk .meson
+.md .mdx .markdown .rst
+.tex .sty .cls .bib
+.xsl .xslt
+.yaml .yml .toml .ini .cfg .conf .xml .json .ipynb .lock .txt
+""".split())
+
+# 数据/配置类:体积可以很大(notebook 输出、XML 标注、JSON 数据),超过
+# DATA_MAX 就不留 —— 实测一个 24 仓库周里这一类就有 7.97 MB 的 notebook。
+DATA_EXTS = frozenset({".json", ".xml", ".txt", ".ipynb", ".lock",
+                       ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf"})
+
+DOC_EXTS = frozenset({".md", ".mdx", ".markdown", ".rst",
+                      ".tex", ".sty", ".cls", ".bib"})
+
+# 无后缀但有明确作用的构建文件(按文件名匹配,大小写不敏感)。
+FIXED_NAMES = frozenset({
+    "makefile", "gnumakefile", "dockerfile", "containerfile",
+    "cmakelists.txt", "snakefile", "justfile", "rakefile",
+    "gemfile", "pipfile", "procfile", "vagrantfile", "configure",
+    "build", "workspace", "module.bazel", "go.mod",
+})
+
+DATA_MAX = 256 * 1024          # 数据类单文件上限
+SOURCE_MAX = 5 * 1024 * 1024   # 源码/文档的保险丝:实测最大源码 0.45 MB
+
+_CLASS_LABEL = {"source": "源码", "docs": "文档", "build": "构建文件",
+                "data": "数据/配置", "readme": "README"}
 
 # 仓库在该 wiki 源上尚未被索引(404/not indexed),与瞬时网络故障区分。
 _NOT_INDEXED_MARKERS = (
@@ -49,11 +100,11 @@ def _is_not_indexed(err):
 def _is_permanent(err):
     return any(m in _error_text(err) for m in _PERMANENT_MARKERS)
 
-def _run_retry(cmd, tag, attempts=5):
+def _run_retry(cmd, tag, attempts=5, env=None):
     last = None
     for i in range(attempts):
         try:
-            subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
             return True, None
         except Exception as e:
             last = e
@@ -64,29 +115,500 @@ def _run_retry(cmd, tag, attempts=5):
     print(f"[{tag} failed] {' '.join(cmd)}: {last}", file=sys.stderr)
     return False, last
 
+def _strip_lfs_attrs(dest):
+    """删掉快照里声明 filter=lfs 的 .gitattributes。
+
+    degit 下载的是 tarball,LFS 大文件只剩 ~130B 指针文本;但仓库自带的
+    .gitattributes 仍把这些路径标成 filter=lfs。提交时 git 会把指针当 LFS
+    对象去上传,而本地根本没有对象,push 直接被拒(整个 weekly 提交丢失)。
+    归档只需要源码文本,删掉这些声明即可,指针文件随后按普通文本入库。
+    """
+    for root, dirs, files in os.walk(dest):
+        dirs[:] = [d for d in dirs if d != ".git"]
+        if ".gitattributes" not in files:
+            continue
+        path = os.path.join(root, ".gitattributes")
+        try:
+            with open(path, encoding="utf-8", errors="ignore") as f:
+                text = f.read()
+        except OSError:
+            continue
+        if "filter=lfs" in text.replace(" ", "").replace("\t", ""):
+            os.remove(path)
+
+def _git_env():
+    # 关掉 LFS smudge:归档只要文本,大权重没必要下载(还会拖慢甚至撞超时)。
+    return {**os.environ, "GIT_LFS_SKIP_SMUDGE": "1"}
+
 def clone_repo(full_name, dest):
+    """完整浅克隆(degit tarball,失败退回 git)。落盘后删掉 .git。"""
     ok, _ = _run_retry(["degit", full_name, dest, "--force"], "clone")
+    if not ok:
+        shutil.rmtree(dest, ignore_errors=True)  # degit 可能留下半截目录
+        ok, _ = _run_retry(["git", "clone", "--depth", "1",
+                            f"https://github.com/{full_name}.git", dest],
+                           "clone:git", env=_git_env())
     if ok:
-        return True
-    shutil.rmtree(dest, ignore_errors=True)  # degit 可能留下半截目录
-    ok, _ = _run_retry(["git", "clone", "--depth", "1",
-                        f"https://github.com/{full_name}.git", dest], "clone:git")
+        _strip_lfs_attrs(dest)
+        # 语料不需要 .git(历史、对象都在 GitHub 上),删掉省体积也避免嵌套仓库。
+        shutil.rmtree(os.path.join(dest, ".git"), ignore_errors=True)
     return ok
 
-def _submit_zread(full_name):
-    if not os.environ.get("ZREAD_TOKEN"):
-        return False, None
-    return _run_retry(["repowiki-cli", "zread", "submit", full_name], "wiki:zread:submit")
+# ── 代码摘录:选文件 / 取文件 / 写清单 ──────────────────────────────
 
-def export_wiki(source, full_name, dest):
-    ok, err = _run_retry(["repowiki-cli", source, "cp", full_name, dest], f"wiki:{source}")
-    if ok:
-        return "ok"
-    if source == "zread" and _is_not_indexed(err):
-        sub_ok, _ = _submit_zread(full_name)
-        if sub_ok:
-            return "submitted"
-    return "not_indexed" if _is_not_indexed(err) else "failed"
+def _ext(path):
+    return os.path.splitext(posixpath.basename(path))[1].lower()
+
+def _fmt_size(n):
+    n = float(n or 0)
+    if n < 1024:
+        return f"{n:.0f} B"
+    for unit in ("KB", "MB", "GB"):
+        n /= 1024
+        if n < 1024 or unit == "GB":
+            return f"{n:.1f} {unit}"
+    return f"{n:.1f} GB"
+
+def _classify(path, readme_path):
+    """→ (类别, 单文件上限)。类别为 None 表示不在白名单。"""
+    name = posixpath.basename(path).lower()
+    if path == readme_path:
+        return "readme", SOURCE_MAX        # README 是核心材料,不吃数据类的小上限
+    if name in FIXED_NAMES:
+        return "build", SOURCE_MAX
+    ext = _ext(path)
+    if ext in DATA_EXTS:
+        return "data", DATA_MAX
+    if ext in DOC_EXTS:
+        return "docs", SOURCE_MAX
+    if ext in SOURCE_EXTS:
+        return "source", SOURCE_MAX
+    return None, 0
+
+def select_entries(entries, mode="code", readme_path=None):
+    """按策略筛文件。entries: [{"path","size","type"?}]。
+
+    返回 (keep, omitted),元素都带 path/size;keep 另带 class,omitted 带 reason。
+    """
+    keep, omitted = [], []
+    for e in entries:
+        path, size = e["path"], int(e.get("size") or 0)
+        if e.get("type") == "commit":
+            omitted.append({"path": path, "size": size, "reason": "子模块未拉取"})
+            continue
+        if mode == "readme":
+            if path == readme_path:
+                keep.append({"path": path, "size": size, "class": "readme"})
+            else:
+                omitted.append({"path": path, "size": size, "reason": "仅保留 README"})
+            continue
+        cls, cap = _classify(path, readme_path)
+        if cls is None:
+            omitted.append({"path": path, "size": size, "reason": "后缀不在白名单"})
+        elif size > cap:
+            omitted.append({"path": path, "size": size, "reason": "超过大小上限"})
+        else:
+            keep.append({"path": path, "size": size, "class": cls})
+    return keep, omitted
+
+_README_RE = re.compile(r"^readme(\.(md|markdown|rst|txt))?$", re.I)
+
+def _pick_readme(entries):
+    """按 GitHub 的查找顺序(root → .github/ → docs/)挑 README。"""
+    names = [e["path"] for e in entries if e.get("type") != "commit"]
+    for prefix in ("", ".github/", "docs/"):
+        for p in names:
+            if posixpath.dirname(p) == prefix.rstrip("/") and \
+                    _README_RE.match(posixpath.basename(p)):
+                return p
+    for p in names:                      # 兜底:任意深度的 README
+        if _README_RE.match(posixpath.basename(p)):
+            return p
+    return None
+
+def _tree_api(full_name):
+    """GitHub tree API:一次拿全量路径 + 每个 blob 的 size(不下载内容)。"""
+    j = _run_json(["gh", "api", f"repos/{full_name}/git/trees/HEAD?recursive=1"])
+    entries = [{"path": e["path"], "size": int(e.get("size") or 0), "type": e["type"]}
+               for e in j.get("tree", []) if e.get("type") in ("blob", "commit")]
+    return entries, bool(j.get("truncated"))
+
+def _walk_entries(dest):
+    entries = []
+    for root, dirs, files in os.walk(dest):
+        dirs[:] = [d for d in dirs if d != ".git"]
+        for f in files:
+            p = os.path.join(root, f)
+            rel = os.path.relpath(p, dest).replace(os.sep, "/")
+            try:
+                size = os.path.getsize(p)
+            except OSError:
+                size = 0
+            entries.append({"path": rel, "size": size, "type": "blob"})
+    return entries
+
+def _sparse_pattern(path):
+    # gitignore 语法:首个 "/" 锚定根目录;通配符要转义,否则文件名会被当模式。
+    p = path.replace("\\", "\\\\")
+    for ch in "*?[]":
+        p = p.replace(ch, "\\" + ch)
+    return "/" + p
+
+def _checkout(dest, paths):
+    """只把 paths 检出到工作区,其余文件连 blob 都不下载。"""
+    if not paths:
+        return
+    info = os.path.join(dest, ".git", "info")
+    os.makedirs(info, exist_ok=True)
+    with open(os.path.join(info, "sparse-checkout"), "w", encoding="utf-8") as f:
+        f.write("\n".join(_sparse_pattern(p) for p in paths) + "\n")
+    subprocess.run(["git", "-C", dest, "config", "core.sparseCheckout", "true"],
+                   capture_output=True, text=True, check=True, env=_git_env())
+    subprocess.run(["git", "-C", dest, "checkout", "HEAD"],
+                   capture_output=True, text=True, check=True, env=_git_env())
+
+def _head_sha(dest):
+    try:
+        return _run_text(["git", "-C", dest, "rev-parse", "HEAD"]).strip()
+    except Exception:
+        return ""
+
+# ── README / 文档里的相对链接改写为 GitHub 绝对地址 ─────────────────
+
+_IMG_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp",
+             ".ico", ".tif", ".tiff", ".avif"}
+_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*:")
+_REF_DEF_RE = re.compile(r"^(\s{0,3}\[[^\]]+\]:\s*)(\S+)(.*)$")
+_HTML_IMG_RE = re.compile(r"(<img\b[^>]*?\bsrc\s*=\s*)([\"'])([^\"']+)\2", re.I)
+_HTML_A_RE = re.compile(r"(<a\b[^>]*?\bhref\s*=\s*)([\"'])([^\"']+)\2", re.I)
+_MD_IMG_RE = re.compile(r"(!\[[^\]]*\]\()([^)\s]+)((?:\s+(?:\"[^\"]*\"|'[^']*'))?\))")
+_MD_LINK_RE = re.compile(r"((?<!!)\[[^\]]*\]\()([^)\s]+)((?:\s+(?:\"[^\"]*\"|'[^']*'))?\))")
+_FENCE_RE = re.compile(r"^\s*(```|~~~)")
+
+def _rewrite_url(raw, base_dir, full_name, kind):
+    """相对路径 → github.com/{repo}/{raw|blob}/HEAD/{path};其余原样返回。"""
+    u = raw.strip()
+    # "#anchor" / "//cdn" / "https:" / "mailto:" 原样;
+    # "@ref" 是 Documenter.jl 的交叉引用,不是路径,也不能改写。
+    if not u or u.startswith(("#", "@", "//")) or _SCHEME_RE.match(u):
+        return raw
+    m = re.match(r"^([^?#]*)([?#].*)?$", u)
+    path, suffix = m.group(1), m.group(2) or ""
+    if not path:
+        return raw
+    if path.startswith("/"):                 # GitHub 里 "/x" 指仓库根
+        path = path.lstrip("/")
+    else:
+        path = posixpath.normpath(posixpath.join(base_dir, path))
+    if path.startswith("..") or path.startswith("/"):
+        return raw                           # 跑出仓库的链接无从改写
+    return (f"https://github.com/{full_name}/{kind}/HEAD/"
+            f"{quote(unquote(path), safe='/')}{suffix}")
+
+def _rewrite_line(line, base_dir, full_name):
+    def ref(m):
+        url = m.group(2)
+        ext = _ext(url.split("#")[0].split("?")[0])
+        kind = "raw" if ext in _IMG_EXTS else "blob"
+        return m.group(1) + _rewrite_url(url, base_dir, full_name, kind) + m.group(3)
+
+    def attr(kind):
+        def repl(m):
+            return (m.group(1) + m.group(2) +
+                    _rewrite_url(m.group(3), base_dir, full_name, kind) + m.group(2))
+        return repl
+
+    def md(kind):
+        def repl(m):
+            return (m.group(1) +
+                    _rewrite_url(m.group(2), base_dir, full_name, kind) + m.group(3))
+        return repl
+
+    line = _REF_DEF_RE.sub(ref, line)
+    line = _HTML_IMG_RE.sub(attr("raw"), line)
+    line = _HTML_A_RE.sub(attr("blob"), line)
+    line = _MD_IMG_RE.sub(md("raw"), line)
+    line = _MD_LINK_RE.sub(md("blob"), line)
+    return line
+
+def rewrite_md(text, md_path, full_name):
+    """改写 Markdown 里的相对图片/链接;围栏代码块内不动。"""
+    base_dir = posixpath.dirname(md_path)
+    out, fenced = [], False
+    for line in text.splitlines(keepends=True):
+        if _FENCE_RE.match(line):
+            fenced = not fenced
+            out.append(line)
+        elif fenced:
+            out.append(line)
+        else:
+            out.append(_rewrite_line(line, base_dir, full_name))
+    return "".join(out)
+
+def _rewrite_file_links(dest, rel, full_name):
+    if not rel.lower().endswith((".md", ".markdown")):
+        return
+    p = os.path.join(dest, *rel.split("/"))
+    try:
+        with open(p, encoding="utf-8") as f:
+            text = f.read()
+    except (OSError, UnicodeDecodeError):
+        return
+    new = rewrite_md(text, rel, full_name)
+    if new != text:
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(new)
+
+def _rewrite_all_md(dest, keep, full_name):
+    for k in keep:
+        _rewrite_file_links(dest, k["path"], full_name)
+
+# ── MANIFEST.md ─────────────────────────────────────────────────────
+
+def _group(items, key):
+    out = {}
+    for it in items:
+        k = key(it)
+        n, b = out.get(k, (0, 0))
+        out[k] = (n + 1, b + it["size"])
+    return out
+
+def _ext_key(item):
+    name = posixpath.basename(item["path"])
+    if name.lower() in FIXED_NAMES:
+        return name
+    return _ext(name) or "无后缀"
+
+def _cell(path):
+    return path.replace("|", "\\|")
+
+def _write_manifest(base, full_name, mode, keep, omitted, commit, date=""):
+    policy = {
+        "code": ("`repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建文件、"
+                 "文档;数据、二进制、图片、权重不保留。"),
+        "readme": "`repo_copy=readme` — 只保留 README,其余文件均未下载。",
+        "full": "`repo_copy=full` — 完整浅克隆(已删除 `.git`)。",
+    }.get(mode, "")
+    kept_n = len(keep)
+    kept_b = sum(k["size"] for k in keep)
+    lines = ["# 代码快照清单", "",
+             f"- 上游仓库: https://github.com/{full_name}",
+             f"- 快照日期: {date or '未知'}"]
+    if commit:
+        lines.append(f"- 快照 commit: [`{commit[:12]}`]"
+                     f"(https://github.com/{full_name}/commit/{commit})")
+    lines += [f"- 归档策略: {policy}", "",
+              f"## 保留 ({kept_n} 个文件, {_fmt_size(kept_b)})", ""]
+    if keep:
+        lines += ["| 类别 | 文件数 | 大小 |", "|---|---:|---:|"]
+        for cls, (n, b) in sorted(_group(keep, lambda k: k["class"]).items(),
+                                  key=lambda kv: -kv[1][1]):
+            lines.append(f"| {_CLASS_LABEL.get(cls, cls)} | {n} | {_fmt_size(b)} |")
+        by_ext = sorted(_group(keep, _ext_key).items(), key=lambda kv: -kv[1][1])
+        lines += ["", "按后缀: " + "、".join(
+            f"`{ext}` {n} ({_fmt_size(b)})" for ext, (n, b) in by_ext)]
+        lines += ["", "> README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。"]
+    else:
+        lines.append("(无)")
+    lines += ["", f"## 省略 ({len(omitted)} 个文件, "
+              f"{_fmt_size(sum(o['size'] for o in omitted))})", ""]
+    if omitted:
+        lines += ["| 原因 | 文件数 | 大小 |", "|---|---:|---:|"]
+        for reason, (n, b) in sorted(_group(omitted, lambda o: o["reason"]).items(),
+                                     key=lambda kv: -kv[1][1]):
+            lines.append(f"| {reason} | {n} | {_fmt_size(b)} |")
+        lines += ["", "体积最大的省略文件:", "",
+                  "| 路径 | 大小 |", "|---|---:|"]
+        for o in sorted(omitted, key=lambda o: -o["size"])[:20]:
+            url = (f"https://github.com/{full_name}/raw/HEAD/"
+                   f"{quote(o['path'], safe='/')}")
+            lines.append(f"| [`{_cell(o['path'])}`]({url}) | {_fmt_size(o['size'])} |")
+    else:
+        lines.append("(无)")
+    if mode == "code":
+        lines += ["", "> 省略规则:数据/配置类单文件 >256 KB、源码单文件 >5 MB、"
+                  "图片/权重/数据表/二进制等不在白名单的后缀、以及子模块。"
+                  "需要全文时按上表链接直接取回,或用 git 克隆上游仓库。"]
+    lines += ["", "> 本清单由 `scripts/archive.py` 每次归档时自动生成并覆盖。", ""]
+    with open(os.path.join(base, "MANIFEST.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+# ── 三种落盘方式 ────────────────────────────────────────────────────
+
+def copy_corpus(full_name, dest, mode="code", date=""):
+    """按 repo_copy 策略落成代码语料。
+
+    先用 tree API 拿到全量路径和每个 blob 的大小(不下载内容),筛出保留清单;
+    再用 --filter=blob:none 克隆 + sparse-checkout 只拉这些文件。Droplet 那种
+    655 MB 的仓库实测只下载 44 MB。tree API 不可用/被截断时退回完整克隆后本地裁剪。
+    """
+    if mode == "readme":
+        return _copy_readme(full_name, dest, date)
+    shutil.rmtree(dest, ignore_errors=True)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    try:
+        entries, truncated = _tree_api(full_name)
+    except Exception as e:
+        print(f"[tree failed] {full_name}: {e}", file=sys.stderr)
+        entries, truncated = None, True
+    if truncated or entries is None:
+        return _copy_full_fallback(full_name, dest, mode, date)
+    try:
+        ok, _ = _run_retry(["git", "clone", "--depth", "1", "--filter=blob:none",
+                            "--no-checkout",
+                            f"https://github.com/{full_name}.git", dest],
+                           "clone:partial", env=_git_env())
+        if not ok:
+            shutil.rmtree(dest, ignore_errors=True)
+            return False
+        readme = _pick_readme(entries)
+        keep, omitted = select_entries(entries, mode, readme)
+        _checkout(dest, [k["path"] for k in keep])
+        commit = _head_sha(dest)
+        _rewrite_all_md(dest, keep, full_name)
+        shutil.rmtree(os.path.join(dest, ".git"), ignore_errors=True)
+        _write_manifest(os.path.dirname(dest), full_name, mode, keep, omitted,
+                        commit, date)
+        return True
+    except Exception as e:
+        print(f"[copy failed] {full_name}: {e}", file=sys.stderr)
+        shutil.rmtree(dest, ignore_errors=True)
+        return False
+
+def _copy_full_fallback(full_name, dest, mode, date):
+    print(f"[copy fallback] {full_name}: 目录树不可用/被截断,"
+          f"退回完整克隆后本地裁剪", file=sys.stderr)
+    if not clone_repo(full_name, dest):
+        return False
+    try:
+        entries = _walk_entries(dest)
+        readme = _pick_readme(entries)
+        keep, omitted = select_entries(entries, mode, readme)
+        kept = {k["path"] for k in keep}
+        for e in entries:
+            if e["path"] not in kept:
+                try:
+                    os.remove(os.path.join(dest, *e["path"].split("/")))
+                except OSError:
+                    pass
+        _prune_empty_dirs(dest)
+        _rewrite_all_md(dest, keep, full_name)
+        _write_manifest(os.path.dirname(dest), full_name, mode, keep, omitted,
+                        "", date)
+        return True
+    except Exception as e:
+        print(f"[copy failed] {full_name}: {e}", file=sys.stderr)
+        return False
+
+def _prune_empty_dirs(dest):
+    for root, _, _ in os.walk(dest, topdown=False):
+        if root == dest:
+            continue
+        try:
+            if not os.listdir(root):
+                os.rmdir(root)
+        except OSError:
+            pass
+
+def _copy_readme(full_name, dest, date=""):
+    shutil.rmtree(dest, ignore_errors=True)
+    try:
+        j = _run_json(["gh", "api", f"repos/{full_name}/readme"])
+        name = j.get("name") or "README.md"
+        content = base64.b64decode(j.get("content") or "").decode("utf-8", "replace")
+    except Exception as e:
+        print(f"[copy failed] {full_name}: {e}", file=sys.stderr)
+        return False
+    if name.lower().endswith((".md", ".markdown")):
+        content = rewrite_md(content, name, full_name)
+    os.makedirs(dest, exist_ok=True)
+    with open(os.path.join(dest, name), "w", encoding="utf-8") as f:
+        f.write(content)
+    commit = ""
+    try:
+        commit = _run_text(["gh", "api", f"repos/{full_name}/commits/HEAD",
+                            "--jq", ".sha"])
+    except Exception:
+        pass
+    _write_manifest(os.path.dirname(dest), full_name, "readme",
+                    [{"path": name, "size": int(j.get("size") or len(content)),
+                      "class": "readme"}], [], commit, date)
+    return True
+
+def _make_copy(mode, date):
+    if mode == "full":
+        return clone_repo
+    return lambda full_name, dest: copy_corpus(full_name, dest, mode, date)
+
+# ── 归档主流程 ──────────────────────────────────────────────────────
+
+def archive_one(row, copy, wiki, date, stat_date=None, in_week=None):
+    full_name = row["full_name"]
+    base = repo_dir(full_name)
+    os.makedirs(base, exist_ok=True)
+    code_dir = os.path.join(base, "code")
+    shutil.rmtree(code_dir, ignore_errors=True)   # 语料每次重建,不叠加旧文件
+    copy_ok = copy(full_name, code_dir)
+    wikis = {}
+    for s in WIKI_SOURCES:
+        dest = _wiki_dest(base, s, date)
+        if stat_date is not None and in_week is not None:
+            d = stat_date(s, full_name)
+            fresh = d is not None and in_week(d)
+            if not fresh and _has_snapshot(base, s):   # 没更新(或 stat 失败)且已留过快照 → 复用,不再新打
+                wikis[s] = "reused"
+                continue
+        shutil.rmtree(dest, ignore_errors=True)
+        wikis[s] = wiki(s, full_name, dest)
+    return {"full_name": full_name, "score": row.get("score"),
+            "one_liner": row.get("one_liner", ""), "copy_ok": copy_ok, "wikis": wikis}
+
+def _safe_archive_one(row, copy, wiki, date, stat_date=None, in_week=None):
+    try:
+        return archive_one(row, copy, wiki, date, stat_date, in_week)
+    except Exception as e:
+        print(f"[archive failed] {row['full_name']}: {e}", file=sys.stderr)
+        return {"full_name": row["full_name"], "score": row.get("score"),
+                "one_liner": row.get("one_liner", ""), "copy_ok": False,
+                "wikis": {s: "failed" for s in WIKI_SOURCES}}
+
+def run(cfg, date, copy=None, wiki=None, stat_date=None, in_week=None):
+    wiki = wiki or export_wiki
+    mode = str(cfg.get("archive", {}).get("repo_copy", "code"))
+    if mode not in ("code", "full", "readme"):
+        mode = "code"
+    copy = copy or _make_copy(mode, date)
+    min_score = int(cfg.get("llm", {}).get("min_score", 5))
+    scored_path = common.data_dir("scored", f"{date}.json")
+    scored = common.load_json(scored_path) if os.path.exists(scored_path) else []
+    keep = threshold(scored, min_score)
+    # 低并发:网络工具(tree API/degit/repowiki-cli)串行太慢,但太高会触发 repowiki 限流。
+    workers = max(1, int(cfg.get("archive", {}).get("concurrency", 4)))
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        archived = list(ex.map(
+            lambda r: _safe_archive_one(r, copy, wiki, date, stat_date, in_week), keep))
+    for r in archived:
+        r["copy"] = mode
+    common.dump_json(common.data_dir("archive", f"{date}.json"), archived)
+    return archived
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", default=os.path.join(common.ROOT, "config.yaml"))
+    ap.add_argument("--date", default=None)
+    a = ap.parse_args()
+    cfg = common.load_config(a.config)
+    date = a.date or common.today()
+    in_week = lambda d: _in_week(d, date)
+    out = run(cfg, date, stat_date=_stat_date, in_week=in_week)
+    ok_copy = sum(1 for r in out if r["copy_ok"])
+    parts = [f"{len(out)} archived; copy ok {ok_copy}/{len(out)}"]
+    for s in WIKI_SOURCES:
+        counts = {st: sum(1 for r in out if r["wikis"].get(s) == st)
+                  for st in ("ok", "submitted", "not_indexed", "failed", "reused")}
+        nonzero = " ".join(f"{st}:{n}" for st, n in counts.items() if n)
+        parts.append(f"{s} {nonzero or '-'}")
+    print("; ".join(parts))
 
 def _run_json(cmd):
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -155,68 +677,20 @@ def _in_week(d, run_date):
     monday = r - dt.timedelta(days=r.weekday())
     return monday <= d <= monday + dt.timedelta(days=6)
 
-def archive_one(row, clone, wiki, date, stat_date=None, in_week=None):
-    full_name = row["full_name"]
-    base = repo_dir(full_name)
-    os.makedirs(base, exist_ok=True)
-    code_dir = os.path.join(base, "code")
-    shutil.rmtree(code_dir, ignore_errors=True)
-    clone_ok = clone(full_name, code_dir)
-    wikis = {}
-    for s in WIKI_SOURCES:
-        dest = _wiki_dest(base, s, date)
-        if stat_date is not None and in_week is not None:
-            d = stat_date(s, full_name)
-            fresh = d is not None and in_week(d)
-            if not fresh and _has_snapshot(base, s):   # 没更新(或 stat 失败)且已留过快照 → 复用,不再新打
-                wikis[s] = "reused"
-                continue
-        shutil.rmtree(dest, ignore_errors=True)
-        wikis[s] = wiki(s, full_name, dest)
-    return {"full_name": full_name, "score": row.get("score"),
-            "one_liner": row.get("one_liner", ""), "clone_ok": clone_ok, "wikis": wikis}
+def export_wiki(source, full_name, dest):
+    ok, err = _run_retry(["repowiki-cli", source, "cp", full_name, dest], f"wiki:{source}")
+    if ok:
+        return "ok"
+    if source == "zread" and _is_not_indexed(err):
+        sub_ok, _ = _submit_zread(full_name)
+        if sub_ok:
+            return "submitted"
+    return "not_indexed" if _is_not_indexed(err) else "failed"
 
-def _safe_archive_one(row, clone, wiki, date, stat_date=None, in_week=None):
-    try:
-        return archive_one(row, clone, wiki, date, stat_date, in_week)
-    except Exception as e:
-        print(f"[archive failed] {row['full_name']}: {e}", file=sys.stderr)
-        return {"full_name": row["full_name"], "score": row.get("score"),
-                "one_liner": row.get("one_liner", ""), "clone_ok": False,
-                "wikis": {s: "failed" for s in WIKI_SOURCES}}
-
-def run(cfg, date, clone=None, wiki=None, stat_date=None, in_week=None):
-    clone = clone or clone_repo
-    wiki = wiki or export_wiki
-    min_score = int(cfg.get("llm", {}).get("min_score", 5))
-    scored_path = common.data_dir("scored", f"{date}.json")
-    scored = common.load_json(scored_path) if os.path.exists(scored_path) else []
-    keep = threshold(scored, min_score)
-    # 低并发:网络工具(degit/repowiki-cli)串行太慢,但太高会触发 repowiki 限流。
-    workers = max(1, int(cfg.get("archive", {}).get("concurrency", 4)))
-    with ThreadPoolExecutor(max_workers=workers) as ex:
-        archived = list(ex.map(
-            lambda r: _safe_archive_one(r, clone, wiki, date, stat_date, in_week), keep))
-    common.dump_json(common.data_dir("archive", f"{date}.json"), archived)
-    return archived
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default=os.path.join(common.ROOT, "config.yaml"))
-    ap.add_argument("--date", default=None)
-    a = ap.parse_args()
-    cfg = common.load_config(a.config)
-    date = a.date or common.today()
-    in_week = lambda d: _in_week(d, date)
-    out = run(cfg, date, stat_date=_stat_date, in_week=in_week)
-    ok_clone = sum(1 for r in out if r["clone_ok"])
-    parts = [f"{len(out)} archived; clone ok {ok_clone}/{len(out)}"]
-    for s in WIKI_SOURCES:
-        counts = {st: sum(1 for r in out if r["wikis"].get(s) == st)
-                  for st in ("ok", "submitted", "not_indexed", "failed", "reused")}
-        nonzero = " ".join(f"{st}:{n}" for st, n in counts.items() if n)
-        parts.append(f"{s} {nonzero or '-'}")
-    print("; ".join(parts))
+def _submit_zread(full_name):
+    if not os.environ.get("ZREAD_TOKEN"):
+        return False, None
+    return _run_retry(["repowiki-cli", "zread", "submit", full_name], "wiki:zread:submit")
 
 if __name__ == "__main__":
     main()

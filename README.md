@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>科研代码仓库（GitHub repo）自动追踪 + AI 精读模板</strong><br/>
-  用 GitHub Actions 每周自动「替你搜一遍研究领域」：每日免费元数据流 + 每周关键词盲搜 → 合并去重 → LLM 按 README 打分 → 高分仓库 <b>degit 浅克隆</b> + AI wiki（DeepWiki · Code Wiki · zread）快照归档 → LLM 生成一张「Code Card」→ 开一条 GitHub Issue 周报 → 部署一个可全文检索的 Pages 站点。
+  用 GitHub Actions 每周自动「替你搜一遍研究领域」：每日免费元数据流 + 每周关键词盲搜 → 合并去重 → LLM 按 README 打分 → 高分仓库 <b>代码语料摘录</b>（源码/文档/构建文件；数据与二进制不入库）+ AI wiki（DeepWiki · Code Wiki · zread）快照归档 → LLM 生成一张「Code Card」→ 开一条 GitHub Issue 周报 → 部署一个可全文检索的 Pages 站点。
 </p>
 
 <p align="center">
@@ -69,7 +69,7 @@
 
 - **双通道发现，宽召回 + 打分过滤** —— 每日通道只吃 GitHub 免费事件流（零成本、按你关注的大佬/课题组），每周通道用关键词盲搜（`in:name,description,readme,topics`，覆盖更宽）。两条并成候选池后，**统统交给 LLM 打分**决定取舍，而不是写死正则启发式。
 - **列表用 `pushed_at` 而非 `updated_at`** —— star/watch/fork 会顶掉 `updated_at`，只有真·代码 push 才动 `pushed_at`。搜索只能按 `--updated` 粗筛（超集），再由客户端按 `pushed_at` 精确过滤，保证「本周推荐」都是真推过代码的仓库。因为实测发现code部分没有update的仓库，很多都是 README 改了点文字、或者被人 star 了一下，导致push日期更新而被误收集进近期更新清单中。
-- **代码 + wiki 一起归档，wiki 只增不删** —— 高分仓库 `degit` 浅克隆到 `code/{repo}/code/`；三个第三方 AI wiki 上游没有版本历史，故每周按日期落一份**快照**，过去周次永不被覆盖。
+- **代码 + wiki 一起归档，wiki 只增不删** —— 高分仓库按 `archive.repo_copy: code` 摘录到 `code/{repo}/code/`（只留源码/构建/文档；数据类单文件 >256 KB、图片、权重、二进制都不留，省略明细与取回链接见该仓库的 `MANIFEST.md`）；三个第三方 AI wiki 上游没有版本历史，故每周按日期落一份**快照**，过去周次永不被覆盖。
 - **AI 写卡片，你来做判断** —— 每个高分仓库自动产出一张 Code Card（是什么 / 亮点 / 为何对本课题有用 / 怎么用 / 核心 idea / 可搬移点），把「值不值得上手 / 能不能移植」的决策成本压到最低，但最终判断仍在你。
 - **Issue 即提醒，站点即沉淀** —— 不额外接推送，有命中才开、零命中不打扰；静态 Pages 把每周产出永久沉淀、可全文检索。
 - **密钥不入库** —— LLM 凭据与 zread token 一律走环境变量 / Actions Secret。
@@ -85,7 +85,7 @@
 | **每周盲搜** | `scripts/search.py` | `weekly-discovery` | `search.queries` 逐条 `gh search repos` → `data/search/{date}.json`（按 `pushed_at` 客户端过滤） |
 | **合并去重** | `scripts/merge.py` | 同上 | 窗口 `[run-window_days, run-1]` 内的每日 feed ∪ 本周盲搜 → `data/candidates/{date}.json`（按 `full_name` 去重） |
 | **LLM 打分** | `scripts/score.py` | 同上 | 候选池 → LLM 按 README 打 0–10 分 + 一句话 → `data/scored/{date}.json` |
-| **归档** | `scripts/archive.py` | 同上 | 高分仓库 → `degit` 浅克隆 + 三 wiki 快照 → `code/{repo}/` + `data/archive/{date}.json` |
+| **归档** | `scripts/archive.py` | 同上 | 高分仓库 → 代码语料摘录（`repo_copy=code`）+ 三 wiki 快照 → `code/{repo}/` + `data/archive/{date}.json` |
 | **Code Card** | `scripts/cards.py` | 同上 | 高分仓库 README + 目录树 + 依赖 → LLM 生成一张卡片 → `data/cards/{date}.json` |
 | **Issue + CSV** | `scripts/issue.py` | 同上 | 打分结果 → `data/weekly/{date}.csv` + 每周 Issue（并记 `data/latest_issue.txt`） |
 | **静态站点** | `scripts/build_site.py` | `deploy-pages` workflow | 遍历 `data/` + `code/` → 渲染 `site/` → 部署到 Pages |
@@ -102,7 +102,7 @@
 │   ├── search.py         # 每周：逐条 gh search repos（pushed_at 客户端过滤）
 │   ├── merge.py          # 每日 feed ∪ 本周盲搜 → 候选池
 │   ├── score.py          # LLM 按 README 打分（min_score 门控）
-│   ├── archive.py        # degit 浅克隆 + 三 wiki 快照（只增不删）
+│   ├── archive.py        # 代码语料摘录 + 三 wiki 快照（只增不删）
 │   ├── cards.py          # LLM 生成 Code Card（README + 目录树 + 依赖）
 │   ├── issue.py          # 生成 CSV + 每周 Issue
 │   ├── agent.py          # LLM 层：OpenAI 兼容客户端 + score / code_card 两个生成函数
@@ -266,7 +266,7 @@ LLM 与 zread 凭据一律走环境变量，**不写入仓库**：
 ```bash
 pip install -r requirements.txt
 pip install ghresearcher pyrepowiki-cli   # 搜索/监控 + wiki 归档（PyPI）
-npm install -g degit                      # 浅克隆（Node.js）
+npm install -g degit                      # 完整克隆（repo_copy=full 与 tree API 回退时用）
 gh auth login                             # 供 gh api / gh search 使用
 
 export LLM_BASE_URL=... LLM_API_KEY=...   # 可选 LLM_MODEL=...
@@ -331,11 +331,20 @@ python -m pytest -q
 </details>
 
 <details>
+<summary><b>代码目录为什么不是完整仓库？</b></summary>
+
+`archive.repo_copy: code`（默认）把高分仓库当「代码语料」而不是备份：保留源码、构建文件与文档（后缀表在 `scripts/archive.py` 顶部），**数据、图片、权重、二进制一律不留**；数据/配置类单文件超过 256 KB 也不留——实测源码文件最大 0.45 MB，而 notebook / XML 能到 8 MB，砍掉的是后者。每个仓库的 `code/{repo}/MANIFEST.md` 由归档时自动生成：保留/省略的统计、体积最大的 20 个省略文件及其 `raw/HEAD` 取回链接都在里面，并明确写着「这是代码摘录，不是完整仓库」。
+
+下载走 `--filter=blob:none` 的 partial clone + sparse-checkout：先按 tree API 的 size 选文件，再只拉清单内的 blob。实测一个 655 MB 的仓库只下载 44 MB；一周 24 个仓库的语料约 35 MB（原来完整克隆是 1.1 GB）。README 和文档里的相对图片/链接会改写成 GitHub 绝对地址，所以图片即使没存下来也能正常渲染。需要完整仓库时把 `repo_copy` 改成 `full`；只要 README 则用 `readme`；tree API 被截断时自动退回完整克隆 + 本地裁剪。
+
+</details>
+
+<details>
 <summary><b>wiki 为什么要按周打快照？</b></summary>
 
 deepwiki / codewiki / zread 是第三方 AI **现算**的产物，上游**没有版本历史**——对方一重新生成，旧版本就永久消失，且每次因随机性与侧重不同会有差异。故把它们当**积累材料**而非缓存：**只增不删**，每周按抓取日期落一份到 `code/{repo}/wikis/{date}/{deepwiki,google_code_wiki,zread}/`。
 
-是否新打一份，看该 wiki **自身**的更新日期是否落在本周（deepwiki 用 `last_modified`、zread 用 `updated_at`、codewiki 用 `commit_sha` 反查提交日期）；没更新且已有旧快照则记 `reused` 不再新打。浅克隆（`code/{repo}/code/`）不受此规则影响，每周照常覆盖重拉——代码本身在 GitHub 上有 git 历史，无需本地攒快照。
+是否新打一份，看该 wiki **自身**的更新日期是否落在本周（deepwiki 用 `last_modified`、zread 用 `updated_at`、codewiki 用 `commit_sha` 反查提交日期）；没更新且已有旧快照则记 `reused` 不再新打。代码语料（`code/{repo}/code/`）不受此规则影响，每周照常覆盖重建——代码本身在 GitHub 上有 git 历史，无需本地攒快照。
 </details>
 
 <details>
