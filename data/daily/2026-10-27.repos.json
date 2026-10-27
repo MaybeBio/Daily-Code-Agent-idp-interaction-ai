@@ -1,0 +1,270 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "SebasNorenaR",
+      "zxkane"
+    ],
+    "event": "issue",
+    "stars": 15909,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/alphafold",
+    "who": [
+      "sahirshahryar"
+    ],
+    "event": "star",
+    "stars": 14914,
+    "language": "Python",
+    "description": "Open source code for AlphaFold 2.",
+    "url": "https://github.com/google-deepmind/alphafold"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "ndesplaines"
+    ],
+    "event": "star",
+    "stars": 8687,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "obsidianmd/pele",
+    "who": [
+      "kepano"
+    ],
+    "event": "issue",
+    "stars": 3625,
+    "language": "TypeScript",
+    "description": "Renders Mermaid diagrams faster than you'd run from a volcano! 🌋 ",
+    "url": "https://github.com/obsidianmd/pele"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "btaba",
+      "google-cla",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1583,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "tidyverse/rvest",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 1526,
+    "language": "R",
+    "description": "Simple web scraping for R",
+    "url": "https://github.com/tidyverse/rvest"
+  },
+  {
+    "full_name": "tidyverse/purrr",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 1411,
+    "language": "R",
+    "description": "A functional programming toolkit for R",
+    "url": "https://github.com/tidyverse/purrr"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Cloudhabil"
+    ],
+    "event": "other",
+    "stars": 1338,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "tidyverse/stringr",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 673,
+    "language": "R",
+    "description": "A fresh approach to string manipulation in R",
+    "url": "https://github.com/tidyverse/stringr"
+  },
+  {
+    "full_name": "tidyverse/multidplyr",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 650,
+    "language": "R",
+    "description": "A dplyr backend that partitions a data frame over multiple processes",
+    "url": "https://github.com/tidyverse/multidplyr"
+  },
+  {
+    "full_name": "feross/bitmidi.com",
+    "who": [
+      "feross"
+    ],
+    "event": "mixed",
+    "stars": 619,
+    "language": "JavaScript",
+    "description": "🎹 Listen to free MIDI songs, download the best MIDI files, and share the best MIDIs on the web",
+    "url": "https://github.com/feross/bitmidi.com"
+  },
+  {
+    "full_name": "PDB-REDO/alphafill",
+    "who": [
+      "dependabot"
+    ],
+    "event": "pr",
+    "stars": 126,
+    "language": "C++",
+    "description": "AlphaFill is an algorithm based on sequence and structure similarity that “transplants” missing compounds to the AlphaFold models. By adding the molecular context to the protein structures, the models can be more easily appreciated in terms of function and structure integrity.",
+    "url": "https://github.com/PDB-REDO/alphafill"
+  },
+  {
+    "full_name": "KULL-Centre/CALVADOS",
+    "who": [
+      "gitesei",
+      "sobuelow"
+    ],
+    "event": "mixed",
+    "stars": 102,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/CALVADOS"
+  },
+  {
+    "full_name": "feross/play.cash",
+    "who": [
+      "feross"
+    ],
+    "event": "mixed",
+    "stars": 91,
+    "language": "JavaScript",
+    "description": "🎶 Music lovers, rejoice.",
+    "url": "https://github.com/feross/play.cash"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "ShearmanChua"
+    ],
+    "event": "star",
+    "stars": 22,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "push",
+    "stars": 21,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "kennethreitz/kennethreitz.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 16,
+    "language": "Python",
+    "description": "The source code of kennethreitz.org.",
+    "url": "https://github.com/kennethreitz/kennethreitz.org"
+  },
+  {
+    "full_name": "lovetaro/selectbench",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 9,
+    "language": "Python",
+    "description": "SelectBench: selectivity benchmark for structure-based generative models",
+    "url": "https://github.com/lovetaro/selectbench"
+  },
+  {
+    "full_name": "feross/mad-science-bot",
+    "who": [
+      "feross"
+    ],
+    "event": "mixed",
+    "stars": 5,
+    "language": "JavaScript",
+    "description": "Mad science bot for Discord",
+    "url": "https://github.com/feross/mad-science-bot"
+  },
+  {
+    "full_name": "KULL-Centre/_2026_streit_opes",
+    "who": [
+      "invemichele-peptone"
+    ],
+    "event": "mixed",
+    "stars": 2,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/_2026_streit_opes"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 1,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "BioComputingUP/OSAI_ecosystem",
+    "who": [
+      "gavinf97"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "HTML",
+    "description": "A community-curated list of Open and Sustainable AI (OSAI) ecosystem components mapped to practical recommendations to guide their use for research. ",
+    "url": "https://github.com/BioComputingUP/OSAI_ecosystem"
+  },
+  {
+    "full_name": "KULL-Centre/_2026_xia_pepDockQ",
+    "who": [
+      "YYingXia"
+    ],
+    "event": "other",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/_2026_xia_pepDockQ"
+  }
+]

@@ -1,0 +1,16 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-10-26 22:45:10 | 🚀 ryanemenecker pushed to idptools/parrot
+    - [96addc0] (expanded) added some nan / nonfinite gradient check capacity, recovery for issues due to nans during training, and restrictions on amp usage for brnns due to problems with instability
+2026-10-26 22:24:31 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [2faf476] (expanded) tracker data 2026-10-26
+2026-10-26 20:48:37 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [bcb03f8] (expanded) tracker data 2026-10-26
+2026-10-26 14:56:54 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [70c7ff2] (expanded) tracker data 2026-10-26
+2026-10-26 06:40:22 | 🚀 gavinf97 pushed to BioComputingUP/OSAI_ecosystem
+    - [0b66401] (expanded) Remove Snyder Bioinformatics Hub, Awesome Healthcare Foundation Models, Pangeo and Climate Change AI Wiki
+2026-10-26 06:32:49 | 🚀 gavinf97 pushed to BioComputingUP/OSAI_ecosystem
+    - [4642f40] (expanded) Add MHub.ai, Snyder Bioinformatics Hub, Awesome Healthcare Foundation Models, Pangeo and Climate Change AI Wiki
+2026-10-26 06:26:12 | 🚀 gavinf97 pushed to BioComputingUP/OSAI_ecosystem
+    - [64c5950] (expanded) Add Safetensors model weight format to ecosystem components list
