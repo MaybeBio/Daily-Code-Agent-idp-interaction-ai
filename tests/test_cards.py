@@ -1,7 +1,16 @@
 import types
+
+import pytest
+
 from scripts import cards, agent
 
 PROMPTS = {"code_card": {"system": "s", "user": "{readme}"}}
+
+
+@pytest.fixture(autouse=True)
+def _no_real_tree(monkeypatch):
+    # 默认 tree_fn=archive.tree_text 会真实调 gh api;测试里一律压成空,避免联网。
+    monkeypatch.setattr(cards.archive, "tree_text", lambda fn: "")
 
 def _fake_client(content):
     msg = types.SimpleNamespace(content=content)
@@ -164,3 +173,40 @@ def test_build_code_card_parses_json():
     client = _fake_client('{"card": "## 是什么\\nhello"}')
     out = agent.build_code_card(client, "m", PROMPTS, "README")
     assert out == {"card": "## 是什么\nhello"}
+
+
+def test_run_noagent_readme_only(monkeypatch, tmp_path):
+    monkeypatch.setattr(cards.common, "ROOT", str(tmp_path))
+    scored = [
+        {"full_name": "wl/a", "url": "u", "language": "Py", "stars": 1,
+         "score": None, "one_liner": "d", "source": "watchlist"},
+        {"full_name": "srch/b", "url": "u", "language": "Go", "stars": 9,
+         "score": None, "one_liner": "d", "source": "search"},
+    ]
+    cards.common.dump_json(str(tmp_path / "data" / "scored" / "2026-10-05.json"), scored)
+    called = {"n": 0}
+    def should_not_run(c, m, p, text):
+        called["n"] += 1
+        return {"card": "x"}
+    out = cards.run({"llm": {"enabled": False}, "topic": "t"}, "2026-10-05",
+                    client=object(), fetch=lambda fn: "README-" + fn,
+                    tree_fn=lambda fn: "src/\n  a.py", card_fn=should_not_run)
+    assert [r["full_name"] for r in out] == ["wl/a"]    # 只 watchlist
+    assert called["n"] == 0                             # 不调 LLM
+    assert out[0]["card"] == ""
+    assert out[0]["readme"] == "README-wl/a"
+    assert out[0]["tree"] == "src/\n  a.py"             # 目录树也进站点渲染
+
+
+def test_run_agent_stores_tree(monkeypatch, tmp_path):
+    monkeypatch.setattr(cards.common, "ROOT", str(tmp_path))
+    cards.common.dump_json(str(tmp_path / "data" / "scored" / "2026-10-05.json"),
+                           [{"full_name": "a/b", "url": "u", "language": "Py", "stars": 1,
+                             "score": 8, "one_liner": "x"}])
+    monkeypatch.setattr(cards, "load_prompts", lambda p: PROMPTS)
+    out = cards.run({"llm": {"min_score": 5}, "topic": "t"}, "2026-10-05",
+                    client=object(), fetch=lambda fn: "README",
+                    fetch_tree=lambda fn: "", card_fn=lambda c, m, p, r: {"card": "C"},
+                    tree_fn=lambda fn: "src/\n  a.py")
+    assert out[0]["card"] == "C"
+    assert out[0]["tree"] == "src/\n  a.py"             # agent 模式也存缩进树

@@ -33,4 +33,12 @@
     </details>
   </section>
   {% endif %}
+  {% if repo.tree %}
+  <section>
+    <details>
+      <summary>目录树</summary>
+      <pre class="tree">{{ repo.tree }}</pre>
+    </details>
+  </section>
+  {% endif %}
 </article>

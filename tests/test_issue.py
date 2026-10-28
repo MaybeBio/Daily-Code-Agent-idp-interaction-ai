@@ -30,3 +30,30 @@ def test_csv_columns(tmp_path):
     rows = list(csv.DictReader(open(p)))
     assert list(rows[0].keys()) == ["repo", "url", "language", "stars",
                                     "last_commit", "score", "one_liner"]
+
+
+def test_issue_noagent_drops_ai_columns():
+    scored = [
+        {"full_name": "a/b", "url": "u", "language": "Py", "stars": 9,
+         "pushed_at": "t", "score": None, "one_liner": "d"},
+        {"full_name": "c/d", "url": "u2", "language": "R", "stars": 2,
+         "pushed_at": "t", "score": None, "one_liner": "d"},
+    ]
+    title, body = issue.build_weekly_issue(scored, {"topic": "t"}, "2026-09-27",
+                                           "2026-10-04", enabled=False)
+    assert "每周仓库发现" in title
+    header = next(ln for ln in body.splitlines() if ln.startswith("| repo"))
+    assert "score" not in header and "one_liner" not in header
+    assert "| repo | language | stars | last_commit |" in header
+    assert body.index("a/b") < body.index("c/d")     # 按 stars 降序
+
+
+def test_csv_noagent_drops_ai_columns(tmp_path):
+    scored = [
+        {"full_name": "a/b", "url": "u", "language": "Py", "stars": 9,
+         "pushed_at": "t", "score": None, "one_liner": "d"},
+    ]
+    p = tmp_path / "w.csv"
+    issue.write_csv(scored, str(p), enabled=False)
+    rows = list(csv.DictReader(open(p)))
+    assert list(rows[0].keys()) == ["repo", "url", "language", "stars", "last_commit"]

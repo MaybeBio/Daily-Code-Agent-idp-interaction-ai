@@ -65,6 +65,7 @@ h1 { font-size:24px; margin:0 0 4px; }
 .md h3 { font-size:16px; }
 .md p { margin:8px 0; }
 .md a { color:var(--accent); }
+.repo pre.tree { margin:12px 0 0; padding:12px; background:#f8f9fa; border:1px solid var(--border); border-radius:6px; overflow:auto; font-size:13px; line-height:1.5; }
 
 @media (max-width: 760px) {
   .layout { flex-direction: column; }

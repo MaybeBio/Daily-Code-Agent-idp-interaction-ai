@@ -4,13 +4,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts import common, agent, gh, archive  # noqa: E402
 from scripts.agent import load_prompts  # noqa: E402
 
-def card_record(row, card, readme="", window=None):
+def card_record(row, card, readme="", tree="", window=None):
     rec = {"full_name": row["full_name"], "url": row.get("url", ""),
             "language": row.get("language", ""), "stars": row.get("stars", 0),
             "pushed_at": row.get("pushed_at", ""),
             "score": row["score"], "one_liner": row.get("one_liner", ""), "card": card}
     if readme:
         rec["readme"] = readme
+    if tree:
+        rec["tree"] = tree
     if window:
         rec["window"] = window
     return rec
@@ -58,31 +60,44 @@ def _card_context(row, fetch, fetch_tree, fetch_deps):
         parts.append(f"依赖/构建文件:\n{deps}")
     return "\n\n".join(parts), full_readme
 
-def run(cfg, date, client=None, fetch=None, fetch_tree=None, fetch_deps=None, card_fn=None):
+def run(cfg, date, client=None, fetch=None, fetch_tree=None, fetch_deps=None, card_fn=None, tree_fn=None):
     fetch = fetch or gh.fetch_readme
     fetch_tree = fetch_tree or gh.fetch_tree
     fetch_deps = fetch_deps or gh.fetch_dep_files
-    client = client if client is not None else agent.make_client()
-    card_fn = card_fn or agent.build_code_card
-    prompts = load_prompts(os.path.join(common.ROOT, "prompts.yaml"))
-    model = agent.model_name()
-    min_score = int(cfg.get("llm", {}).get("min_score", 5))
+    tree_fn = tree_fn or archive.tree_text
+    enabled = bool(cfg.get("llm", {}).get("enabled", True))
     window = _window(date, int(cfg.get("window_days", 7)))
     scored_path = common.data_dir("scored", f"{date}.json")
     scored = common.load_json(scored_path) if os.path.exists(scored_path) else []
-    keepers = archive.threshold(scored, min_score)
+    if enabled:
+        client = client if client is not None else agent.make_client()
+        card_fn = card_fn or agent.build_code_card
+        prompts = load_prompts(os.path.join(common.ROOT, "prompts.yaml"))
+        model = agent.model_name()
+        min_score = int(cfg.get("llm", {}).get("min_score", 5))
+        keepers = archive.threshold(scored, min_score)
+    else:
+        # noagent:不生成 Code Card,只抓 README 喂站点;范围与归档一致(仅 watchlist)。
+        keepers = [r for r in scored if r.get("source") == "watchlist"]
+        keepers.sort(key=lambda r: r.get("stars") or 0, reverse=True)
+
     def work(row):
         readme = ""
+        tree = ""
         try:
-            text, readme = _card_context(row, fetch, fetch_tree, fetch_deps)
-            if not text.strip():
-                return card_record(row, "", readme=readme, window=window)
-            res = card_fn(client, model, prompts, text)
-            card = res.get("card", "")
+            tree = tree_fn(row["full_name"]) or ""
+            if enabled:
+                text, readme = _card_context(row, fetch, fetch_tree, fetch_deps)
+                if not text.strip():
+                    return card_record(row, "", readme=readme, tree=tree, window=window)
+                card = card_fn(client, model, prompts, text).get("card", "")
+            else:
+                readme = fetch(row["full_name"]) or ""
+                card = ""
         except Exception as e:
             print(f"[card failed] {row['full_name']}: {e}", file=sys.stderr)
             card = ""
-        return card_record(row, card, readme=readme, window=window)
+        return card_record(row, card, readme=readme, tree=tree, window=window)
     with ThreadPoolExecutor(max_workers=int(cfg.get("llm", {}).get("concurrency", 8))) as ex:
         out = list(ex.map(work, keepers))
     common.dump_json(common.data_dir("cards", f"{date}.json"), out)

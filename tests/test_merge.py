@@ -32,3 +32,30 @@ def test_daily_run_uses_only_run_day_feed_and_custom_dates(monkeypatch, tmp_path
     assert {r["full_name"] for r in out} == {"today/feed", "search/hit"}
     saved = merge.common.load_json(str(tmp_path / "data" / "candidates" / "2026-10-04.json"))
     assert {r["full_name"] for r in saved} == {"today/feed", "search/hit"}
+
+
+def test_run_tags_source_watchlist_vs_search(monkeypatch, tmp_path):
+    monkeypatch.setattr(merge.common, "ROOT", str(tmp_path))
+    monkeypatch.setattr(merge.common, "today", lambda: "2026-10-04")
+    (tmp_path / "data" / "daily").mkdir(parents=True)
+    merge.common.dump_json(str(tmp_path / "data" / "daily" / "2026-10-03.repos.json"),
+                           [{"full_name": "wl/a", "event": "star"}])
+    merge.common.dump_json(str(tmp_path / "data" / "search" / "2026-10-04.json"),
+                           [{"full_name": "srch/b", "pushed_at": "2026-10-03"}])
+    monkeypatch.setattr(merge.gh, "safe_repo_meta",
+                        lambda fn: {"pushed_at": "2026-10-03", "stars": 1,
+                                    "language": "", "description": "", "url": "u"})
+    out = merge.run({"window_days": 7}, "2026-10-04")
+    assert {r["full_name"]: r["source"] for r in out} == {"wl/a": "watchlist", "srch/b": "search"}
+
+
+def test_run_overlap_stays_watchlist(monkeypatch, tmp_path):
+    monkeypatch.setattr(merge.common, "ROOT", str(tmp_path))
+    monkeypatch.setattr(merge.common, "today", lambda: "2026-10-04")
+    (tmp_path / "data" / "daily").mkdir(parents=True)
+    merge.common.dump_json(str(tmp_path / "data" / "daily" / "2026-10-03.repos.json"),
+                           [{"full_name": "a/b", "event": "push"}])
+    merge.common.dump_json(str(tmp_path / "data" / "search" / "2026-10-04.json"),
+                           [{"full_name": "a/b", "pushed_at": "2026-10-03"}])
+    out = merge.run({"window_days": 7}, "2026-10-04")
+    assert out[0]["source"] == "watchlist"    # daily 先入池,source 保持 watchlist

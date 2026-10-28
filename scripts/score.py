@@ -13,11 +13,18 @@ def _score_one(row, client, prompts, model, fetch, fetch_tree):
 def run(cfg, date, client=None, fetch=None, fetch_tree=None):
     fetch = fetch or gh.fetch_readme
     fetch_tree = fetch_tree or gh.fetch_tree
+    cand_path = common.data_dir("candidates", f"{date}.json")
+    candidates = common.load_json(cand_path) if os.path.exists(cand_path) else []
+    if not bool(cfg.get("llm", {}).get("enabled", True)):
+        # noagent 降级:不打分,score=None、one_liner 用描述兜底(供站点搜索摘要)。
+        out = [{**row, "score": None,
+                "one_liner": (row.get("description") or "").strip()}
+               for row in candidates]
+        common.dump_json(common.data_dir("scored", f"{date}.json"), out)
+        return out
     client = client if client is not None else agent.make_client()
     prompts = load_prompts(os.path.join(common.ROOT, "prompts.yaml"))
     model = agent.model_name()
-    cand_path = common.data_dir("candidates", f"{date}.json")
-    candidates = common.load_json(cand_path) if os.path.exists(cand_path) else []
     out = []
     done, lock = 0, threading.Lock()
     def work(row):

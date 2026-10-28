@@ -559,3 +559,19 @@ def test_copy_readme_writes_readme_and_tree(monkeypatch, tmp_path):
     assert "src/" in tree and "a.py" in tree and "README.md" in tree
     manifest = (base / "MANIFEST.md").read_text()
     assert "TREE.md" in manifest and "abc123def456" in manifest
+
+
+def test_run_noagent_archives_only_watchlist(monkeypatch, tmp_path):
+    monkeypatch.setattr(archive.common, "ROOT", str(tmp_path))
+    scored = [
+        {"full_name": "wl/a", "score": None, "one_liner": "d", "source": "watchlist", "stars": 5},
+        {"full_name": "srch/b", "score": None, "one_liner": "d", "source": "search", "stars": 9},
+        {"full_name": "wl/c", "score": None, "one_liner": "d", "source": "watchlist", "stars": 1},
+    ]
+    archive.common.dump_json(str(tmp_path / "data" / "scored" / "2026-10-05.json"), scored)
+    copy_calls = []
+    out = archive.run({"llm": {"enabled": False}}, "2026-10-05",
+                      copy=lambda fn, d: copy_calls.append(fn) or True,
+                      wiki=lambda s, fn, d: True)
+    assert [r["full_name"] for r in out] == ["wl/a", "wl/c"]    # watchlist 按 stars 降序
+    assert set(copy_calls) == {"wl/a", "wl/c"}                  # 并发下 copy 顺序不保证,只断言集合

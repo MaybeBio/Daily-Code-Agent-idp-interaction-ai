@@ -80,3 +80,25 @@ def test_llm_failure_marked_as_llm_failed(monkeypatch, tmp_path):
     monkeypatch.setattr(score.agent, "score_repo", boom)
     rows = score.run(CFG, "2026-10-04", client=object(), fetch=lambda fn: "readme")
     assert rows[0]["score"] is None and rows[0]["one_liner"] == "[llm failed]"
+
+
+def test_run_noagent_passthrough(monkeypatch, tmp_path):
+    monkeypatch.setattr(score.common, "ROOT", str(tmp_path))
+    score.common.dump_json(str(tmp_path / "data" / "candidates" / "2026-10-04.json"),
+                           [{"full_name": "a/b", "url": "u", "pushed_at": "t",
+                             "stars": 1, "language": "", "description": "IDP tool"},
+                            {"full_name": "c/d", "url": "u", "pushed_at": "t",
+                             "stars": 2, "language": "", "description": ""}])
+    called = {"n": 0}
+    def should_not_run(*a, **k):
+        called["n"] += 1
+        return {"score": 9, "one_liner": "x"}
+    monkeypatch.setattr(score.agent, "score_repo", should_not_run)
+    rows = score.run({"llm": {"enabled": False}, "topic": "t"}, "2026-10-04",
+                     client=object(), fetch=lambda fn: "readme")
+    assert called["n"] == 0                         # 不打分,不花 LLM 调用
+    assert rows[0]["score"] is None
+    assert rows[0]["one_liner"] == "IDP tool"       # description 兜底
+    assert rows[1]["one_liner"] == ""
+    saved = score.common.load_json(str(tmp_path / "data" / "scored" / "2026-10-04.json"))
+    assert saved[0]["score"] is None

@@ -20,6 +20,10 @@ search_placeholder: 如 相分离、intrinsically disordered、Python
 llm:
   concurrency: 8
   min_score: 5
+  # noagent 降级开关:false 时跳过 LLM(打分/Code Card)。issue 仍全量列仓库,
+  # 但站点/归档/wiki 只留 watchlist 来源;配合 archive.repo_copy: readme 一起用。
+  # api 欠费/不可用时手动切 false,重跑该周 action 即可。
+  enabled: true
 archive:
   # 高分仓库落盘方式:code=只保留代码语料(源码/构建配置/README/文档;数据、
   # 图片、权重、二进制、通用 txt/log/csv/json/xml 不留,普通源码>2 MB、文档/构建>1 MB 不留,README/ipynb 不设限),省略

@@ -615,6 +615,14 @@ def _render_tree(paths, truncated=False, limit=3000):
     walk(root, "")
     return "\n".join(lines) + "\n"
 
+def tree_text(full_name):
+    """仓库全量 blob 路径 → 缩进目录树文本(网页展示/归档共用)。tree API 失败返回 ""。"""
+    try:
+        entries, truncated = _tree_api(full_name)
+        return _render_tree([e["path"] for e in entries if e.get("type") == "blob"], truncated)
+    except Exception:
+        return ""
+
 def _make_copy(mode, date):
     if mode == "full":
         return clone_repo
@@ -659,9 +667,15 @@ def run(cfg, date, copy=None, wiki=None, stat_date=None, in_week=None):
         mode = "code"
     copy = copy or _make_copy(mode, date)
     min_score = int(cfg.get("llm", {}).get("min_score", 5))
+    enabled = bool(cfg.get("llm", {}).get("enabled", True))
     scored_path = common.data_dir("scored", f"{date}.json")
     scored = common.load_json(scored_path) if os.path.exists(scored_path) else []
-    keep = threshold(scored, min_score)
+    if enabled:
+        keep = threshold(scored, min_score)
+    else:
+        # noagent:没有打分,归档/wiki 只留 watchlist 来源;搜索仓库不进站点/wiki。
+        keep = [r for r in scored if r.get("source") == "watchlist"]
+        keep.sort(key=lambda r: r.get("stars") or 0, reverse=True)
     # 低并发:网络工具(tree API/degit/repowiki-cli)串行太慢,但太高会触发 repowiki 限流。
     workers = max(1, int(cfg.get("archive", {}).get("concurrency", 4)))
     with ThreadPoolExecutor(max_workers=workers) as ex:
