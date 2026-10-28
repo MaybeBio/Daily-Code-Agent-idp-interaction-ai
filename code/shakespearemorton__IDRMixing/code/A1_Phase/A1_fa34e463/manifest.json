@@ -1,0 +1,31 @@
+{
+  "job_id": "45",
+  "sysname": "A1_fa34e463",
+  "sim_hash": "fa34e463",
+  "params": {
+    "sim_type": "homotypic_idr",
+    "seq_name1": "A1",
+    "seq_name2": "",
+    "cluster": "meta",
+    "is_rna2": false,
+    "temp": 305.0,
+    "ionic": 0.15,
+    "pH": 7.5,
+    "wfreq": 100000,
+    "steps": 500000000,
+    "runtime": 24,
+    "box": [
+      20.0,
+      20.0,
+      200.0
+    ],
+    "n_mol1": 269,
+    "n_mol2": 0,
+    "ff": "calvados2",
+    "restraint": false,
+    "steps_eq": 1000000,
+    "slab_width": 100.0,
+    "sim_hash": "fa34e463",
+    "sysname": "A1_fa34e463"
+  }
+}

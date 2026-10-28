@@ -1,0 +1,10 @@
+name: embed_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11.7
+  - h5py
+  - pyyaml=6.0.1
+  - ca-certificates
+  - openssl
+prefix: /media/data/.conda/envs/embed_env

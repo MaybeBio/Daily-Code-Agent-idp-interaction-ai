@@ -10,12 +10,68 @@ import os
 from sklearn.mixture import GaussianMixture
 from adjustText import adjust_text
 
-if len(sys.argv) < 2 or len(sys.argv) > 3:
-    print("Usage: python plot_plddt.py <dataset_name> [metapredict_csv]")
-    sys.exit(1)
+USAGE = """Usage:
+  Single input:
+    python plot_plddt.py <dataset_name> [metapredict_csv]
+      (reads plddt_all_values_<dataset_name>*.pkl from the current directory)
 
-dataset_name = sys.argv[1]
-metapredict_csv = sys.argv[2] if len(sys.argv) == 3 else None
+  Several inputs on shared plots:
+    python plot_plddt.py --combined <output_prefix> \\
+        --query NAME PKL [METAPREDICT_CSV] \\
+        --query NAME PKL [METAPREDICT_CSV] ...
+"""
+
+# ---------- ARGUMENTS ----------
+# combined_mode: every --query is drawn on the same figures, labelled by
+# NAME, and the outputs are named <output_prefix>_<plot>.png.
+# Otherwise the original single-input behaviour is kept unchanged.
+combined_mode = len(sys.argv) > 1 and sys.argv[1] == "--combined"
+
+if combined_mode:
+    argv = sys.argv[2:]
+    if not argv or argv[0].startswith("--"):
+        print(USAGE)
+        sys.exit(1)
+    output_prefix = argv.pop(0)
+    queries = []  # list of (name, pkl_path, metapredict_csv_or_None)
+    while argv:
+        flag = argv.pop(0)
+        if flag != "--query":
+            print(f"ERROR: unexpected argument {flag!r}\n{USAGE}")
+            sys.exit(1)
+        vals = []
+        while argv and argv[0] != "--query":
+            vals.append(argv.pop(0))
+        if len(vals) not in (2, 3):
+            print(f"ERROR: --query takes NAME PKL [METAPREDICT_CSV], got {vals}\n{USAGE}")
+            sys.exit(1)
+        queries.append((vals[0], vals[1], vals[2] if len(vals) == 3 else None))
+    if not queries:
+        print(f"ERROR: --combined needs at least one --query\n{USAGE}")
+        sys.exit(1)
+    names = [q[0] for q in queries]
+    if len(set(names)) != len(names):
+        print(f"ERROR: --query names must be unique, got {names}")
+        sys.exit(1)
+    dataset_name = output_prefix
+    # Disorder for the coloured scatter is only drawn if every query has it
+    query_metapredict = {name: csv for name, _, csv in queries}
+    metapredict_csv = "per-query" if all(query_metapredict.values()) else None
+    plot_title_suffix = f"{len(queries)} inputs" if len(queries) > 1 else queries[0][0]
+else:
+    if len(sys.argv) < 2 or len(sys.argv) > 3:
+        print(USAGE)
+        sys.exit(1)
+    dataset_name = sys.argv[1]
+    metapredict_csv = sys.argv[2] if len(sys.argv) == 3 else None
+    plot_title_suffix = dataset_name
+
+
+def output_png(kind):
+    """kind: e.g. 'plddt_density_scipy'."""
+    if combined_mode:
+        return f"{output_prefix}_{kind}.png"
+    return f"{kind}_{dataset_name}.png"
 
 # ---------- CSV FILE ----------
 # Resolve CSV path robustly. Search order:
@@ -117,16 +173,31 @@ if not csv_species_values:
     sys.exit(1)
 
 # ---------- LOAD PKL ----------
-pkl_files = glob.glob(f"plddt_all_values_{dataset_name}*.pkl")
+if combined_mode:
+    # One entry per query, keyed by its display name. A PKL normally holds
+    # a single dataset; if it holds several they are pooled under NAME.
+    species_plddt = {}
+    for name, pkl_path, _ in queries:
+        if not os.path.exists(pkl_path):
+            print(f"ERROR: file not found: {pkl_path}")
+            sys.exit(1)
+        with open(pkl_path, "rb") as f:
+            loaded = pickle.load(f)
+        pooled = {}
+        for sub in loaded.values():
+            pooled.update(sub)
+        species_plddt[name] = pooled
+else:
+    pkl_files = glob.glob(f"plddt_all_values_{dataset_name}*.pkl")
 
-if len(pkl_files) == 0:
-    print(f"ERROR: file not found: plddt_all_values_{dataset_name}*.pkl")
-    sys.exit(1)
+    if len(pkl_files) == 0:
+        print(f"ERROR: file not found: plddt_all_values_{dataset_name}*.pkl")
+        sys.exit(1)
 
-pkl_file = pkl_files[0]
+    pkl_file = pkl_files[0]
 
-with open(pkl_file, "rb") as f:
-    species_plddt = pickle.load(f)
+    with open(pkl_file, "rb") as f:
+        species_plddt = pickle.load(f)
 
 print("Loaded PKL species:", list(species_plddt.keys()))
 
@@ -231,12 +302,12 @@ for species, values in csv_species_values.items():
     y = scipy_kde_curve(values, grid)
     plt.plot(grid, y, linestyle="--", alpha=0.3, label=f"{species} (CSV)")
 
-plt.title(f"pLDDT Density (SciPy KDE) - {dataset_name}")
+plt.title(f"pLDDT Density (SciPy KDE) - {plot_title_suffix}")
 plt.xlabel("Mean pLDDT")
 plt.ylabel("Density")
 plt.legend()
 plt.tight_layout()
-plt.savefig(f"plddt_density_scipy_{dataset_name}.png", dpi=300)
+plt.savefig(output_png("plddt_density_scipy"), dpi=300)
 plt.close()
 
 # =========================================================
@@ -378,9 +449,9 @@ adjust_text(
 
 ax.set_xlabel("GMM Upper Component Proportion")
 ax.set_ylabel("Proportion ≥70 pLDDT")
-ax.set_title(f"GMM Upper Peak vs ≥70 Proportion ({dataset_name})")
+ax.set_title(f"GMM Upper Peak vs ≥70 Proportion ({plot_title_suffix})")
 plt.tight_layout()
-plt.savefig(f"plddt_gmm_scatter_{dataset_name}.png", dpi=300)
+plt.savefig(output_png("plddt_gmm_scatter"), dpi=300)
 plt.close()
 
 print("GMM scatter diagnostics generated (CSV cached, PKL highlighted).")
@@ -431,21 +502,31 @@ else:
         .to_dict()
     )
 
-    # Query disorder
-    query_mean_disorder = None
-    if os.path.exists(metapredict_csv):
-        query_mean_disorder = _compute_query_mean_disorder(metapredict_csv)
-        if query_mean_disorder is not None:
-            print(f"  Query mean disorder: {query_mean_disorder:.4f}")
-        else:
-            print(f"  WARNING: no usable rows in {metapredict_csv}")
+    # Query disorder: one value per query species (keyed as in species_values)
+    def _load_query_disorder(csv_path):
+        if not os.path.exists(csv_path):
+            print(f"  WARNING: metapredict CSV not found: {csv_path}")
+            return None
+        value = _compute_query_mean_disorder(csv_path)
+        if value is None:
+            print(f"  WARNING: no usable rows in {csv_path}")
+        return value
+
+    if combined_mode:
+        query_disorder = {name: _load_query_disorder(csv)
+                          for name, csv in query_metapredict.items()}
     else:
-        print(f"  WARNING: metapredict CSV not found: {metapredict_csv}")
+        single = _load_query_disorder(metapredict_csv)
+        query_disorder = {sp: single for sp in species_values}
+    for name, value in query_disorder.items():
+        if value is not None:
+            print(f"  Query mean disorder ({name}): {value:.4f}")
 
     # Attach a MeanDisorder value to each row of df_metrics
     def _disorder_for_row(row):
         if row["Is_PKL"]:
-            return query_mean_disorder if query_mean_disorder is not None else np.nan
+            value = query_disorder.get(row["Species"])
+            return value if value is not None else np.nan
         return ref_disorder.get(row["Species"], np.nan)
 
     df_metrics["MeanDisorder"] = df_metrics.apply(_disorder_for_row, axis=1)
@@ -533,9 +614,9 @@ else:
 
     ax.set_xlabel("GMM Upper Component Proportion")
     ax.set_ylabel("Proportion ≥70 pLDDT")
-    ax.set_title(f"GMM Scatter — coloured by Mean Disorder ({dataset_name})")
+    ax.set_title(f"GMM Scatter — coloured by Mean Disorder ({plot_title_suffix})")
     plt.tight_layout()
-    plt.savefig(f"plddt_gmm_scatter_disorder_{dataset_name}.png", dpi=300)
+    plt.savefig(output_png("plddt_gmm_scatter_disorder"), dpi=300)
     plt.close()
     print("Disorder-coloured scatter generated.")
 

@@ -1,0 +1,31 @@
+{
+  "job_id": "37",
+  "sysname": "Q3LI60_1_44_0a470d24",
+  "sim_hash": "0a470d24",
+  "params": {
+    "sim_type": "homotypic_idr",
+    "seq_name1": "Q3LI60_1_44",
+    "seq_name2": "",
+    "cluster": "meta",
+    "is_rna2": false,
+    "temp": 293,
+    "ionic": 0.15,
+    "pH": 7.5,
+    "wfreq": 100000,
+    "steps": 500000000,
+    "runtime": 24,
+    "box": [
+      25.0,
+      25.0,
+      250.0
+    ],
+    "n_mol1": 1022,
+    "n_mol2": 0,
+    "ff": "calvados2",
+    "restraint": false,
+    "steps_eq": 1000000,
+    "slab_width": 125.0,
+    "sim_hash": "0a470d24",
+    "sysname": "Q3LI60_1_44_0a470d24"
+  }
+}

@@ -32,14 +32,38 @@ SPECIES_TO_EXCLUDE = {
 # =========================================================
 # ARGUMENTS
 # =========================================================
-if len(sys.argv) < 2:
-    print("Usage: python plot_metapredict.py <metapredict_csv>")
-    sys.exit(1)
+# Single input (original behaviour):
+#     python plot_metapredict.py <metapredict_csv>
+#       -> <csv basename>_mean_disorder_density_scipy.png
+# Several inputs on one plot:
+#     python plot_metapredict.py A.csv B.csv ... [--names A B ...] [--out-prefix combined]
+#       -> <out-prefix>_metapredict_mean_disorder_density_scipy.png
+import argparse
 
-highlight_csv = sys.argv[1]
-dataset_label = os.path.basename(highlight_csv).replace(".csv", "")
+ap = argparse.ArgumentParser(description="Overlay query disorder distributions on the reference proteomes.")
+ap.add_argument("csvs", nargs="+", help="Query metapredict CSV(s)")
+ap.add_argument("--names", nargs="+", default=None,
+                help="Display names, one per CSV (default: CSV basenames)")
+ap.add_argument("--out-prefix", default=None,
+                help="Write <prefix>_metapredict_mean_disorder_density_scipy.png "
+                     "(default for a single CSV: <csv basename>_mean_disorder_density_scipy.png)")
+args = ap.parse_args()
 
-print("Dataset:", dataset_label)
+if args.names is not None and len(args.names) != len(args.csvs):
+    sys.exit(f"ERROR: got {len(args.names)} --names for {len(args.csvs)} CSVs")
+
+query_labels = args.names or [os.path.basename(c).replace(".csv", "") for c in args.csvs]
+if len(set(query_labels)) != len(query_labels):
+    sys.exit(f"ERROR: query names must be unique, got {query_labels}")
+
+if args.out_prefix:
+    output_png = f"{args.out_prefix}_metapredict_mean_disorder_density_scipy.png"
+elif len(args.csvs) == 1:
+    output_png = f"{query_labels[0]}_mean_disorder_density_scipy.png"
+else:
+    sys.exit("ERROR: --out-prefix is required with more than one CSV")
+
+print("Datasets:", query_labels)
 
 # =========================================================
 # LOAD REFERENCE PKL
@@ -74,14 +98,15 @@ if missing:
         print(f"  - {sp}")
 
 # =========================================================
-# LOAD HIGHLIGHT CSV
+# LOAD HIGHLIGHT CSV(S)
 # =========================================================
-highlight_mean_values = []
-
-if os.path.exists(highlight_csv):
-    print("Loading highlight CSV:", highlight_csv)
-
-    with open(highlight_csv) as f:
+def load_mean_disorder(csv_path):
+    values = []
+    if not os.path.exists(csv_path):
+        print("WARNING: highlight CSV not found:", csv_path)
+        return values
+    print("Loading highlight CSV:", csv_path)
+    with open(csv_path) as f:
         for line in f:
             parts = line.strip().split(",")
             try:
@@ -89,9 +114,10 @@ if os.path.exists(highlight_csv):
             except:
                 continue
             if scores:
-                highlight_mean_values.append(np.mean(scores))
-else:
-    print("WARNING: highlight CSV not found")
+                values.append(np.mean(scores))
+    return values
+
+highlights = [(label, load_mean_disorder(csv)) for label, csv in zip(query_labels, args.csvs)]
 
 # =========================================================
 # PREP DATA
@@ -121,16 +147,17 @@ for species, values in species_mean_values.items():
     y = gaussian_kde(values)(grid)
     plt.plot(grid, y, label=species, **style_background())
 
-if highlight_mean_values and len(highlight_mean_values) > 1:
-    y = gaussian_kde(highlight_mean_values)(grid)
-    plt.plot(grid, y, label=dataset_label, **style_highlight())
+for label, values in highlights:
+    if len(values) > 1:
+        y = gaussian_kde(values)(grid)
+        plt.plot(grid, y, label=label, **style_highlight())
 
 plt.title("Mean Disorder Density (SciPy KDE)")
 plt.xlabel("Mean Disorder")
 plt.ylabel("Density")
 plt.legend()
 plt.tight_layout()
-plt.savefig(f"{dataset_label}_mean_disorder_density_scipy.png", dpi=300)
+plt.savefig(output_png, dpi=300)
 plt.close()
 
 print("Done — overlay plots generated")

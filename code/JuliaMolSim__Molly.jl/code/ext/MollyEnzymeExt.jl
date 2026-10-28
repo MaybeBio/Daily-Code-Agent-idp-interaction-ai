@@ -37,7 +37,6 @@ EnzymeRules.inactive(::typeof(Molly.check_units), args...) = nothing
 EnzymeRules.inactive(::typeof(Molly.check_force_units), args...) = nothing
 EnzymeRules.inactive(::typeof(Molly.check_energy_units), args...) = nothing
 EnzymeRules.inactive(::typeof(Molly.has_infinite_boundary), args...) = nothing
-EnzymeRules.inactive(::typeof(Molly.n_infinite_dims), args...) = nothing
 EnzymeRules.inactive(::typeof(random_coord), args...) = nothing
 EnzymeRules.inactive(::typeof(random_velocity), args...) = nothing
 EnzymeRules.inactive(::typeof(random_velocities), args...) = nothing
@@ -65,7 +64,6 @@ EnzymeRules.inactive(::typeof(use_neighbors), args...) = nothing
 EnzymeRules.inactive(::typeof(find_neighbors), args...) = nothing
 EnzymeRules.inactive(::typeof(Molly.uses_gpu_neighbor_finder), args...) = nothing
 EnzymeRules.inactive(::typeof(Molly.claim_block!), args...) = nothing
-EnzymeRules.inactive_type(::Type{<:NoNeighborFinder}) = true
 EnzymeRules.inactive_type(::Type{<:GPUNeighborFinder}) = true
 EnzymeRules.inactive_type(::Type{<:GPUCellListNeighborFinder}) = true
 EnzymeRules.inactive_type(::Type{<:Molly.GPUCellListState}) = true
@@ -134,7 +132,8 @@ end
 
 # Calculate the gradient of a CV with respect to the input coordinates
 # Works for systems with and without units
-function Molly.cv_gradient(cv_type, coords, atoms=nothing, boundary=nothing, velocities=nothing)
+function Molly.cv_gradient_enzyme(cv_type, coords, atoms=nothing, boundary=nothing,
+                                  velocities=nothing)
     d_coords = zero(coords)
     unit_arr = Any[u"nm"]
 
@@ -155,6 +154,11 @@ function Molly.cv_gradient(cv_type, coords, atoms=nothing, boundary=nothing, vel
     d_coords = d_coords .* u ./ unit(d_coords[1][1])^2
 
     return d_coords, cv_val_ustrip * u
+end
+
+# Fallback, analytic methods are defined for built-in collective variables
+function Molly.cv_gradient(cv_type, coords, atoms=nothing, boundary=nothing, velocities=nothing)
+    return Molly.cv_gradient_enzyme(cv_type, coords, atoms, boundary, velocities)
 end
 
 # Optimisations for dict_get gradients
@@ -936,7 +940,8 @@ end
                         kx, ky, kz, TV)
             o1, o2 = reim(recip_grid[li])
             g1, g2 = reim(drecip_grid[li])
-            de = desum_arr[li]
+            # The energy buffer can be in a higher precision than the grid
+            de = T(desum_arr[li])
             drecip_grid[li] = Complex(eterm_nou*g1 + 2*weight*de*o1,
                                       eterm_nou*g2 + 2*weight*de*o2)
         end

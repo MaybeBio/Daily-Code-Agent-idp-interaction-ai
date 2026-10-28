@@ -1,0 +1,34 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=8:ngpus=1:mem=10gb:scratch_local=50gb
+#PBS -l walltime=24:00:00
+#PBS -q gpu
+#PBS -j oe
+
+set -euo pipefail
+
+module load anaconda3
+source activate /storage/brno14-ceitec/shared/softmatter/shakespearem/.conda/envs/calvados
+export OPENMM_PLUGIN_DIR=/storage/brno14-ceitec/shared/softmatter/shakespearem/.conda/envs/calvados/lib/plugins
+
+cp -r /mnt/storage-brno14-ceitec/shared/softmatter/shakespearem/Extra_Jobs/A1_769c17b4/* "$SCRATCHDIR/"
+cp -r /mnt/storage-brno14-ceitec/shared/softmatter/shakespearem/Extra_Jobs/input "$SCRATCHDIR/"
+cd "$SCRATCHDIR"
+
+timeout 23h python run.py || :
+
+# Remove equilibration files before copying back
+rm -f "$SCRATCHDIR"/equilibration*.*
+
+# Copy all output files back to storage
+cp "$SCRATCHDIR"/*.dcd \
+   "$SCRATCHDIR"/*.log \
+   "$SCRATCHDIR"/*.chk \
+   "$SCRATCHDIR"/*.pdb \
+   "$SCRATCHDIR"/*.xml \
+   "/mnt/storage-brno14-ceitec/shared/softmatter/shakespearem/Extra_Jobs/A1_769c17b4/" 2>/dev/null || true
+
+# Copy PBS stdout/stderr if present
+cp "$SCRATCHDIR"/*.out "$SCRATCHDIR"/*.err \
+   "/mnt/storage-brno14-ceitec/shared/softmatter/shakespearem/Extra_Jobs/A1_769c17b4/" 2>/dev/null || true
+
+rm -rf "$SCRATCHDIR/"*

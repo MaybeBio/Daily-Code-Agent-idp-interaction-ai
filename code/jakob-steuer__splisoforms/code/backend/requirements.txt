@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+asyncpg
+SQLAlchemy>=2.0,<2.1
+pydantic
+pydantic-settings
+boto3
+python-multipart
+pyhmmer>=0.10.0
+gemmi
+freesasa
+biopython
+pandas
+pydssp
+mhcflurry>=2.2
+requests
+httpx

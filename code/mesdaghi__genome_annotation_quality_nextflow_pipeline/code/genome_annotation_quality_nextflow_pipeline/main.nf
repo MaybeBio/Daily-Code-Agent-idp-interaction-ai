@@ -18,6 +18,8 @@ include { INTERPROSCAN } from './modules/interproscan.nf'
 include { CONCAT_IPR } from './modules/concat_ipr.nf'
 include { PLOT_INTERPRO } from './modules/plot_interpro.nf'
 include { BUILD_SUMMARY_TSV } from './modules/build_summary_tsv.nf'
+include { PLOT_PLDDT_COMBINED; PLOT_METAPREDICT_COMBINED; PLOT_PSAURON_COMBINED;
+          PLOT_INTERPRO_COMBINED; GENERATE_COMBINED_REPORT; COMBINE_SUMMARY_TSV } from './modules/combined.nf'
 
 
 // ==================== Branch switches ==================== //
@@ -47,6 +49,55 @@ def placeholder(name) {
     return file("${projectDir}/assets/${name}", checkIfExists: true)
 }
 
+// ==================== Inputs ==================== //
+// FASTA files can come from --fasta (one path, a glob, or a comma-separated
+// list of either) and/or --fasta_list (a text file with one path or glob
+// per line; blank lines and lines starting with # are ignored). Relative
+// paths are resolved against the directory the pipeline is launched from.
+
+def collectFastaFiles() {
+    def found = []
+    def addPattern = { String pattern, String source ->
+        def matched = files(pattern)
+        if ( !matched ) {
+            error "No FASTA file found for '${pattern}' (from ${source})"
+        }
+        matched.each { f ->
+            if ( !f.exists() ) {
+                error "FASTA file not found: ${f} (from ${source}). " +
+                      "Relative paths are resolved from the directory you launch the pipeline in; " +
+                      "use absolute paths if in doubt."
+            }
+            found << f
+        }
+    }
+
+    if ( params.fasta ) {
+        params.fasta.toString().split(',')
+            .collect { it.trim() }
+            .findAll { it }
+            .each { addPattern(it, '--fasta') }
+    }
+
+    if ( params.fasta_list ) {
+        def list_file = file(params.fasta_list)
+        if ( !list_file.exists() ) {
+            error "--fasta_list file not found: ${list_file}"
+        }
+        list_file.readLines().eachWithIndex { line, i ->
+            def entry = line.trim()
+            if ( entry && !entry.startsWith('#') ) {
+                addPattern(entry, "--fasta_list line ${i + 1}")
+            }
+        }
+    }
+
+    // The same file given twice (e.g. by a glob and by the list) counts once
+    return found
+        .unique { it.toAbsolutePath().normalize().toString() }
+        .sort { it.baseName }
+}
+
 
 workflow {
 
@@ -60,16 +111,63 @@ workflow {
               "--run_protenix, --run_metapredict, --run_psauron or --run_interpro."
     }
 
-    log.info """\
-        Branches enabled:
-          protenix    : ${run_protenix}
-          metapredict : ${run_metapredict}
-          psauron     : ${run_psauron}
-          interpro    : ${interpro_mode}
-        """.stripIndent()
+    // ---------- inputs ----------
+    def fasta_files = collectFastaFiles()
+    if ( !fasta_files ) {
+        error "No input FASTA files. Give --fasta (a path, a glob, or a " +
+              "comma-separated list) and/or --fasta_list (a text file with one path per line)."
+    }
+
+    // Each input is identified by its file name without the extension, and
+    // every output file is named after it, so these must be unique.
+    def dataset_names = fasta_files.collect { it.baseName }
+    def duplicate_names = dataset_names.countBy { it }.findAll { name, n -> n > 1 }.keySet()
+    if ( duplicate_names ) {
+        def clashes = duplicate_names.collect { name ->
+            "  ${name}: " + fasta_files.findAll { it.baseName == name }.join(', ')
+        }.join('\n')
+        error "Input FASTA files must have unique names (ignoring the extension). Clashes:\n${clashes}"
+    }
+
+    if ( interpro_mode == 'xml' && fasta_files.size() > 1 ) {
+        error "--run_interpro /path/to/file.xml plots one supplied XML, so it only works " +
+              "with a single input FASTA (got ${fasta_files.size()}). Use --run_interpro true " +
+              "to run InterProScan on every input."
+    }
+
+    // ---------- report mode ----------
+    def report_mode = params.report.toString().trim().toLowerCase()
+    if ( !(report_mode in ['separate', 'combined']) ) {
+        error "--report must be 'separate' or 'combined' (got '${params.report}')"
+    }
+    def combined_mode = report_mode == 'combined'
+    def combined_name = params.combined_name.toString().trim()
+    if ( combined_mode ) {
+        if ( !(combined_name ==~ /[A-Za-z0-9._-]+/) ) {
+            error "--combined_name may only contain letters, digits, '.', '_' and '-' (got '${combined_name}')"
+        }
+        if ( combined_name in dataset_names ) {
+            error "--combined_name '${combined_name}' is also the name of an input FASTA; " +
+                  "choose a different --combined_name so their outputs don't overwrite each other."
+        }
+        if ( fasta_files.size() == 1 ) {
+            log.warn "--report combined with a single input: the combined report will match the per-input report."
+        }
+    }
+
+    def startup = ["Inputs (${fasta_files.size()}):"]
+    startup += fasta_files.collect { "  ${it.baseName}  <-  ${it}" }
+    startup << "Report: ${report_mode}" +
+               (combined_mode ? " (${combined_name}_report.pdf plus one PDF per input)" : ' (one PDF per input)')
+    startup << "Branches enabled:"
+    startup << "  protenix    : ${run_protenix}"
+    startup << "  metapredict : ${run_metapredict}"
+    startup << "  psauron     : ${run_psauron}"
+    startup << "  interpro    : ${interpro_mode}"
+    log.info startup.join('\n') + '\n'
 
     fasta_ch = Channel
-        .fromPath(params.fasta, checkIfExists: true)
+        .fromList(fasta_files)
         .map { fasta -> tuple(fasta, fasta.baseName) }
 
     // Each plotting branch adds (dataset_name, order, [pngs]) to this list.
@@ -281,6 +379,61 @@ workflow {
     }
 
     // Resulting tuple: (dataset_name, fasta, pkl, metapredict_csv, psauron_csv, xml)
-    BUILD_SUMMARY_TSV(summary_ch)
+    summary_tsv_ch = BUILD_SUMMARY_TSV(summary_ch)
+
+    // ================= COMBINED REPORT (--report combined) ================= //
+    // Every input is drawn on the same plots alongside the reference
+    // organisms, gathered into <combined_name>_report.pdf, and the per-input
+    // summary rows are concatenated into <combined_name>_summary.tsv.
+    // The per-input reports above are still produced.
+
+    if ( combined_mode ) {
+
+        // Wait for every input, then order rows by dataset name so that the
+        // plots, legends and summary rows are in a stable order.
+        def byName = { ch -> ch.toSortedList { a, b -> a[0] <=> b[0] } }
+        def column = { rows, i -> rows.collect { it[i] } }
+
+        def combined_parts = []
+
+        if ( run_protenix ) {
+            plddt_combined_in = byName(plddt_input_ch)
+                .map { rows -> tuple(column(rows, 0), column(rows, 1), column(rows, 2)) }
+            combined_parts << PLOT_PLDDT_COMBINED(plddt_combined_in, combined_name)
+                .map { pngs -> tuple(1, asList(pngs)) }
+        }
+
+        if ( run_metapredict ) {
+            metapredict_combined_in = byName(metapredict_ch)
+                .map { rows -> tuple(column(rows, 0), column(rows, 1)) }
+            combined_parts << PLOT_METAPREDICT_COMBINED(metapredict_combined_in, combined_name)
+                .map { png -> tuple(2, asList(png)) }
+        }
+
+        if ( run_psauron ) {
+            psauron_combined_in = byName(psauron_ch)
+                .map { rows -> tuple(column(rows, 0), column(rows, 1)) }
+            combined_parts << PLOT_PSAURON_COMBINED(psauron_combined_in, combined_name)
+                .map { png -> tuple(3, asList(png)) }
+        }
+
+        if ( interpro_mode != 'off' ) {
+            interpro_combined_in = byName(interpro_inputs_ch)
+                .map { rows -> tuple(column(rows, 0), column(rows, 1), column(rows, 2)) }
+            combined_parts << PLOT_INTERPRO_COMBINED(interpro_combined_in, combined_name)
+                .map { bar_png, dist_png, ipr_tsv -> tuple(4, [bar_png, dist_png]) }
+        }
+
+        combined_pngs_ch = Channel.empty()
+            .mix(*combined_parts)
+            .toList()
+            .map { parts -> parts.sort { it[0] }.collectMany { it[1] } }
+
+        def subtitle = "Inputs (${dataset_names.size()}): " + dataset_names.sort(false).join(', ')
+        GENERATE_COMBINED_REPORT(combined_pngs_ch, combined_name, subtitle)
+
+        combined_summary_in = byName(summary_tsv_ch).map { rows -> column(rows, 1) }
+        COMBINE_SUMMARY_TSV(combined_summary_in, combined_name)
+    }
 
 }

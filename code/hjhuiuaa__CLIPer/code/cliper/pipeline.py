@@ -1,0 +1,3555 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+import json
+from pathlib import Path
+import random
+import re
+import socket
+import subprocess
+import sys
+import time
+from typing import Any
+
+import torch
+from torch import nn
+from torch.nn import functional as F
+from torch.optim import AdamW
+from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import DataLoader, Dataset
+import yaml
+
+from .caid_io import read_residue_embedding
+from .data import (
+    MotifSpec,
+    ProteinRecord,
+    build_split_manifest,
+    build_motif_special_tokens,
+    build_motif_token_map,
+    build_motif_vocab,
+    load_motif_specs,
+    parse_id_lines,
+    parse_three_line_fasta,
+    read_json,
+    select_records,
+    summarize_motif_coverage,
+    tokenize_sequence_with_motifs,
+    write_json,
+)
+from .metrics import (
+    apply_threshold,
+    binary_roc_auc,
+    f1_score,
+    mcc_score,
+    precision_recall_auc,
+    search_best_threshold,
+)
+from .modeling import (
+    DummyBackbone,
+    DummyProteinTokenizer,
+    DualTokenizerResidueClassifier,
+    ResidueClassifier,
+    configure_trainable_token_embeddings,
+    encode_sequences,
+    encode_token_sequences,
+    load_backbone_and_tokenizer,
+    prepare_backbone_for_motif_tokenizer,
+)
+from .windowing import (
+    build_eval_window_starts,
+    linker_probs_from_logits,
+    merge_window_logits,
+    sigmoid,
+    training_crop,
+)
+
+
+def _autocast_context(device_type: str, enabled: bool):
+    return torch.amp.autocast(device_type=device_type, enabled=enabled)
+
+
+def _build_grad_scaler(enabled: bool):
+    return torch.amp.GradScaler("cuda", enabled=enabled)
+
+
+REQUIRED_CONFIG_FIELDS = [
+    "backbone_name",
+    "window_size",
+    "batch_tokens",
+    "optimizer",
+    "lr",
+    "weight_decay",
+    "max_epochs",
+    "early_stop_patience",
+    "seed",
+    "threshold_search",
+]
+
+
+DEFAULTS = {
+    "stage": "stage1",
+    "dropout": 0.1,
+    "freeze_backbone": True,
+    "val_ratio": 0.2,
+    "error_file": "dataset/error.txt",
+    "auto_rebuild_split_on_mismatch": True,
+    "resume_checkpoint": None,
+    "resume_output_strategy": "same_experiment",
+    "eval_stride": None,
+    "top_k_heuristic": 4,
+    "num_workers": 0,
+    "device": "cuda" if torch.cuda.is_available() else "cpu",
+    "train_fasta": "dataset/disprot_202312_linker_label.fasta",
+    "caid_fasta": "dataset/linker.fasta",
+    "split_manifest": "artifacts/splits/disprot_split_seed42.json",
+    "output_dir": "artifacts/runs/stage1",
+    "experiment_prefix": "exp",
+    "save_every": 500,
+    "print_every": 20,
+    "eval_every": 200,
+    "auto_start_tensorboard": True,
+    "tensorboard_host": "0.0.0.0",
+    "tensorboard_port": 6006,
+    "use_wandb": False,
+    "wandb_entity": "3151599052-nankai-university",
+    "wandb_project": "CLIPer",
+    "wandb_mode": "online",
+    "wandb_run_name": None,
+    "wandb_group": None,
+    "wandb_tags": [],
+    "wandb_dir": None,
+    "tokenizer_name": None,
+    "embeddings_dir": None,
+    "classifier_head": {
+        "type": "linear",
+        "dropout": 0.3,
+        "use_layernorm": True,
+        "activation": "relu",
+        "hidden_dims": [1024, 256, 128, 64],
+        "num_layers": 2,
+        "num_heads": 4,
+        "ffn_dim": 2048,
+        "use_positional_encoding": True,
+        "conv_channels": [256, 256, 256],
+        "kernel_size": 3,
+        "dilations": [1, 2, 4],
+        "rnn_hidden_size": 256,
+        "rnn_num_layers": 2,
+        "rnn_type": "gru",
+        "bidirectional": True,
+        "num_classes": 1,
+        "linker_class": 1,
+        "dual_binary": False,
+    },
+    "local_context": {
+        "enabled": False,
+        "radius": 2,
+        "mode": "concat_window",
+        "include_self": True,
+    },
+    "motif": {
+        "enabled": False,
+        "source": None,
+        "matching": "prosite",
+        "tokenization": "special_token",
+    },
+    "contrastive": {
+        "enabled": False,
+        "weight": 0.2,
+        "neg_weight": 0.05,
+        "temperature": 0.1,
+        "proj_dim": 128,
+        "max_samples_per_class": 256,
+    },
+    "dual_tokenizer": {
+        "enabled": False,
+        "fusion": "weighted_logits",
+        "branches": {
+            "plain": {
+                "weight": 0.5,
+                "tokenizer_name": None,
+                "motif": {
+                    "enabled": False,
+                    "source": None,
+                    "matching": "prosite",
+                    "tokenization": "special_token",
+                },
+            },
+            "special": {
+                "weight": 0.5,
+                "tokenizer_name": None,
+                "motif": {
+                    "enabled": True,
+                    "source": None,
+                    "matching": "prosite",
+                    "tokenization": "special_token",
+                },
+            },
+        },
+    },
+}
+
+
+@dataclass
+class TrainItem:
+    protein_id: str
+    sequence: str
+    labels: str
+    start: int
+
+
+class TrainDataset(Dataset):
+    def __init__(
+        self,
+        records: list[ProteinRecord],
+        window_size: int,
+        seed: int,
+        *,
+        linker_positive_chars: str = "1",
+    ) -> None:
+        self.records = records
+        self.window_size = window_size
+        self.seed = seed
+        self.linker_positive_chars = linker_positive_chars
+
+    def __len__(self) -> int:
+        return len(self.records)
+
+    def __getitem__(self, index: int) -> TrainItem:
+        record = self.records[index]
+        seq, labels, start = training_crop(
+            record.sequence,
+            record.labels,
+            self.window_size,
+            seed=self.seed + index,
+            positive_chars=self.linker_positive_chars,
+        )
+        return TrainItem(protein_id=record.protein_id, sequence=seq, labels=labels, start=start)
+
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def _ensure_required_fields(config: dict[str, Any]) -> None:
+    missing = [field for field in REQUIRED_CONFIG_FIELDS if field not in config]
+    if missing:
+        raise ValueError(f"Missing required config fields: {missing}")
+
+
+def _resolve_contrastive_config(config: dict[str, Any], stage: str) -> dict[str, Any]:
+    defaults = dict(DEFAULTS["contrastive"])
+    provided = config.get("contrastive", {})
+    if provided is None:
+        provided = {}
+    if not isinstance(provided, dict):
+        raise ValueError("contrastive must be a dict when provided.")
+    defaults.update(provided)
+    if stage == "stage2" and "enabled" not in provided:
+        defaults["enabled"] = True
+    if float(defaults["weight"]) < 0:
+        raise ValueError(f"contrastive.weight must be >= 0, got {defaults['weight']}")
+    defaults["neg_weight"] = float(defaults.get("neg_weight", 0.0))
+    if float(defaults["neg_weight"]) < 0:
+        raise ValueError(f"contrastive.neg_weight must be >= 0, got {defaults['neg_weight']}")
+    if float(defaults["temperature"]) <= 0:
+        raise ValueError(f"contrastive.temperature must be > 0, got {defaults['temperature']}")
+    if int(defaults["proj_dim"]) <= 0:
+        raise ValueError(f"contrastive.proj_dim must be > 0, got {defaults['proj_dim']}")
+    if int(defaults["max_samples_per_class"]) <= 0:
+        raise ValueError(
+            "contrastive.max_samples_per_class must be > 0, "
+            f"got {defaults['max_samples_per_class']}"
+        )
+    mode = str(defaults.get("mode", "hierarchical")).lower()
+    if mode not in {"hierarchical", "binary", "ternary", "none"}:
+        raise ValueError(
+            "contrastive.mode must be one of ['hierarchical', 'binary', 'ternary', 'none'], "
+            f"got {mode!r}"
+        )
+    defaults["mode"] = mode
+    if mode == "none":
+        defaults["enabled"] = False
+    return defaults
+
+
+def _resolve_classifier_head_config(config: dict[str, Any]) -> dict[str, Any]:
+    defaults = dict(DEFAULTS["classifier_head"])
+    provided = config.get("classifier_head", {})
+    if provided is None:
+        provided = {}
+    if not isinstance(provided, dict):
+        raise ValueError("classifier_head must be a dict when provided.")
+    defaults.update(provided)
+
+    head_type = str(defaults.get("type", "linear")).lower()
+    if head_type not in {"linear", "mlp3", "mlp5", "mlp12", "transformer", "cnn", "rnn", "crnn"}:
+        raise ValueError(
+            "classifier_head.type must be one of "
+            "['linear', 'mlp3', 'mlp5', 'mlp12', 'transformer', 'cnn', 'rnn', 'crnn'], "
+            f"got {head_type!r}"
+        )
+    defaults["type"] = head_type
+
+    dropout = float(defaults.get("dropout", 0.3))
+    if not (0.0 <= dropout < 1.0):
+        raise ValueError(f"classifier_head.dropout must be in [0, 1), got {dropout}")
+    defaults["dropout"] = dropout
+
+    activation = str(defaults.get("activation", "relu")).lower()
+    if activation not in {"relu", "gelu"}:
+        raise ValueError(f"classifier_head.activation must be one of ['relu', 'gelu'], got {activation!r}")
+    defaults["activation"] = activation
+    defaults["use_layernorm"] = bool(defaults.get("use_layernorm", True))
+    defaults["use_positional_encoding"] = bool(defaults.get("use_positional_encoding", True))
+
+    if head_type in {"mlp3", "mlp5", "mlp12"}:
+        mlp_default_hidden: dict[str, list[int]] = {
+            "mlp3": [128, 64, 32],
+            "mlp5": [1024, 256, 128, 64],
+            "mlp12": [1024, 1024, 768, 768, 512, 512, 256, 256, 128, 128, 64],
+        }
+        expected_hidden_layers = {"mlp3": 3, "mlp5": 4, "mlp12": 11}
+        if "hidden_dims" not in provided:
+            defaults["hidden_dims"] = mlp_default_hidden[head_type]
+        hidden_dims = defaults.get("hidden_dims", mlp_default_hidden[head_type])
+        if not isinstance(hidden_dims, list) or len(hidden_dims) == 0:
+            raise ValueError("classifier_head.hidden_dims must be a non-empty list.")
+        hidden_dims = [int(dim) for dim in hidden_dims]
+        if any(dim <= 0 for dim in hidden_dims):
+            raise ValueError(f"classifier_head.hidden_dims must be > 0, got {hidden_dims!r}")
+        defaults["hidden_dims"] = hidden_dims
+        if len(hidden_dims) != expected_hidden_layers[head_type]:
+            raise ValueError(
+                f"classifier_head.hidden_dims for {head_type} must contain exactly "
+                f"{expected_hidden_layers[head_type]} integers, got {hidden_dims!r}"
+            )
+        if head_type == "mlp3" and any(dim > 128 for dim in hidden_dims):
+            raise ValueError(
+                "classifier_head.hidden_dims for mlp3 must use widths <= 128 "
+                f"(compact head), got {hidden_dims!r}"
+            )
+    else:
+        defaults["hidden_dims"] = []
+
+    if head_type == "transformer":
+        num_layers = int(defaults.get("num_layers", 2))
+        num_heads = int(defaults.get("num_heads", 4))
+        ffn_dim = int(defaults.get("ffn_dim", 2048))
+        if num_layers <= 0:
+            raise ValueError(f"classifier_head.num_layers must be > 0, got {num_layers}")
+        if num_heads <= 0:
+            raise ValueError(f"classifier_head.num_heads must be > 0, got {num_heads}")
+        if ffn_dim <= 0:
+            raise ValueError(f"classifier_head.ffn_dim must be > 0, got {ffn_dim}")
+        defaults["num_layers"] = num_layers
+        defaults["num_heads"] = num_heads
+        defaults["ffn_dim"] = ffn_dim
+    elif head_type == "cnn":
+        conv_channels = defaults.get("conv_channels", [256, 256, 256])
+        if not isinstance(conv_channels, list) or len(conv_channels) == 0:
+            raise ValueError("classifier_head.conv_channels must be a non-empty list.")
+        conv_channels = [int(ch) for ch in conv_channels]
+        if any(ch <= 0 for ch in conv_channels):
+            raise ValueError(f"classifier_head.conv_channels must be > 0, got {conv_channels!r}")
+        kernel_size = int(defaults.get("kernel_size", 3))
+        if kernel_size <= 0 or kernel_size % 2 == 0:
+            raise ValueError(f"classifier_head.kernel_size must be a positive odd integer, got {kernel_size}")
+        raw_dilations = defaults.get("dilations", [1, 2, 4])
+        if not isinstance(raw_dilations, list) or len(raw_dilations) != len(conv_channels):
+            raise ValueError(
+                "classifier_head.dilations must be a list with same length as conv_channels, "
+                f"got dilations={raw_dilations!r}, conv_channels={conv_channels!r}"
+            )
+        dilations = [int(d) for d in raw_dilations]
+        if any(d <= 0 for d in dilations):
+            raise ValueError(f"classifier_head.dilations must be > 0, got {dilations!r}")
+        defaults["conv_channels"] = conv_channels
+        defaults["kernel_size"] = kernel_size
+        defaults["dilations"] = dilations
+    elif head_type in {"rnn", "crnn"}:
+        rnn_hidden_size = int(defaults.get("rnn_hidden_size", 256))
+        rnn_num_layers = int(defaults.get("rnn_num_layers", 2))
+        rnn_type = str(defaults.get("rnn_type", "gru")).lower()
+        bidirectional = bool(defaults.get("bidirectional", True))
+        if rnn_hidden_size <= 0:
+            raise ValueError(f"classifier_head.rnn_hidden_size must be > 0, got {rnn_hidden_size}")
+        if rnn_num_layers <= 0:
+            raise ValueError(f"classifier_head.rnn_num_layers must be > 0, got {rnn_num_layers}")
+        if rnn_type not in {"gru", "lstm"}:
+            raise ValueError(f"classifier_head.rnn_type must be one of ['gru', 'lstm'], got {rnn_type!r}")
+        defaults["rnn_hidden_size"] = rnn_hidden_size
+        defaults["rnn_num_layers"] = rnn_num_layers
+        defaults["rnn_type"] = rnn_type
+        defaults["bidirectional"] = bidirectional
+        if head_type == "crnn":
+            conv_channels = defaults.get("conv_channels", [256, 256])
+            if not isinstance(conv_channels, list) or len(conv_channels) == 0:
+                raise ValueError("classifier_head.conv_channels must be a non-empty list.")
+            conv_channels = [int(ch) for ch in conv_channels]
+            if any(ch <= 0 for ch in conv_channels):
+                raise ValueError(f"classifier_head.conv_channels must be > 0, got {conv_channels!r}")
+            kernel_size = int(defaults.get("kernel_size", 3))
+            if kernel_size <= 0 or kernel_size % 2 == 0:
+                raise ValueError(f"classifier_head.kernel_size must be a positive odd integer, got {kernel_size}")
+            raw_dilations = defaults.get("dilations", [1, 2])
+            if not isinstance(raw_dilations, list) or len(raw_dilations) != len(conv_channels):
+                raise ValueError(
+                    "classifier_head.dilations must be a list with same length as conv_channels, "
+                    f"got dilations={raw_dilations!r}, conv_channels={conv_channels!r}"
+                )
+            dilations = [int(d) for d in raw_dilations]
+            if any(d <= 0 for d in dilations):
+                raise ValueError(f"classifier_head.dilations must be > 0, got {dilations!r}")
+            defaults["conv_channels"] = conv_channels
+            defaults["kernel_size"] = kernel_size
+            defaults["dilations"] = dilations
+
+    num_classes = int(defaults.get("num_classes", 1))
+    if num_classes < 1:
+        raise ValueError(f"classifier_head.num_classes must be >= 1, got {num_classes}")
+    if num_classes != 1 and head_type != "crnn":
+        raise ValueError(
+            f"classifier_head.num_classes={num_classes} is only supported for crnn heads, got type={head_type!r}"
+        )
+    defaults["num_classes"] = num_classes
+    linker_class = int(defaults.get("linker_class", 1))
+    if linker_class not in {1, 2}:
+        raise ValueError(f"classifier_head.linker_class must be 1 or 2, got {linker_class}")
+    defaults["linker_class"] = linker_class
+    dual_binary = bool(defaults.get("dual_binary", False))
+    if dual_binary:
+        if head_type != "crnn":
+            raise ValueError("classifier_head.dual_binary is only supported for crnn heads.")
+        if num_classes != 2:
+            raise ValueError(
+                "classifier_head.dual_binary requires num_classes=2 "
+                f"(linker logit + type logit), got {num_classes}"
+            )
+        if linker_class != 2:
+            raise ValueError("classifier_head.dual_binary requires linker_class=2.")
+    defaults["dual_binary"] = dual_binary
+
+    return defaults
+
+
+def _resolve_local_context_config(config: dict[str, Any]) -> dict[str, Any]:
+    raw = config.get("local_context", {})
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise ValueError("local_context must be a dict when provided.")
+    defaults = dict(DEFAULTS["local_context"])
+    defaults.update(raw)
+    defaults["enabled"] = bool(defaults.get("enabled", False))
+    defaults["radius"] = int(defaults.get("radius", 2))
+    defaults["mode"] = str(defaults.get("mode", "concat_window")).lower()
+    defaults["include_self"] = bool(defaults.get("include_self", True))
+    if defaults["radius"] < 0:
+        raise ValueError(f"local_context.radius must be >= 0, got {defaults['radius']}")
+    if defaults["mode"] not in {"concat_window"}:
+        raise ValueError("local_context.mode must be one of ['concat_window']")
+    return defaults
+
+
+def _resolve_motif_config(config: dict[str, Any]) -> dict[str, Any]:
+    raw = config.get("motif", {})
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise ValueError("motif must be a dict when provided.")
+    defaults = dict(DEFAULTS["motif"])
+    defaults.update(raw)
+    defaults["enabled"] = bool(defaults.get("enabled", False))
+    defaults["source"] = _optional_str(defaults.get("source"))
+    defaults["matching"] = str(defaults.get("matching", "degenerate")).lower()
+    if defaults["matching"] not in {"exact", "regex", "degenerate", "prosite"}:
+        raise ValueError("motif.matching must be one of ['exact', 'regex', 'degenerate', 'prosite']")
+    defaults["tokenization"] = str(defaults.get("tokenization", "special_token")).lower()
+    if defaults["tokenization"] in {"special", "special_tokens"}:
+        defaults["tokenization"] = "special_token"
+    if defaults["enabled"] and defaults["tokenization"] != "special_token":
+        raise ValueError("motif.tokenization only supports 'special_token'. Legacy fusion has been removed.")
+    if defaults["enabled"] and defaults["source"] is None:
+        raise ValueError("motif.enabled=true requires motif.source to be set.")
+    return defaults
+
+
+def _resolve_wandb_tags(raw: Any) -> list[str]:
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        stripped = raw.strip()
+        return [stripped] if stripped else []
+    if isinstance(raw, (list, tuple)):
+        tags: list[str] = []
+        for item in raw:
+            if item is None:
+                continue
+            value = str(item).strip()
+            if value:
+                tags.append(value)
+        return tags
+    raise ValueError("wandb_tags must be a list/tuple of strings or a single string.")
+
+
+def _optional_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _resolve_tokenizer_name(config: dict[str, Any]) -> str | None:
+    return _optional_str(config.get("tokenizer_name"))
+
+
+def _resolve_dual_tokenizer_branch(
+    *,
+    name: str,
+    raw: Any,
+    default: dict[str, Any],
+) -> dict[str, Any]:
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"dual_tokenizer.branches.{name} must be a dict.")
+    merged = dict(default)
+    merged.update(raw)
+    weight = float(merged.get("weight", 0.0))
+    if weight < 0.0:
+        raise ValueError(f"dual_tokenizer.branches.{name}.weight must be >= 0, got {weight}")
+    merged["weight"] = weight
+    merged["tokenizer_name"] = _optional_str(merged.get("tokenizer_name"))
+    merged["motif"] = _resolve_motif_config({"motif": merged.get("motif", default.get("motif", {}))})
+    return merged
+
+
+def _resolve_dual_tokenizer_config(config: dict[str, Any], *, stage: str) -> dict[str, Any]:
+    raw = config.get("dual_tokenizer", {})
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise ValueError("dual_tokenizer must be a dict when provided.")
+    defaults = DEFAULTS["dual_tokenizer"]
+    resolved = {
+        "enabled": bool(raw.get("enabled", stage == "stage6")),
+        "fusion": str(raw.get("fusion", defaults["fusion"])).lower(),
+    }
+    if resolved["fusion"] != "weighted_logits":
+        raise ValueError("dual_tokenizer.fusion only supports 'weighted_logits'.")
+
+    raw_branches = raw.get("branches", {})
+    if raw_branches is None:
+        raw_branches = {}
+    if not isinstance(raw_branches, dict):
+        raise ValueError("dual_tokenizer.branches must be a dict.")
+    default_branches = {
+        "plain": dict(defaults["branches"]["plain"]),
+        "special": dict(defaults["branches"]["special"]),
+    }
+    if stage != "stage6":
+        default_branches["special"] = dict(default_branches["special"])
+        default_branches["special"]["motif"] = dict(default_branches["special"]["motif"])
+        default_branches["special"]["motif"]["enabled"] = False
+    branches = {
+        "plain": _resolve_dual_tokenizer_branch(
+            name="plain",
+            raw=raw_branches.get("plain", {}),
+            default=default_branches["plain"],
+        ),
+        "special": _resolve_dual_tokenizer_branch(
+            name="special",
+            raw=raw_branches.get("special", {}),
+            default=default_branches["special"],
+        ),
+    }
+    total_weight = branches["plain"]["weight"] + branches["special"]["weight"]
+    if abs(total_weight - 1.0) > 1e-6:
+        raise ValueError(f"dual_tokenizer branch weights must sum to 1.0, got {total_weight}")
+    if branches["plain"]["motif"]["enabled"]:
+        raise ValueError("dual_tokenizer.branches.plain.motif.enabled must be false.")
+    if stage == "stage6":
+        if not resolved["enabled"]:
+            raise ValueError("stage6 requires dual_tokenizer.enabled=true.")
+        if not branches["special"]["motif"]["enabled"]:
+            raise ValueError("stage6 requires dual_tokenizer.branches.special.motif.enabled=true.")
+        if str(config.get("backbone_name", "")).lower() != "dummy" and branches["special"]["tokenizer_name"] is None:
+            raise ValueError("Stage 6 special-token branch requires tokenizer_name pointing to a trained PROSITE tokenizer.")
+    resolved["branches"] = branches
+    return resolved
+
+
+def load_config(path: str | Path) -> dict[str, Any]:
+    source = Path(path)
+    config = yaml.safe_load(source.read_text(encoding="utf-8"))
+    if not isinstance(config, dict):
+        raise ValueError(f"Config file must be a YAML object: {source}")
+    _ensure_required_fields(config)
+    merged = dict(DEFAULTS)
+    merged.update(config)
+    stage = str(merged.get("stage", "stage1")).lower()
+    if stage not in {"stage1", "stage2", "stage3", "stage4", "stage5", "stage6", "stage7"}:
+        raise ValueError(
+            "stage must be one of ['stage1', 'stage2', 'stage3', 'stage4', 'stage5', 'stage6', 'stage7'], "
+            f"got {stage!r}"
+        )
+    merged["stage"] = stage
+    merged["tokenizer_name"] = _resolve_tokenizer_name(merged)
+    merged["contrastive"] = _resolve_contrastive_config(config, stage=stage)
+    merged["classifier_head"] = _resolve_classifier_head_config(config)
+    merged["local_context"] = _resolve_local_context_config(config)
+    merged["motif"] = _resolve_motif_config(config)
+    merged["dual_tokenizer"] = _resolve_dual_tokenizer_config(config, stage=stage)
+    merged["stage_contrastive_forced_off"] = False
+    merged["stage3_contrastive_forced_off"] = False
+    # Stage7 ternary (num_classes>1) keeps hierarchical SupCon; other stage3–7 runs still force off.
+    ternary_stage7_supcon = (
+        stage == "stage7" and int(merged["classifier_head"].get("num_classes", 1)) > 1
+    )
+    # binary/ternary are explicit ablation modes and stay on for a single linker head.
+    contrastive_ablation = str(merged["contrastive"].get("mode", "hierarchical")) in {"binary", "ternary"}
+    if (
+        stage in {"stage3", "stage4", "stage5", "stage6", "stage7"}
+        and bool(merged["contrastive"].get("enabled", False))
+        and not ternary_stage7_supcon
+        and not contrastive_ablation
+    ):
+        merged["contrastive"]["enabled"] = False
+        merged["stage_contrastive_forced_off"] = True
+        merged["stage3_contrastive_forced_off"] = True
+    if stage == "stage5" and bool(merged["motif"].get("enabled", False)):
+        if merged["backbone_name"].lower() != "dummy" and merged["tokenizer_name"] is None:
+            raise ValueError(
+                "Stage 5 motif special-token mode requires tokenizer_name pointing to a trained PROSITE tokenizer."
+            )
+    if merged["optimizer"].lower() != "adamw":
+        raise ValueError("Only optimizer=adamw is supported.")
+    merged["auto_rebuild_split_on_mismatch"] = bool(merged.get("auto_rebuild_split_on_mismatch", True))
+    resume_output_strategy = str(merged.get("resume_output_strategy", "same_experiment")).lower()
+    if resume_output_strategy != "same_experiment":
+        raise ValueError(
+            "resume_output_strategy only supports 'same_experiment' currently, "
+            f"got {resume_output_strategy!r}."
+        )
+    merged["resume_output_strategy"] = resume_output_strategy
+    wandb_mode = str(merged.get("wandb_mode", "online")).lower()
+    if wandb_mode not in {"online", "offline", "disabled"}:
+        raise ValueError(
+            "wandb_mode must be one of ['online', 'offline', 'disabled'], "
+            f"got {wandb_mode!r}"
+        )
+    merged["wandb_mode"] = wandb_mode
+    merged["wandb_tags"] = _resolve_wandb_tags(merged.get("wandb_tags"))
+    if bool(merged.get("use_wandb", False)):
+        if not str(merged.get("wandb_project", "")).strip():
+            raise ValueError("use_wandb=true requires non-empty wandb_project.")
+    threshold_search = merged["threshold_search"]
+    if not isinstance(threshold_search, dict):
+        raise ValueError("threshold_search must be a dict with min/max/step.")
+    for key in ("min", "max", "step"):
+        if key not in threshold_search:
+            raise ValueError(f"threshold_search missing key: {key}")
+    for key in ("save_every", "print_every", "eval_every"):
+        if int(merged[key]) <= 0:
+            raise ValueError(f"{key} must be > 0, got {merged[key]}")
+    if int(merged["tensorboard_port"]) <= 0:
+        raise ValueError(f"tensorboard_port must be > 0, got {merged['tensorboard_port']}")
+    return merged
+
+
+def _resolve_experiment_dir(base_output_dir: str | Path, prefix: str) -> tuple[Path, str]:
+    return _resolve_incremental_dir(base_output_dir, prefix=prefix)
+
+
+def _timestamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _build_logger(log_path: str | Path):
+    target = Path(log_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    def _log(message: str) -> None:
+        line = f"[{_timestamp()}] {message}"
+        print(line)
+        with target.open("a", encoding="utf-8") as handle:
+            handle.write(line + "\n")
+
+    return _log
+
+
+def _save_checkpoint(
+    path: str | Path,
+    *,
+    epoch: int,
+    global_step: int,
+    model: nn.Module,
+    best_val_auroc: float,
+    threshold: float,
+    config: dict[str, Any],
+    optimizer: AdamW | None = None,
+    scaler: Any | None = None,
+    train_state: dict[str, Any] | None = None,
+) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload: dict[str, Any] = {
+        "epoch": epoch,
+        "global_step": global_step,
+        "model_state": model.state_dict(),
+        "best_val_auroc": best_val_auroc,
+        "threshold": threshold,
+        "config": config,
+    }
+    if optimizer is not None:
+        payload["optimizer_state"] = optimizer.state_dict()
+    if scaler is not None:
+        payload["scaler_state"] = scaler.state_dict()
+    if train_state is not None:
+        payload["train_state"] = train_state
+    torch.save(payload, target)
+
+
+def _load_model_state(
+    model: nn.Module,
+    state_dict: dict[str, Any],
+    *,
+    logger=None,
+) -> None:
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    allowed_missing_prefixes = ("projection_head.",)
+    disallowed_missing = [name for name in missing if not name.startswith(allowed_missing_prefixes)]
+    if disallowed_missing or unexpected:
+        raise RuntimeError(
+            "Checkpoint state mismatch. "
+            f"missing={disallowed_missing}, unexpected={unexpected}"
+        )
+    if missing and logger is not None:
+        logger(f"[checkpoint] missing optional params during load: {missing}")
+
+
+def _port_probe_host(host: str) -> str:
+    if host in ("0.0.0.0", "::"):
+        return "127.0.0.1"
+    return host
+
+
+def _is_tcp_port_open(host: str, port: int) -> bool:
+    probe_host = _port_probe_host(host)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        return sock.connect_ex((probe_host, port)) == 0
+
+
+def _start_tensorboard_if_needed(
+    *,
+    enabled: bool,
+    logdir: str | Path,
+    host: str,
+    port: int,
+    runtime_log_path: str | Path,
+    logger,
+) -> dict[str, Any]:
+    resolved_logdir = Path(logdir)
+    resolved_logdir.mkdir(parents=True, exist_ok=True)
+    runtime_log = Path(runtime_log_path)
+    runtime_log.parent.mkdir(parents=True, exist_ok=True)
+
+    service_url = f"http://{_port_probe_host(host)}:{port}"
+    if not enabled:
+        logger("[tensorboard] auto start disabled by config.")
+        return {
+            "status": "disabled",
+            "url": service_url,
+            "logdir": str(resolved_logdir),
+            "host": host,
+            "port": port,
+            "pid": None,
+        }
+
+    if _is_tcp_port_open(host=host, port=port):
+        logger(f"[tensorboard] detected existing service on {service_url}, reuse.")
+        return {
+            "status": "reused",
+            "url": service_url,
+            "logdir": str(resolved_logdir),
+            "host": host,
+            "port": port,
+            "pid": None,
+        }
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "tensorboard.main",
+        "--logdir",
+        str(resolved_logdir),
+        "--host",
+        host,
+        "--port",
+        str(port),
+    ]
+
+    with runtime_log.open("a", encoding="utf-8") as handle:
+        handle.write(f"[{_timestamp()}] launch tensorboard: {' '.join(cmd)}\n")
+        kwargs: dict[str, Any] = {"stdout": handle, "stderr": subprocess.STDOUT}
+        if sys.platform.startswith("win"):
+            creationflags = 0
+            creationflags |= int(getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+            creationflags |= int(getattr(subprocess, "DETACHED_PROCESS", 0))
+            kwargs["creationflags"] = creationflags
+        else:
+            kwargs["start_new_session"] = True
+        proc = subprocess.Popen(cmd, **kwargs)
+
+    time.sleep(0.8)
+    if proc.poll() is not None:
+        logger(
+            f"[tensorboard] failed to start on {service_url}. "
+            f"See runtime log: {runtime_log}"
+        )
+        return {
+            "status": "failed",
+            "url": service_url,
+            "logdir": str(resolved_logdir),
+            "host": host,
+            "port": port,
+            "pid": proc.pid,
+        }
+
+    logger(f"[tensorboard] started pid={proc.pid} at {service_url}, logdir={resolved_logdir}")
+    return {
+        "status": "started",
+        "url": service_url,
+        "logdir": str(resolved_logdir),
+        "host": host,
+        "port": port,
+        "pid": proc.pid,
+    }
+
+
+def _start_wandb_if_needed(
+    *,
+    enabled: bool,
+    project: str | None,
+    entity: str | None,
+    run_name: str | None,
+    group: str | None,
+    tags: list[str],
+    mode: str,
+    run_dir: str | Path | None,
+    job_type: str,
+    config_payload: dict[str, Any],
+    logger,
+) -> tuple[Any | None, dict[str, Any]]:
+    # W&B integration is temporarily disabled by request.
+    logger("[wandb] temporarily commented out (disabled).")
+    return None, {
+        "status": "disabled",
+        "project": project,
+        "entity": entity,
+        "run_id": None,
+        "run_name": None,
+        "mode": mode,
+        "url": None,
+        "dir": None,
+    }
+
+
+def _wandb_log(run: Any | None, payload: dict[str, Any], *, step: int | None = None) -> None:
+    if run is None:
+        return
+    if step is None:
+        run.log(payload)
+    else:
+        run.log(payload, step=step)
+
+
+def _finish_wandb(run: Any | None, logger) -> None:
+    if run is None:
+        return
+    try:
+        run.finish()
+        logger("[wandb] run finished.")
+    except Exception as exc:  # pragma: no cover - defensive cleanup
+        logger(f"[wandb] failed to finish run cleanly: {exc}")
+
+
+def _infer_experiment_dir_from_checkpoint(checkpoint_path: str | Path) -> Path:
+    checkpoint = Path(checkpoint_path).resolve()
+    if checkpoint.parent.name == "checkpoints":
+        return checkpoint.parent.parent
+    return checkpoint.parent
+
+
+def _resolve_incremental_dir(base_dir: str | Path, prefix: str) -> tuple[Path, str]:
+    base = Path(base_dir)
+    base.mkdir(parents=True, exist_ok=True)
+    pattern = re.compile(rf"^{re.escape(prefix)}(\d+)$")
+    max_index = 0
+    for child in base.iterdir():
+        if not child.is_dir():
+            continue
+        match = pattern.match(child.name)
+        if not match:
+            continue
+        max_index = max(max_index, int(match.group(1)))
+    next_index = max_index + 1
+    item_id = f"{prefix}{next_index:04d}"
+    return base / item_id, item_id
+
+
+def prepare_data(
+    *,
+    fasta_path: str | Path,
+    error_file: str | Path,
+    caid_fasta: str | Path,
+    seed: int,
+    val_ratio: float,
+    split_out: str | Path,
+    exclusion_out: str | Path,
+) -> dict:
+    records = parse_three_line_fasta(fasta_path)
+    error_ids = parse_id_lines(error_file)
+    caid_ids = parse_id_lines(caid_fasta)
+    split_manifest, exclusion_report = build_split_manifest(
+        records,
+        source_fasta=fasta_path,
+        error_ids=error_ids,
+        caid_ids=caid_ids,
+        seed=seed,
+        val_ratio=val_ratio,
+    )
+    write_json(split_out, split_manifest)
+    write_json(exclusion_out, exclusion_report)
+    return {
+        "split_manifest_path": str(Path(split_out)),
+        "exclusion_report_path": str(Path(exclusion_out)),
+        "counts": split_manifest["counts"],
+    }
+
+
+def _safe_parse_id_lines(path: str | Path, *, kind: str, logger) -> set[str]:
+    source = Path(path)
+    if not source.exists():
+        logger(f"[split] {kind} file not found: {source}. Treat as empty id set during split rebuild.")
+        return set()
+    return parse_id_lines(source)
+
+
+def _resolve_train_val_records(
+    *,
+    all_records: list[ProteinRecord],
+    caid_records: list[ProteinRecord],
+    split_manifest_path: str | Path,
+    source_fasta_path: str | Path,
+    error_file_path: str | Path,
+    seed: int,
+    val_ratio: float,
+    auto_rebuild_on_mismatch: bool,
+    logger,
+) -> tuple[list[ProteinRecord], list[ProteinRecord], dict[str, Any], dict[str, Any], dict[str, Any] | None]:
+    split_manifest_source = Path(split_manifest_path)
+    available_ids = {rec.protein_id for rec in all_records}
+    caid_ids = {rec.protein_id for rec in caid_records}
+
+    split_manifest: dict[str, Any] | None = None
+    missing_train: list[str] = []
+    missing_val: list[str] = []
+
+    if split_manifest_source.exists():
+        split_manifest = read_json(split_manifest_source)
+        train_ids = split_manifest.get("train_ids")
+        val_ids = split_manifest.get("val_ids")
+        if not isinstance(train_ids, list) or not isinstance(val_ids, list):
+            raise ValueError(
+                f"Invalid split manifest format at {split_manifest_source}. "
+                "Expected list fields: train_ids and val_ids."
+            )
+        missing_train = sorted(set(train_ids) - available_ids)
+        missing_val = sorted(set(val_ids) - available_ids)
+    elif not auto_rebuild_on_mismatch:
+        raise FileNotFoundError(
+            f"split_manifest file not found: {split_manifest_source}. "
+            "Set auto_rebuild_split_on_mismatch=true to rebuild automatically."
+        )
+
+    needs_rebuild = (split_manifest is None) or bool(missing_train or missing_val)
+    if not needs_rebuild:
+        train_records = select_records(all_records, split_manifest["train_ids"])
+        val_records = select_records(all_records, split_manifest["val_ids"])
+        return (
+            train_records,
+            val_records,
+            split_manifest,
+            {
+                "status": "used",
+                "source_split_manifest_path": str(split_manifest_source),
+                "missing_train_ids_count": 0,
+                "missing_val_ids_count": 0,
+                "missing_train_ids_sample": [],
+                "missing_val_ids_sample": [],
+            },
+            None,
+        )
+
+    if not auto_rebuild_on_mismatch:
+        raise ValueError(
+            "Split manifest is inconsistent with current training FASTA. "
+            f"Missing train ids={len(missing_train)}, missing val ids={len(missing_val)}. "
+            "Set auto_rebuild_split_on_mismatch=true to rebuild automatically."
+        )
+
+    logger(
+        "[split] detected split/FASTA mismatch, rebuilding split manifest "
+        f"(missing_train={len(missing_train)} missing_val={len(missing_val)})."
+    )
+    error_ids = _safe_parse_id_lines(error_file_path, kind="error", logger=logger)
+    rebuilt_manifest, rebuilt_exclusion = build_split_manifest(
+        all_records,
+        source_fasta=source_fasta_path,
+        error_ids=error_ids,
+        caid_ids=caid_ids,
+        seed=seed,
+        val_ratio=val_ratio,
+    )
+    train_records = select_records(all_records, rebuilt_manifest["train_ids"])
+    val_records = select_records(all_records, rebuilt_manifest["val_ids"])
+    return (
+        train_records,
+        val_records,
+        rebuilt_manifest,
+        {
+            "status": "rebuilt",
+            "source_split_manifest_path": str(split_manifest_source),
+            "missing_train_ids_count": len(missing_train),
+            "missing_val_ids_count": len(missing_val),
+            "missing_train_ids_sample": missing_train[:10],
+            "missing_val_ids_sample": missing_val[:10],
+        },
+        rebuilt_exclusion,
+    )
+
+
+def _load_history_if_exists(path: str | Path, logger) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    source = Path(path)
+    if not source.exists():
+        return [], [], []
+    payload = read_json(source)
+    if not isinstance(payload, dict):
+        logger(f"[resume] ignore invalid history file format: {source}")
+        return [], [], []
+    epoch_history = payload.get("epoch_history", [])
+    print_history = payload.get("print_history", [])
+    eval_history = payload.get("eval_history", [])
+    if not isinstance(epoch_history, list) or not isinstance(print_history, list) or not isinstance(eval_history, list):
+        logger(f"[resume] ignore invalid history list fields: {source}")
+        return [], [], []
+    logger(
+        "[resume] loaded history from previous run: "
+        f"epochs={len(epoch_history)} prints={len(print_history)} evals={len(eval_history)}"
+    )
+    return epoch_history, print_history, eval_history
+
+
+def _restore_train_state_from_checkpoint(
+    checkpoint: dict[str, Any],
+) -> dict[str, Any]:
+    train_state = checkpoint.get("train_state")
+    if not isinstance(train_state, dict):
+        train_state = {}
+    best_val_stored = train_state.get("best_val_auroc")
+    if best_val_stored is None:
+        best_val_stored = train_state.get("best_val_auprc")
+    if best_val_stored is None:
+        best_val_stored = checkpoint.get("best_val_auroc")
+    if best_val_stored is None:
+        best_val_stored = checkpoint.get("best_val_auprc", -1.0)
+    restored = {
+        "epoch": int(train_state.get("epoch", checkpoint.get("epoch", 0))),
+        "global_step": int(train_state.get("global_step", checkpoint.get("global_step", 0))),
+        "best_val_auroc": float(best_val_stored),
+        "best_threshold": float(train_state.get("best_threshold", checkpoint.get("threshold", 0.5))),
+        "best_epoch": int(train_state.get("best_epoch", -1)),
+        "best_step": int(train_state.get("best_step", -1)),
+        "evals_without_improve": int(train_state.get("evals_without_improve", 0)),
+        "best_val_metrics": train_state.get("best_val_metrics", {}),
+        "last_eval_metrics": train_state.get("last_eval_metrics", {}),
+    }
+    return restored
+
+
+def _contrastive_label_tensor(
+    label_strings: list[str],
+    residue_lengths: list[int],
+    *,
+    linker_class: int,
+    enabled: bool,
+    mode: str,
+) -> torch.Tensor | None:
+    """Keep raw 0/1/2 labels for binary or 3-class SupCon.
+
+    The classification target may already be binarized when num_classes == 1.
+    Contrastive learning still needs the original ordered / other-IDR / linker codes.
+    """
+    if not enabled or mode not in {"binary", "ternary"}:
+        return None
+    return _labels_to_tensor(
+        label_strings,
+        residue_lengths,
+        num_classes=3,
+        linker_class=linker_class,
+    )
+
+
+def _labels_to_tensor(
+    label_strings: list[str],
+    residue_lengths: list[int],
+    *,
+    num_classes: int = 1,
+    linker_class: int = 1,
+) -> torch.Tensor:
+    max_len = max(residue_lengths)
+    if num_classes > 1:
+        labels_tensor = torch.full((len(label_strings), max_len), -100, dtype=torch.long)
+        for row, (label_string, length) in enumerate(zip(label_strings, residue_lengths)):
+            for idx, char in enumerate(label_string[:length]):
+                if char in {"0", "1", "2"}:
+                    labels_tensor[row, idx] = int(char)
+                else:
+                    labels_tensor[row, idx] = -100
+        return labels_tensor
+
+    positive_char = "2" if int(linker_class) == 2 else "1"
+    negative_chars = {"0", "1"} if int(linker_class) == 2 else {"0"}
+    labels_tensor = torch.full((len(label_strings), max_len), -100.0, dtype=torch.float32)
+    for row, (label_string, length) in enumerate(zip(label_strings, residue_lengths)):
+        for idx, char in enumerate(label_string[:length]):
+            if char == positive_char:
+                labels_tensor[row, idx] = 1.0
+            elif char in negative_chars:
+                labels_tensor[row, idx] = 0.0
+            else:
+                labels_tensor[row, idx] = -100.0
+    return labels_tensor
+
+
+def _optional_embeddings_dir(value: Any) -> Path | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    return Path(text)
+
+
+def _pad_residue_hidden(windows: list[torch.Tensor], *, device: torch.device) -> tuple[torch.Tensor, list[int]]:
+    if not windows:
+        raise ValueError("Cannot pad an empty residue-hidden batch.")
+    lengths = [int(window.shape[0]) for window in windows]
+    max_len = max(lengths)
+    hidden = int(windows[0].shape[1])
+    batch = windows[0].new_zeros((len(windows), max_len, hidden), device=device)
+    for row, window in enumerate(windows):
+        if window.dim() != 2:
+            raise ValueError(f"Expected embedding window [L, H], got {tuple(window.shape)}")
+        batch[row, : window.shape[0]] = window.to(device=device, dtype=batch.dtype)
+    return batch, lengths
+
+
+def _load_embedding_cache(records: list[ProteinRecord], embeddings_dir: Path) -> dict[str, torch.Tensor]:
+    cache: dict[str, torch.Tensor] = {}
+    for rec in records:
+        if rec.protein_id in cache:
+            continue
+        embedding = read_residue_embedding(embeddings_dir, rec.protein_id)
+        if int(embedding.shape[0]) != len(rec.sequence):
+            raise ValueError(
+                f"Embedding length {int(embedding.shape[0])} != sequence length {len(rec.sequence)} "
+                f"for {rec.protein_id}"
+            )
+        cache[rec.protein_id] = embedding
+    return cache
+
+
+def _class_stat_keys(linker_class: int) -> dict[int, str]:
+    if int(linker_class) == 2:
+        return {0: "class_0_ordered", 1: "class_1_other_idr", 2: "class_2_linker"}
+    return {0: "class_0_other_idr", 1: "class_1_linker", 2: "class_2_ordered"}
+
+
+def _compute_class_weights(
+    records: list[ProteinRecord],
+    num_classes: int,
+    *,
+    linker_class: int = 1,
+) -> tuple[torch.Tensor, dict[str, int]]:
+    counts = [0] * num_classes
+    for rec in records:
+        for ch in rec.labels:
+            if ch in {"0", "1", "2"}:
+                class_id = int(ch)
+                if 0 <= class_id < num_classes:
+                    counts[class_id] += 1
+    if any(c <= 0 for c in counts):
+        raise ValueError(f"All classes must appear in training labels, got counts={counts}")
+    inv = [1.0 / c for c in counts]
+    mean_inv = sum(inv) / len(inv)
+    weights = [v / mean_inv for v in inv]
+    names = _class_stat_keys(linker_class)
+    stats = {names.get(idx, f"class_{idx}"): counts[idx] for idx in range(num_classes)}
+    stats["total"] = sum(counts)
+    return torch.tensor(weights, dtype=torch.float32), stats
+
+
+def _compute_dual_binary_weights(
+    records: list[ProteinRecord],
+    *,
+    linker_class: int = 2,
+) -> tuple[float, float, dict[str, float]]:
+    """pos_weight for (2 vs {0,1}) and (1 vs 0)."""
+    counts = {"0": 0, "1": 0, "2": 0}
+    for rec in records:
+        for char in rec.labels:
+            if char in counts:
+                counts[char] += 1
+    n0, n1, n2 = counts["0"], counts["1"], counts["2"]
+    if n2 <= 0:
+        raise ValueError("Dual-binary linker head needs class-2 residues in training labels.")
+    if n0 <= 0 or n1 <= 0:
+        raise ValueError(f"Dual-binary type head needs both class 0 and 1, got counts={counts}")
+    linker_pos_weight = (n0 + n1) / n2
+    type_pos_weight = n0 / n1
+    return linker_pos_weight, type_pos_weight, {
+        "class_0_ordered": n0,
+        "class_1_other_idr": n1,
+        "class_2_linker": n2,
+        "total": n0 + n1 + n2,
+        "linker_pos_weight": linker_pos_weight,
+        "type_pos_weight": type_pos_weight,
+        "linker_class": linker_class,
+    }
+
+
+def _optional_embeddings_dir(value: Any) -> Path | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    return Path(text)
+
+
+def _load_embedding_cache(records: list[ProteinRecord], embeddings_dir: Path) -> dict[str, torch.Tensor]:
+    cache: dict[str, torch.Tensor] = {}
+    for rec in records:
+        if rec.protein_id in cache:
+            continue
+        embedding = read_residue_embedding(embeddings_dir, rec.protein_id)
+        if int(embedding.shape[0]) != len(rec.sequence):
+            raise ValueError(
+                f"Embedding length {int(embedding.shape[0])} != sequence length {len(rec.sequence)} "
+                f"for {rec.protein_id}"
+            )
+        cache[rec.protein_id] = embedding
+    return cache
+
+
+def _pad_residue_hidden(windows: list[torch.Tensor], *, device: torch.device) -> tuple[torch.Tensor, list[int]]:
+    if not windows:
+        raise ValueError("Cannot pad an empty embedding window list.")
+    lengths = [int(window.shape[0]) for window in windows]
+    max_len = max(lengths)
+    hidden = int(windows[0].shape[1])
+    batch = windows[0].new_zeros((len(windows), max_len, hidden))
+    for row, window in enumerate(windows):
+        batch[row, : window.shape[0]] = window
+    return batch.to(device), lengths
+
+
+def _motif_special_token_batch(
+    sequences: list[str],
+    specs: list[MotifSpec],
+) -> tuple[list[list[str]], list[list[int]]]:
+    token_sequences: list[list[str]] = []
+    token_residue_lengths: list[list[int]] = []
+    token_map = build_motif_token_map(specs)
+    for sequence in sequences:
+        tokens, span_lengths, _ = tokenize_sequence_with_motifs(sequence, specs, token_map=token_map)
+        token_sequences.append(tokens)
+        token_residue_lengths.append(span_lengths)
+    return token_sequences, token_residue_lengths
+
+
+def _encode_batch_sequences(
+    *,
+    tokenizer: Any,
+    backbone_name: str,
+    sequences: list[str],
+    motif_specs: list[MotifSpec] | None,
+    motif_cfg: dict[str, Any] | None,
+):
+    if motif_cfg and bool(motif_cfg.get("enabled", False)) and motif_cfg.get("tokenization") == "special_token":
+        if motif_specs is None:
+            raise RuntimeError("Motif special-token pipeline is enabled but motif specs are missing.")
+        token_sequences, token_residue_lengths = _motif_special_token_batch(sequences, motif_specs)
+        return encode_token_sequences(tokenizer, backbone_name, token_sequences, token_residue_lengths)
+    return encode_sequences(tokenizer, backbone_name, sequences)
+
+
+def _validate_dual_residue_lengths(plain: list[int], special: list[int]) -> None:
+    if plain != special:
+        raise ValueError(
+            "Dual tokenizer branches produced different residue lengths: "
+            f"plain={plain!r} special={special!r}"
+        )
+
+
+def _encode_dual_batch_sequences(
+    *,
+    plain_tokenizer: Any,
+    special_tokenizer: Any,
+    backbone_name: str,
+    sequences: list[str],
+    special_motif_specs: list[MotifSpec],
+    special_motif_cfg: dict[str, Any],
+) -> dict[str, Any]:
+    plain_encoded = encode_sequences(plain_tokenizer, backbone_name, sequences)
+    special_encoded = _encode_batch_sequences(
+        tokenizer=special_tokenizer,
+        backbone_name=backbone_name,
+        sequences=sequences,
+        motif_specs=special_motif_specs,
+        motif_cfg=special_motif_cfg,
+    )
+    _validate_dual_residue_lengths(plain_encoded.residue_lengths, special_encoded.residue_lengths)
+    return {
+        "plain": plain_encoded,
+        "special": special_encoded,
+        "residue_lengths": plain_encoded.residue_lengths,
+    }
+
+
+def _build_motif_runtime_metadata(
+    specs: list[MotifSpec],
+    tokenizer_info: dict[str, Any] | None,
+    motif_cfg: dict[str, Any],
+) -> dict[str, Any]:
+    motif_vocab = {
+        spec.motif_id: {
+            "index": idx + 1,
+            "token": spec.token or build_motif_token_map([spec])[spec.motif_id],
+            "accession": spec.accession,
+            "kind": spec.kind,
+        }
+        for idx, spec in enumerate(specs)
+    }
+    return {
+        "source": motif_cfg.get("source"),
+        "num_motifs": len(specs),
+        "tokenization": motif_cfg.get("tokenization"),
+        "matching": motif_cfg.get("matching"),
+        "alignment_strategy": "greedy_longest_non_overlapping_span_replacement",
+        "logit_restore_strategy": "broadcast_token_output_to_original_residue_span",
+        "tokenizer": tokenizer_info or {},
+        "motif_vocab": motif_vocab,
+    }
+
+
+def _sample_contrastive_residues(
+    embeddings: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    max_samples_per_class: int,
+    class_ids: tuple[int, ...] = (0, 1),
+) -> tuple[torch.Tensor, torch.Tensor]:
+    valid_mask = labels >= 0
+    if int(valid_mask.sum().item()) == 0:
+        empty_embeddings = embeddings.new_zeros((0, embeddings.shape[-1]))
+        empty_labels = labels.new_zeros((0,), dtype=torch.long)
+        return empty_embeddings, empty_labels
+
+    flat_embeddings = embeddings[valid_mask]
+    flat_labels = labels[valid_mask].to(dtype=torch.long)
+    sampled_embeddings: list[torch.Tensor] = []
+    sampled_labels: list[torch.Tensor] = []
+
+    for class_id in class_ids:
+        class_mask = flat_labels == int(class_id)
+        class_count = int(class_mask.sum().item())
+        if class_count == 0:
+            continue
+        class_embeddings = flat_embeddings[class_mask]
+        if class_count > max_samples_per_class:
+            perm = torch.randperm(class_count, device=class_embeddings.device)[:max_samples_per_class]
+            class_embeddings = class_embeddings[perm]
+        sampled_embeddings.append(class_embeddings)
+        sampled_labels.append(
+            torch.full(
+                (class_embeddings.shape[0],),
+                int(class_id),
+                device=flat_labels.device,
+                dtype=torch.long,
+            )
+        )
+
+    if not sampled_embeddings:
+        empty_embeddings = embeddings.new_zeros((0, embeddings.shape[-1]))
+        empty_labels = labels.new_zeros((0,), dtype=torch.long)
+        return empty_embeddings, empty_labels
+
+    return torch.cat(sampled_embeddings, dim=0), torch.cat(sampled_labels, dim=0)
+
+
+def _contrastive_target_labels(
+    labels: torch.Tensor,
+    *,
+    mode: str,
+    linker_class: int,
+) -> torch.Tensor:
+    """Remap residue labels for hierarchical SupCon.
+
+    posneg: linker vs all other valid classes (binary 1/0)
+    neg: ordered vs other-IDR only
+    """
+    remapped = torch.full_like(labels, -100)
+    valid = labels >= 0
+    if mode == "posneg":
+        remapped[valid] = (labels[valid] == int(linker_class)).to(dtype=torch.long)
+        return remapped
+    if mode == "ternary":
+        keep = (labels == 0) | (labels == 1) | (labels == 2)
+        remapped[keep] = labels[keep].to(dtype=torch.long)
+        return remapped
+    if mode == "neg":
+        if int(linker_class) == 2:
+            keep = (labels == 0) | (labels == 1)
+            remapped[keep] = labels[keep]
+            return remapped
+        keep_other = labels == 0
+        keep_ordered = labels == 2
+        remapped[keep_other] = 0
+        remapped[keep_ordered] = 1
+        return remapped
+    raise ValueError(f"Unknown contrastive mode {mode!r}")
+
+
+def _compute_batch_supcon_loss(
+    residue_embeddings: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    max_samples_per_class: int,
+    temperature: float,
+    mode: str = "posneg",
+    linker_class: int = 1,
+) -> tuple[torch.Tensor, int]:
+    target_labels = _contrastive_target_labels(labels, mode=mode, linker_class=linker_class)
+    class_ids = (0, 1, 2) if mode == "ternary" else (0, 1)
+    sampled_embeddings, sampled_labels = _sample_contrastive_residues(
+        residue_embeddings,
+        target_labels,
+        max_samples_per_class=max_samples_per_class,
+        class_ids=class_ids,
+    )
+    sampled_count = int(sampled_labels.shape[0])
+    class_count = int(sampled_labels.unique().shape[0]) if sampled_count > 0 else 0
+    if sampled_count < 2 or class_count < 2:
+        return residue_embeddings.new_zeros(()), sampled_count
+    loss = _supervised_contrastive_loss(
+        sampled_embeddings,
+        sampled_labels,
+        temperature=temperature,
+    )
+    if not torch.isfinite(loss):
+        raise ValueError("SupCon loss became non-finite; please check training hyperparameters.")
+    return loss, sampled_count
+
+
+def _supervised_contrastive_loss(
+    embeddings: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    temperature: float,
+) -> torch.Tensor:
+    if embeddings.ndim != 2:
+        raise ValueError(f"Expected 2D embeddings [N, D], got shape={tuple(embeddings.shape)}")
+    num_samples = embeddings.shape[0]
+    if num_samples < 2:
+        return embeddings.new_zeros(())
+
+    normalized = F.normalize(embeddings, p=2, dim=1)
+    logits = torch.matmul(normalized, normalized.T) / temperature
+    logits = logits - logits.max(dim=1, keepdim=True).values.detach()
+
+    labels = labels.view(-1, 1)
+    positive_mask = torch.eq(labels, labels.T).to(dtype=logits.dtype)
+    logits_mask = torch.ones_like(positive_mask) - torch.eye(num_samples, device=logits.device, dtype=logits.dtype)
+    positive_mask = positive_mask * logits_mask
+
+    exp_logits = torch.exp(logits) * logits_mask
+    denominator = exp_logits.sum(dim=1, keepdim=True)
+    log_prob = logits - torch.log(denominator + 1e-12)
+
+    positive_count = positive_mask.sum(dim=1)
+    valid = positive_count > 0
+    if int(valid.sum().item()) == 0:
+        return embeddings.new_zeros(())
+
+    mean_log_prob_pos = (positive_mask * log_prob).sum(dim=1) / positive_count.clamp_min(1.0)
+    loss = -mean_log_prob_pos[valid].mean()
+    return loss
+
+
+def _batched_forward(
+    model: nn.Module,
+    tokenizer: Any,
+    backbone_name: str,
+    sequences: list[str],
+    motif_specs: list[MotifSpec] | None,
+    motif_vocab: dict[str, int] | None,
+    motif_cfg: dict[str, Any] | None,
+    *,
+    device: torch.device,
+    batch_size: int,
+    mixed_precision: bool,
+    dual_tokenizer_runtime: dict[str, Any] | None = None,
+) -> list[list[float]]:
+    outputs: list[list[float]] = []
+    for start in range(0, len(sequences), batch_size):
+        batch_sequences = sequences[start : start + batch_size]
+        if dual_tokenizer_runtime is not None:
+            encoded_dual = _encode_dual_batch_sequences(
+                plain_tokenizer=dual_tokenizer_runtime["plain_tokenizer"],
+                special_tokenizer=dual_tokenizer_runtime["special_tokenizer"],
+                backbone_name=backbone_name,
+                sequences=batch_sequences,
+                special_motif_specs=dual_tokenizer_runtime["special_motif_specs"],
+                special_motif_cfg=dual_tokenizer_runtime["special_motif_cfg"],
+            )
+            plain_encoded = encoded_dual["plain"]
+            special_encoded = encoded_dual["special"]
+            residue_lengths = encoded_dual["residue_lengths"]
+            with torch.no_grad():
+                with _autocast_context(device_type=device.type, enabled=mixed_precision):
+                    branch_logits = model(
+                        plain_input_ids=plain_encoded.input_ids.to(device),
+                        plain_attention_mask=plain_encoded.attention_mask.to(device),
+                        plain_residue_lengths=plain_encoded.residue_lengths,
+                        special_input_ids=special_encoded.input_ids.to(device),
+                        special_attention_mask=special_encoded.attention_mask.to(device),
+                        special_residue_lengths=special_encoded.residue_lengths,
+                        special_token_residue_lengths=special_encoded.token_residue_lengths,
+                    )
+                    logits = branch_logits["fused_logits"]
+        else:
+            encoded = _encode_batch_sequences(
+                tokenizer=tokenizer,
+                backbone_name=backbone_name,
+                sequences=batch_sequences,
+                motif_specs=motif_specs,
+                motif_cfg=motif_cfg,
+            )
+            input_ids = encoded.input_ids.to(device)
+            attention_mask = encoded.attention_mask.to(device)
+            residue_lengths = encoded.residue_lengths
+
+            with torch.no_grad():
+                with _autocast_context(device_type=device.type, enabled=mixed_precision):
+                    logits = model(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        residue_lengths=residue_lengths,
+                        token_residue_lengths=encoded.token_residue_lengths,
+                    )
+        logits = logits.detach().float().cpu()
+        for row, length in enumerate(residue_lengths):
+            row_logits = logits[row, :length]
+            outputs.append(row_logits.tolist())
+    return outputs
+
+
+def _batched_forward_from_embeddings(
+    model: nn.Module,
+    windows: list[torch.Tensor],
+    *,
+    device: torch.device,
+    batch_size: int,
+    mixed_precision: bool,
+) -> list[list[float]]:
+    outputs: list[list[float]] = []
+    for start in range(0, len(windows), batch_size):
+        batch_windows = windows[start : start + batch_size]
+        residue_hidden, residue_lengths = _pad_residue_hidden(batch_windows, device=device)
+        with torch.no_grad():
+            with _autocast_context(device_type=device.type, enabled=mixed_precision):
+                logits = model(
+                    residue_hidden=residue_hidden,
+                    residue_lengths=residue_lengths,
+                )
+        logits = logits.detach().float().cpu()
+        for row, length in enumerate(residue_lengths):
+            outputs.append(logits[row, :length].tolist())
+    return outputs
+
+
+def _ternary_label_chars(linker_class: int) -> tuple[str, str, str]:
+    """Return (linker_char, other_idr_char, ordered_char)."""
+    if int(linker_class) == 2:
+        return "2", "1", "0"
+    return "1", "0", "2"
+
+
+def _extract_scored_residues(
+    labels: str,
+    probs: list[float],
+    *,
+    protocol: str = "t1",
+    linker_class: int = 1,
+) -> tuple[list[int], list[float]]:
+    """Map residue labels to binary linker scores.
+
+    protocol='t1': linker vs {other IDR, ordered}
+    protocol='t2': linker vs other IDR only (ordered ignored)
+    """
+    linker_ch, other_ch, ordered_ch = _ternary_label_chars(linker_class)
+    y_true: list[int] = []
+    y_prob: list[float] = []
+    for char, prob in zip(labels, probs):
+        if char == linker_ch:
+            y_true.append(1)
+            y_prob.append(prob)
+        elif char == other_ch:
+            y_true.append(0)
+            y_prob.append(prob)
+        elif protocol == "t1" and char == ordered_ch:
+            y_true.append(0)
+            y_prob.append(prob)
+        else:
+            continue
+    return y_true, y_prob
+
+
+def evaluate_records(
+    model: nn.Module,
+    tokenizer: Any,
+    backbone_name: str,
+    records: list[ProteinRecord],
+    motif_specs: list[MotifSpec] | None,
+    motif_vocab: dict[str, int] | None,
+    motif_cfg: dict[str, Any] | None,
+    *,
+    window_size: int,
+    stride: int | None,
+    top_k_heuristic: int,
+    device: torch.device,
+    batch_size: int,
+    threshold: float | None,
+    threshold_search: dict[str, float],
+    mixed_precision: bool,
+    dual_tokenizer_runtime: dict[str, Any] | None = None,
+    num_classes: int = 1,
+    embedding_cache: dict[str, torch.Tensor] | None = None,
+    linker_class: int = 1,
+    dual_binary: bool = False,
+) -> dict[str, Any]:
+    model.eval()
+    per_record: list[tuple[str, str, list[float]]] = []
+    y_true_all: list[int] = []
+    y_prob_all: list[float] = []
+    y_true_t2: list[int] = []
+    y_prob_t2: list[float] = []
+
+    for record in records:
+        starts = build_eval_window_starts(
+            record.sequence,
+            window_size=window_size,
+            stride=stride,
+            top_k_heuristic=top_k_heuristic,
+        )
+        windows_seq = [record.sequence[start : start + window_size] for start in starts]
+        if embedding_cache is not None:
+            full_emb = embedding_cache.get(record.protein_id)
+            if full_emb is None:
+                raise KeyError(f"Missing embedding for {record.protein_id} in embedding_cache.")
+            windows_emb = [full_emb[start : start + window_size] for start in starts]
+            window_logits = _batched_forward_from_embeddings(
+                model,
+                windows_emb,
+                device=device,
+                batch_size=batch_size,
+                mixed_precision=mixed_precision,
+            )
+        else:
+            window_logits = _batched_forward(
+                model,
+                tokenizer,
+                backbone_name,
+                windows_seq,
+                motif_specs,
+                motif_vocab,
+                motif_cfg,
+                device=device,
+                batch_size=batch_size,
+                mixed_precision=mixed_precision,
+                dual_tokenizer_runtime=dual_tokenizer_runtime,
+            )
+        merged_logits = merge_window_logits(
+            length=len(record.sequence),
+            window_logits=list(zip(starts, window_logits)),
+        )
+        probs = linker_probs_from_logits(
+            merged_logits, linker_class=linker_class, dual_binary=dual_binary
+        )
+        per_record.append((record.protein_id, record.labels, probs))
+        true_slice, prob_slice = _extract_scored_residues(
+            record.labels, probs, protocol="t1", linker_class=linker_class
+        )
+        y_true_all.extend(true_slice)
+        y_prob_all.extend(prob_slice)
+        if num_classes > 1 or dual_binary or int(linker_class) == 2:
+            t2_true, t2_prob = _extract_scored_residues(
+                record.labels, probs, protocol="t2", linker_class=linker_class
+            )
+            y_true_t2.extend(t2_true)
+            y_prob_t2.extend(t2_prob)
+
+    tuned_threshold = threshold
+    best_f1 = 0.0
+    best_mcc = 0.0
+    if y_true_all and tuned_threshold is None:
+        tuned_threshold, best_f1, best_mcc = search_best_threshold(
+            y_true_all,
+            y_prob_all,
+            min_threshold=float(threshold_search["min"]),
+            max_threshold=float(threshold_search["max"]),
+            step=float(threshold_search["step"]),
+        )
+    if tuned_threshold is None:
+        tuned_threshold = 0.5
+
+    preds = apply_threshold(y_prob_all, tuned_threshold) if y_true_all else []
+    auprc = precision_recall_auc(y_true_all, y_prob_all) if y_true_all else 0.0
+    auroc = binary_roc_auc(y_true_all, y_prob_all)
+    f1 = best_f1 if y_true_all and threshold is None else (f1_score(y_true_all, preds) if y_true_all else 0.0)
+    mcc = best_mcc if y_true_all and threshold is None else (mcc_score(y_true_all, preds) if y_true_all else 0.0)
+
+    metrics: dict[str, Any] = {
+        "num_records": len(records),
+        "num_scored_residues": len(y_true_all),
+        "auprc": auprc,
+        "auroc": auroc,
+        "auprc_t1": auprc,
+        "auroc_t1": auroc,
+        "f1": f1,
+        "mcc": mcc,
+        "threshold": tuned_threshold,
+        "protocol_t1": "linker vs {other_idr, ordered}",
+        "linker_class": int(linker_class),
+    }
+    if num_classes > 1 or dual_binary or int(linker_class) == 2:
+        metrics["auprc_t2"] = precision_recall_auc(y_true_t2, y_prob_t2) if y_true_t2 else 0.0
+        metrics["auroc_t2"] = binary_roc_auc(y_true_t2, y_prob_t2)
+        metrics["num_scored_residues_t2"] = len(y_true_t2)
+        metrics["protocol_t2"] = "linker vs other_idr"
+
+    return {
+        "threshold": tuned_threshold,
+        "metrics": metrics,
+        "per_record": per_record,
+    }
+
+
+def _format_auroc_for_log(auroc: float | None) -> str:
+    if auroc is None:
+        return "n/a"
+    return f"{float(auroc):.6f}"
+
+
+def _write_predictions_tsv(path: str | Path, per_record: list[tuple[str, str, list[float]]], threshold: float) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8") as handle:
+        handle.write("protein_id\tposition_1based\tprobability\tpred_label\n")
+        for protein_id, _, probs in per_record:
+            for index, probability in enumerate(probs, start=1):
+                pred = 1 if probability >= threshold else 0
+                handle.write(f"{protein_id}\t{index}\t{probability:.8f}\t{pred}\n")
+
+
+def _compute_pos_weight(
+    records: list[ProteinRecord],
+    *,
+    linker_class: int = 1,
+) -> tuple[float, dict[str, int]]:
+    pos = 0
+    neg = 0
+    positive_char = "2" if int(linker_class) == 2 else "1"
+    negative_chars = {"0", "1"} if int(linker_class) == 2 else {"0"}
+    for rec in records:
+        for char in rec.labels:
+            if char == positive_char:
+                pos += 1
+            elif char in negative_chars:
+                neg += 1
+    if pos == 0:
+        raise ValueError("No positive labels found in training split; cannot compute pos_weight.")
+    return (neg / pos), {"positive": pos, "negative": neg, "total": pos + neg}
+
+
+def train(config_path: str | Path, resume_checkpoint: str | Path | None = None) -> dict[str, Any]:
+    config = load_config(config_path)
+    set_seed(int(config["seed"]))
+    stage = str(config.get("stage", "stage1"))
+    classifier_head_cfg = dict(config.get("classifier_head", {}))
+    contrastive_cfg = dict(config.get("contrastive", {}))
+    motif_cfg = dict(config.get("motif", {}))
+    dual_tokenizer_cfg = dict(config.get("dual_tokenizer", {}))
+    stage6_enabled = stage == "stage6" and bool(dual_tokenizer_cfg.get("enabled", False))
+    dual_branches = dict(dual_tokenizer_cfg.get("branches", {}))
+    plain_branch_cfg = dict(dual_branches.get("plain", {}))
+    special_branch_cfg = dict(dual_branches.get("special", {}))
+    special_motif_cfg = dict(special_branch_cfg.get("motif", {}))
+    plain_loss_weight = float(plain_branch_cfg.get("weight", 0.5))
+    special_loss_weight = float(special_branch_cfg.get("weight", 0.5))
+    contrastive_enabled = bool(contrastive_cfg.get("enabled", False))
+    contrastive_mode = str(contrastive_cfg.get("mode", "hierarchical")).lower()
+    contrastive_weight = float(contrastive_cfg.get("weight", 0.0)) if contrastive_enabled else 0.0
+    contrastive_neg_weight = float(contrastive_cfg.get("neg_weight", 0.0)) if contrastive_enabled else 0.0
+    if contrastive_mode in {"binary", "ternary"}:
+        contrastive_neg_weight = 0.0
+    contrastive_temperature = float(contrastive_cfg.get("temperature", 0.1))
+    contrastive_max_samples = int(contrastive_cfg.get("max_samples_per_class", 256))
+    linker_class = int(classifier_head_cfg.get("linker_class", 1))
+    dual_binary = bool(classifier_head_cfg.get("dual_binary", False))
+    resume_checkpoint_cfg = _optional_str(config.get("resume_checkpoint"))
+    resume_checkpoint_cli = _optional_str(resume_checkpoint)
+    resume_checkpoint_value = resume_checkpoint_cli or resume_checkpoint_cfg
+    resumed = False
+    resume_checkpoint_path: Path | None = None
+    resume_checkpoint_payload: dict[str, Any] | None = None
+    resume_start_epoch = 0
+    resume_start_global_step = 0
+
+    device = torch.device(config["device"])
+    use_amp = device.type == "cuda"
+    if resume_checkpoint_value:
+        resume_checkpoint_path = Path(resume_checkpoint_value)
+        if not resume_checkpoint_path.exists():
+            raise FileNotFoundError(f"Resume checkpoint not found: {resume_checkpoint_path}")
+        resume_checkpoint_payload = torch.load(resume_checkpoint_path, map_location="cpu")
+        output_dir = _infer_experiment_dir_from_checkpoint(resume_checkpoint_path)
+        run_id = output_dir.name
+        output_base_dir = output_dir.parent
+        resumed = True
+    else:
+        output_base_dir = Path(config["output_dir"])
+        output_dir, run_id = _resolve_experiment_dir(output_base_dir, prefix=str(config["experiment_prefix"]))
+
+    metrics_dir = output_dir / "metrics"
+    ckpt_dir = output_dir / "checkpoints"
+    logs_dir = output_dir / "logs"
+    tensorboard_dir = output_dir / "tensorboard"
+    metrics_dir.mkdir(parents=True, exist_ok=True)
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    tensorboard_dir.mkdir(parents=True, exist_ok=True)
+
+    config_resolved = dict(config)
+    config_resolved["output_dir"] = str(output_dir)
+    config_resolved["run_id"] = run_id
+    config_resolved["output_base_dir"] = str(output_base_dir)
+    config_resolved["resume_checkpoint"] = str(resume_checkpoint_path) if resume_checkpoint_path else None
+    config_resolved["resumed"] = resumed
+
+    log = _build_logger(logs_dir / "train.log")
+    if resumed:
+        log(
+            f"Run resumed: run_id={run_id} output_dir={output_dir} "
+            f"resume_checkpoint={resume_checkpoint_path}"
+        )
+    else:
+        log(f"Run started: run_id={run_id} output_dir={output_dir}")
+    log(
+        f"Run stage={stage} contrastive_enabled={contrastive_enabled} "
+        f"contrastive_mode={contrastive_mode} "
+        f"contrastive_weight={contrastive_weight:.4f} "
+        f"contrastive_neg_weight={contrastive_neg_weight:.4f} "
+        f"linker_class={linker_class}"
+    )
+    if bool(config.get("stage_contrastive_forced_off", False)):
+        log(f"[{stage}] contrastive.enabled=true ignored; forced to false for {stage}.")
+    tensorboard_info = _start_tensorboard_if_needed(
+        enabled=bool(config.get("auto_start_tensorboard", True)),
+        logdir=output_base_dir,
+        host=str(config.get("tensorboard_host", "0.0.0.0")),
+        port=int(config.get("tensorboard_port", 6006)),
+        runtime_log_path=logs_dir / "tensorboard_runtime.log",
+        logger=log,
+    )
+
+    writer = SummaryWriter(log_dir=str(tensorboard_dir))
+    writer.add_text("run/id", run_id, 0)
+    writer.add_text("run/stage", stage, 0)
+    writer.add_text("run/config_path", str(Path(config_path)), 0)
+    writer.add_text("run/config_resolved", json.dumps(config_resolved, ensure_ascii=False, indent=2), 0)
+    if resumed and resume_checkpoint_path is not None:
+        writer.add_text("run/resume_checkpoint", str(resume_checkpoint_path), 0)
+    writer.add_text("tensorboard/service", json.dumps(tensorboard_info, ensure_ascii=False, indent=2), 0)
+    wandb_run, wandb_info = _start_wandb_if_needed(
+        enabled=bool(config.get("use_wandb", False)),
+        project=_optional_str(config.get("wandb_project")),
+        entity=_optional_str(config.get("wandb_entity")),
+        run_name=_optional_str(config.get("wandb_run_name")) or run_id,
+        group=_optional_str(config.get("wandb_group")),
+        tags=list(config.get("wandb_tags", [])),
+        mode=str(config.get("wandb_mode", "online")),
+        run_dir=config.get("wandb_dir") or (output_dir / "wandb"),
+        job_type="train",
+        config_payload=config_resolved,
+        logger=log,
+    )
+    writer.add_text("wandb/service", json.dumps(wandb_info, ensure_ascii=False, indent=2), 0)
+
+    all_records = parse_three_line_fasta(config["train_fasta"])
+    caid_records = parse_three_line_fasta(config["caid_fasta"])
+    motif_specs: list[MotifSpec] | None = None
+    motif_vocab: dict[str, int] | None = None
+    motif_stats: dict[str, Any] | None = None
+    if stage6_enabled:
+        motif_specs = load_motif_specs(
+            special_motif_cfg["source"],
+            matching=str(special_motif_cfg.get("matching", "degenerate")),
+        )
+        motif_vocab = build_motif_vocab(motif_specs)
+        motif_stats = summarize_motif_coverage(all_records, motif_specs, motif_vocab)
+        log(
+            "[stage6:motif] special branch source="
+            f"{special_motif_cfg['source']} motifs={motif_stats['num_motifs']} "
+            f"coverage={motif_stats['coverage_ratio']:.4f}"
+        )
+    elif bool(motif_cfg.get("enabled", False)):
+        motif_specs = load_motif_specs(
+            motif_cfg["source"],
+            matching=str(motif_cfg.get("matching", "degenerate")),
+        )
+        motif_vocab = build_motif_vocab(motif_specs)
+        motif_stats = summarize_motif_coverage(all_records, motif_specs, motif_vocab)
+        log(
+            "[motif] enabled source="
+            f"{motif_cfg['source']} motifs={motif_stats['num_motifs']} "
+            f"coverage={motif_stats['coverage_ratio']:.4f}"
+        )
+    train_records, val_records, split_manifest, split_manifest_resolution, rebuilt_exclusion_report = _resolve_train_val_records(
+        all_records=all_records,
+        caid_records=caid_records,
+        split_manifest_path=config["split_manifest"],
+        source_fasta_path=config["train_fasta"],
+        error_file_path=config["error_file"],
+        seed=int(config["seed"]),
+        val_ratio=float(config["val_ratio"]),
+        auto_rebuild_on_mismatch=bool(config.get("auto_rebuild_split_on_mismatch", True)),
+        logger=log,
+    )
+    active_split_manifest_path = Path(config["split_manifest"])
+    rebuilt_exclusion_report_path: Path | None = None
+    if split_manifest_resolution["status"] == "rebuilt":
+        split_dir = output_dir / "splits"
+        split_dir.mkdir(parents=True, exist_ok=True)
+        active_split_manifest_path = split_dir / "split_manifest_rebuilt.json"
+        write_json(active_split_manifest_path, split_manifest)
+        if rebuilt_exclusion_report is not None:
+            rebuilt_exclusion_report_path = split_dir / "exclusion_report_rebuilt.json"
+            write_json(rebuilt_exclusion_report_path, rebuilt_exclusion_report)
+        log(
+            "[split] rebuilt split manifest saved to "
+            f"{active_split_manifest_path} (train={len(train_records)} val={len(val_records)})"
+        )
+
+    train_val_ids = {rec.protein_id for rec in train_records + val_records}
+    caid_ids = {rec.protein_id for rec in caid_records}
+    leakage = sorted(train_val_ids.intersection(caid_ids))
+    if leakage:
+        raise ValueError(f"Detected CAID3 leakage into train/val split. Example ids: {leakage[:10]}")
+
+    embeddings_dir = _optional_embeddings_dir(config.get("embeddings_dir"))
+    embedding_cache: dict[str, torch.Tensor] | None = None
+    if embeddings_dir is not None:
+        if not embeddings_dir.is_dir():
+            raise FileNotFoundError(f"embeddings_dir not found: {embeddings_dir}")
+        embedding_cache = _load_embedding_cache(
+            train_records + val_records + caid_records,
+            embeddings_dir,
+        )
+        log(f"[embeddings] loaded {len(embedding_cache)} proteins from {embeddings_dir}")
+        config_resolved["embeddings_dir"] = str(embeddings_dir.resolve())
+
+    pos_weight, class_stats = _compute_pos_weight(train_records, linker_class=linker_class)
+    num_classes = int(classifier_head_cfg.get("num_classes", 1))
+    class_weight_tensor: torch.Tensor | None = None
+    linker_pos_weight = pos_weight
+    type_pos_weight = 1.0
+    if dual_binary:
+        linker_pos_weight, type_pos_weight, class_stats = _compute_dual_binary_weights(
+            train_records, linker_class=linker_class
+        )
+        pos_weight = linker_pos_weight
+        log(
+            "[dual-binary] "
+            f"linker_pos_weight={linker_pos_weight:.4f} type_pos_weight={type_pos_weight:.4f} "
+            f"ordered={class_stats['class_0_ordered']} other_idr={class_stats['class_1_other_idr']} "
+            f"linker={class_stats['class_2_linker']}"
+        )
+    elif num_classes > 1:
+        class_weight_tensor, class_stats = _compute_class_weights(
+            train_records, num_classes, linker_class=linker_class
+        )
+        pos_weight = 0.0
+        count_msg = " ".join(
+            f"{key}={value}" for key, value in class_stats.items() if key != "total"
+        )
+        log(
+            "[ternary] "
+            f"linker_class={linker_class} class counts {count_msg} "
+            f"total={class_stats['total']} weights={class_weight_tensor.tolist()}"
+        )
+
+    dual_tokenizer_runtime: dict[str, Any] | None = None
+    if stage6_enabled:
+        if motif_specs is None:
+            raise RuntimeError("Stage 6 special branch motif specs are missing.")
+        plain_backbone, plain_tokenizer, plain_hidden_size = load_backbone_and_tokenizer(
+            config["backbone_name"],
+            tokenizer_name=plain_branch_cfg.get("tokenizer_name"),
+        )
+        special_backbone, special_tokenizer, special_hidden_size = load_backbone_and_tokenizer(
+            config["backbone_name"],
+            tokenizer_name=special_branch_cfg.get("tokenizer_name"),
+        )
+        if plain_hidden_size != special_hidden_size:
+            raise ValueError(
+                "Stage 6 branch hidden sizes must match: "
+                f"plain={plain_hidden_size} special={special_hidden_size}"
+            )
+        special_tokens = build_motif_special_tokens(motif_specs)
+        motif_tokenizer_info = prepare_backbone_for_motif_tokenizer(
+            special_backbone,
+            special_tokenizer,
+            special_tokens,
+        )
+        config_resolved["dual_tokenizer_runtime"] = {
+            "fusion": dual_tokenizer_cfg.get("fusion"),
+            "plain": {
+                "weight": plain_loss_weight,
+                "tokenizer_name": plain_branch_cfg.get("tokenizer_name"),
+                "motif": plain_branch_cfg.get("motif"),
+            },
+            "special": {
+                "weight": special_loss_weight,
+                "tokenizer_name": special_branch_cfg.get("tokenizer_name"),
+                "motif": special_motif_cfg,
+                "motif_runtime": _build_motif_runtime_metadata(
+                    motif_specs,
+                    motif_tokenizer_info,
+                    special_motif_cfg,
+                ),
+            },
+        }
+        plain_model = ResidueClassifier(
+            backbone=plain_backbone,
+            hidden_size=plain_hidden_size,
+            dropout=float(config["dropout"]),
+            freeze_backbone=bool(config["freeze_backbone"]),
+            projection_dim=int(contrastive_cfg["proj_dim"]),
+            proj_hidden=None if contrastive_cfg.get("proj_hidden") is None else int(contrastive_cfg["proj_hidden"]),
+            classifier_head=classifier_head_cfg,
+            local_context=dict(config.get("local_context", {})),
+            motif={"enabled": False},
+            motif_vocab_size=0,
+        )
+        special_model = ResidueClassifier(
+            backbone=special_backbone,
+            hidden_size=special_hidden_size,
+            dropout=float(config["dropout"]),
+            freeze_backbone=bool(config["freeze_backbone"]),
+            projection_dim=int(contrastive_cfg["proj_dim"]),
+            proj_hidden=None if contrastive_cfg.get("proj_hidden") is None else int(contrastive_cfg["proj_hidden"]),
+            classifier_head=classifier_head_cfg,
+            local_context=dict(config.get("local_context", {})),
+            motif=special_motif_cfg,
+            motif_vocab_size=len(motif_vocab) if motif_vocab is not None else 0,
+        )
+        configure_trainable_token_embeddings(special_backbone, motif_tokenizer_info["token_ids"])
+        model = DualTokenizerResidueClassifier(
+            plain_model=plain_model,
+            special_model=special_model,
+            plain_weight=plain_loss_weight,
+            special_weight=special_loss_weight,
+        ).to(device)
+        tokenizer = plain_tokenizer
+        dual_tokenizer_runtime = {
+            "plain_tokenizer": plain_tokenizer,
+            "special_tokenizer": special_tokenizer,
+            "special_motif_specs": motif_specs,
+            "special_motif_cfg": special_motif_cfg,
+        }
+        log(
+            "[stage6] dual tokenizer enabled "
+            f"plain_weight={plain_loss_weight:.4f} special_weight={special_loss_weight:.4f} "
+            f"special_tokens={len(special_tokens)}"
+        )
+    else:
+        motif_tokenizer_info: dict[str, Any] | None = None
+        if embedding_cache is not None:
+            if bool(motif_cfg.get("enabled", False)):
+                raise ValueError("embeddings_dir cannot be combined with motif.enabled=true.")
+            sample_hidden = int(next(iter(embedding_cache.values())).shape[1])
+            tokenizer = DummyProteinTokenizer()
+            backbone = DummyBackbone(hidden_size=sample_hidden)
+            hidden_size = sample_hidden
+            log(f"[embeddings] training classifier on cached ProstT5 features hidden_size={hidden_size}")
+        else:
+            backbone, tokenizer, hidden_size = load_backbone_and_tokenizer(
+                config["backbone_name"],
+                tokenizer_name=config.get("tokenizer_name"),
+            )
+            if bool(motif_cfg.get("enabled", False)):
+                if motif_specs is None:
+                    raise RuntimeError("Motif specs are missing while motif.enabled=true.")
+                motif_special_tokens = build_motif_special_tokens(motif_specs)
+                motif_tokenizer_info = prepare_backbone_for_motif_tokenizer(backbone, tokenizer, motif_special_tokens)
+                config_resolved["motif_runtime"] = _build_motif_runtime_metadata(
+                    motif_specs,
+                    motif_tokenizer_info,
+                    motif_cfg,
+                )
+                log(
+                    "[motif] trained tokenizer special tokens="
+                    f"{len(motif_special_tokens)} tokenizer={config.get('tokenizer_name')} "
+                    f"strategy={config_resolved['motif_runtime']['alignment_strategy']}"
+                )
+        model = ResidueClassifier(
+            backbone=backbone,
+            hidden_size=hidden_size,
+            dropout=float(config["dropout"]),
+            freeze_backbone=bool(config["freeze_backbone"]),
+            projection_dim=int(contrastive_cfg["proj_dim"]),
+            proj_hidden=None if contrastive_cfg.get("proj_hidden") is None else int(contrastive_cfg["proj_hidden"]),
+            classifier_head=classifier_head_cfg,
+            local_context=dict(config.get("local_context", {})),
+            motif=motif_cfg if embedding_cache is None else {"enabled": False},
+            motif_vocab_size=(len(motif_vocab) if motif_vocab is not None else 0),
+        ).to(device)
+        if motif_tokenizer_info is not None:
+            configure_trainable_token_embeddings(backbone, motif_tokenizer_info["token_ids"])
+
+    batch_size = max(1, int(config["batch_tokens"]) // int(config["window_size"]))
+    train_dataset = TrainDataset(
+        train_records,
+        window_size=int(config["window_size"]),
+        seed=int(config["seed"]),
+        linker_positive_chars="2" if linker_class == 2 else "1",
+    )
+
+    def _collate(batch: list[TrainItem]) -> dict[str, Any]:
+        sequences = [item.sequence for item in batch]
+        labels = [item.labels for item in batch]
+        if stage6_enabled:
+            if dual_tokenizer_runtime is None or motif_specs is None:
+                raise RuntimeError("Stage 6 runtime is not initialized.")
+            encoded_dual = _encode_dual_batch_sequences(
+                plain_tokenizer=dual_tokenizer_runtime["plain_tokenizer"],
+                special_tokenizer=dual_tokenizer_runtime["special_tokenizer"],
+                backbone_name=config["backbone_name"],
+                sequences=sequences,
+                special_motif_specs=motif_specs,
+                special_motif_cfg=special_motif_cfg,
+            )
+            label_tensor = _labels_to_tensor(
+                labels, encoded_dual["residue_lengths"], num_classes=num_classes, linker_class=linker_class
+            )
+            contrastive_label_tensor = _contrastive_label_tensor(
+                labels,
+                encoded_dual["residue_lengths"],
+                linker_class=linker_class,
+                enabled=contrastive_enabled,
+                mode=contrastive_mode,
+            )
+            payload = {
+                "plain_input_ids": encoded_dual["plain"].input_ids,
+                "plain_attention_mask": encoded_dual["plain"].attention_mask,
+                "plain_residue_lengths": encoded_dual["plain"].residue_lengths,
+                "special_input_ids": encoded_dual["special"].input_ids,
+                "special_attention_mask": encoded_dual["special"].attention_mask,
+                "special_residue_lengths": encoded_dual["special"].residue_lengths,
+                "special_token_residue_lengths": encoded_dual["special"].token_residue_lengths,
+                "residue_lengths": encoded_dual["residue_lengths"],
+                "labels": label_tensor,
+            }
+            if contrastive_label_tensor is not None:
+                payload["contrastive_labels"] = contrastive_label_tensor
+            return payload
+        if embedding_cache is not None:
+            windows: list[torch.Tensor] = []
+            for item in batch:
+                full_emb = embedding_cache.get(item.protein_id)
+                if full_emb is None:
+                    raise KeyError(f"Missing embedding for {item.protein_id} in embedding_cache.")
+                windows.append(full_emb[item.start : item.start + len(item.sequence)])
+            residue_hidden, residue_lengths = _pad_residue_hidden(windows, device=torch.device("cpu"))
+            label_tensor = _labels_to_tensor(
+                labels, residue_lengths, num_classes=num_classes, linker_class=linker_class
+            )
+            payload = {
+                "residue_hidden": residue_hidden,
+                "residue_lengths": residue_lengths,
+                "labels": label_tensor,
+            }
+            contrastive_label_tensor = _contrastive_label_tensor(
+                labels,
+                residue_lengths,
+                linker_class=linker_class,
+                enabled=contrastive_enabled,
+                mode=contrastive_mode,
+            )
+            if contrastive_label_tensor is not None:
+                payload["contrastive_labels"] = contrastive_label_tensor
+            return payload
+        encoded = _encode_batch_sequences(
+            tokenizer=tokenizer,
+            backbone_name=config["backbone_name"],
+            sequences=sequences,
+            motif_specs=motif_specs,
+            motif_cfg=motif_cfg,
+        )
+        label_tensor = _labels_to_tensor(
+            labels, encoded.residue_lengths, num_classes=num_classes, linker_class=linker_class
+        )
+        payload = {
+            "input_ids": encoded.input_ids,
+            "attention_mask": encoded.attention_mask,
+            "residue_lengths": encoded.residue_lengths,
+            "token_residue_lengths": encoded.token_residue_lengths,
+            "labels": label_tensor,
+        }
+        contrastive_label_tensor = _contrastive_label_tensor(
+            labels,
+            encoded.residue_lengths,
+            linker_class=linker_class,
+            enabled=contrastive_enabled,
+            mode=contrastive_mode,
+        )
+        if contrastive_label_tensor is not None:
+            payload["contrastive_labels"] = contrastive_label_tensor
+        return payload
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=int(config["num_workers"]),
+        collate_fn=_collate,
+    )
+
+    optimizer = AdamW(model.parameters(), lr=float(config["lr"]), weight_decay=float(config["weight_decay"]))
+    scaler = _build_grad_scaler(enabled=use_amp)
+    criterion_type: nn.Module | None = None
+    if dual_binary:
+        criterion = nn.BCEWithLogitsLoss(
+            pos_weight=torch.tensor(linker_pos_weight, dtype=torch.float32, device=device),
+            reduction="none",
+        )
+        criterion_type = nn.BCEWithLogitsLoss(
+            pos_weight=torch.tensor(type_pos_weight, dtype=torch.float32, device=device),
+            reduction="none",
+        )
+    elif num_classes > 1:
+        if class_weight_tensor is None:
+            raise RuntimeError("Ternary training requires class_weight_tensor.")
+        criterion = nn.CrossEntropyLoss(
+            weight=class_weight_tensor.to(device),
+            ignore_index=-100,
+            reduction="mean",
+        )
+    else:
+        pos_weight_tensor = torch.tensor(pos_weight, dtype=torch.float32, device=device)
+        criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor, reduction="none")
+    best_auroc = -1.0
+    best_epoch = -1
+    best_step = -1
+    best_threshold = 0.5
+    evals_without_improve = 0
+    best_val_metrics: dict[str, Any] = {}
+    last_eval_metrics: dict[str, Any] = {}
+    global_step = 0
+    start_epoch = 0
+    raw_stop_metric = str(config.get("early_stop_metric", "")).strip().lower()
+    has_scene2 = num_classes > 1 or dual_binary or int(linker_class) == 2
+    if not raw_stop_metric:
+        raw_stop_metric = "joint" if has_scene2 else "auroc_t1"
+    if raw_stop_metric not in {"auroc_t1", "joint"}:
+        raise ValueError(
+            "early_stop_metric must be 'auroc_t1' or 'joint', "
+            f"got {raw_stop_metric!r}"
+        )
+    early_stop_metric = raw_stop_metric
+    selection_metric_name = "val_auroc_t1" if early_stop_metric == "auroc_t1" else "val_auroc_joint"
+    early_stop_min_delta = float(config.get("early_stop_min_delta", 0.0))
+    if early_stop_min_delta < 0:
+        raise ValueError(f"early_stop_min_delta must be >= 0, got {early_stop_min_delta}")
+    max_train_val_auroc_gap = config.get("max_train_val_auroc_gap")
+    if max_train_val_auroc_gap is not None:
+        max_train_val_auroc_gap = float(max_train_val_auroc_gap)
+        if max_train_val_auroc_gap <= 0:
+            raise ValueError(
+                f"max_train_val_auroc_gap must be > 0 when set, got {max_train_val_auroc_gap}"
+            )
+
+    if resumed:
+        history, print_history, eval_history = _load_history_if_exists(metrics_dir / "train_history.json", logger=log)
+    else:
+        history = []
+        print_history = []
+        eval_history = []
+
+    if resumed:
+        if resume_checkpoint_payload is None or resume_checkpoint_path is None:
+            raise RuntimeError("Internal error: resumed=True but resume checkpoint payload/path missing.")
+        _load_model_state(model, resume_checkpoint_payload["model_state"], logger=log)
+        if "optimizer_state" in resume_checkpoint_payload:
+            optimizer.load_state_dict(resume_checkpoint_payload["optimizer_state"])
+            log("[resume] optimizer state restored.")
+        else:
+            log("[resume] optimizer_state missing in checkpoint; optimizer reset.")
+        if "scaler_state" in resume_checkpoint_payload:
+            try:
+                scaler.load_state_dict(resume_checkpoint_payload["scaler_state"])
+                log("[resume] scaler state restored.")
+            except Exception as exc:
+                log(f"[resume] failed to restore scaler_state; scaler reset. error={exc}")
+        else:
+            log("[resume] scaler_state missing in checkpoint; scaler reset.")
+
+        restored_state = _restore_train_state_from_checkpoint(resume_checkpoint_payload)
+        start_epoch = max(0, restored_state["epoch"])
+        global_step = max(0, restored_state["global_step"])
+        best_auroc = restored_state["best_val_auroc"]
+        best_threshold = restored_state["best_threshold"]
+        best_epoch = restored_state["best_epoch"]
+        best_step = restored_state["best_step"]
+        evals_without_improve = max(0, restored_state["evals_without_improve"])
+        if isinstance(restored_state["best_val_metrics"], dict):
+            best_val_metrics = restored_state["best_val_metrics"]
+        if isinstance(restored_state["last_eval_metrics"], dict):
+            last_eval_metrics = restored_state["last_eval_metrics"]
+        resume_start_epoch = start_epoch
+        resume_start_global_step = global_step
+        if int(config["max_epochs"]) <= start_epoch:
+            raise ValueError(
+                f"resume checkpoint already at epoch={start_epoch}, "
+                f"but max_epochs={config['max_epochs']}. Increase max_epochs to continue training."
+            )
+        log(
+            "[resume] training state restored: "
+            f"start_epoch={start_epoch} global_step={global_step} "
+            f"best_val_auroc={best_auroc:.6f} best_threshold={best_threshold:.4f}"
+        )
+
+    if num_classes > 1:
+        class_log_payload = {
+            "train/pos_weight": pos_weight,
+            "train/contrastive_weight": contrastive_weight,
+            "train/contrastive_neg_weight": contrastive_neg_weight,
+            "run/stage": stage,
+        }
+        for key, value in class_stats.items():
+            if key == "total":
+                continue
+            writer.add_scalar(f"data/{key}", value, global_step)
+            class_log_payload[f"data/{key}"] = value
+    else:
+        writer.add_scalar("data/class_positive", class_stats["positive"], global_step)
+        writer.add_scalar("data/class_negative", class_stats["negative"], global_step)
+        class_log_payload = {
+            "data/class_positive": class_stats["positive"],
+            "data/class_negative": class_stats["negative"],
+            "train/pos_weight": pos_weight,
+            "train/contrastive_weight": contrastive_weight,
+            "train/contrastive_neg_weight": contrastive_neg_weight,
+            "run/stage": stage,
+        }
+    writer.add_scalar("train/pos_weight", pos_weight, global_step)
+    writer.add_scalar("train/contrastive_weight", contrastive_weight, global_step)
+    writer.add_scalar("train/contrastive_neg_weight", contrastive_neg_weight, global_step)
+    _wandb_log(
+        wandb_run,
+        class_log_payload,
+        step=global_step,
+    )
+    if motif_stats is not None:
+        writer.add_scalar("motif/coverage_ratio", float(motif_stats["coverage_ratio"]), global_step)
+        writer.add_scalar("motif/num_motifs", int(motif_stats["num_motifs"]), global_step)
+
+    save_every = int(config["save_every"])
+    print_every = int(config["print_every"])
+    eval_every = int(config["eval_every"])
+    early_stop_patience = int(config["early_stop_patience"])
+    stop_training = False
+
+    def _current_train_state(epoch: int) -> dict[str, Any]:
+        return {
+            "epoch": epoch,
+            "global_step": global_step,
+            "best_val_auroc": best_auroc,
+            "best_threshold": best_threshold,
+            "best_epoch": best_epoch,
+            "best_step": best_step,
+            "evals_without_improve": evals_without_improve,
+            "best_val_metrics": best_val_metrics,
+            "last_eval_metrics": last_eval_metrics,
+            "resumed": resumed,
+            "resume_checkpoint": str(resume_checkpoint_path) if resume_checkpoint_path else None,
+        }
+
+    def _run_validation(epoch: int, step: int, reason: str) -> None:
+        nonlocal best_auroc, best_epoch, best_step, best_threshold
+        nonlocal best_val_metrics, evals_without_improve, last_eval_metrics
+        nonlocal stop_training
+
+        train_result = evaluate_records(
+            model,
+            tokenizer,
+            config["backbone_name"],
+            train_records,
+            motif_specs,
+            motif_vocab,
+            motif_cfg,
+            window_size=int(config["window_size"]),
+            stride=config["eval_stride"],
+            top_k_heuristic=int(config["top_k_heuristic"]),
+            device=device,
+            batch_size=batch_size,
+            threshold=None,
+            threshold_search=config["threshold_search"],
+            mixed_precision=use_amp,
+            dual_tokenizer_runtime=dual_tokenizer_runtime,
+            num_classes=num_classes,
+            embedding_cache=embedding_cache,
+            linker_class=linker_class,
+            dual_binary=dual_binary,
+        )
+        train_metrics = train_result["metrics"]
+
+        val_result = evaluate_records(
+            model,
+            tokenizer,
+            config["backbone_name"],
+            val_records,
+            motif_specs,
+            motif_vocab,
+            motif_cfg,
+            window_size=int(config["window_size"]),
+            stride=config["eval_stride"],
+            top_k_heuristic=int(config["top_k_heuristic"]),
+            device=device,
+            batch_size=batch_size,
+            threshold=None,
+            threshold_search=config["threshold_search"],
+            mixed_precision=use_amp,
+            dual_tokenizer_runtime=dual_tokenizer_runtime,
+            num_classes=num_classes,
+            embedding_cache=embedding_cache,
+            linker_class=linker_class,
+            dual_binary=dual_binary,
+        )
+        val_metrics = val_result["metrics"]
+        val_threshold = float(val_result["threshold"])
+        last_eval_metrics = val_metrics
+        eval_history.append(
+            {
+                "epoch": epoch,
+                "global_step": step,
+                "reason": reason,
+                "train_metrics": train_metrics,
+                "metrics": val_metrics,
+                "threshold": val_threshold,
+            }
+        )
+
+        writer.add_scalar("train/auprc", float(train_metrics["auprc"]), step)
+        if train_metrics.get("auroc") is not None:
+            writer.add_scalar("train/auroc", float(train_metrics["auroc"]), step)
+        if train_metrics.get("auroc_t2") is not None:
+            writer.add_scalar("train/auroc_t2", float(train_metrics["auroc_t2"]), step)
+        writer.add_scalar("val/auprc", float(val_metrics["auprc"]), step)
+        if val_metrics.get("auroc") is not None:
+            writer.add_scalar("val/auroc", float(val_metrics["auroc"]), step)
+        if val_metrics.get("auprc_t2") is not None:
+            writer.add_scalar("val/auprc_t2", float(val_metrics["auprc_t2"]), step)
+        if val_metrics.get("auroc_t2") is not None:
+            writer.add_scalar("val/auroc_t2", float(val_metrics["auroc_t2"]), step)
+        writer.add_scalar("val/f1", float(val_metrics["f1"]), step)
+        writer.add_scalar("val/mcc", float(val_metrics["mcc"]), step)
+        writer.add_scalar("val/threshold", float(val_threshold), step)
+        wandb_eval_payload: dict[str, Any] = {
+            "train/auprc": float(train_metrics["auprc"]),
+            "val/auprc": float(val_metrics["auprc"]),
+            "val/f1": float(val_metrics["f1"]),
+            "val/mcc": float(val_metrics["mcc"]),
+            "val/threshold": float(val_threshold),
+        }
+        if train_metrics.get("auroc") is not None:
+            wandb_eval_payload["train/auroc"] = float(train_metrics["auroc"])
+        if train_metrics.get("auroc_t2") is not None:
+            wandb_eval_payload["train/auroc_t2"] = float(train_metrics["auroc_t2"])
+        if val_metrics.get("auroc") is not None:
+            wandb_eval_payload["val/auroc"] = float(val_metrics["auroc"])
+        if val_metrics.get("auprc_t2") is not None:
+            wandb_eval_payload["val/auprc_t2"] = float(val_metrics["auprc_t2"])
+        if val_metrics.get("auroc_t2") is not None:
+            wandb_eval_payload["val/auroc_t2"] = float(val_metrics["auroc_t2"])
+        _wandb_log(wandb_run, wandb_eval_payload, step=step)
+        t2_msg = ""
+        if val_metrics.get("auprc_t2") is not None or train_metrics.get("auroc_t2") is not None:
+            t2_msg = (
+                f" train_auroc_t1={_format_auroc_for_log(train_metrics.get('auroc_t1', train_metrics.get('auroc')))} "
+                f"train_auroc_t2={_format_auroc_for_log(train_metrics.get('auroc_t2'))} "
+                f"val_auroc_t1={_format_auroc_for_log(val_metrics.get('auroc_t1', val_metrics.get('auroc')))} "
+                f"val_auprc_t2={float(val_metrics.get('auprc_t2') or 0.0):.6f} "
+                f"val_auroc_t2={_format_auroc_for_log(val_metrics.get('auroc_t2'))}"
+            )
+        log(
+            "[eval] "
+            f"reason={reason} epoch={epoch} step={step} "
+            f"train_auprc={train_metrics['auprc']:.6f} train_auroc={_format_auroc_for_log(train_metrics.get('auroc'))} "
+            f"val_auprc={val_metrics['auprc']:.6f} val_auroc={_format_auroc_for_log(val_metrics.get('auroc'))} "
+            f"f1={val_metrics['f1']:.6f} mcc={val_metrics['mcc']:.6f} "
+            f"threshold={val_threshold:.4f}{t2_msg}"
+        )
+
+        if early_stop_metric == "joint" and (num_classes > 1 or dual_binary or int(linker_class) == 2):
+            t1_auroc = val_metrics.get("auroc")
+            t2_auroc = val_metrics.get("auroc_t2")
+            t1_score = float(t1_auroc) if t1_auroc is not None else -1.0
+            t2_score = float(t2_auroc) if t2_auroc is not None else t1_score
+            selection_score = 0.5 * t1_score + 0.5 * t2_score
+            improved = selection_score > best_auroc + early_stop_min_delta
+        else:
+            val_auroc = val_metrics.get("auroc")
+            selection_score = float(val_auroc) if val_auroc is not None else -1.0
+            improved = val_auroc is not None and selection_score > best_auroc + early_stop_min_delta
+        if improved:
+            best_auroc = selection_score
+            best_epoch = epoch
+            best_step = step
+            best_threshold = val_threshold
+            best_val_metrics = val_metrics
+            evals_without_improve = 0
+            _save_checkpoint(
+                ckpt_dir / "best.pt",
+                epoch=epoch,
+                global_step=step,
+                model=model,
+                best_val_auroc=best_auroc,
+                threshold=best_threshold,
+                config=config_resolved,
+                optimizer=optimizer,
+                scaler=scaler,
+                train_state=_current_train_state(epoch),
+            )
+            log(
+                f"[best] updated best checkpoint at epoch={epoch}, step={step}, "
+                f"{selection_metric_name}={best_auroc:.6f}"
+            )
+        else:
+            evals_without_improve += 1
+            log(
+                f"[early-stop] no improvement count={evals_without_improve}/{early_stop_patience} "
+                f"(need +{early_stop_min_delta:.4f} on {selection_metric_name})"
+            )
+
+        train_auroc_for_gap = train_metrics.get("auroc")
+        val_auroc_for_gap = val_metrics.get("auroc")
+        if (
+            max_train_val_auroc_gap is not None
+            and train_auroc_for_gap is not None
+            and val_auroc_for_gap is not None
+        ):
+            gap = float(train_auroc_for_gap) - float(val_auroc_for_gap)
+            if gap > max_train_val_auroc_gap:
+                stop_training = True
+                log(
+                    f"[early-stop] train-val AUROC gap={gap:.4f} "
+                    f"exceeded max_train_val_auroc_gap={max_train_val_auroc_gap:.4f}; stopping."
+                )
+
+        # evaluate_records() sets model.eval(); cuDNN RNN heads require train mode for backward.
+        model.train()
+
+    try:
+        for epoch in range(start_epoch + 1, int(config["max_epochs"]) + 1):
+            model.train()
+            start_time = time.time()
+            running_total_loss = 0.0
+            running_bce_loss = 0.0
+            running_supcon_loss = 0.0
+            running_plain_bce_loss = 0.0
+            running_special_bce_loss = 0.0
+            steps = 0
+            window_total_loss = 0.0
+            window_bce_loss = 0.0
+            window_supcon_loss = 0.0
+            window_plain_bce_loss = 0.0
+            window_special_bce_loss = 0.0
+            window_steps = 0
+            eval_happened_in_epoch = False
+
+            for batch in train_loader:
+                labels = batch["labels"].to(device)
+
+                optimizer.zero_grad(set_to_none=True)
+                with _autocast_context(device_type=device.type, enabled=use_amp):
+                    if stage6_enabled:
+                        branch_logits = model(
+                            plain_input_ids=batch["plain_input_ids"].to(device),
+                            plain_attention_mask=batch["plain_attention_mask"].to(device),
+                            plain_residue_lengths=batch["plain_residue_lengths"],
+                            special_input_ids=batch["special_input_ids"].to(device),
+                            special_attention_mask=batch["special_attention_mask"].to(device),
+                            special_residue_lengths=batch["special_residue_lengths"],
+                            special_token_residue_lengths=batch["special_token_residue_lengths"],
+                        )
+                        mask = labels >= 0
+                        valid_count = int(mask.sum().item())
+                        if valid_count == 0:
+                            continue
+                        plain_loss_matrix = criterion(branch_logits["plain_logits"], labels)
+                        special_loss_matrix = criterion(branch_logits["special_logits"], labels)
+                        plain_bce_loss = (plain_loss_matrix * mask).sum() / valid_count
+                        special_bce_loss = (special_loss_matrix * mask).sum() / valid_count
+                        bce_loss = plain_loss_weight * plain_bce_loss + special_loss_weight * special_bce_loss
+                        supcon_loss = bce_loss.new_zeros(())
+                        posneg_loss = bce_loss.new_zeros(())
+                        neg_loss = bce_loss.new_zeros(())
+                        contrastive_num_samples = 0
+                        contrastive_num_samples_neg = 0
+                        total_loss = bce_loss
+                    else:
+                        residue_lengths = batch["residue_lengths"]
+                        if "residue_hidden" in batch:
+                            residue_hidden = batch["residue_hidden"].to(device)
+                            if contrastive_enabled:
+                                logits, residue_embeddings = model(
+                                    residue_hidden=residue_hidden,
+                                    residue_lengths=residue_lengths,
+                                    return_embeddings=True,
+                                )
+                            else:
+                                logits = model(
+                                    residue_hidden=residue_hidden,
+                                    residue_lengths=residue_lengths,
+                                )
+                                residue_embeddings = None
+                        else:
+                            input_ids = batch["input_ids"].to(device)
+                            attention_mask = batch["attention_mask"].to(device)
+                            token_residue_lengths = batch["token_residue_lengths"]
+                            if contrastive_enabled:
+                                logits, residue_embeddings = model(
+                                    input_ids=input_ids,
+                                    attention_mask=attention_mask,
+                                    residue_lengths=residue_lengths,
+                                    token_residue_lengths=token_residue_lengths,
+                                    return_embeddings=True,
+                                )
+                            else:
+                                logits = model(
+                                    input_ids=input_ids,
+                                    attention_mask=attention_mask,
+                                    residue_lengths=residue_lengths,
+                                    token_residue_lengths=token_residue_lengths,
+                                )
+                                residue_embeddings = None
+                        if dual_binary:
+                            if logits.dim() != 3 or int(logits.shape[-1]) != 2:
+                                raise RuntimeError(
+                                    f"dual_binary expects logits [B, L, 2], got {tuple(logits.shape)}"
+                                )
+                            if criterion_type is None:
+                                raise RuntimeError("dual_binary training requires criterion_type.")
+                            linker_logit = logits[..., 0]
+                            type_logit = logits[..., 1]
+                            valid = labels >= 0
+                            valid_count = int(valid.sum().item())
+                            if valid_count == 0:
+                                continue
+                            linker_target = (labels == int(linker_class)).to(dtype=linker_logit.dtype)
+                            linker_loss = (criterion(linker_logit, linker_target) * valid).sum() / valid_count
+                            type_valid = (labels == 0) | (labels == 1)
+                            type_count = int(type_valid.sum().item())
+                            if type_count == 0:
+                                type_loss = linker_loss.new_zeros(())
+                            else:
+                                type_target = (labels == 1).to(dtype=type_logit.dtype)
+                                type_loss = (
+                                    criterion_type(type_logit, type_target) * type_valid
+                                ).sum() / type_count
+                            bce_loss = linker_loss + type_loss
+                            plain_bce_loss = linker_loss
+                            special_bce_loss = type_loss
+                        elif num_classes > 1:
+                            # CrossEntropy with ignore_index; logits [B,L,C], labels [B,L]
+                            flat_logits = logits.reshape(-1, num_classes)
+                            flat_labels = labels.reshape(-1)
+                            valid_count = int((flat_labels >= 0).sum().item())
+                            if valid_count == 0:
+                                continue
+                            bce_loss = criterion(flat_logits, flat_labels)
+                            plain_bce_loss = bce_loss.new_zeros(())
+                            special_bce_loss = bce_loss.new_zeros(())
+                        else:
+                            mask = labels >= 0
+                            valid_count = int(mask.sum().item())
+                            if valid_count == 0:
+                                continue
+                            loss_matrix = criterion(logits, labels)
+                            bce_loss = (loss_matrix * mask).sum() / valid_count
+                            plain_bce_loss = bce_loss.new_zeros(())
+                            special_bce_loss = bce_loss.new_zeros(())
+
+                        contrastive_num_samples = 0
+                        contrastive_num_samples_neg = 0
+                        posneg_loss = bce_loss.new_zeros(())
+                        neg_loss = bce_loss.new_zeros(())
+                        if contrastive_enabled and residue_embeddings is not None:
+                            contrastive_labels = batch.get("contrastive_labels", labels)
+                            if contrastive_labels is not labels:
+                                contrastive_labels = contrastive_labels.to(device)
+                            if contrastive_mode == "ternary":
+                                posneg_loss, contrastive_num_samples = _compute_batch_supcon_loss(
+                                    residue_embeddings,
+                                    contrastive_labels,
+                                    max_samples_per_class=contrastive_max_samples,
+                                    temperature=contrastive_temperature,
+                                    mode="ternary",
+                                    linker_class=linker_class,
+                                )
+                            else:
+                                posneg_loss, contrastive_num_samples = _compute_batch_supcon_loss(
+                                    residue_embeddings,
+                                    contrastive_labels,
+                                    max_samples_per_class=contrastive_max_samples,
+                                    temperature=contrastive_temperature,
+                                    mode="posneg",
+                                    linker_class=linker_class,
+                                )
+                                if contrastive_mode != "binary" and contrastive_neg_weight > 0:
+                                    neg_loss, contrastive_num_samples_neg = _compute_batch_supcon_loss(
+                                        residue_embeddings,
+                                        contrastive_labels,
+                                        max_samples_per_class=contrastive_max_samples,
+                                        temperature=contrastive_temperature,
+                                        mode="neg",
+                                        linker_class=linker_class,
+                                    )
+                        supcon_loss = contrastive_weight * posneg_loss + contrastive_neg_weight * neg_loss
+                        total_loss = bce_loss + supcon_loss
+
+                scaler.scale(total_loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+
+                total_loss_value = float(total_loss.detach().cpu().item())
+                bce_loss_value = float(bce_loss.detach().cpu().item())
+                supcon_loss_value = float(supcon_loss.detach().cpu().item())
+                posneg_loss_value = float(posneg_loss.detach().cpu().item())
+                neg_loss_value = float(neg_loss.detach().cpu().item())
+                plain_bce_loss_value = float(plain_bce_loss.detach().cpu().item())
+                special_bce_loss_value = float(special_bce_loss.detach().cpu().item())
+                global_step += 1
+                running_total_loss += total_loss_value
+                running_bce_loss += bce_loss_value
+                running_supcon_loss += supcon_loss_value
+                running_plain_bce_loss += plain_bce_loss_value
+                running_special_bce_loss += special_bce_loss_value
+                steps += 1
+                window_total_loss += total_loss_value
+                window_bce_loss += bce_loss_value
+                window_supcon_loss += supcon_loss_value
+                window_plain_bce_loss += plain_bce_loss_value
+                window_special_bce_loss += special_bce_loss_value
+                window_steps += 1
+
+                writer.add_scalar("train/loss_step", total_loss_value, global_step)
+                writer.add_scalar("train/loss_total", total_loss_value, global_step)
+                writer.add_scalar("train/loss_bce", bce_loss_value, global_step)
+                writer.add_scalar("train/loss_supcon", supcon_loss_value, global_step)
+                writer.add_scalar("train/loss_supcon_posneg", posneg_loss_value, global_step)
+                writer.add_scalar("train/loss_supcon_neg", neg_loss_value, global_step)
+                writer.add_scalar("train/loss_plain_bce", plain_bce_loss_value, global_step)
+                writer.add_scalar("train/loss_special_bce", special_bce_loss_value, global_step)
+                writer.add_scalar("train/loss_fused_total", total_loss_value, global_step)
+                writer.add_scalar("train/contrastive_num_samples", contrastive_num_samples, global_step)
+                writer.add_scalar("train/contrastive_num_samples_neg", contrastive_num_samples_neg, global_step)
+                writer.add_scalar("train/lr", float(optimizer.param_groups[0]["lr"]), global_step)
+                _wandb_log(
+                    wandb_run,
+                    {
+                        "train/loss_step": total_loss_value,
+                        "train/loss_total": total_loss_value,
+                        "train/loss_bce": bce_loss_value,
+                        "train/loss_supcon": supcon_loss_value,
+                        "train/loss_supcon_posneg": posneg_loss_value,
+                        "train/loss_supcon_neg": neg_loss_value,
+                        "train/loss_plain_bce": plain_bce_loss_value,
+                        "train/loss_special_bce": special_bce_loss_value,
+                        "train/loss_fused_total": total_loss_value,
+                        "train/contrastive_num_samples": contrastive_num_samples,
+                        "train/contrastive_num_samples_neg": contrastive_num_samples_neg,
+                        "train/lr": float(optimizer.param_groups[0]["lr"]),
+                    },
+                    step=global_step,
+                )
+
+                if global_step % print_every == 0:
+                    avg_window_total = window_total_loss / max(1, window_steps)
+                    avg_window_bce = window_bce_loss / max(1, window_steps)
+                    avg_window_supcon = window_supcon_loss / max(1, window_steps)
+                    avg_window_plain_bce = window_plain_bce_loss / max(1, window_steps)
+                    avg_window_special_bce = window_special_bce_loss / max(1, window_steps)
+                    print_event = {
+                        "epoch": epoch,
+                        "global_step": global_step,
+                        "avg_loss": avg_window_total,
+                        "avg_bce_loss": avg_window_bce,
+                        "avg_supcon_loss": avg_window_supcon,
+                        "avg_plain_bce_loss": avg_window_plain_bce,
+                        "avg_special_bce_loss": avg_window_special_bce,
+                    }
+                    print_history.append(print_event)
+                    log(
+                        f"[train] epoch={epoch} step={global_step} "
+                        f"avg_total={avg_window_total:.6f} avg_bce={avg_window_bce:.6f} "
+                        f"avg_supcon={avg_window_supcon:.6f} "
+                        f"avg_plain_bce={avg_window_plain_bce:.6f} avg_special_bce={avg_window_special_bce:.6f}"
+                    )
+                    writer.add_scalar("train/loss_print_avg", avg_window_total, global_step)
+                    writer.add_scalar("train/loss_bce_print_avg", avg_window_bce, global_step)
+                    writer.add_scalar("train/loss_supcon_print_avg", avg_window_supcon, global_step)
+                    writer.add_scalar("train/loss_plain_bce_print_avg", avg_window_plain_bce, global_step)
+                    writer.add_scalar("train/loss_special_bce_print_avg", avg_window_special_bce, global_step)
+                    window_total_loss = 0.0
+                    window_bce_loss = 0.0
+                    window_supcon_loss = 0.0
+                    window_plain_bce_loss = 0.0
+                    window_special_bce_loss = 0.0
+                    window_steps = 0
+
+                if global_step % save_every == 0:
+                    checkpoint_path = ckpt_dir / f"step_{global_step:07d}.pt"
+                    _save_checkpoint(
+                        checkpoint_path,
+                        epoch=epoch,
+                        global_step=global_step,
+                        model=model,
+                        best_val_auroc=best_auroc,
+                        threshold=best_threshold,
+                        config=config_resolved,
+                        optimizer=optimizer,
+                        scaler=scaler,
+                        train_state=_current_train_state(epoch),
+                    )
+                    log(f"[save] periodic checkpoint saved: {checkpoint_path.name}")
+
+                if global_step % eval_every == 0:
+                    eval_happened_in_epoch = True
+                    _run_validation(epoch=epoch, step=global_step, reason="interval")
+                    if evals_without_improve >= early_stop_patience:
+                        stop_training = True
+                        log(
+                            f"[early-stop] triggered at epoch={epoch}, step={global_step}, "
+                            f"patience={early_stop_patience}"
+                        )
+                        break
+
+            if window_steps > 0:
+                avg_window_total = window_total_loss / max(1, window_steps)
+                avg_window_bce = window_bce_loss / max(1, window_steps)
+                avg_window_supcon = window_supcon_loss / max(1, window_steps)
+                avg_window_plain_bce = window_plain_bce_loss / max(1, window_steps)
+                avg_window_special_bce = window_special_bce_loss / max(1, window_steps)
+                print_event = {
+                    "epoch": epoch,
+                    "global_step": global_step,
+                    "avg_loss": avg_window_total,
+                    "avg_bce_loss": avg_window_bce,
+                    "avg_supcon_loss": avg_window_supcon,
+                    "avg_plain_bce_loss": avg_window_plain_bce,
+                    "avg_special_bce_loss": avg_window_special_bce,
+                }
+                print_history.append(print_event)
+                log(
+                    f"[train] epoch={epoch} step={global_step} avg_total={avg_window_total:.6f} "
+                    f"avg_bce={avg_window_bce:.6f} avg_supcon={avg_window_supcon:.6f} (epoch_end_flush)"
+                    f" avg_plain_bce={avg_window_plain_bce:.6f} avg_special_bce={avg_window_special_bce:.6f}"
+                )
+                writer.add_scalar("train/loss_print_avg", avg_window_total, global_step)
+                writer.add_scalar("train/loss_bce_print_avg", avg_window_bce, global_step)
+                writer.add_scalar("train/loss_supcon_print_avg", avg_window_supcon, global_step)
+                writer.add_scalar("train/loss_plain_bce_print_avg", avg_window_plain_bce, global_step)
+                writer.add_scalar("train/loss_special_bce_print_avg", avg_window_special_bce, global_step)
+
+            train_loss = running_total_loss / max(1, steps)
+            train_bce_loss = running_bce_loss / max(1, steps)
+            train_supcon_loss = running_supcon_loss / max(1, steps)
+            train_plain_bce_loss = running_plain_bce_loss / max(1, steps)
+            train_special_bce_loss = running_special_bce_loss / max(1, steps)
+            epoch_seconds = round(time.time() - start_time, 3)
+            history.append(
+                {
+                    "epoch": epoch,
+                    "global_step": global_step,
+                    "train_loss": train_loss,
+                    "train_bce_loss": train_bce_loss,
+                    "train_supcon_loss": train_supcon_loss,
+                    "train_plain_bce_loss": train_plain_bce_loss,
+                    "train_special_bce_loss": train_special_bce_loss,
+                    "train_fused_total_loss": train_loss,
+                    "epoch_seconds": epoch_seconds,
+                    "train_steps": steps,
+                }
+            )
+            writer.add_scalar("train/loss_epoch", train_loss, epoch)
+            writer.add_scalar("train/loss_bce_epoch", train_bce_loss, epoch)
+            writer.add_scalar("train/loss_supcon_epoch", train_supcon_loss, epoch)
+            writer.add_scalar("train/loss_plain_bce_epoch", train_plain_bce_loss, epoch)
+            writer.add_scalar("train/loss_special_bce_epoch", train_special_bce_loss, epoch)
+            writer.add_scalar("train/loss_fused_total_epoch", train_loss, epoch)
+            writer.add_scalar("train/epoch_seconds", epoch_seconds, epoch)
+            _wandb_log(
+                wandb_run,
+                {
+                    "train/loss_epoch": train_loss,
+                    "train/loss_bce_epoch": train_bce_loss,
+                    "train/loss_supcon_epoch": train_supcon_loss,
+                    "train/loss_plain_bce_epoch": train_plain_bce_loss,
+                    "train/loss_special_bce_epoch": train_special_bce_loss,
+                    "train/loss_fused_total_epoch": train_loss,
+                    "train/epoch_seconds": epoch_seconds,
+                    "train/epoch": epoch,
+                },
+                step=global_step,
+            )
+            log(
+                f"[epoch] epoch={epoch} steps={steps} global_step={global_step} "
+                f"train_total={train_loss:.6f} train_bce={train_bce_loss:.6f} "
+                f"train_supcon={train_supcon_loss:.6f} "
+                f"train_plain_bce={train_plain_bce_loss:.6f} "
+                f"train_special_bce={train_special_bce_loss:.6f} epoch_seconds={epoch_seconds:.3f}"
+            )
+
+            if stop_training:
+                break
+
+            if not eval_happened_in_epoch:
+                _run_validation(epoch=epoch, step=global_step, reason="epoch_end")
+                if evals_without_improve >= early_stop_patience:
+                    stop_training = True
+                    log(
+                        f"[early-stop] triggered at epoch_end epoch={epoch}, step={global_step}, "
+                        f"patience={early_stop_patience}"
+                    )
+                    break
+
+        if global_step > 0 and global_step % save_every != 0:
+            final_step_path = ckpt_dir / f"step_{global_step:07d}.pt"
+            if not final_step_path.exists():
+                _save_checkpoint(
+                    final_step_path,
+                    epoch=history[-1]["epoch"] if history else 0,
+                    global_step=global_step,
+                    model=model,
+                    best_val_auroc=best_auroc,
+                    threshold=best_threshold,
+                    config=config_resolved,
+                    optimizer=optimizer,
+                    scaler=scaler,
+                    train_state=_current_train_state(history[-1]["epoch"] if history else start_epoch),
+                )
+                log(f"[save] final step checkpoint saved: {final_step_path.name}")
+    finally:
+        writer.flush()
+        writer.close()
+
+    best_ckpt_path = ckpt_dir / "best.pt"
+    if not best_ckpt_path.exists():
+        _save_checkpoint(
+            best_ckpt_path,
+            epoch=history[-1]["epoch"] if history else 0,
+            global_step=global_step,
+            model=model,
+            best_val_auroc=0.0,
+            threshold=best_threshold,
+            config=config_resolved,
+            optimizer=optimizer,
+            scaler=scaler,
+            train_state=_current_train_state(history[-1]["epoch"] if history else start_epoch),
+        )
+        log("[best] best checkpoint was missing; fallback best.pt created from latest model state.")
+
+    last_ckpt_path = ckpt_dir / "last.pt"
+    _save_checkpoint(
+        last_ckpt_path,
+        epoch=history[-1]["epoch"] if history else 0,
+        global_step=global_step,
+        model=model,
+        best_val_auroc=best_auroc,
+        threshold=best_threshold,
+        config=config_resolved,
+        optimizer=optimizer,
+        scaler=scaler,
+        train_state=_current_train_state(history[-1]["epoch"] if history else start_epoch),
+    )
+    log(f"[save] last checkpoint saved: {last_ckpt_path.name}")
+
+    checkpoint = torch.load(best_ckpt_path, map_location=device)
+    _load_model_state(model, checkpoint["model_state"], logger=log)
+    best_threshold = float(checkpoint.get("threshold", best_threshold))
+    best_step = int(checkpoint.get("global_step", best_step))
+
+    caid_eval = evaluate_records(
+        model,
+        tokenizer,
+        config["backbone_name"],
+        caid_records,
+        motif_specs,
+        motif_vocab,
+        motif_cfg,
+        window_size=int(config["window_size"]),
+        stride=config["eval_stride"],
+        top_k_heuristic=int(config["top_k_heuristic"]),
+        device=device,
+        batch_size=batch_size,
+        threshold=best_threshold,
+        threshold_search=config["threshold_search"],
+        mixed_precision=use_amp,
+        dual_tokenizer_runtime=dual_tokenizer_runtime,
+        num_classes=num_classes,
+        embedding_cache=embedding_cache,
+        linker_class=linker_class,
+        dual_binary=dual_binary,
+    )
+    log(
+        "[caid3] "
+        f"t1_auprc={caid_eval['metrics']['auprc']:.6f} "
+        f"t1_auroc={_format_auroc_for_log(caid_eval['metrics'].get('auroc_t1', caid_eval['metrics'].get('auroc')))} "
+        f"t2_auprc={float(caid_eval['metrics'].get('auprc_t2') or 0.0):.6f} "
+        f"t2_auroc={_format_auroc_for_log(caid_eval['metrics'].get('auroc_t2'))} "
+        f"f1={caid_eval['metrics']['f1']:.6f} "
+        f"mcc={caid_eval['metrics']['mcc']:.6f} "
+        f"threshold={caid_eval['metrics']['threshold']:.4f}"
+    )
+
+    train_final = evaluate_records(
+        model,
+        tokenizer,
+        config["backbone_name"],
+        train_records,
+        motif_specs,
+        motif_vocab,
+        motif_cfg,
+        window_size=int(config["window_size"]),
+        stride=config["eval_stride"],
+        top_k_heuristic=int(config["top_k_heuristic"]),
+        device=device,
+        batch_size=batch_size,
+        threshold=best_threshold,
+        threshold_search=config["threshold_search"],
+        mixed_precision=use_amp,
+        dual_tokenizer_runtime=dual_tokenizer_runtime,
+        num_classes=num_classes,
+        embedding_cache=embedding_cache,
+        linker_class=linker_class,
+        dual_binary=dual_binary,
+    )
+    val_final = evaluate_records(
+        model,
+        tokenizer,
+        config["backbone_name"],
+        val_records,
+        motif_specs,
+        motif_vocab,
+        motif_cfg,
+        window_size=int(config["window_size"]),
+        stride=config["eval_stride"],
+        top_k_heuristic=int(config["top_k_heuristic"]),
+        device=device,
+        batch_size=batch_size,
+        threshold=best_threshold,
+        threshold_search=config["threshold_search"],
+        mixed_precision=use_amp,
+        dual_tokenizer_runtime=dual_tokenizer_runtime,
+        num_classes=num_classes,
+        embedding_cache=embedding_cache,
+        linker_class=linker_class,
+        dual_binary=dual_binary,
+    )
+    log(
+        "[split-auroc] "
+        f"train_t1={_format_auroc_for_log(train_final['metrics'].get('auroc_t1', train_final['metrics'].get('auroc')))} "
+        f"train_t2={_format_auroc_for_log(train_final['metrics'].get('auroc_t2'))} "
+        f"val_t1={_format_auroc_for_log(val_final['metrics'].get('auroc_t1', val_final['metrics'].get('auroc')))} "
+        f"val_t2={_format_auroc_for_log(val_final['metrics'].get('auroc_t2'))} "
+        f"test_t1={_format_auroc_for_log(caid_eval['metrics'].get('auroc_t1', caid_eval['metrics'].get('auroc')))} "
+        f"test_t2={_format_auroc_for_log(caid_eval['metrics'].get('auroc_t2'))}"
+    )
+
+    writer = SummaryWriter(log_dir=str(tensorboard_dir))
+    writer.add_scalar("caid3/auprc", float(caid_eval["metrics"]["auprc"]), global_step)
+    if caid_eval["metrics"].get("auroc") is not None:
+        writer.add_scalar("caid3/auroc", float(caid_eval["metrics"]["auroc"]), global_step)
+        writer.add_scalar("caid3/auroc_t1", float(caid_eval["metrics"]["auroc"]), global_step)
+    if caid_eval["metrics"].get("auroc_t2") is not None:
+        writer.add_scalar("caid3/auroc_t2", float(caid_eval["metrics"]["auroc_t2"]), global_step)
+    if caid_eval["metrics"].get("auprc_t2") is not None:
+        writer.add_scalar("caid3/auprc_t2", float(caid_eval["metrics"]["auprc_t2"]), global_step)
+    writer.add_scalar("caid3/f1", float(caid_eval["metrics"]["f1"]), global_step)
+    writer.add_scalar("caid3/mcc", float(caid_eval["metrics"]["mcc"]), global_step)
+    writer.flush()
+    writer.close()
+    caid3_wandb: dict[str, Any] = {
+        "caid3/auprc": float(caid_eval["metrics"]["auprc"]),
+        "caid3/f1": float(caid_eval["metrics"]["f1"]),
+        "caid3/mcc": float(caid_eval["metrics"]["mcc"]),
+        "caid3/threshold": float(caid_eval["metrics"]["threshold"]),
+    }
+    if caid_eval["metrics"].get("auroc") is not None:
+        caid3_wandb["caid3/auroc"] = float(caid_eval["metrics"]["auroc"])
+        caid3_wandb["caid3/auroc_t1"] = float(caid_eval["metrics"]["auroc"])
+    if caid_eval["metrics"].get("auroc_t2") is not None:
+        caid3_wandb["caid3/auroc_t2"] = float(caid_eval["metrics"]["auroc_t2"])
+    if caid_eval["metrics"].get("auprc_t2") is not None:
+        caid3_wandb["caid3/auprc_t2"] = float(caid_eval["metrics"]["auprc_t2"])
+    _wandb_log(wandb_run, caid3_wandb, step=global_step)
+
+    write_json(
+        metrics_dir / "train_history.json",
+        {
+            "epoch_history": history,
+            "print_history": print_history,
+            "eval_history": eval_history,
+        },
+    )
+    write_json(
+        metrics_dir / "best_val_metrics.json",
+        {
+            "epoch": best_epoch,
+            "global_step": best_step,
+            "metrics": best_val_metrics,
+            "threshold": best_threshold,
+        },
+    )
+    write_json(metrics_dir / "last_eval_metrics.json", {"metrics": last_eval_metrics})
+    write_json(metrics_dir / "caid3_metrics.json", caid_eval["metrics"])
+    write_json(
+        metrics_dir / "split_auroc.json",
+        {
+            "threshold": best_threshold,
+            "linker_class": linker_class,
+            "protocol": {
+                "t1": "linker vs {other_idr, ordered}",
+                "t2": "linker vs other_idr",
+            },
+            "train": train_final["metrics"],
+            "val": val_final["metrics"],
+            "test": caid_eval["metrics"],
+            "auroc": {
+                "train": train_final["metrics"].get("auroc"),
+                "val": val_final["metrics"].get("auroc"),
+                "test": caid_eval["metrics"].get("auroc"),
+            },
+            "auroc_t1": {
+                "train": train_final["metrics"].get("auroc_t1", train_final["metrics"].get("auroc")),
+                "val": val_final["metrics"].get("auroc_t1", val_final["metrics"].get("auroc")),
+                "test": caid_eval["metrics"].get("auroc_t1", caid_eval["metrics"].get("auroc")),
+            },
+            "auroc_t2": {
+                "train": train_final["metrics"].get("auroc_t2"),
+                "val": val_final["metrics"].get("auroc_t2"),
+                "test": caid_eval["metrics"].get("auroc_t2"),
+            },
+        },
+    )
+    write_json(
+        output_dir / "run_metadata.json",
+        {
+            "config_path": str(Path(config_path)),
+            "run_id": run_id,
+            "output_base_dir": str(output_base_dir),
+            "output_dir": str(output_dir),
+            "tensorboard_dir": str(tensorboard_dir),
+            "log_file": str(logs_dir / "train.log"),
+            "checkpoints_dir": str(ckpt_dir),
+            "tensorboard_service": tensorboard_info,
+            "wandb_service": wandb_info,
+            "split_manifest": str(active_split_manifest_path),
+            "split_manifest_resolution": split_manifest_resolution,
+            "rebuilt_exclusion_report": str(rebuilt_exclusion_report_path) if rebuilt_exclusion_report_path else None,
+            "resumed": resumed,
+            "resume_checkpoint": str(resume_checkpoint_path) if resume_checkpoint_path else None,
+            "resume_start_epoch": resume_start_epoch,
+            "resume_start_global_step": resume_start_global_step,
+            "train_records": len(train_records),
+            "val_records": len(val_records),
+            "caid_records": len(caid_records),
+            "class_stats_train": class_stats,
+            "pos_weight": pos_weight,
+            "stage": stage,
+            "contrastive": contrastive_cfg,
+            "motif": motif_cfg,
+            "motif_stats": motif_stats,
+            "dual_tokenizer": dual_tokenizer_cfg,
+            "global_steps": global_step,
+            "save_every": save_every,
+            "print_every": print_every,
+            "eval_every": eval_every,
+            "best_epoch": best_epoch,
+            "best_step": best_step,
+            "excluded_error_ids": split_manifest.get("excluded_error_ids", []),
+            "excluded_holdout_overlap_ids": split_manifest.get("excluded_holdout_overlap_ids", []),
+            "selected_threshold": best_threshold,
+            "embeddings_dir": str(embeddings_dir) if embeddings_dir is not None else None,
+            "selection_metric": selection_metric_name,
+        },
+    )
+    _finish_wandb(wandb_run, logger=log)
+
+    return {
+        "run_id": run_id,
+        "output_dir": str(output_dir),
+        "output_base_dir": str(output_base_dir),
+        "tensorboard_dir": str(tensorboard_dir),
+        "tensorboard_service": tensorboard_info,
+        "wandb_service": wandb_info,
+        "split_manifest": str(active_split_manifest_path),
+        "split_manifest_resolution": split_manifest_resolution,
+        "resumed": resumed,
+        "resume_checkpoint": str(resume_checkpoint_path) if resume_checkpoint_path else None,
+        "resume_start_epoch": resume_start_epoch,
+        "resume_start_global_step": resume_start_global_step,
+        "log_file": str(logs_dir / "train.log"),
+        "best_checkpoint": str(best_ckpt_path),
+        "last_checkpoint": str(last_ckpt_path),
+        "best_epoch": best_epoch,
+        "best_step": best_step,
+        "global_steps": global_step,
+        "best_val_auroc": best_auroc,
+        "stage": stage,
+        "contrastive": contrastive_cfg,
+        "motif": motif_cfg,
+        "motif_stats": motif_stats,
+        "dual_tokenizer": dual_tokenizer_cfg,
+        "caid3_metrics": caid_eval["metrics"],
+        "train_metrics": train_final["metrics"],
+        "val_metrics": val_final["metrics"],
+        "split_auroc": {
+            "train": train_final["metrics"].get("auroc"),
+            "val": val_final["metrics"].get("auroc"),
+            "test": caid_eval["metrics"].get("auroc"),
+            "t1": {
+                "train": train_final["metrics"].get("auroc_t1", train_final["metrics"].get("auroc")),
+                "val": val_final["metrics"].get("auroc_t1", val_final["metrics"].get("auroc")),
+                "test": caid_eval["metrics"].get("auroc_t1", caid_eval["metrics"].get("auroc")),
+            },
+            "t2": {
+                "train": train_final["metrics"].get("auroc_t2"),
+                "val": val_final["metrics"].get("auroc_t2"),
+                "test": caid_eval["metrics"].get("auroc_t2"),
+            },
+        },
+    }
+
+
+def evaluate(
+    *,
+    checkpoint_path: str | Path,
+    fasta_path: str | Path,
+    output_dir: str | Path | None = None,
+    split_manifest_path: str | Path | None = None,
+    split_key: str | None = None,
+    threshold: float | None = None,
+    batch_size: int | None = None,
+) -> dict[str, Any]:
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    config = checkpoint["config"]
+    experiment_dir = _infer_experiment_dir_from_checkpoint(checkpoint_path)
+    if output_dir is None:
+        eval_base = experiment_dir / "evaluations"
+        output, eval_id = _resolve_incremental_dir(eval_base, prefix="eval")
+    else:
+        output = Path(output_dir)
+        eval_id = None
+    output.mkdir(parents=True, exist_ok=True)
+
+    logs_dir = experiment_dir / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log = _build_logger(logs_dir / "eval.log")
+
+    tensorboard_info = _start_tensorboard_if_needed(
+        enabled=bool(config.get("auto_start_tensorboard", True)),
+        logdir=Path(config.get("output_base_dir", experiment_dir.parent)),
+        host=str(config.get("tensorboard_host", "0.0.0.0")),
+        port=int(config.get("tensorboard_port", 6006)),
+        runtime_log_path=logs_dir / "tensorboard_runtime.log",
+        logger=log,
+    )
+
+    if batch_size is None:
+        batch_size = max(1, int(config["batch_tokens"]) // int(config["window_size"]))
+    eval_id_for_name = eval_id if eval_id is not None else output.name
+    wandb_eval_config = {
+        "checkpoint_path": str(Path(checkpoint_path)),
+        "fasta_path": str(Path(fasta_path)),
+        "split_manifest_path": str(Path(split_manifest_path)) if split_manifest_path else None,
+        "split_key": split_key,
+        "batch_size": batch_size,
+        "threshold_override": threshold,
+        "experiment_dir": str(experiment_dir),
+        "eval_output_dir": str(output),
+        "train_config": config,
+    }
+    wandb_run, wandb_info = _start_wandb_if_needed(
+        enabled=bool(config.get("use_wandb", False)),
+        project=_optional_str(config.get("wandb_project")),
+        entity=_optional_str(config.get("wandb_entity")),
+        run_name=f"{config.get('run_id', experiment_dir.name)}-{eval_id_for_name}-eval",
+        group=_optional_str(config.get("wandb_group")),
+        tags=list(config.get("wandb_tags", [])) + ["eval"],
+        mode=str(config.get("wandb_mode", "online")),
+        run_dir=config.get("wandb_dir") or (experiment_dir / "wandb"),
+        job_type="eval",
+        config_payload=wandb_eval_config,
+        logger=log,
+    )
+
+    records = parse_three_line_fasta(fasta_path)
+    if split_manifest_path and split_key:
+        manifest = read_json(split_manifest_path)
+        if split_key not in manifest:
+            raise ValueError(f"split_key {split_key!r} not found in split manifest.")
+        records = select_records(records, manifest[split_key])
+
+    stage = str(config.get("stage", "stage1")).lower()
+    classifier_head_cfg = _resolve_classifier_head_config(config)
+    motif_cfg = _resolve_motif_config(config)
+    dual_tokenizer_cfg = _resolve_dual_tokenizer_config(config, stage=stage)
+    stage6_enabled = stage == "stage6" and bool(dual_tokenizer_cfg.get("enabled", False))
+    dual_branches = dict(dual_tokenizer_cfg.get("branches", {}))
+    plain_branch_cfg = dict(dual_branches.get("plain", {}))
+    special_branch_cfg = dict(dual_branches.get("special", {}))
+    special_motif_cfg = dict(special_branch_cfg.get("motif", {}))
+    motif_specs: list[MotifSpec] | None = None
+    motif_vocab: dict[str, int] | None = None
+    if stage6_enabled:
+        motif_specs = load_motif_specs(
+            special_motif_cfg["source"],
+            matching=str(special_motif_cfg.get("matching", "degenerate")),
+        )
+        motif_vocab = build_motif_vocab(motif_specs)
+    elif bool(motif_cfg.get("enabled", False)):
+        motif_specs = load_motif_specs(
+            motif_cfg["source"],
+            matching=str(motif_cfg.get("matching", "degenerate")),
+        )
+        motif_vocab = build_motif_vocab(motif_specs)
+
+    dual_tokenizer_runtime: dict[str, Any] | None = None
+    embedding_cache: dict[str, torch.Tensor] | None = None
+    if stage6_enabled:
+        if motif_specs is None:
+            raise RuntimeError("Stage 6 special branch motif specs are missing.")
+        plain_backbone, plain_tokenizer, plain_hidden_size = load_backbone_and_tokenizer(
+            config["backbone_name"],
+            tokenizer_name=plain_branch_cfg.get("tokenizer_name"),
+        )
+        special_backbone, special_tokenizer, special_hidden_size = load_backbone_and_tokenizer(
+            config["backbone_name"],
+            tokenizer_name=special_branch_cfg.get("tokenizer_name"),
+        )
+        if plain_hidden_size != special_hidden_size:
+            raise ValueError(
+                "Stage 6 branch hidden sizes must match: "
+                f"plain={plain_hidden_size} special={special_hidden_size}"
+            )
+        motif_tokenizer_info = prepare_backbone_for_motif_tokenizer(
+            special_backbone,
+            special_tokenizer,
+            build_motif_special_tokens(motif_specs),
+        )
+        plain_model = ResidueClassifier(
+            backbone=plain_backbone,
+            hidden_size=plain_hidden_size,
+            dropout=float(config.get("dropout", 0.1)),
+            freeze_backbone=bool(config.get("freeze_backbone", True)),
+            projection_dim=int(config.get("contrastive", {}).get("proj_dim", 128)),
+            proj_hidden=None
+            if config.get("contrastive", {}).get("proj_hidden") is None
+            else int(config.get("contrastive", {}).get("proj_hidden")),
+            classifier_head=classifier_head_cfg,
+            local_context=dict(config.get("local_context", {})),
+            motif={"enabled": False},
+            motif_vocab_size=0,
+        )
+        special_model = ResidueClassifier(
+            backbone=special_backbone,
+            hidden_size=special_hidden_size,
+            dropout=float(config.get("dropout", 0.1)),
+            freeze_backbone=bool(config.get("freeze_backbone", True)),
+            projection_dim=int(config.get("contrastive", {}).get("proj_dim", 128)),
+            proj_hidden=None
+            if config.get("contrastive", {}).get("proj_hidden") is None
+            else int(config.get("contrastive", {}).get("proj_hidden")),
+            classifier_head=classifier_head_cfg,
+            local_context=dict(config.get("local_context", {})),
+            motif=special_motif_cfg,
+            motif_vocab_size=(len(motif_vocab) if motif_vocab is not None else 0),
+        )
+        configure_trainable_token_embeddings(special_backbone, motif_tokenizer_info["token_ids"])
+        model = DualTokenizerResidueClassifier(
+            plain_model=plain_model,
+            special_model=special_model,
+            plain_weight=float(plain_branch_cfg.get("weight", 0.5)),
+            special_weight=float(special_branch_cfg.get("weight", 0.5)),
+        )
+        tokenizer = plain_tokenizer
+        dual_tokenizer_runtime = {
+            "plain_tokenizer": plain_tokenizer,
+            "special_tokenizer": special_tokenizer,
+            "special_motif_specs": motif_specs,
+            "special_motif_cfg": special_motif_cfg,
+        }
+    else:
+        embeddings_dir = _optional_embeddings_dir(config.get("embeddings_dir"))
+        embedding_cache: dict[str, torch.Tensor] | None = None
+        motif_tokenizer_info: dict[str, Any] | None = None
+        if embeddings_dir is not None:
+            embedding_cache = _load_embedding_cache(records, embeddings_dir)
+            sample_hidden = int(next(iter(embedding_cache.values())).shape[1])
+            tokenizer = DummyProteinTokenizer()
+            backbone = DummyBackbone(hidden_size=sample_hidden)
+            hidden_size = sample_hidden
+        else:
+            backbone, tokenizer, hidden_size = load_backbone_and_tokenizer(
+                config["backbone_name"],
+                tokenizer_name=config.get("tokenizer_name"),
+            )
+            if bool(motif_cfg.get("enabled", False)):
+                if motif_specs is None:
+                    raise RuntimeError("Motif specs are missing while motif.enabled=true.")
+                motif_tokenizer_info = prepare_backbone_for_motif_tokenizer(
+                    backbone,
+                    tokenizer,
+                    build_motif_special_tokens(motif_specs),
+                )
+        model = ResidueClassifier(
+            backbone=backbone,
+            hidden_size=hidden_size,
+            dropout=float(config.get("dropout", 0.1)),
+            freeze_backbone=bool(config.get("freeze_backbone", True)),
+            projection_dim=int(config.get("contrastive", {}).get("proj_dim", 128)),
+            proj_hidden=None
+            if config.get("contrastive", {}).get("proj_hidden") is None
+            else int(config.get("contrastive", {}).get("proj_hidden")),
+            classifier_head=classifier_head_cfg,
+            local_context=dict(config.get("local_context", {})),
+            motif=motif_cfg if embedding_cache is None else {"enabled": False},
+            motif_vocab_size=(len(motif_vocab) if motif_vocab is not None else 0),
+        )
+        if motif_tokenizer_info is not None:
+            configure_trainable_token_embeddings(backbone, motif_tokenizer_info["token_ids"])
+    _load_model_state(model, checkpoint["model_state"], logger=log)
+    device = torch.device(config.get("device", "cuda" if torch.cuda.is_available() else "cpu"))
+    model.to(device)
+
+    resolved_threshold = float(threshold) if threshold is not None else float(checkpoint.get("threshold", 0.5))
+    eval_num_classes = int(classifier_head_cfg.get("num_classes", 1))
+    result = evaluate_records(
+        model,
+        tokenizer,
+        config["backbone_name"],
+        records,
+        motif_specs,
+        motif_vocab,
+        motif_cfg,
+        window_size=int(config["window_size"]),
+        stride=config.get("eval_stride"),
+        top_k_heuristic=int(config.get("top_k_heuristic", 4)),
+        device=device,
+        batch_size=batch_size,
+        threshold=resolved_threshold,
+        threshold_search=config["threshold_search"],
+        mixed_precision=(device.type == "cuda"),
+        dual_tokenizer_runtime=dual_tokenizer_runtime,
+        num_classes=eval_num_classes,
+        embedding_cache=embedding_cache,
+        linker_class=int(classifier_head_cfg.get("linker_class", 1)),
+        dual_binary=bool(classifier_head_cfg.get("dual_binary", False)),
+    )
+    eval_wandb: dict[str, Any] = {
+        "eval/auprc": float(result["metrics"]["auprc"]),
+        "eval/f1": float(result["metrics"]["f1"]),
+        "eval/mcc": float(result["metrics"]["mcc"]),
+        "eval/threshold": float(result["metrics"]["threshold"]),
+        "eval/num_records": int(result["metrics"]["num_records"]),
+        "eval/num_scored_residues": int(result["metrics"]["num_scored_residues"]),
+    }
+    if result["metrics"].get("auroc") is not None:
+        eval_wandb["eval/auroc"] = float(result["metrics"]["auroc"])
+    _wandb_log(wandb_run, eval_wandb)
+
+    predictions_path = output / "predictions.tsv"
+    metrics_path = output / "metrics.json"
+    _write_predictions_tsv(predictions_path, result["per_record"], resolved_threshold)
+    write_json(metrics_path, result["metrics"])
+    write_json(
+        output / "evaluation_metadata.json",
+        {
+            "checkpoint_path": str(Path(checkpoint_path)),
+            "experiment_dir": str(experiment_dir),
+            "output_dir": str(output),
+            "eval_id": eval_id,
+            "tensorboard_service": tensorboard_info,
+            "wandb_service": wandb_info,
+            "fasta_path": str(Path(fasta_path)),
+            "split_manifest_path": str(Path(split_manifest_path)) if split_manifest_path else None,
+            "split_key": split_key,
+            "threshold": resolved_threshold,
+            "batch_size": batch_size,
+            "motif": motif_cfg,
+            "dual_tokenizer": dual_tokenizer_cfg,
+        },
+    )
+    log(
+        "[eval] "
+        f"checkpoint={Path(checkpoint_path).name} output_dir={output} "
+        f"auprc={result['metrics']['auprc']:.6f} "
+        f"auroc={_format_auroc_for_log(result['metrics'].get('auroc'))} "
+        f"f1={result['metrics']['f1']:.6f} "
+        f"mcc={result['metrics']['mcc']:.6f}"
+    )
+    _finish_wandb(wandb_run, logger=log)
+
+    return {
+        "experiment_dir": str(experiment_dir),
+        "eval_id": eval_id,
+        "output_dir": str(output),
+        "tensorboard_service": tensorboard_info,
+        "wandb_service": wandb_info,
+        "predictions_path": str(predictions_path),
+        "metrics_path": str(metrics_path),
+        "metrics": result["metrics"],
+    }

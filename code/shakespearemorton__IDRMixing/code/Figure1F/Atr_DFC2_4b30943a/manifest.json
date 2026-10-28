@@ -1,0 +1,31 @@
+{
+  "job_id": "38",
+  "sysname": "Atr_DFC2_4b30943a",
+  "sim_hash": "4b30943a",
+  "params": {
+    "sim_type": "homotypic_idr",
+    "seq_name1": "Atr_DFC2",
+    "seq_name2": "",
+    "cluster": "meta",
+    "is_rna2": false,
+    "temp": 293,
+    "ionic": 0.15,
+    "pH": 7.5,
+    "wfreq": 100000,
+    "steps": 500000000,
+    "runtime": 24,
+    "box": [
+      17.0,
+      17.0,
+      170.0
+    ],
+    "n_mol1": 85,
+    "n_mol2": 0,
+    "ff": "calvados2",
+    "restraint": false,
+    "steps_eq": 1000000,
+    "slab_width": 85.0,
+    "sim_hash": "4b30943a",
+    "sysname": "Atr_DFC2_4b30943a"
+  }
+}

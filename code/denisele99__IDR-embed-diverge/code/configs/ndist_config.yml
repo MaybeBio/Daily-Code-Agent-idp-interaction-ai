@@ -1,0 +1,48 @@
+inputs:
+  # Embedding file used as the background space for neighbour-rank calculations. May be .csv or .h5. Typically all human IDR or domain embeddings.
+  background_emb: ../data/embeddings/human_idrs_pos_updated_esm.csv #../data/embed/human_idrs_pos_updated_esm_h_prefix.csv #/home/moseslab/denise/Paper/data/embed/human_idrs_pos_updated_esm.csv #/home/moseslab/denise/Paper/data/embed/human_PFAM_esm_updated.csv #  # #  # #/data/embeddings/human_idr_background.csv
+  # Ortholog embedding file or directory of ortholog embedding files (.h5 or .csv). Used to compute ortholog neighbour distances and/or family divergence.
+  ortholog_emb: ../data/embeddings/idr_orthologs_fixed_names #/home/moseslab/denise/Paper/data/embed/CDK_PFAM_ortho_07_31_25_esm.h5 # #/home/moseslab/denise/Paper/data/embed/unrelated_pfam_sample_combined_esm.h5  #/home/moseslab/denise/Paper/data/embed/unrelated_pfam_sample_07-31-25_esm.h5 #/home/moseslab/denise/Paper/data/embed/unrelated_pfam_sample_10_23_25_esm.h5 #/home/moseslab/denise/Paper/data/embed/CDK_PFAM_ortho_07_31_25_esm.csv # #/data/embeddings/orthologs/ #file of ortholog embeddings or directory of ortholog embeddings
+  # JSON mapping from family name -> list of genes. Required unless only running random_neighbour_divergence.
+  fam_map: ./cdk_genes.json #../src/idr_diverge/distances/input_args/cdk_to_genes.json #family_to_genes.json 
+
+
+compute:
+  chunk_size: 8000  # Number of pairwise comparisons processed at once.
+
+#Calculate neighbour divergence: fam neighbour divergence OR random neighbour divergence
+
+ortholog_filter:
+  enabled: true
+  ortholog_types: ortholog_one2one_one2many #- ortholog_one2one | ortholog_one2many | ortholog_one2one_one2many #Which Ensembl ortholog types to keep
+  min_species_coverage: 0.3 # Minimum fraction of paralog segments that must contain a species.
+  min_species: 10 # Minimum number of species across paralog segments required after filtering.
+  homolog_annotation: ../data/annotations/ensembl_homol_reference_2025.pkl # Ensembl ortholog annotation file used for filtering.
+
+neighbour_divergence:
+  #Distance type for neighbour divergence calculation. 
+  #Between = pairwise distances between different paralogous segments. Within = pairwise distances among orthologs of the same segment. Should be either "between" or "within". If "within", the code will calculate divergence among orthologs of the same segment and return a single divergence value per segment. If "between", the code will calculate pairwise distances between all paralogous segments and return a distance matrix.
+  dist_type: between     # between | within 
+  segment: IDR          # Segment label used only for output naming.
+  # For within divergence only:
+  # aggregate = return one value per species
+  # per_gene = return one value per gene segment per species
+  return_mode: per_gene # aggregate | per_gene 
+  out_distance: ../res/ndist/test #/results/ortholog_divergence/ ##Output DIRECTORY to save neighbour distance results
+  #Put chunk_size and n_jobs here?
+
+random_neighbour_divergence: #dist_type, segment, and return mode parameters are used from neighbour_divergence setting.
+  enabled: false
+  sample_size: 100 # Number of random segments sampled for each background estimate.
+  random_seed:  #42
+  out_random:  ../res/ndist/rand_ndist_bw_2/1005_rand_bw_idr_diverge # Output FILE for random/background neighbour-distance results.
+
+calculate_FND:
+  enabled: true
+  # Background neighbour distance file (.pkl) - output from random neighbour divergence calculation (default sample size 100) or pre-computed background distance matrix.
+  bg_distance_matrix: ../res/ndist/rand_ndist/rand_100_idr_diverge_04_02.pkl
+
+  # Family neighbour distance file (or directory of neighbour distance matrix files) produced by neighbour_divergence.
+  fam_distance_matrix: ../res/ndist/test/CDK_between_IDR_diverge.pkl #../res/ndist/
+  # Output CSV containing FND values.
+  output_results: ../res/FND/FND_test.csv

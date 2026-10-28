@@ -1,0 +1,66 @@
+_wandb:
+    value:
+        cli_version: 0.22.0
+        e:
+            qj1bzoatrvhg3lbnwawjwbjnaft5eb8k:
+                codePath: src/idr_diverge/IDR_LM_train/train.py
+                codePathLocal: train.py
+                cpu_count: 14
+                cpu_count_logical: 20
+                cudaVersion: "12.2"
+                disk:
+                    /:
+                        total: "1006450962432"
+                        used: "765031071744"
+                email: denise.le@mail.utoronto.ca
+                executable: /media/data/.conda/envs/denise_trn/bin/python
+                git:
+                    commit: 496c05f0838960d17a5595610c2965470384f3c5
+                    remote: https://github.com/denisele99/idr_embed_divergence.git
+                gpu: NVIDIA RTX A4500
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 7168
+                      memoryTotal: "21464350720"
+                      name: NVIDIA RTX A4500
+                      uuid: GPU-ac9d3f27-568b-165b-c465-a09fa856d26f
+                host: soma
+                memory:
+                    total: "67099389952"
+                os: Linux-6.8.0-59-generic-x86_64-with-glibc2.35
+                program: /home/moseslab/denise/Paper/src/idr_diverge/IDR_LM_train/train.py
+                python: CPython 3.11.7
+                root: /home/moseslab/denise/Paper/src/idr_diverge/IDR_LM_train
+                startedAt: "2026-04-10T18:37:30.147160Z"
+                writerId: qj1bzoatrvhg3lbnwawjwbjnaft5eb8k
+        m: []
+        python_version: 3.11.7
+        t:
+            "1":
+                - 2
+                - 1
+                - 3
+                - 5
+                - 11
+                - 49
+                - 51
+                - 53
+                - 71
+            "2":
+                - 2
+                - 1
+                - 3
+                - 5
+                - 11
+                - 49
+                - 51
+                - 53
+                - 71
+            "3":
+                - 13
+            "4": 3.11.7
+            "5": 0.22.0
+            "6": 4.37.2
+            "12": 0.22.0
+            "13": linux-x86_64

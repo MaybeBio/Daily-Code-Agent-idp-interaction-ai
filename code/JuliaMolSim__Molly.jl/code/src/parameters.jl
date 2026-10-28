@@ -2,8 +2,8 @@
 
 export
     ParameterPlan,
-    extract_parameters,
-    inject_gradients
+    inject_gradients,
+    extract_parameters
 
 @public parameter_prefix,
     parameter_fields
@@ -56,6 +56,11 @@ parameter_fields(x) = parameter_fields(typeof(x))
 @inline convert_parameter(::Type{T}, x::Real) where {T <: Unitful.AbstractQuantity} =
     convert(T, x * unit(T))
 
+# A field that is not a parameter, as it is put into the injected copy of an interaction.
+#   `LambdaScheduler` rebuilds itself field by field, since Enzyme cannot deduce the type of a
+#   plain copy of its `Bool`s and errors on λ interactions with no other such field.
+@inline copied_field(x) = x
+
 # A copy of `inter` with its differentiable parameters replaced by `values`, which are in the
 #   order given by `parameter_fields`, either plain numbers in the units of the fields or
 #   values with units
@@ -74,7 +79,7 @@ parameter_fields(x) = parameter_fields(typeof(x))
         if haskey(pos, fname)
             push!(args, :(convert_parameter($(fieldtype(T, i)), vals[$(pos[fname])])))
         else
-            push!(args, :(getfield(inter, $i)))
+            push!(args, :(copied_field(getfield(inter, $i))))
         end
     end
     return Expr(:call, T, args...)
@@ -118,6 +123,35 @@ function check_scalar_atoms(atoms)
     end
 end
 
+# Whether an interaction stores the parameters of both end states, as the λ interactions of a
+#   single topology system do; such an interaction has no single value per key
+single_topology(inter) = false
+
+function check_dual_topology(inters)
+    if any(single_topology, inters)
+        throw(ArgumentError("interactions with parameters for two end states, as in a single " *
+                            "topology RelativeFESystem, are not supported; use dual topology"))
+    end
+end
+
+# Keys of specific interactions whose interactions do not all have the same value, for example
+#   a bond type that the two end states of a dual topology system parametrise differently. A
+#   single value would overwrite some of them, so these keys are not parameters.
+function inconsistent_inter_keys(specific_inter_lists)
+    first_values = Dict{String, Any}()
+    inconsistent = Set{String}()
+    for il in specific_inter_lists
+        for (inter, t) in zip(from_device(il.inters), il.types)
+            prefix = parameter_prefix(inter, t)
+            isnothing(prefix) && continue
+            for (suffix, val) in zip(parameter_keys(inter), parameter_values(inter))
+                get!(first_values, prefix * suffix, val) == val || push!(inconsistent, prefix * suffix)
+            end
+        end
+    end
+    return inconsistent
+end
+
 """
     ParameterPlan(sys, params_dic)
 
@@ -125,8 +159,8 @@ The mapping from the entries of `params_dic` to the parameters of `sys`, built
 once and reused on every call to [`inject_gradients`](@ref).
 
 Atom keys are described in [`extract_parameters`](@ref). It is an error to give an atom key
-whose atoms have different values, which [`extract_parameters`](@ref) leaves out, or to use a
-single topology system.
+whose atoms have different values, or an interaction key whose interactions have different
+values, which [`extract_parameters`](@ref) leaves out, or to use a single topology system.
 
 Building the plan is where the dictionary keys are formed and looked up. A plan is valid
 for any dictionary with the same keys, so it can be reused across a gradient calculation
@@ -226,9 +260,17 @@ function ParameterPlan(sys::System, params_dic)
     end
 
     # Specific interaction lists
+    for key in inconsistent_inter_keys(values(sys.specific_inter_lists))
+        if haskey(params_dic, key)
+            throw(ArgumentError("the interactions with parameter $key have different values, " *
+                "which it would overwrite; remove it from the dictionary or give them " *
+                "different types"))
+        end
+    end
     for il in values(sys.specific_inter_lists)
         push!(target_starts, length(ranges))
         inters_cpu = from_device(il.inters)
+        check_dual_topology(inters_cpu)
         suffixes = parameter_keys(eltype(inters_cpu))
         if length(suffixes) == 0 || isnothing(parameter_prefix(first(inters_cpu), ""))
             for _ in suffixes
@@ -267,6 +309,12 @@ inject_interaction(inter, args...) = inter
 #   interaction that caches values computed from the charges
 update_charges(inter, atoms) = inter
 
+# A copy of a general interaction that is consistent with the injected atoms (on the host) and
+#   its own injected parameters, for an interaction that caches values computed from them, such
+#   as the dispersion corrections. Called inside the function being differentiated, so the
+#   recomputation carries the gradients.
+update_cached_parameters(inter, atoms) = inter
+
 # The values of the plan's parameters, in slot order
 function plan_values(params_dic, plan::ParameterPlan{V}) where {V}
     ks = plan.keys
@@ -291,10 +339,15 @@ function parameter_flat(params_dic, plan::ParameterPlan{V}) where {V}
     return flat
 end
 
-@inline function inject_atoms(sys, flat, plan, ::Type{AT}) where {AT}
-    isempty(plan.ranges[1]) && return sys.atoms
+@inline function inject_atoms_host(flat, plan)
+    isempty(plan.ranges[1]) && return plan.atoms_host
     m, q, s, e = target_views(flat, plan, 1, Val(4))
-    return to_device(inject_atom.(plan.atoms_host, m, q, s, e), AT)
+    return inject_atom.(plan.atoms_host, m, q, s, e)
+end
+
+@inline function inject_atoms(sys, atoms_host, plan, ::Type{AT}) where {AT}
+    isempty(plan.ranges[1]) && return sys.atoms
+    return to_device(atoms_host, AT)
 end
 
 # Whether the dictionary sets the charge of any atom
@@ -408,7 +461,9 @@ units that each parameter is stored with in `sys`, as returned by
 Gradients are only supported for systems without units.
 
 When charges are injected, the charge sums that a [`PME`](@ref) with `fixed_charges=true`
-caches are recomputed from the new charges.
+caches are recomputed from the new charges. The dispersion corrections, such as
+[`LJDispersionCorrection`](@ref), are recomputed from the injected σ and ϵ values (and `α` and
+`β` for [`DExpDispersionCorrection`](@ref)), so their gradients are included.
 """
 inject_gradients(sys::System, params_dic) =
     inject_gradients(sys, params_dic, ParameterPlan(sys, params_dic))
@@ -420,7 +475,8 @@ function inject_gradients(sys::System{<:Any, AT}, params_dic, plan::ParameterPla
                           coords) where {AT}
     flat = parameter_flat(params_dic, plan)
 
-    atoms = inject_atoms(sys, flat, plan, AT)
+    atoms_host = inject_atoms_host(flat, plan)
+    atoms = inject_atoms(sys, atoms_host, plan, AT)
     # Walked recursively rather than with `ntuple`, so that the heterogeneous tuples are
     # unrolled and each element keeps its concrete type
     n_lists = length(sys.specific_inter_lists)
@@ -432,6 +488,7 @@ function inject_gradients(sys::System{<:Any, AT}, params_dic, plan::ParameterPla
     if injects_charges(plan)
         gis = map(inter -> update_charges(inter, atoms), gis)
     end
+    gis = map(inter -> update_cached_parameters(inter, atoms_host), gis)
 
     masses, total_mass = injected_masses(sys, flat, plan, AT)
     velocities = copy(sys.velocities)
@@ -462,10 +519,15 @@ and `atom_<charge type>_charge` for each charge type, the `charge_type` of
 example masses after hydrogen mass repartitioning, is left out, so that injecting the
 dictionary leaves those values unchanged. Leaving out a charge, σ or ϵ key is reported
 according to `strictness`: `:warn` to emit a warning (the default), `:nowarn` to suppress it
-or `:error` to error; leaving out a mass key is not reported. Single topology systems, whose
-atoms store the parameters of two end states, are not supported.
+or `:error` to error; leaving out a mass key is not reported. Likewise, an interaction key whose
+interactions have different values, for example a bond type that the two end states of a
+[`RelativeFESystem`](@ref) parametrise differently, is left out and reported. Single topology
+systems, whose atoms and interactions store the parameters of two end states, are not
+supported.
 An interaction contributes its parameters if it defines [`Molly.parameter_prefix`](@ref)
-and [`Molly.parameter_fields`](@ref).
+and [`Molly.parameter_fields`](@ref). The λ interactions of an [`AbsoluteFESystem`](@ref) or
+a dual topology [`RelativeFESystem`](@ref) have the keys of the interactions they replace, so
+an alchemical system has the keys of the systems it was built from.
 
 The values are plain numbers of the float type of the system. On a system with units they
 are in the units that each parameter is stored with in the system, for example kJ mol⁻¹ nm⁻²
@@ -498,10 +560,18 @@ function extract_parameters(sys::System{<:Any, <:Any, T}, ff=nothing;
 
     for il in values(sys.specific_inter_lists)
         inters_cpu = from_device(il.inters)
+        check_dual_topology(inters_cpu)
         for (inter, t) in zip(inters_cpu, il.types)
             extract_block!(params_dic, parameter_prefix(inter, t), parameter_keys(inter),
                            parameter_values(inter))
         end
+    end
+    inconsistent_inters = sort!(collect(inconsistent_inter_keys(values(sys.specific_inter_lists))))
+    if !isempty(inconsistent_inters)
+        foreach(key -> delete!(params_dic, key), inconsistent_inters)
+        report_issue("the interactions of each of these parameters have different values, so " *
+            "they are left out: $(join(inconsistent_inters, ", ")); give the interactions " *
+            "different types to make them parameters", strictness)
     end
 
     for inter in (values(sys.pairwise_inters)..., values(sys.general_inters)...)

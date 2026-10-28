@@ -14,7 +14,7 @@
         sys_out = System(
             sys;
             coords=[F * coord for coord in sys.coords],
-            boundary=TriclinicBoundary(F * Molly.boxmatrix(sys.boundary)),
+            boundary=TriclinicBoundary(F * Molly.box_matrix(sys.boundary)),
         )
         return potential_energy(sys_out, neighbors; n_threads=1)
     end
@@ -51,7 +51,7 @@
             z         o + q[2]   q[6];
             z         z          o + q[3]
         ]
-        boundary_new = TriclinicBoundary(F * Molly.boxmatrix(boundary))
+        boundary_new = TriclinicBoundary(F * Molly.box_matrix(boundary))
         return Molly.ewald_pe_forces!(
             nothing,
             nothing,
@@ -141,7 +141,7 @@
         nonbonded_method=SetupCoulombReactionField(),
     )
 
-    sys_trc = System(sys; boundary=TriclinicBoundary(Molly.boxmatrix(sys.boundary)))
+    sys_trc = System(sys; boundary=TriclinicBoundary(Molly.box_matrix(sys.boundary)))
     neighbors_virial = Molly.find_neighbors(sys_trc; n_threads=1)
 
     W_enzyme, _, _ = virial_enzyme(sys_trc, neighbors_virial)
@@ -229,10 +229,9 @@ end
     neighbor_finder = DistanceNeighborFinder(eligible=trues(n_atoms, n_atoms), n_steps=1,
                                              dist_cutoff=T(1.5))
     pairwise_inters = (
-        LennardJones(cutoff=DistanceCutoff(T(1.2)), use_neighbors=true),
+        LennardJones(cutoff=DistanceCutoff(T(1.2))),
         CoulombReactionField(dist_cutoff=T(1.2),
                              solvent_dielectric=T(Molly.crf_solvent_dielectric),
-                             use_neighbors=true,
                              coulomb_const=T(ustrip(Molly.coulomb_const))),
     )
     bonds = InteractionList2Atoms(Int32.(collect(1:4)), Int32.(collect(5:8)),
@@ -292,30 +291,7 @@ end
 end
 
 @testset "CV gradients" begin
-    function cv_gradient_enz(cv_type, coords, atoms=nothing, boundary=nothing, velocities=nothing)
-        d_coords = zero(coords)
-        unit_arr = Any[u"nm"]
-
-        _, cv_val_ustrip = autodiff(
-            set_runtime_activity(ReverseWithPrimal), # set_runtime_activity necessary for units
-            Molly.calculate_cv_ustrip!,
-            Active,
-            Const(unit_arr),
-            Const(cv_type),
-            Duplicated(coords, d_coords),
-            Const(atoms),
-            Const(boundary),
-            Const(velocities),
-        )
-
-        # Correct the units after the ustrip
-        u = only(unit_arr)
-        d_coords = d_coords .* u ./ unit(d_coords[1][1])^2
-
-        return d_coords, cv_val_ustrip * u
-    end
-
-    function forces_test!(fs, sys, bias::BiasPotential; grad_cv=cv_gradient_enz, kwargs...)
+    function forces_test!(fs, sys, bias; grad_cv=Molly.cv_gradient_enzyme, kwargs...)
         if bias.cv_type.correction == :pbc
             coords = Molly.unwrap_molecules(sys)
         else
@@ -382,7 +358,7 @@ end
         fs_zero_enz = zero(fs)
         fs_zero_anl = zero(fs)
 
-        forces_test!(fs_zero_enz, sys, bias_pot; grad_cv=cv_gradient_enz)
+        forces_test!(fs_zero_enz, sys, bias_pot; grad_cv=Molly.cv_gradient_enzyme)
         forces_test!(fs_zero_anl, sys, bias_pot; grad_cv=Molly.cv_gradient)
         @test isapprox(ustrip_vec.(fs_zero_anl), ustrip_vec.(fs_zero_enz); atol=1e-6)
     end
@@ -484,16 +460,16 @@ end
     #   range where each interaction actually varies
     inters = [
         ("LennardJonesSCBeutler", LennardJonesSoftCoreBeutler(α=T(0.5),
-                                        cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true),
+                                        cutoff=DistanceCutoff(nb_cutoff)),
                                   T(0.4)),
         ("LennardJonesSCGapsys" , LennardJonesSoftCoreGapsys(α=T(0.85),
-                                        cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true),
+                                        cutoff=DistanceCutoff(nb_cutoff)),
                                   T(0.4)),
         ("CoulombSCBeutler"     , CoulombSoftCoreBeutler(cutoff=DistanceCutoff(nb_cutoff),
-                                        use_neighbors=true, coulomb_const=cc),
+                                        coulomb_const=cc),
                                   T(0.7)),
         ("CoulombSCGapsys"      , CoulombSoftCoreGapsys(cutoff=DistanceCutoff(nb_cutoff),
-                                        σQ=T(1.0), use_neighbors=true, coulomb_const=cc),
+                                        σQ=T(1.0), coulomb_const=cc),
                                   T(0.7)),
     ]
     for (name, inter, λ_start) in inters
@@ -609,11 +585,10 @@ end
     coords = place_atoms(n_atoms, boundary; min_dist=T(0.6), max_attempts=500, rng=rng_setup)
     velocities = [random_velocity(atom_mass, temp; rng=rng_setup) for i in 1:n_atoms]
     nb_cutoff = T(1.2)
-    lj = LennardJones(cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true)
+    lj = LennardJones(cutoff=DistanceCutoff(nb_cutoff))
     crf = CoulombReactionField(
         dist_cutoff=nb_cutoff,
         solvent_dielectric=T(Molly.crf_solvent_dielectric),
-        use_neighbors=true,
         coulomb_const=cc,
     )
     neighbor_finder = DistanceNeighborFinder(
@@ -837,7 +812,7 @@ end
     @test frac_diff < 1e-5
 
     boundary_units = CubicBoundary(3.0u"nm")
-    lj_units = LennardJones(cutoff=DistanceCutoff(1.2u"nm"), use_neighbors=true)
+    lj_units = LennardJones(cutoff=DistanceCutoff(1.2u"nm"))
     neighbor_finder_units = DistanceNeighborFinder(
         eligible=trues(n_atoms, n_atoms),
         n_steps=10,
@@ -1083,52 +1058,49 @@ end
     lost_wc = ("weight_14", "coulomb_const")
     pairwise_inters = [
         ("LennardJones"     , LennardJones(cutoff=DistanceCutoff(nb_cutoff),
-                                    use_neighbors=true, weight_special=w), lost_w),
+                                    weight_special=w), lost_w),
         ("Mie"              , Mie(m=T(6), n=T(12), cutoff=DistanceCutoff(nb_cutoff),
-                                    use_neighbors=true, weight_special=w), lost_w),
+                                    weight_special=w), lost_w),
         ("AshbaughHatch"    , AshbaughHatch(cutoff=DistanceCutoff(nb_cutoff),
-                                    use_neighbors=true, weight_special=w), lost_w),
+                                    weight_special=w), lost_w),
         ("DoubleExponential", DoubleExponential(α=T(16.766), β=T(4.427), weight_special=w,
-                                    cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true), ()),
+                                    cutoff=DistanceCutoff(nb_cutoff)), ()),
         ("DoubleExponentialSC", DoubleExponentialSoftCore(α=T(16.766), β=T(4.427),
-                                    weight_special=w, cutoff=DistanceCutoff(nb_cutoff),
-                                    use_neighbors=true), ()),
-        ("Gravity"          , Gravity(G=T(1.0), use_neighbors=true), ()),
+                                    weight_special=w, cutoff=DistanceCutoff(nb_cutoff)), ()),
+        ("Gravity"          , Gravity(G=T(1.0)), ()),
         ("LJSCBeutler"      , LennardJonesSoftCoreBeutler(α=T(0.5), weight_special=w,
-                                    cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true), ()),
+                                    cutoff=DistanceCutoff(nb_cutoff)), ()),
         ("LJSCGapsys"       , LennardJonesSoftCoreGapsys(α=T(0.85), weight_special=w,
-                                    cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true), ()),
-        ("Coulomb"          , Coulomb(cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true,
+                                    cutoff=DistanceCutoff(nb_cutoff)), ()),
+        ("Coulomb"          , Coulomb(cutoff=DistanceCutoff(nb_cutoff),
                                     weight_special=w, coulomb_const=cc), ()),
         ("CoulombScaled"    , Molly.CoulombScaled(cutoff=DistanceCutoff(nb_cutoff),
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc), ()),
+                                    weight_special=w, coulomb_const=cc), ()),
         ("CoulombSCBeutler" , CoulombSoftCoreBeutler(cutoff=DistanceCutoff(nb_cutoff),
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc), ()),
+                                    weight_special=w, coulomb_const=cc), ()),
         ("CoulombSCGapsys"  , CoulombSoftCoreGapsys(cutoff=DistanceCutoff(nb_cutoff),
-                                    σQ=T(1.0), use_neighbors=true, weight_special=w,
-                                    coulomb_const=cc), ()),
+                                    σQ=T(1.0), weight_special=w, coulomb_const=cc), ()),
         ("CoulombRF"        , CoulombReactionField(dist_cutoff=nb_cutoff,
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc), ()),
+                                    weight_special=w, coulomb_const=cc), ()),
         ("CRFScaled"        , Molly.CoulombReactionFieldScaled(dist_cutoff=nb_cutoff,
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc), ()),
+                                    weight_special=w, coulomb_const=cc), ()),
         ("CRFSCBeutler"     , CoulombSoftCoreBeutlerReactionField(dist_cutoff=nb_cutoff,
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc), ()),
+                                    weight_special=w, coulomb_const=cc), ()),
         ("CRFSCGapsys"      , CoulombSoftCoreGapsysReactionField(dist_cutoff=nb_cutoff,
-                                    σQ=T(1.0), use_neighbors=true, weight_special=w,
-                                    coulomb_const=cc), ()),
-        ("CoulombEwald"     , CoulombEwald(dist_cutoff=nb_cutoff, use_neighbors=true,
+                                    σQ=T(1.0), weight_special=w, coulomb_const=cc), ()),
+        ("CoulombEwald"     , CoulombEwald(dist_cutoff=nb_cutoff,
                                     weight_special=w, coulomb_const=cc,
                                     approximate_erfc=false), ()),
         ("CoulombEwaldScaled", Molly.CoulombEwaldScaled(dist_cutoff=nb_cutoff,
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc,
+                                    weight_special=w, coulomb_const=cc,
                                     approximate_erfc=false), ()),
         ("CEwaldSCBeutler"  , CoulombSoftCoreBeutlerEwald(dist_cutoff=nb_cutoff,
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc,
+                                    weight_special=w, coulomb_const=cc,
                                     approximate_erfc=false), ()),
         ("CEwaldSCGapsys"   , CoulombSoftCoreGapsysEwald(dist_cutoff=nb_cutoff, σQ=T(1.0),
-                                    use_neighbors=true, weight_special=w, coulomb_const=cc,
+                                    weight_special=w, coulomb_const=cc,
                                     approximate_erfc=false), ()),
-        ("Yukawa"           , Yukawa(cutoff=DistanceCutoff(nb_cutoff), use_neighbors=true,
+        ("Yukawa"           , Yukawa(cutoff=DistanceCutoff(nb_cutoff),
                                     weight_special=w, coulomb_const=cc, kappa=T(1.0)), ()),
     ]
     for (name, inter, broken) in pairwise_inters
@@ -1190,6 +1162,47 @@ end
         end
         test_params(name, sys_ref, params_dic)
     end
+
+    # The λ versions that alchemical systems use have the keys of the interactions they
+    #   replace. Dual topology keeps the bonded terms of deleted atoms at full strength, so
+    #   the A copies of core atoms are used, whose bonded terms are scaled by 1 - λ
+    atoms_λ = [Atom(index=i, mass=T(10.0), charge=T(0.1), σ=T(0.3), ϵ=T(0.4), λ=T(0.6),
+                    alch_role=(i <= 2 ? Molly.CoreDRole : Molly.EnvRole))
+               for i in eachindex(coords_spec)]
+    scheduler = Molly.DefaultLambdaScheduler(dual=true)
+    to_λ(inter) = Molly.to_lambda_function(inter; scheduler=scheduler)
+    to_λ(inter::Molly.LennardJones14) = Molly.to_lambda_function(inter, Molly.GapsysSoftCore();
+                                                                 scheduler=scheduler, float_type=T)
+    to_λ(inter::Molly.LennardJones14, softcore) =
+        Molly.to_lambda_function(inter, softcore; scheduler=scheduler, float_type=T)
+    λ_inters = Any[(name, il, to_λ) for (name, il) in specific_inters if name != "FENEBond" &&
+                                                     name != "HarmonicPositionRestraint"]
+    for softcore in (Molly.BeutlerSoftCore(), Molly.ScaledSoftCore())
+        lj14 = specific_inters[findfirst(x -> first(x) == "LennardJones14", specific_inters)][2]
+        push!(λ_inters, ("LennardJones14 $(nameof(typeof(softcore)))", lj14,
+                         inter -> to_λ(inter, softcore)))
+    end
+    for (name, inter_list, convert) in λ_inters
+        il_λ = typeof(inter_list).name.wrapper(
+            (getfield(inter_list, f) for f in fieldnames(typeof(inter_list))[1:(end - 3)])...,
+            convert.(inter_list.inters), ["t"], inter_list.data)
+        sys_ref = System(specific_sys(il_λ); atoms=atoms_λ)
+        # The coupling must change the energy, or the λ part would go untested
+        @test !(potential_energy(sys_ref) ≈ potential_energy(specific_sys(inter_list)))
+        params_dic = extract_parameters(sys_ref)
+        keys_base = [Molly.parameter_prefix(inter_list.inters[1], "t") * k
+                     for k in Molly.parameter_keys(inter_list.inters[1])]
+        @test all(k -> haskey(params_dic, k), keys_base)
+        inter_params = Dict(k => params_dic[k] for k in keys_base)
+        test_params("$(name)λ", sys_ref, inter_params)
+    end
+
+    # Single topology λ interactions store the parameters of both end states
+    hb_single = Molly.to_lambda_function_single(HarmonicBond(k=T(100.0), r0=T(0.5)), nothing;
+                    scheduler=Molly.DefaultLambdaScheduler(dual=false))
+    sys_single = specific_sys(InteractionList2Atoms(is, js, [hb_single], ["t"]))
+    @test_throws "single topology" extract_parameters(sys_single)
+    @test_throws "single topology" ParameterPlan(sys_single, Dict("inter_HB_t_k" => T(100.0)))
 end
 
 @testset "Parameters with units" begin
@@ -1207,6 +1220,7 @@ end
             float_type=Float64,
             nonbonded_method=SetupCoulombReactionField(),
             dist_cutoff=(units ? 1.0u"nm" : 1.0),
+            dispersion_correction=true,
             strictness=:nowarn,
         )
     end
@@ -1286,6 +1300,35 @@ end
     @test ustrip(u"kJ * mol^-1", E_mod) ≈ pe(sys_mod_nounits) rtol=1e-12
     @test map(f -> ustrip.(u"kJ * mol^-1 * nm^-1", f), fs(sys_mod)) ≈ fs(sys_mod_nounits) rtol=1e-12
 
+    # The dispersion correction takes up the injected α, σ and ϵ, as does its λ version, so
+    #   both match those of a system set up with the modified force field
+    xml = read(joinpath(ff_dir, "ethanol_garnet.xml"), String)
+    xml_mod = replace(xml,
+        "name=\"alpha\" defaultValue=\"12.159626\"" =>
+            "name=\"alpha\" defaultValue=\"$(modified["inter_DEXP_alpha"])\"",
+        "<Atom type=\"C1\" sigma=\"0.3358508050441742\"" =>
+            "<Atom type=\"C1\" sigma=\"$(modified["atom_C1_σ"])\"",
+        "epsilon=\"0.9317593574523926\"" => "epsilon=\"$(modified["atom_O1_ϵ"])\"",
+    )
+    @test count("$(modified["inter_DEXP_alpha"])", xml_mod) == 1
+    garnet_mod = joinpath(mktempdir(), "ethanol_garnet.xml")
+    write(garnet_mod, xml_mod)
+    sys_rebuilt = System(
+        joinpath(data_dir, "ethanol_garnet.pdb"),
+        MolecularForceField(garnet_mod; units=false,
+            custom_residue_templates=joinpath(ff_dir, "ethanol_garnet_residues.xml"));
+        units=false, float_type=Float64, nonbonded_method=SetupCoulombReactionField(),
+        dist_cutoff=1.0, dispersion_correction=true, strictness=:nowarn,
+    )
+    disp(s) = potential_energy(s; pairwise_inters=(), specific_inter_lists=())
+    @test disp(sys_mod_nounits) ≈ disp(sys_rebuilt) rtol=1e-12
+    @test !isapprox(disp(sys_mod_nounits), disp(sys_nounits); rtol=1e-3)
+    solute = collect(1:9)
+    sys_λ_mod = inject_gradients(AbsoluteFESystem(sys_nounits, 0.8, solute), params_mod)
+    @test disp(sys_λ_mod) ≈ disp(AbsoluteFESystem(sys_rebuilt, 0.8, solute)) rtol=1e-12
+    @test disp(Molly.set_lambda!(sys_λ_mod, 0.6)) ≈
+          disp(AbsoluteFESystem(sys_rebuilt, 0.6, solute)) rtol=1e-12
+
     for AT in array_list[2:end]
         sys_gpu = garnet_sys(AT, true)
         plan_gpu = ParameterPlan(sys_gpu, params_dic)
@@ -1335,6 +1378,7 @@ end
             nonbonded_method=nonbonded_method,
             dist_cutoff=1.0,
             grad_safe=grad_safe,
+            dispersion_correction=true,
             strictness=:nowarn,
         )
     end
@@ -1385,8 +1429,11 @@ end
         params_dic = extract_parameters(sys)
         plan = ParameterPlan(sys, params_dic)
         neighbors = find_neighbors(sys; n_threads=1)
+        # The dispersion correction alongside the PME checks that Enzyme handles general
+        #   interactions of different types
         gis = sys.general_inters
-        @test isempty(gis) || only(gis).grad_safe
+        @test any(gi -> gi isa DExpDispersionCorrection, gis)
+        @test all(gi -> !(gi isa PME) || gi.grad_safe, gis)
         grads_enzyme = Dict(k => zero(v) for (k, v) in params_dic)
         autodiff(
             set_runtime_activity(Reverse),
@@ -1397,7 +1444,7 @@ end
             Const(plan),
             Duplicated(copy(sys.coords), zero(sys.coords)),
             Const(neighbors),
-            isempty(gis) ? Const(gis) : Duplicated(gis, Enzyme.make_zero(gis)),
+            Duplicated(gis, Enzyme.make_zero(gis)),
         )
         for key in ("atom_O2_charge", "atom_H7_charge", "atom_O1_charge", "atom_C1_σ",
                     "atom_C1_ϵ")
@@ -1544,4 +1591,110 @@ end
         end
         @test abs(grads_enzyme[key] - grad_fd) <= 1e-6 * abs(grad_fd)
     end
+end
+
+@testset "Dispersion correction gradients" begin
+    # The corrections are recomputed from the injected parameters inside the differentiated
+    #   function, so Enzyme gives their gradients, checked against finite differencing
+    function disp_injected(params_dic, sys_ref, plan)
+        sys = inject_gradients(sys_ref, params_dic, plan)
+        return potential_energy(sys, nothing; n_threads=1, pairwise_inters=(),
+                                specific_inter_lists=())
+    end
+    function build(ff_files, pdb; kwargs...)
+        ff = MolecularForceField(joinpath.(ff_dir, ff_files)...; units=false, kwargs...)
+        return System(joinpath(data_dir, pdb), ff; units=false, float_type=Float64,
+                      nonbonded_method=SetupCoulombReactionField(), dist_cutoff=1.0,
+                      dispersion_correction=true, strictness=:nowarn)
+    end
+    garnet_templates = joinpath(ff_dir, "ethanol_garnet_residues.xml")
+    sys_dexp = build(["ethanol_garnet.xml"], "ethanol_solv.pdb";
+                     custom_residue_templates=garnet_templates)
+    sys_lj = build(["tip3p_standard.xml", "benzene.xml"], "benzene_solv.pdb")
+    cases = (
+        ("DEXP", sys_dexp, ("inter_DEXP_alpha", "inter_DEXP_beta", "atom_C1_σ", "atom_O1_ϵ"),
+         DExpDispersionCorrection),
+        ("DEXP λ", AbsoluteFESystem(sys_dexp, 0.8, collect(1:9)),
+         ("inter_DEXP_alpha", "inter_DEXP_beta", "atom_C1_σ", "atom_O1_ϵ"),
+         Molly.DExpDispersionCorrectionλ),
+        ("LJ", sys_lj, ("atom_BZNC1_σ", "atom_BZNC1_ϵ", "atom_tip3p-O_σ"),
+         LJDispersionCorrection),
+        ("LJ λ", AbsoluteFESystem(sys_lj, 0.8, collect(1:12)),
+         ("atom_BZNC1_σ", "atom_BZNC1_ϵ", "atom_tip3p-O_ϵ"), Molly.LJDispersionCorrectionλ),
+    )
+    @testset "$name" for (name, sys, ks, DC) in cases
+        @test only(sys.general_inters) isa DC
+        params_dic = extract_parameters(sys; strictness=:nowarn)
+        plan = ParameterPlan(sys, params_dic)
+        grads_enzyme = Dict(k => zero(v) for (k, v) in params_dic)
+        autodiff(set_runtime_activity(Reverse), Const(disp_injected), Active,
+                 Duplicated(params_dic, grads_enzyme), Const(sys), Const(plan))
+        for key in ks
+            grad_fd = central_fdm(6, 1)(params_dic[key]) do val
+                disp_injected(merge(params_dic, Dict(key => val)), sys, plan)
+            end
+            @test !iszero(grad_fd)
+            @test abs(grads_enzyme[key] - grad_fd) <= 1e-6 * abs(grad_fd)
+        end
+    end
+end
+
+@testset "Gradients of a converted system" begin
+    ff_dexp = MolecularForceField(joinpath(ff_dir, "ethanol_garnet.xml"))
+    ff_water = MolecularForceField(joinpath(ff_dir, "tip4pfb.xml"))
+
+    sys_vac = System(joinpath(data_dir, "ethanol_vac.pdb"), ff_dexp; float_type=Float32,
+                     nonbonded_method=SetupCoulombReactionField(), dist_cutoff=1.0u"nm",
+                     strictness=:nowarn)
+    sys_ref = System(sys_vac; float_type=Float64, units=false, grad_safe=true)
+    params_dic = extract_parameters(sys_ref)
+    plan = ParameterPlan(sys_ref, params_dic)
+    neighbors = find_neighbors(sys_ref; n_threads=1)
+    function pe_injected(params_dic, sys_ref, plan, coords, neighbors)
+        sys = inject_gradients(sys_ref, params_dic, plan, coords)
+        return potential_energy(sys, neighbors; n_threads=1)
+    end
+    grads = Dict(k => zero(v) for (k, v) in params_dic)
+    autodiff(
+        set_runtime_activity(Reverse),
+        Const(pe_injected),
+        Active,
+        Duplicated(params_dic, grads),
+        Const(sys_ref),
+        Const(plan),
+        Duplicated(copy(sys_ref.coords), zero(sys_ref.coords)),
+        Const(neighbors),
+    )
+    keys_checked = filter(k -> occursin("DEXP", k) || endswith(k, "_σ"),
+                          collect(keys(params_dic)))
+    @test !isempty(keys_checked)
+    for key in keys_checked
+        grad_fd = central_fdm(6, 1)(params_dic[key]) do val
+            dic = copy(params_dic)
+            dic[key] = val
+            pe_injected(dic, sys_ref, plan, copy(sys_ref.coords), neighbors)
+        end
+        @test isapprox(grads[key], grad_fd; rtol=1e-6, atol=1e-8)
+    end
+
+    # The PME of a gradient safe converted system can be differentiated
+    sys_water = System(joinpath(data_dir, "tip4pew.pdb"), ff_water; float_type=Float32,
+                       nonbonded_method=SetupPME(), center_coords=false)
+    sys = System(sys_water; float_type=Float64, units=false, grad_safe=true)
+    pme = sys.general_inters[1]
+    @test pme.grad_safe
+    fs = zero(sys.coords)
+    Molly.ewald_pe_forces!(fs, nothing, sys, pme, Val(false))
+    d_sys = zero(sys)
+    autodiff(
+        Reverse,
+        Molly.ewald_pe_forces!,
+        Active,
+        Const(zero(sys.coords)),
+        Const(nothing),
+        Duplicated(sys, d_sys),
+        Duplicated(pme, zero(pme)),
+        Const(Val(false)),
+    )
+    @test maximum(norm.(-d_sys.coords .- fs)) < 1e-8 * maximum(norm.(fs))
 end

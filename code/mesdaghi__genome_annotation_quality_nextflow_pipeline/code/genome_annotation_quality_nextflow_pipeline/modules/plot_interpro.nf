@@ -14,9 +14,9 @@ process PLOT_INTERPRO {
 
     output:
     tuple val(dataset_name),
-          path("interpro_domain_coverage.png"),
-          path("interpro_merged_coverage_distribution.png"),
-          path("interpro_summary.tsv")
+          path("interpro_domain_coverage_${dataset_name}.png"),
+          path("interpro_merged_coverage_distribution_${dataset_name}.png"),
+          path("interpro_summary_${dataset_name}.tsv")
 
     script:
     """
@@ -27,9 +27,10 @@ process PLOT_INTERPRO {
         --name "${dataset_name}" \
         --outdir .
 
-    # Rename to stable filenames so the report step can find them
-    mv query_ipr_coverage.png                       interpro_domain_coverage.png
-    mv query_ipr_merged_coverage_distribution.png   interpro_merged_coverage_distribution.png
-    mv query_ipr_summary.tsv                        interpro_summary.tsv
+    # Rename to stable filenames so the report step can find them. The
+    # dataset name keeps several inputs apart in results/interpro_plots.
+    mv query_ipr_coverage.png                       interpro_domain_coverage_${dataset_name}.png
+    mv query_ipr_merged_coverage_distribution.png   interpro_merged_coverage_distribution_${dataset_name}.png
+    mv query_ipr_summary.tsv                        interpro_summary_${dataset_name}.tsv
     """
 }

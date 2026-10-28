@@ -9,18 +9,24 @@ length reader, identical in behaviour to the reporter script.
 
 Usage
 -----
-    python3 ipr_coverage_query.py QUERY.fasta QUERY.xml \
+    python3 plot_interpro.py QUERY.fasta QUERY.xml \
         [--json ipr_coverage.json] \
         [--name "My species"] \
         [--outdir .]
 
-Produces three files in --outdir:
-    query_ipr_coverage.png                       - per-library bar chart
-    query_ipr_merged_coverage_distribution.png   - merged-coverage violin/box
-    query_ipr_summary.tsv                        - tab-separated summary table
+    # several queries on the same plots
+    python3 plot_interpro.py \
+        --query A.fasta A.xml "Species A" \
+        --query B.fasta B.xml "Species B" \
+        [--json ipr_coverage.json] [--prefix combined] [--outdir .]
 
-The query is appended at the end of every plot and rendered with a thicker
-border and bold italic label so it stands out from the precomputed organisms.
+Produces three files in --outdir (<prefix> defaults to "query"):
+    <prefix>_ipr_coverage.png                       - per-library bar chart
+    <prefix>_ipr_merged_coverage_distribution.png   - merged-coverage violin/box
+    <prefix>_ipr_summary.tsv                        - tab-separated summary table
+
+Queries are appended after the precomputed organisms, in the order given,
+and rendered with a thicker border and bold italic label so they stand out.
 """
 from __future__ import annotations
 
@@ -581,8 +587,15 @@ def main():
         description="Plot a query proteome alongside precomputed model organisms.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("fasta", type=Path, help="Query FASTA file")
-    p.add_argument("xml", type=Path, help="Query InterProScan XML file")
+    p.add_argument("fasta", type=Path, nargs="?", default=None,
+                   help="Query FASTA file (single-query form)")
+    p.add_argument("xml", type=Path, nargs="?", default=None,
+                   help="Query InterProScan XML file (single-query form)")
+    p.add_argument("--query", nargs=3, action="append", default=[],
+                   metavar=("FASTA", "XML", "NAME"),
+                   help="Add a query; repeat for several queries on the same plots")
+    p.add_argument("--prefix", type=str, default="query",
+                   help="Prefix for the output file names")
     p.add_argument("--json", type=Path, default=Path("ipr_coverage.json"),
                    help="Precomputed model-organism JSON")
     p.add_argument("--name", type=str, default=None,
@@ -592,41 +605,58 @@ def main():
                    help="Output directory for plots and summary table")
     args = p.parse_args()
 
-    for f in (args.fasta, args.xml, args.json):
+    queries: list[tuple[Path, Path, str]] = []
+    if args.fasta is not None or args.xml is not None:
+        if args.fasta is None or args.xml is None:
+            sys.exit("ERROR: give both FASTA and XML, or use --query")
+        queries.append((args.fasta, args.xml,
+                        args.name or args.xml.stem.replace("_", " ")))
+    elif args.name:
+        sys.exit("ERROR: --name only applies to the single-query form; "
+                 "use the NAME field of --query instead")
+    for fasta, xml, name in args.query:
+        queries.append((Path(fasta), Path(xml), name))
+    if not queries:
+        p.error("give FASTA XML, or at least one --query")
+
+    names = [q[2] for q in queries]
+    if len(set(names)) != len(names):
+        sys.exit(f"ERROR: query names must be unique, got {names}")
+
+    for f in [args.json] + [x for q in queries for x in q[:2]]:
         if not f.exists():
             sys.exit(f"ERROR: file not found: {f}")
 
     args.outdir.mkdir(parents=True, exist_ok=True)
-    query_name = args.name or args.xml.stem.replace("_", " ")
 
     print(f"Loading model organisms from {args.json} ...")
     models = load_models(args.json)
     print(f"  → {len(models)} species: {', '.join(models.keys())}")
 
-    print(f"\nProcessing query: {query_name}")
-    print(f"  FASTA: {args.fasta}")
-    print(f"  XML:   {args.xml}")
-    query_record = compute_query(args.fasta, args.xml)
-    print(f"  → total={query_record['total']:,}  "
-          f"with_ipr={query_record['with_ipr']:,}  "
-          f"ipr_pct={query_record['ipr_pct']}%")
-
-    # Compose record list: models first (alphabetical), query last
+    # Compose record list: models first (alphabetical), queries last
     records: list[tuple[str, dict, bool]] = [
         (sp, rec, False) for sp, rec in sorted(models.items())
     ]
-    records.append((query_name, query_record, True))
+    for fasta, xml, query_name in queries:
+        print(f"\nProcessing query: {query_name}")
+        print(f"  FASTA: {fasta}")
+        print(f"  XML:   {xml}")
+        query_record = compute_query(fasta, xml)
+        print(f"  → total={query_record['total']:,}  "
+              f"with_ipr={query_record['with_ipr']:,}  "
+              f"ipr_pct={query_record['ipr_pct']}%")
+        records.append((query_name, query_record, True))
 
     print()
-    make_bar_chart(records, args.outdir / "query_ipr_coverage.png")
+    make_bar_chart(records, args.outdir / f"{args.prefix}_ipr_coverage.png")
     make_distribution_plot(
         records, "merged_coverage",
-        args.outdir / "query_ipr_merged_coverage_distribution.png",
+        args.outdir / f"{args.prefix}_ipr_merged_coverage_distribution.png",
         title="Distribution of IPR domain coverage per protein "
               "(merged, overlaps counted once)",
         ylabel="Fraction of protein residues covered by IPR domains",
     )
-    write_summary_table(records, args.outdir / "query_ipr_summary.tsv")
+    write_summary_table(records, args.outdir / f"{args.prefix}_ipr_summary.tsv")
 
 
 if __name__ == "__main__":

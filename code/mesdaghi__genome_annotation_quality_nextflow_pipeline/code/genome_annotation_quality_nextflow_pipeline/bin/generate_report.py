@@ -5,8 +5,13 @@ Combines PNG plots into a single PDF report.
 
 Usage:
     python generate_report.py <dataset_name> <output_pdf> <plot1.png> [plot2.png ...]
+        [--subtitle "text shown under the title"]
+
+Plots are placed in a fixed section order (pLDDT, Metapredict, PSAURON,
+InterPro) whatever order they are given in.
 """
 
+import argparse
 import sys
 import os
 from reportlab.lib.pagesizes import A4
@@ -36,6 +41,28 @@ PLOT_LABELS = [
 ]
 
 
+# Page order in the report: (filename fragment, position). Fragments are
+# checked top to bottom and the first match wins, so more specific
+# fragments come before more general ones.
+REPORT_ORDER = [
+    ("plddt_density_scipy",                   0),
+    ("plddt_gmm_scatter_disorder",            2),
+    ("plddt_gmm_scatter",                     1),
+    ("metapredict",                           3),
+    ("psauron",                               4),
+    ("interpro_domain_coverage",              5),
+    ("interpro_merged_coverage_distribution", 6),
+]
+
+
+def order_key(png_path):
+    name = os.path.basename(png_path).lower()
+    for fragment, position in REPORT_ORDER:
+        if fragment in name:
+            return position
+    return len(REPORT_ORDER)
+
+
 def label_for(png_path):
     name = os.path.basename(png_path).lower()
     for fragment, label in PLOT_LABELS:
@@ -51,7 +78,7 @@ def fit_image(path, max_width, max_height):
     return Image(path, width=native_w * scale, height=native_h * scale)
 
 
-def build_report(dataset_name, output_pdf, png_files):
+def build_report(dataset_name, output_pdf, png_files, subtitle=None):
     page_width, page_height = A4
     margin = 2 * cm
     img_width = page_width - 2 * margin
@@ -97,12 +124,24 @@ def build_report(dataset_name, output_pdf, png_files):
         f"{dataset_name}",
         title_style
     ))
+    if subtitle:
+        subtitle_style = ParagraphStyle(
+            "ReportSubtitle",
+            parent=styles["Normal"],
+            fontSize=10,
+            leading=13,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor("#4a4e69"),
+        )
+        story.append(Spacer(1, 0.15 * cm))
+        story.append(Paragraph(subtitle, subtitle_style))
     story.append(Spacer(1, 0.3 * cm))
     story.append(HRFlowable(
         width="100%", thickness=1.5,
         color=colors.HexColor("#4a4e69"), spaceAfter=0.6 * cm
     ))
 
+    png_files = sorted(png_files, key=order_key)  # stable within a section
     for i, png in enumerate(png_files):
         story.append(Paragraph(label_for(png), section_style))
         story.append(fit_image(png, img_width, img_max_height))
@@ -114,13 +153,13 @@ def build_report(dataset_name, output_pdf, png_files):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        sys.exit(
-            "Usage: generate_report.py <dataset_name> <output_pdf> <plot1.png> [plot2.png ...]"
-        )
-    dataset_name = sys.argv[1]
-    output_pdf   = sys.argv[2]
-    png_files    = sys.argv[3:]
-    build_report(dataset_name, output_pdf, png_files)
+    ap = argparse.ArgumentParser(description="Combine PNG plots into a PDF report.")
+    ap.add_argument("dataset_name", help="Title shown at the top of the report")
+    ap.add_argument("output_pdf")
+    ap.add_argument("png_files", nargs="+")
+    ap.add_argument("--subtitle", default=None,
+                    help="Optional line shown under the title")
+    args = ap.parse_args()
+    build_report(args.dataset_name, args.output_pdf, args.png_files, args.subtitle)
 
 

@@ -1,0 +1,21 @@
+name: NEW_ENV
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.7.7
+  - pip>=20.0.2
+
+  - numpy>=1.18.1
+  - mdtraj>=1.9.3
+  - matplotlib>=3.2.0
+  - jupyter
+  - MDAnalysis
+  - openmm
+  - pdbfixer
+  - flask
+  - scipy
+  - seaborn
+  - pandas
+
+  - pip:
+      - pyblock

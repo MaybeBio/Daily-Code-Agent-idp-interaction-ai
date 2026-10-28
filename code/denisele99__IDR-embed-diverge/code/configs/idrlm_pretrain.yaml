@@ -1,0 +1,28 @@
+
+# logging
+wandb_project: idr_lm
+wandb_run_name: run1
+
+# paths
+train_data_path: /home/moseslab/denise/Paper/data_other/seqs/human_idrs.fasta #../data/seqs/human_idrs_pos_updated_labels.fasta #/home/moseslab/denise/IDR_LM/data/sequences/mobidb_idrs_27/mobi_idrs_30M.fasta #TODO change to sample dataset
+model_config_path: ./bert_config.json #../src/idr_diverge/IDR_LM_train/bert_config.json
+resume_checkpoint_path: null #Optional: load weights from a previous training run instead of starting from scratch. Set to None to initialize a new model from model_config_path
+checkpoint_output_dir: ../res/model_checkpoints
+final_model_dir: ../res/model_checkpoints/best
+
+# optimization
+batch_size: 64
+test_size: 0.15
+num_train_epochs: 1 #30
+warmup_proportion: 0.1
+learning_rate: 1e-4
+no_cuda: false
+seed: 42
+gradient_accumulation_steps: 1
+
+# tokenizer / MLM settings
+do_lower_case: true
+max_seq_length: 512
+masked_lm_prob: 0.05
+max_predictions_per_seq: 50
+

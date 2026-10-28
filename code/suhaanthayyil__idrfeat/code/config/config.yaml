@@ -1,0 +1,16 @@
+# Optional config override for idrfeat. These values mirror the baked-in defaults in
+# idrfeat.io.DEFAULT_CONFIG. Pass this file with `idrfeat features --config config/config.yaml`
+# to change any of them. Anything left out keeps its default.
+
+seed: 1729
+
+disorder:
+  primary: metapredict          # required disorder predictor that defines IDR segments
+  definitions: [metapredict, aiupred]  # which predictors to also compute columns for, when installed
+  score_threshold: 0.5          # per-residue disorder cutoff for calling segments
+  min_segment_length: 10        # shortest IDR segment to keep
+  plddt_threshold: 70.0         # AlphaFold confidence cutoff for the structure check
+  binding_threshold: 0.5        # AIUPred binding cutoff for the fold-on-binding fraction
+
+# Low complexity is called with SEG (NCBI segmasker) when the binary is on PATH; there are no
+# tunable parameters here. Physicochemical features come from localCIDER.

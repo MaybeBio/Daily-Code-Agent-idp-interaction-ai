@@ -1,0 +1,42 @@
+bilayer_eq: false
+box:
+- 20.0
+- 20.0
+- 200.0
+box_eq: false
+boxscaling_xyz:
+- true
+- true
+- true
+cutoff_lj: 2.0
+cutoff_yu: 4.0
+eps_lj: 0.2
+fixed_lambda: 0
+frestart: restart.chk
+friction_coeff: 0.01
+gpu_id: 0
+ionic: 0.15
+k_eq: 0.02
+logfreq: 1000000
+pH: 7.5
+platform: CUDA
+pressure:
+- 0
+- 0
+- 0
+pressure_coupling: false
+random_number_seed: null
+report_potential_energy: false
+restart: checkpoint
+runtime: 48
+slab_eq: true
+slab_outer: 40
+slab_width: 100.0
+steps: 500000000
+steps_eq: 1000000
+sysname: A1_da2d9e14
+temp: 313.0
+threads: 1
+topol: slab
+verbose: false
+wfreq: 100000

@@ -1,0 +1,12 @@
+name: lm_train
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11.7
+  - numpy
+  - pandas
+  - h5py
+  - pyyaml
+  - ca-certificates
+  - openssl
+prefix: /media/data/.conda/envs/lm_train

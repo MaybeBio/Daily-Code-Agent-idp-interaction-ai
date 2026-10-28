@@ -1,0 +1,22 @@
+# Serving-only dependencies for the deployed API container.
+#
+# The deployed server only *serves* the read + /api/v1 endpoints; the heavy
+# compute libraries (freesasa, pydssp/torch, mhcflurry, pyhmmer, gemmi,
+# biopython, pandas, …) are imported lazily inside the /analyze endpoints and
+# the backfill scripts, which run on the dev box / HPC — never on the server.
+# Keeping them out yields a small, fast, GPU-free image.
+#
+# NOTE: psycopg2-binary is required (the sync SQLAlchemy engine uses the
+# postgresql:// dialect → psycopg2); the full requirements.txt omits it.
+# SQLAlchemy is pinned < 2.1: from 2.1 the bare postgresql:// URL resolves to
+# the psycopg (v3) driver, which this image does not install.
+fastapi
+uvicorn[standard]
+SQLAlchemy>=2.0,<2.1
+psycopg2-binary
+alembic
+pydantic
+pydantic-settings
+python-multipart
+httpx
+requests

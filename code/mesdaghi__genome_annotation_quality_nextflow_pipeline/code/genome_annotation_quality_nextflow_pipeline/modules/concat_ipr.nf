@@ -9,11 +9,14 @@ process CONCAT_IPR {
     tuple val(dataset_name), path(tsv_files), path(xml_files)
 
     output:
-    tuple val(dataset_name), path("concatenated.tsv"), path("merged_output.xml")
+    tuple val(dataset_name), path("${dataset_name}_interproscan.tsv"), path("${dataset_name}_interproscan.xml")
 
     script:
+    // Outputs are named after the dataset so that several inputs don't
+    // overwrite each other in results/interpro.
     """
-    python3 ${projectDir}/bin/concat_xml.py ${xml_files} -o merged_output.xml
+    python3 ${projectDir}/bin/concat_xml.py ${xml_files} -o ${dataset_name}_interproscan.xml
     python3 ${projectDir}/bin/concat_tsv.py ${tsv_files}
+    mv concatenated.tsv ${dataset_name}_interproscan.tsv
     """
 }

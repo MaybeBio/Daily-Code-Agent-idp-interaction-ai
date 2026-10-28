@@ -1,0 +1,36 @@
+
+
+services:
+  db:
+    image: postgres:16
+    container_name: splisoforms_db
+    restart: always
+    environment:
+      POSTGRES_USER: splisoforms_user
+      POSTGRES_PASSWORD: splisoforms_dev
+      POSTGRES_DB: splisoforms
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    # Size shared_buffers well below the memory available to the Docker VM
+    # (a value larger than the VM can get the backend OOM-killed during a
+    # pg_dump). 4 GB also keeps the bulk-read ring buffer active for every
+    # table > 1 GB.
+    command: >
+      postgres
+      -c shared_buffers=4GB
+      -c effective_cache_size=12GB
+      -c work_mem=128MB
+      -c maintenance_work_mem=2GB
+      -c max_connections=500
+      -c random_page_cost=1.1
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U splisoforms_user -d splisoforms"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

@@ -4,7 +4,6 @@ export
     use_neighbors,
     neighbor_pairs,
     ragged_neighbors,
-    NoNeighborFinder,
     find_neighbors,
     GPUNeighborFinder,
     GPUCellListNeighborFinder,
@@ -18,13 +17,18 @@ export
 """
     use_neighbors(inter)
 
-Whether a pairwise interaction uses the neighbor list, default `false`.
+Whether a pairwise interaction uses the neighbor list, default `true`.
 
+If `true` only the pairs in the neighbor list are considered, which requires a
+neighbor finder in the [`System`](@ref).
+If `false` all pairs of atoms are considered, without the exclusions or special pairs
+of the neighbor finder.
 Custom pairwise interactions can define a method for this function.
 For built-in interactions such as [`LennardJones`](@ref) this function accesses
-the `use_neighbors` field of the struct.
+the `use_neighbors` field of the struct, set with the `use_neighbors` keyword
+argument, which is `true` by default.
 """
-use_neighbors(inter) = false
+use_neighbors(inter) = true
 
 """
     neighbor_pairs(neighbors)
@@ -208,16 +212,6 @@ function check_neighbor_array_type(AT)
 end
 
 """
-    NoNeighborFinder()
-
-Placeholder neighbor finder that returns no neighbors.
-
-When using this neighbor finder, ensure that [`use_neighbors`](@ref) for the interactions
-returns `false`.
-"""
-struct NoNeighborFinder end
-
-"""
     find_neighbors(system; n_threads=Threads.nthreads())
     find_neighbors(system, neighbor_finder, current_neighbors=nothing, step_n=0,
                    force_recompute=false; n_threads=Threads.nthreads())
@@ -235,6 +229,8 @@ Returns a [`NeighborList`](@ref) for the classical neighbor finders and a
 For [`GPUNeighborFinder`](@ref), this returns `nothing`: the CUDA pairwise force
 and energy kernels build and cache their interacting tile list internally from
 the neighbor-finder metadata.
+It also returns `nothing` when the neighbor finder is `nothing`, meaning that no
+neighbor finder is used.
 
 A neighbor finder may reuse the device buffers behind `current_neighbors` for the
 list it returns, as [`GPUCellListNeighborFinder`](@ref) does, so the list passed in
@@ -242,7 +238,7 @@ should not be used afterwards.
 """
 find_neighbors(sys::System; kwargs...) = find_neighbors(sys, sys.neighbor_finder; kwargs...)
 
-find_neighbors(sys::System, nf::NoNeighborFinder, args...; kwargs...) = nothing
+find_neighbors(sys::System, ::Nothing, args...; kwargs...) = nothing
 
 #=
     uses_gpu_neighbor_finder(AT)
@@ -341,7 +337,8 @@ function dense_masks_to_pair_lists(eligible, special)
     return ineligible_pairs(eligible), true_pairs(special)
 end
 
-function neighbor_finder_masks(nf::NoNeighborFinder, n_atoms::Integer)
+# No neighbor finder, all pairs are eligible and none are special
+function neighbor_finder_masks(::Nothing, n_atoms::Integer)
     eligible = trues(n_atoms, n_atoms)
     special = falses(n_atoms, n_atoms)
     for i in 1:n_atoms
@@ -1758,7 +1755,7 @@ end
 # Dense masks, as for the other neighbor finders
 function neighbor_finder_masks(nf::GPUCellListNeighborFinder, n_atoms::Integer)
     # :ragged and :geometric_pairs ignore the exceptions, so all pairs are eligible
-    isnothing(nf.eligible) && return neighbor_finder_masks(NoNeighborFinder(), n_atoms)
+    isnothing(nf.eligible) && return neighbor_finder_masks(nothing, n_atoms)
     return copy_to_bitmatrix(from_device(nf.eligible)), copy_to_bitmatrix(from_device(nf.special))
 end
 
@@ -2219,6 +2216,9 @@ function find_neighbors(sys::System{<:Any, AT},
                         n_threads::Integer=Threads.nthreads()) where AT
     if !force_recompute && !iszero(step_n % nf.n_steps)
         return current_neighbors
+    end
+    if sys.boundary isa TriclinicBoundary
+        throw(ArgumentError("TreeNeighborFinder cannot be used with a TriclinicBoundary"))
     end
 
     dist_unit = unit(first(first(sys.coords)))

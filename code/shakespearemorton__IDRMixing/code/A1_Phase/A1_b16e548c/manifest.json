@@ -1,0 +1,31 @@
+{
+  "job_id": "14",
+  "sysname": "A1_b16e548c",
+  "sim_hash": "b16e548c",
+  "params": {
+    "sim_type": "homotypic_idr",
+    "seq_name1": "A1",
+    "seq_name2": "",
+    "cluster": "meta",
+    "is_rna2": false,
+    "temp": 315.0,
+    "ionic": 0.15,
+    "pH": 7.5,
+    "wfreq": 100000,
+    "steps": 500000000,
+    "runtime": 24,
+    "box": [
+      25.0,
+      25.0,
+      300.0
+    ],
+    "n_mol1": 630,
+    "n_mol2": 0,
+    "ff": "calvados2",
+    "restraint": false,
+    "steps_eq": 1000000,
+    "slab_width": 150.0,
+    "sim_hash": "b16e548c",
+    "sysname": "A1_b16e548c"
+  }
+}
