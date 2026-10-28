@@ -1,0 +1,8 @@
+title: Model of Ecm29-proteasome complex
+tags: [chemical crosslinks, PMI, X-ray]
+pmid: 28821611
+prereqs: [python/numpy, modeller]
+accessions: [PDBDEV_00000026]
+test:
+    runtime: 24h
+    build: release

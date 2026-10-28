@@ -1,0 +1,64 @@
+import os
+
+import numpy as np
+import pygamd_v_me_50_meal.utils as utils
+
+from tqdm import tqdm
+from multiprocessing import Pool
+from pygamd_v_me_50_meal.file_processor.xml_data_extractor import XMLDataExtractor
+
+class BondAnalysys:
+    def __init__(self, path: str, data, lang: str="zh"):
+        self.path, self.data, self.lang = path, data, lang
+
+        self.xml_path = os.path.join(self.path, "xml_unwrapping/")
+
+        self.sys_topol_path = os.path.join(self.path, "sys_topol/")
+        os.makedirs(self.sys_topol_path, exist_ok=True)
+
+        self.bond_path = os.path.join(self.sys_topol_path, "bond/")
+        utils.create_folder("bond/", self.sys_topol_path, overwrite=True)
+
+        self.balance_cut = input("请输入需要截取的平衡后的文件索引，格式为 'START-END', 例如: 1000-2000, 直接回车则不截取: ")
+
+
+    def get_bond_length(self, file_name: str):
+        position_list: np.ndarray = XMLDataExtractor(self.xml_path + file_name).extract_position_data()
+        _, bond_dict = XMLDataExtractor(self.xml_path + file_name).extract_bond_data()
+
+        bond_length_dict = {}
+
+        for bond in bond_dict:
+            bond_length_dict[bond] = []
+            for bond_pair in bond_dict[bond]:
+                bond_length_dict[bond].append(float(np.linalg.norm(position_list[bond_pair[0]] - position_list[bond_pair[1]])))
+        
+        with open(os.path.join(self.bond_path, file_name), 'w') as f:
+            f.write(str(bond_length_dict))    
+     
+    def get_bond_length_parallel(self):
+        files = os.listdir(self.xml_path)
+        if self.balance_cut:
+            print(f"截取文件索引范围: {self.balance_cut}")
+            start, end = list(map(int, self.balance_cut.split('-')))
+            files = files[start: end+1]
+        
+        with Pool(processes=4) as pool:
+                # 使用 tqdm 包装可迭代对象
+                list(tqdm(pool.imap(self.get_bond_length, files),
+                          total=len(files),
+                          desc="Calculating bond length",
+                          colour='cyan',
+                          bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]',
+                          ncols=100))
+        
+        merged_bond_length_dict = {}
+        for file_name in os.listdir(self.bond_path):
+            with open(os.path.join(self.bond_path, file_name), 'r') as f:
+                for bond_name, values in eval(f.read()).items():
+                    if bond_name not in merged_bond_length_dict:
+                        merged_bond_length_dict[bond_name] = []
+                    merged_bond_length_dict[bond_name].extend(values)
+    
+        with open(os.path.join(self.sys_topol_path, "bond_length.txt"), 'w') as f:
+            f.write(str(merged_bond_length_dict))

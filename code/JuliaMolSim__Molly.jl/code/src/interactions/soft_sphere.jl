@@ -1,0 +1,83 @@
+export SoftSphere
+
+@doc raw"""
+    SoftSphere(; cutoff, use_neighbors, shortcut, σ_mixing, ϵ_mixing)
+
+The soft-sphere potential.
+
+The potential energy is defined as
+```math
+V(r_{ij}) = 4\varepsilon_{ij} \left(\frac{\sigma_{ij}}{r_{ij}}\right)^{12}
+```
+"""
+@kwdef struct SoftSphere{C, H, S, E} <: PairwiseInteraction
+    cutoff::C = NoCutoff()
+    use_neighbors::Bool = false
+    shortcut::H = LJZeroShortcut()
+    σ_mixing::S = LorentzMixing()
+    ϵ_mixing::E = GeometricMixing()
+end
+
+use_neighbors(inter::SoftSphere) = inter.use_neighbors
+
+required_atom_fields(inter::SoftSphere) = (:σ, :ϵ, :λ,
+            mixing_atom_fields(inter.σ_mixing)..., mixing_atom_fields(inter.ϵ_mixing)...)
+
+function Base.zero(ss::SoftSphere)
+    return SoftSphere(ss.cutoff, ss.use_neighbors, ss.shortcut, ss.σ_mixing, ss.ϵ_mixing)
+end
+
+function Base.:+(s1::SoftSphere, ::SoftSphere)
+    return SoftSphere(s1.cutoff, s1.use_neighbors, s1.shortcut, s1.σ_mixing, s1.ϵ_mixing)
+end
+
+@inline function force(inter::SoftSphere,
+                       dr,
+                       atom_i,
+                       atom_j,
+                       force_units=u"kJ * mol^-1 * nm^-1",
+                       args...)
+    if shortcut_pair(inter.shortcut, atom_i, atom_j)
+        return zero_pairwise_force(dr, force_units)
+    end
+    σ = σ_mixing(inter.σ_mixing, atom_i, atom_j)
+    ϵ = ϵ_mixing(inter.ϵ_mixing, atom_i, atom_j)
+
+    cutoff = inter.cutoff
+    r = sqrt(sum(abs2, dr))
+    σ2 = σ^2
+    params = (σ2, ϵ)
+
+    f = force_cutoff(cutoff, inter, r, params)
+    return (f / r) * dr
+end
+
+function pairwise_force(::SoftSphere, r, (σ2, ϵ))
+    six_term = (σ2 / r^2) ^ 3
+    return (24ϵ / r) * 2 * six_term ^ 2
+end
+
+@inline function potential_energy(inter::SoftSphere,
+                                  dr,
+                                  atom_i,
+                                  atom_j,
+                                  energy_units=u"kJ * mol^-1",
+                                  args...)
+    if shortcut_pair(inter.shortcut, atom_i, atom_j)
+        return zero_pairwise_energy(dr, energy_units)
+    end
+    σ = σ_mixing(inter.σ_mixing, atom_i, atom_j)
+    ϵ = ϵ_mixing(inter.ϵ_mixing, atom_i, atom_j)
+
+    cutoff = inter.cutoff
+    r = sqrt(sum(abs2, dr))
+    σ2 = σ^2
+    params = (σ2, ϵ)
+
+    return pe_cutoff(cutoff, inter, r, params)
+end
+
+function pairwise_pe(::SoftSphere, r, (σ2, ϵ))
+    six_term = (σ2 / r^2) ^ 3
+    return 4ϵ * (six_term ^ 2)
+end

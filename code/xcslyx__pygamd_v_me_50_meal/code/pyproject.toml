@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygamd_v_me_50_meal"
+version = "0.8.5"
+description = "MD analysis toolkit for cGAS-DNA simulations"
+authors = [
+    { name = "Yuxi Leng", email = "1203969713@qq.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["numpy", "pandas", "matplotlib",
+                "torch", "tqdm", "scipy",
+                "scikit-learn", "MDAnalysis",
+                "pygamd", "biopython",
+                "semantic_kernel"]
+
+[tool.setuptools]
+# 自动发现包
+packages = { find = {} }
+# 包含所有受版本控制或 package-data 指定的非 py 文件
+include-package-data = true
+
+[tool.setuptools.package-data]
+# "*" 表示匹配所有子包，"*.json" 匹配所有 json 文件
+"*" = ["*.json"]
+"pygamd_v_me_50_meal" = [
+    "gromacs/all_atom_mdp/*",
+    "gromacs/charmm36.ff/*"
+]
+
+[project.urls]
+Homepage = "https://gitee.com/lyxlyxlyxxx/pygamd_v_me_50_meal.git"
+Repository = "https://github.com/xcslyx/pygamd_v_me_50_meal"
+
+[project.scripts]
+v50 = "pygamd_v_me_50_meal.__main__:update_software_name_zh"
+v50_en = "pygamd_v_me_50_meal.__main__:update_software_name_en"
+
+vssk50 = "pygamd_v_me_50_meal.__main__:main"
+vssk50_en = "pygamd_v_me_50_meal.__main__:main_en"

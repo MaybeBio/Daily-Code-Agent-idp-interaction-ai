@@ -1,0 +1,119 @@
+export Buckingham
+
+@doc raw"""
+    Buckingham(; cutoff, use_neighbors, shortcut, A_mixing, B_mixing,
+               C_mixing, weight_special)
+
+The Buckingham interaction between two atoms.
+
+The potential energy is defined as
+```math
+V(r_{ij}) = A_{ij} \exp(-B_{ij} r_{ij}) - \frac{C_{ij}}{r_{ij}^6}
+```
+and the force on each atom by
+```math
+\vec{F}_i = \left( A_{ij} B_{ij} \exp(-B_{ij} r_{ij}) - 6 \frac{C_{ij}}{r_{ij}^7} \right) \frac{\vec{r}_{ij}}{r_{ij}}
+```
+By default, using [`Molly.GeometricMixing`](@ref) for `A` and `C` and
+[`Molly.InverseMixing`](@ref) for `B`, the parameters are derived from the atom parameters
+according to
+```math
+\begin{aligned}
+A_{ij} &= (A_{ii} A_{jj})^{1/2} \\
+B_{ij} &= \frac{2}{\frac{1}{B_{ii}} + \frac{1}{B_{jj}}} \\
+C_{ij} &= (C_{ii} C_{jj})^{1/2}
+\end{aligned}
+```
+so atoms that use this interaction should have fields `A`, `B` and `C` available.
+The default `shortcut` is [`Molly.BuckinghamZeroShortcut`](@ref).
+"""
+@kwdef struct Buckingham{C, S, A, B, M, W} <: PairwiseInteraction
+    cutoff::C = NoCutoff()
+    use_neighbors::Bool = false
+    shortcut::S = BuckinghamZeroShortcut()
+    A_mixing::A = GeometricMixing()
+    B_mixing::B = InverseMixing()
+    C_mixing::M = GeometricMixing()
+    weight_special::W = 1
+end
+
+use_neighbors(inter::Buckingham) = inter.use_neighbors
+
+required_atom_fields(inter::Buckingham) = (:A, :B, :C,
+            mixing_atom_fields(inter.A_mixing)..., mixing_atom_fields(inter.B_mixing)...,
+            mixing_atom_fields(inter.C_mixing)...)
+
+function Base.zero(b::Buckingham{C, W}) where {C, W}
+    return Buckingham(b.cutoff, b.use_neighbors, b.shortcut, b.A_mixing,
+                      b.B_mixing, b.C_mixing, zero(W))
+end
+
+function Base.:+(b1::Buckingham, b2::Buckingham)
+    return Buckingham(b1.cutoff, b1.use_neighbors, b1.shortcut, b1.A_mixing, b1.B_mixing,
+                      b1.C_mixing, b1.weight_special + b2.weight_special)
+end
+
+parameter_prefix(::Buckingham) = "inter_BU_"
+parameter_fields(::Type{<:Buckingham}) = ((:weight_special, "weight_14"),)
+
+
+@inline function force(inter::Buckingham,
+                       dr,
+                       atom_i,
+                       atom_j,
+                       force_units=u"kJ * mol^-1 * nm^-1",
+                       special=false,
+                       args...)
+    if shortcut_pair(inter.shortcut, atom_i, atom_j, special)
+        return zero_pairwise_force(dr, force_units)
+    end
+    A = A_mixing(inter.A_mixing, atom_i, atom_j, special)
+    B = B_mixing(inter.B_mixing, atom_i, atom_j, special)
+    C = C_mixing(inter.C_mixing, atom_i, atom_j, special)
+
+    cutoff = inter.cutoff
+    r = sqrt(sum(abs2, dr))
+    params = (A, B, C)
+
+    f = force_cutoff(cutoff, inter, r, params)
+    fdr = (f / r) * dr
+    if special
+        return fdr * inter.weight_special
+    else
+        return fdr
+    end
+end
+
+function pairwise_force(::Buckingham, r, (A, B, C))
+    return A * B * exp(-B * r) - 6 * C * inv(r)^7
+end
+
+@inline function potential_energy(inter::Buckingham,
+                                  dr,
+                                  atom_i,
+                                  atom_j,
+                                  energy_units=u"kJ * mol^-1",
+                                  special=false,
+                                  args...)
+    if shortcut_pair(inter.shortcut, atom_i, atom_j, special)
+        return zero_pairwise_energy(dr, energy_units)
+    end
+    A = A_mixing(inter.A_mixing, atom_i, atom_j, special)
+    B = B_mixing(inter.B_mixing, atom_i, atom_j, special)
+    C = C_mixing(inter.C_mixing, atom_i, atom_j, special)
+
+    cutoff = inter.cutoff
+    r = sqrt(sum(abs2, dr))
+    params = (A, B, C)
+
+    pe = pe_cutoff(cutoff, inter, r, params)
+    if special
+        return pe * inter.weight_special
+    else
+        return pe
+    end
+end
+
+function pairwise_pe(::Buckingham, r, (A, B, C))
+    return A * exp(-B * r) - C * inv(r)^6
+end

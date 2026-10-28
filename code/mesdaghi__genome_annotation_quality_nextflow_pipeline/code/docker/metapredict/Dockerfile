@@ -1,0 +1,2 @@
+FROM holehouselab/metapredict:latest
+

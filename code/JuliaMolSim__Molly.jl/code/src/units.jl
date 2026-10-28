@@ -1,0 +1,255 @@
+# Handle units
+
+export ustrip_vec
+
+# Unit types to dispatch on
+@derived_dimension MolarMass Unitful.𝐌/Unitful.𝐍
+@derived_dimension BoltzmannConstUnits Unitful.𝐌*Unitful.𝐋^2*Unitful.𝐓^-2*Unitful.𝚯^-1
+@derived_dimension MolarBoltzmannConstUnits Unitful.𝐌*Unitful.𝐋^2*Unitful.𝐓^-2*Unitful.𝚯^-1*Unitful.𝐍^-1
+
+add_units(val, u, add_unit) = (add_unit ? val * u : val)
+
+"""
+    ustrip_vec(x)
+    ustrip_vec(u, x)
+
+Broadcasted form of `ustrip` from Unitful.jl, allowing e.g. `ustrip_vec.(coords)`.
+"""
+ustrip_vec(x...) = ustrip.(x...)
+
+function check_force_units(F, force_units)
+    if unit(F) != force_units
+        throw(ArgumentError("system force units are $force_units but encountered " *
+                            "force units $(unit(F))"))
+    end
+end
+
+check_force_units(F::SVector, force_units) = @inbounds check_force_units(F[1], force_units)
+
+function check_energy_units(E, energy_units)
+    if unit(E) != energy_units
+        throw(ArgumentError("system energy units are $energy_units but encountered " *
+                            "energy units $(unit(E))"))
+    end
+end
+
+@inline function checked_ustrip(x, force_units)
+    check_force_units(x, force_units)
+    return ustrip.(x)
+end
+
+@inline function checked_ustrip(x::SVector{N, <:Unitful.Quantity{T, D, U}}, ::U) where {N, T, D, U}
+    return SVector{N, T}(ntuple(i -> ustrip(x[i]), Val(N)))
+end
+
+@inline checked_ustrip(x::SVector{<:Any, <:AbstractFloat}, ::typeof(NoUnits)) = x
+
+# Parses the length, mass, velocity, energy and force units and verifies they are
+#   correct and consistent with other parameters passed to the system
+function check_units(atoms, coords, velocities, energy_units, force_units,
+                     p_inters, s_inters, g_inters, boundary)
+    masses = mass.(atoms)
+    sys_units = check_system_units(masses, coords, velocities, energy_units, force_units)
+    check_other_units(atoms, boundary, sys_units)
+    return sys_units
+end
+
+function check_system_units(masses, coords, velocities, energy_units, force_units)
+    length_dim, length_units = validate_coords(coords)
+    vel_dim, vel_units = validate_velocities(velocities)
+    force_dim = dimension(force_units)
+    energy_dim = dimension(energy_units)
+    mass_dim, mass_units = validate_masses(masses)
+    validate_energy_units(energy_units)
+
+    force_is_molar = (force_dim == u"𝐋 * 𝐌 * 𝐍^-1 * 𝐓^-2")
+    energy_is_molar = (energy_dim == u"𝐋^2 * 𝐌 * 𝐍^-1 * 𝐓^-2")
+    mass_is_molar = (mass_dim == u"𝐌* 𝐍^-1")
+
+    if !(energy_is_molar == mass_is_molar && energy_is_molar == force_is_molar)
+        throw(ArgumentError("System was constructed with inconsistent energy, force and mass " *
+                            "units. All must be molar, non-molar or unitless. For example, " *
+                            "kcal and kg is allowed but kcal/mol and kg is not. Units were " *
+                            "$([energy_units, mass_units, force_units])."))
+    end
+
+    no_dim_arr = [dim == NoDims for dim in (length_dim, vel_dim, energy_dim, force_dim, mass_dim)]
+
+    # If something has NoDims, all other data must have NoDims
+    if any(no_dim_arr) && !all(no_dim_arr)
+        throw(ArgumentError("either coords, velocities, masses or energy_units has " *
+                            "NoDims/NoUnits but the others do have units"))
+    end
+
+    # Check derived units
+    if force_units != (energy_units / length_units)
+        throw(ArgumentError("force_units was specified as $force_units, but that is " *
+                            "different from energy_units divided by the coordinate length units"))
+    end
+
+    return NamedTuple{(:length, :velocity, :mass, :energy, :force)}((length_units,
+        vel_units, mass_units, energy_units, force_units))
+end
+
+function check_other_units(atoms, boundary, sys_units::NamedTuple)
+    if unit(length_type(boundary)) != sys_units[:length]
+        throw(ArgumentError("simulation box constructed with $(unit(length_type(boundary))) " *
+                            "but length unit of coords was $(sys_units[:length])"))
+    end
+
+    for at in from_device(atoms)
+        if hasproperty(at, :σ)
+            for σ in at.σ
+                if σ != 0.0u"nm" && unit(σ) != sys_units[:length]
+                    throw(ArgumentError("Atom σ has $(unit(σ)) units but length unit of " *
+                                        "coords was $(sys_units[:length])"))
+                end
+            end
+        end
+        if hasproperty(at, :ϵ)
+            for ϵ in at.ϵ
+                if ϵ != 0.0u"kJ * mol^-1" && unit(ϵ) != sys_units[:energy]
+                    throw(ArgumentError("Atom ϵ has $(unit(ϵ)) units but system energy " *
+                                        "unit was $(sys_units[:energy])"))
+                end
+            end
+        end
+    end
+end
+
+function validate_energy_units(energy_units)
+    valid_energy_dimensions = [u"𝐋^2 * 𝐌 * 𝐍^-1 * 𝐓^-2", u"𝐋^2 * 𝐌 * 𝐓^-2", NoDims]
+    if !(dimension(energy_units) in valid_energy_dimensions)
+        throw(ArgumentError("$energy_units do not have dimensions of energy; energy units must " *
+                            "be energy, energy/number, or NoUnits, e.g. kcal or kcal/mol"))
+    end
+end
+
+function validate_masses(masses)
+    mass_units = unit.(from_device(masses))
+    if !allequal(mass_units)
+        throw(ArgumentError("atom array constructed with mixed mass units"))
+    end
+
+    valid_mass_dimensions = [u"𝐌", u"𝐌* 𝐍^-1", NoDims]
+    mass_dimension = dimension(eltype(masses))
+
+    if !(mass_dimension in valid_mass_dimensions)
+        throw(ArgumentError("mass units have dimension $mass_dimension; mass units must be mass, " *
+                            "mass/number or NoUnits, e.g. 1.0u\"kg\", 1.0u\"kg/mol\" or 1.0"))
+    end
+
+    return mass_dimension, mass_units[1]
+end
+
+function validate_coords(coords)
+    coord_units = map(from_device(coords)) do coord
+        [unit(c) for c in coord]
+    end
+
+    if !allequal(coord_units) || !allequal(coord_units[1])
+        throw(ArgumentError("coordinates have mixed units"))
+    end
+
+    valid_length_dimensions = [u"𝐋", NoDims]
+    coord_dimension = (dimension ∘ eltype ∘ eltype)(coords)
+
+    if !(coord_dimension in valid_length_dimensions)
+        throw(ArgumentError("coordinate units have dimension $coord_dimension; length units " *
+                            "must be length or NoUnits, e.g. 1.0u\"m\" or 1.0"))
+    end
+
+    return coord_dimension, coord_units[1][1]
+end
+
+function validate_velocities(velocities)
+    velocity_units = map(from_device(velocities)) do vel
+        [unit(v) for v in vel]
+    end
+
+    if !allequal(velocity_units) || !allequal(velocity_units[1])
+        throw(ArgumentError("velocities have mixed units"))
+    end
+
+    valid_velocity_dimensions = [u"𝐋 * 𝐓^-1", NoDims]
+    velocity_dimension = (dimension ∘ eltype ∘ eltype)(velocities)
+
+    if !(velocity_dimension in valid_velocity_dimensions)
+        throw(ArgumentError("velocity units have dimension $velocity_dimension; velocity units " *
+                            "must be velocity or NoUnits, e.g. 1.0u\"m/s\" or 1.0"))
+    end
+
+    return velocity_dimension, velocity_units[1][1]
+end
+
+function default_k(energy_units)
+    if dimension(energy_units) == u"𝐋^2 * 𝐌 * 𝐍^-1 * 𝐓^-2"
+        k = Unitful.k * Unitful.Na
+    elseif dimension(energy_units) == u"𝐋^2 * 𝐌 * 𝐓^-2"
+        k = Unitful.k
+    elseif energy_units == NoUnits
+        k = ustrip(u"u * nm^2 * ps^-2 * K^-1", Unitful.k)
+    else
+        throw(ArgumentError("energy units do not have dimensions of energy: $energy_units"))
+    end
+
+    return k
+end
+
+# Convert the Boltzmann constant k to suitable units and float type
+# Assumes temperature units are Kelvin
+function convert_k_units(T, k, energy_units, strictness)
+    if energy_units == NoUnits
+        if unit(k) == NoUnits
+            # Use user-supplied unitless Boltzmann constant
+            k_converted = T(k)
+        else
+            err_str = "Units will be stripped from Boltzmann constant: energy_units was passed " *
+                      "as NoUnits and units were provided on k: $(unit(k))"
+            report_issue(err_str, strictness)
+            k_converted = T(ustrip(k))
+        end
+    elseif dimension(energy_units) in (u"𝐋^2 * 𝐌 * 𝐍^-1 * 𝐓^-2", u"𝐋^2 * 𝐌 * 𝐓^-2")
+        if dimension(energy_units * u"K^-1") != dimension(k)
+            throw(ArgumentError("energy_units ($energy_units) in System and Boltzmann constant " *
+                                "units ($(unit(k))) are incompatible"))
+        end
+        k_converted = T(uconvert(energy_units * u"K^-1", k))
+    else
+        throw(ArgumentError("energy units do not have dimensions of energy: $energy_units"))
+    end
+    return k_converted
+end
+
+function energy_remove_mol(x)
+    if dimension(x) == u"𝐋^2 * 𝐌 * 𝐍^-1 * 𝐓^-2"
+        T = typeof(ustrip(x))
+        return x / T(Unitful.Na)
+    else
+        return x
+    end
+end
+
+# Allow setup structs to have unitful defaults
+function convert_setup_quantity(x, units, T)
+    if units
+        return T(x)
+    else
+        if unit(x) == NoUnits
+            return T(x)
+        else
+            return T(ustrip(x))
+        end
+    end
+end
+
+# Unit handling when converting a System, see `System(sys; ...)`
+
+# Values with units have their units stripped if required
+function convert_component(c::SystemConversion, x::Unitful.Quantity)
+    val = convert_component(c, ustrip(x))
+    return (c.strip_units ? val : val * unit(x))
+end
+
+# Units stored in a struct, such as the force and energy units of `MullerBrown`
+convert_component(c::SystemConversion, x::Unitful.Units) = (c.strip_units ? NoUnits : x)

@@ -1,0 +1,157 @@
+# AnHydra deployment
+
+Follow [AUTH.md](https://github.com/abdulksidani-png/AnHydra/blob/HEAD/deploy/AUTH.md) before rollout: configure Auth0 signed admission claims,
+provision PostgreSQL, run migrations, and inject production settings when using
+Auth0. In that mode, `/score` and `/me` require eligible users' API access tokens.
+The explicit public-access mode is documented below. `/health` and `/ready` stay public.
+
+Release validation and deployment gates are in [RELEASE.md](https://github.com/abdulksidani-png/AnHydra/blob/HEAD/docs/RELEASE.md).
+Use `Caddyfile.site` for `frontend/anhydra-site`, the current React site. The
+older integrated React app uses `Caddyfile.react.template`. Both proxy `/me` and
+`/ready` alongside `/score` and `/health`. The existing `Caddyfile.template` and
+`Caddyfile.anhydra` serve the FastAPI page.
+Do not replace a live React site's configuration with the FastAPI-only variant
+unless deliberately switching interfaces.
+
+## Built-in FastAPI page configuration
+
+For the built-in interface, FastAPI serves `app/static/index.html`.
+Proxy all requests to `127.0.0.1:8000`; no separate frontend build or static
+web root is required. The retired `frontend/dist/` build should not be deployed.
+
+Back up `/etc/caddy/Caddyfile`, then incorporate `deploy/Caddyfile.anhydra`,
+preserving unrelated sites and replacing the old IP-only block. Confirm the
+DNS records for `anhydra.work` and `www.anhydra.work` point to this server
+before applying the configuration. Validate with
+`caddy validate --config /etc/caddy/Caddyfile` before `systemctl reload caddy`.
+Caddy manages domain HTTPS automatically. The IP address remains available
+over HTTP. Restore the backup if validation or serving fails.
+
+After updating the server checkout, restart `tardiscreen` and verify `/`,
+`/health`, and a real `/score` request. Run `bash scripts/check_site.sh` for
+the demo checks, and verify HTTP-to-HTTPS redirection for both hostnames.
+These are deployment instructions, not confirmation of a live server update.
+
+Replace every `@@...@@` token with the verified absolute checkout path and
+registered domain. The service uses a dynamic non-root account and a read-only
+mount of the checkout at `/srv/tardiscreen`. It has its own writable Hugging Face
+cache at `/var/cache/tardiscreen/huggingface`. Do not change ownership of the
+active dataset or model files. Systemd reads the optional checkout `.env` before
+starting the app; restart the service after changing that environment file.
+
+## Serving the AnHydra site without sign-in
+
+`frontend/anhydra-site` supports an explicit public mode. In this mode the backend
+runs with `PUBLIC_ACCESS=true`: `/score` is open to everyone and Auth0 and PostgreSQL
+are not needed. Every score also calls Gemini with the server's key, so anyone can spend
+that quota. On the server, from the checkout:
+
+1. Update the checkout to the reviewed release commit, then install the backend's current
+   dependencies into the existing environment: `.venv/bin/pip install -e .`
+2. Add `PUBLIC_ACCESS=true` to the checkout's `.env` and restart: `systemctl restart tardiscreen`.
+   Check `curl --fail http://127.0.0.1:8000/health`.
+3. Set `VITE_PUBLIC_ACCESS=true` with no Auth0 settings in the site's
+   `.env.production.local`. Pick the example buttons from the training data, then build
+   the site (Node 20 or newer):
+   `.venv/bin/python scripts/pick_examples.py > frontend/anhydra-site/public/examples.json`.
+   Optionally upscale the home page photo (a few minutes on the CPU; without it the photo comes
+   from Duda's image server): `.venv/bin/python scripts/upscale_backdrop.py`. Then
+   `cd frontend/anhydra-site && npm ci && npm run build`.
+   Copy it into place: `mkdir -p /var/www/anhydra-site && cp -r dist/. /var/www/anhydra-site/`.
+4. Back up `/etc/caddy/Caddyfile`, replace the AnHydra block with `deploy/Caddyfile.site`,
+   then `caddy validate --config /etc/caddy/Caddyfile` and `systemctl reload caddy`.
+5. Open the domain, check Home, Screen and About, and screen a pasted sequence.
+
+To go back, restore the Caddyfile backup and reload Caddy. Removing `PUBLIC_ACCESS`
+puts sign-in back on, which needs the Auth0 and database settings in AUTH.md.
+
+## Turning sign-in on for the site
+
+People sign in with Google or with an email and password (verified before they can screen).
+Browsing stays open; pressing Screen asks a signed-out visitor to sign in.
+
+In the Auth0 dashboard:
+
+1. **APIs**: an API whose identifier is the audience (for example `https://api.anhydra.work`),
+   signing algorithm RS256.
+2. **Applications**: a Single Page Application. Set Allowed Callback URLs, Allowed Logout URLs
+   and Allowed Web Origins each to `https://anhydra.work, https://www.anhydra.work,
+   http://localhost:5173`.
+3. **Authentication**: enable the `google-oauth2` and `Username-Password-Authentication`
+   connections for that application. Give Google your own OAuth client ID and secret; Auth0's
+   development keys are only for testing.
+4. **Actions**: create a Login / Post Login Action from `deploy/auth0-post-login.js`, deploy it,
+   and add it to the Login flow.
+
+Coordinate the frontend build and backend switch: Auth0 mode checks `/me`, so an
+Auth0 build cannot validate real accounts against a public-mode backend. From the checkout:
+
+1. Put the three public settings in `frontend/anhydra-site/.env.production.local`:
+   `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`, and remove
+   `VITE_PUBLIC_ACCESS=true`. Rebuild and copy the site
+   as in step 3 above.
+2. `sudo bash deploy/setup_postgres.sh /root/tardiscreen` creates the account database and writes
+   `DATABASE_URL` into `.env`.
+3. In `.env` set `AUTH0_ISSUER=https://<VITE_AUTH0_DOMAIN>/`, `AUTH0_AUDIENCE` (the same audience),
+   `AUTH0_CLAIM_NAMESPACE=https://anhydra.work/claims/` and `PUBLIC_ACCESS=false`, then
+   `systemctl restart tardiscreen`.
+4. Sign in on the site with Google and with a new email account, and screen a sequence with each.
+   `scripts/check_site.sh` now needs `AUTH_HEADER_FILE` (see AUTH.md) to test scoring.
+
+To go back to open access, set `PUBLIC_ACCESS=true` again, restart, and rebuild the site with
+`VITE_PUBLIC_ACCESS=true` in place of the three Auth0 settings.
+
+## Before installation
+
+- Coordinate the checkout update with Abdul while the dataset rebuild is active.
+  Never run `data.py`, `embed.py`, or `coverage.py`; deployment needs no retraining.
+- Confirm the checkout contains `data/models.joblib`, `.venv/bin/uvicorn`, and
+  an installed `tardiscreen` package with its ML dependencies.
+- Put `GEMINI_API_KEY` in the checkout's `.env` using a server-side editor.
+  Optionally set `GEMINI_MODEL=gemini-3.5-flash-lite`. Restrict `.env` to mode 600,
+  owned by root so systemd can load it without exposing it to other accounts.
+  Never print or commit its contents.
+- At your DNS provider, set the chosen hostname's A record to `64.177.42.245`.
+  Remove conflicting records for that hostname, including stale AAAA records.
+  Only add a www alias if it will also be included in the Caddy configuration.
+- Confirm inbound TCP 80 and 443 are allowed by the Vultr firewall and host
+  firewall. Preserve SSH access; port 8000 should stay private.
+
+## Install and start
+
+1. Render `tardiscreen.service.template` and install it as
+   `/etc/systemd/system/tardiscreen.service`. Run `systemd-analyze verify` on
+   that file, then `systemctl daemon-reload` and
+   `systemctl enable --now tardiscreen`.
+2. Check `curl --fail http://127.0.0.1:8000/health`. Expect
+   `{"status":"ok","model_trained":true}`. This is a readiness check for the
+   artifact's presence; a successful score is still required.
+3. Install Caddy using its official Ubuntu installation instructions. Inspect
+   existing Caddy configuration first and preserve other hosted sites. Render
+   the domain block and incorporate it into `/etc/caddy/Caddyfile`.
+4. Run `caddy validate --config /etc/caddy/Caddyfile`, then enable/start Caddy
+   or reload it if already running. Caddy obtains HTTPS certificates once DNS
+   and public ports reach this server.
+
+## Acceptance checks
+
+- Confirm both services are enabled and active. Restart the app service and
+  repeat the health request to check that it starts independently of SSH.
+- Verify public HTTPS `/` and `/health`, and HTTP-to-HTTPS redirection.
+- Submit a known demo sequence to `/score`; check the family score, features,
+  and explanation. First inference may load the ESM model and take longer.
+- Verify Gemini separately using the service environment and the same request
+  schema as `src/tardiscreen/explain.py`: require a successful API response and
+  nonempty candidate text. An explanation alone does not prove Gemini worked,
+  because the app intentionally provides an offline fallback. Never log the key.
+- On a phone with Wi-Fi disabled, open the domain's `/health` and submit a
+  sequence. Record this as pending until a teammate actually performs it.
+
+## Troubleshooting and rollback
+
+Inspect `systemctl status tardiscreen caddy` and service journals without
+printing secrets. Missing model artifacts must be handled by the data owner.
+Back up any existing service and Caddy configuration before replacing it.
+If deployment fails, restore those configurations, validate Caddy, reload
+systemd, and restart/reload the affected services. Do not roll back or replace
+dataset files as part of an infrastructure rollback.

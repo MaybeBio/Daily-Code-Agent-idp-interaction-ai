@@ -1,0 +1,1799 @@
+# Read files to set up a system
+# See OpenMM source code
+
+export
+    place_atoms,
+    place_diatomics
+
+@public MissingResidueTemplateError,
+    is_any_atom,
+    is_heavy_atom,
+    add_position_restraints
+
+"""
+    place_atoms(n_atoms, boundary; min_dist=nothing, max_attempts=100,
+                rng=Random.default_rng())
+
+Generate random coordinates.
+
+Obtain `n_atoms` coordinates in bounding box `boundary` where no two
+points are closer than `min_dist`, accounting for periodic boundary conditions.
+The keyword argument `max_attempts` determines the number of failed tries after
+which to stop placing atoms.
+Cannot be used if one or more dimensions has infinite boundaries.
+"""
+function place_atoms(n_atoms::Integer,
+                     boundary;
+                     min_dist=zero(length_type(boundary)),
+                     max_attempts::Integer=100,
+                     rng=Random.default_rng())
+    if has_infinite_boundary(boundary)
+        throw(ArgumentError("one or more dimension has infinite boundaries, boundary is $boundary"))
+    end
+    dims = AtomsBase.n_dimensions(boundary)
+    max_atoms = volume(boundary) / (min_dist ^ dims)
+    if n_atoms > max_atoms
+        throw(ArgumentError("boundary $boundary too small for $n_atoms atoms with " *
+                            "minimum distance $min_dist"))
+    end
+    min_dist_sq = min_dist ^ 2
+    coords = SArray[]
+    sizehint!(coords, n_atoms)
+    failed_attempts = 0
+    while length(coords) < n_atoms
+        new_coord = random_coord(boundary; rng=rng)
+        okay = true
+        if min_dist > zero(min_dist)
+            for coord in coords
+                if sum(abs2, vector(coord, new_coord, boundary)) < min_dist_sq
+                    okay = false
+                    failed_attempts += 1
+                    break
+                end
+            end
+        end
+        if okay
+            push!(coords, new_coord)
+            failed_attempts = 0
+        elseif failed_attempts >= max_attempts
+            error("failed to place atom $(length(coords) + 1) after $max_attempts " *
+                  "(max_attempts) tries")
+        end
+    end
+    return [coords...]
+end
+
+"""
+    place_diatomics(n_molecules, boundary, bond_length; min_dist=nothing,
+                    max_attempts=100, aligned=false, rng=Random.default_rng())
+
+Generate random diatomic molecule coordinates.
+
+Obtain coordinates for `n_molecules` diatomics in bounding box `boundary`
+where no two points are closer than `min_dist` and the bond length is `bond_length`,
+accounting for periodic boundary conditions.
+The keyword argument `max_attempts` determines the number of failed tries after
+which to stop placing atoms.
+The keyword argument `aligned` determines whether the bonds all point the same direction
+(`true`) or random directions (`false`).
+Cannot be used if one or more dimensions has infinite boundaries.
+"""
+function place_diatomics(n_molecules::Integer,
+                         boundary,
+                         bond_length;
+                         min_dist=zero(length_type(boundary)),
+                         max_attempts::Integer=100,
+                         aligned::Bool=false,
+                         rng=Random.default_rng())
+    if has_infinite_boundary(boundary)
+        throw(ArgumentError("one or more dimension has infinite boundaries, boundary is $boundary"))
+    end
+    dims = AtomsBase.n_dimensions(boundary)
+    max_molecules = volume(boundary) / ((min_dist + bond_length) ^ dims)
+    if n_molecules > max_molecules
+        throw(ArgumentError("boundary $boundary too small for $n_molecules diatomics with " *
+                            "minimum distance $min_dist"))
+    end
+    min_dist_sq = min_dist ^ 2
+    coords = SArray[]
+    sizehint!(coords, 2 * n_molecules)
+    failed_attempts = 0
+    while length(coords) < (n_molecules * 2)
+        new_coord_a = random_coord(boundary; rng=rng)
+        if aligned
+            shift = SVector{dims}([bond_length, [zero(bond_length) for d in 1:(dims - 1)]...])
+        else
+            shift = bond_length * normalize(randn(rng, SVector{dims, typeof(ustrip(bond_length))}))
+        end
+        new_coord_b = copy(new_coord_a) + shift
+        okay = true
+        if min_dist > zero(min_dist)
+            for coord in coords
+                if sum(abs2, vector(coord, new_coord_a, boundary)) < min_dist_sq ||
+                        sum(abs2, vector(coord, new_coord_b, boundary)) < min_dist_sq
+                    okay = false
+                    failed_attempts += 1
+                    break
+                end
+            end
+        end
+        if okay
+            push!(coords, new_coord_a)
+            push!(coords, new_coord_b)
+            failed_attempts = 0
+        elseif failed_attempts >= max_attempts
+            error("failed to place atom $(length(coords) + 1) after $max_attempts " *
+                  "(max_attempts) tries")
+        end
+    end
+    # Second atom in each molecule may be outside boundary
+    return wrap_coords.([coords...], (boundary,))
+end
+
+get_res_id(res) = (
+    Chemfiles.id(res),
+    "chainid" in Chemfiles.list_properties(res) ? Chemfiles.property(res, "chainid") : "X",
+)
+
+atom_types_to_string(atom_types...) = join(map(at -> at == "" ? "-" : at, atom_types), "/")
+
+atom_types_to_tuple(atom_types) = tuple(map(at -> at == "-" ? "" : at, split(atom_types, "/"))...)
+
+const standard_res_names = [keys(BioStructures.threeletter_to_aa)..., "HID", "HIE", "HIP"]
+
+# Versions of Chemfiles functions that don't make a copy
+function chemfiles_residue(top, ai)
+    ptr_raw = Chemfiles.lib.chfl_residue_from_topology(Chemfiles.__ptr(top), UInt64(ai))
+    ptr = Chemfiles.@__check_ptr(ptr_raw)
+    return Chemfiles.Residue(Chemfiles.CxxPointer(ptr, is_const=true))
+end
+
+function chemfiles_atom(top, ai)
+    ptr_raw = Chemfiles.lib.chfl_atom_from_topology(Chemfiles.__ptr(top), UInt64(ai))
+    ptr = Chemfiles.@__check_ptr(ptr_raw)
+    return Chemfiles.Atom(Chemfiles.CxxPointer(ptr, is_const=false))
+end
+
+chemfiles_name(top, ai) = Chemfiles.name(chemfiles_atom(top, ai))
+
+# Creates a Dict representation of the system Chains -> Residues -> Graphs
+# It is useful to have all the necessary data in one hashable object
+# It also ensures that the correct names are used for downstream template matching
+function canonicalize_system(top, resname_replacements, atomname_replacements,
+                             extra_particle_names, strictness)
+    canon_system = Dict{String, Dict{Int, ResidueGraph}}()
+    if iszero(Chemfiles.count_residues(top))
+        # Chemfiles does not assign residues for file types like SDF
+        # If no residues are assigned, assume the whole system is one residue
+        assume_one_res = true
+        res_range = 1:1
+    else
+        assume_one_res = false
+        res_range = 1:Chemfiles.count_residues(top)
+    end
+
+    for ri in res_range
+        if assume_one_res
+            res_id = (1, "X")
+            res_name = "UNK"
+            atom_inds_zero = collect(0:(size(top)-1))
+        else
+            res = chemfiles_residue(top, ri-1)
+            res_id = get_res_id(res)
+            res_name = Chemfiles.name(res)
+            if haskey(resname_replacements, res_name)
+                res_name = resname_replacements[res_name]
+            end
+            atom_inds_zero = Int.(Chemfiles.atoms(res))
+        end
+        atom_inds = atom_inds_zero .+ 1
+        atom_names = Vector{String}(undef, length(atom_inds_zero))
+        atom_elements = Vector{Symbol}(undef, length(atom_inds_zero))
+        for (li, atom_idx) in enumerate(atom_inds_zero)
+            # Reading the atom in place avoids the copy and explicit finalize done by
+            #   Chemfiles.Atom(top, atom_idx), which is slow when repeated for each atom
+            atom = chemfiles_atom(top, atom_idx)
+            atom_name = Chemfiles.name(atom)
+            atom_names[li] = atom_name
+            an = Int(Chemfiles.atomic_number(atom))
+            # Chemfiles treats e.g. "C" but not "C2" as carbon
+            # Here we search for elements after removing numbers, so "C2" is treated as carbon
+            # Cases that are ambiguous, such as "CA" with calcium, are not assigned (i.e. X)
+            if iszero(an)
+                atom_name_nonum = replace(atom_name, r"\d+" => "")
+                element_symbol = Symbol(atom_name_nonum)
+                if haskey(PeriodicTable.elements, element_symbol)
+                    an = PeriodicTable.elements[element_symbol].number
+                end
+            end
+            if iszero(an) # Extra particle returns 0 from chemfiles
+                atom_elements[li] = :X
+            elseif atom_name in extra_particle_names
+                # A site named like an element, e.g. V, would otherwise be read as vanadium
+                report_issue("atom $atom_name is read as an extra particle, since its type in " *
+                             "the force field has zero mass and no element, rather than as " *
+                             "element $(PeriodicTable.elements[an].symbol)", strictness; maxlog=1)
+                atom_elements[li] = :X
+            else
+                atom_elements[li] = Symbol(PeriodicTable.elements[an].symbol)
+            end
+        end
+        if haskey(atomname_replacements, res_name)
+            lookup = atomname_replacements[res_name]
+            atom_names = [get(lookup, a, a) for a in atom_names]
+        end
+
+        rgraph = ResidueGraph(res_name, atom_inds, atom_names, atom_elements,
+                              Tuple{Int,Int}[], fill(0, length(atom_inds)))
+
+        if !haskey(canon_system, res_id[2])
+            canon_system[res_id[2]] = Dict(res_id[1] => rgraph)
+        else
+            canon_system[res_id[2]][res_id[1]] = rgraph
+        end
+    end
+    return canon_system, assume_one_res
+end
+
+function resolve_bond(ff::MolecularForceField, t1::AbstractString, t2::AbstractString)
+    # Exact types first, both orders
+    key = (t1, t2)
+    if haskey(ff.bond_resolver.cache, key)
+        return ff.bond_resolver.cache[key]
+    end
+
+    cand = Int[]
+    append!(cand, get(ff.bond_resolver.idx, (:type,  t1, t2), Int[]))
+    append!(cand, get(ff.bond_resolver.idx, (:type,  t2, t1), Int[]))
+    c1 = get(ff.type_to_class, t1, "")
+    c2 = get(ff.type_to_class, t2, "")
+    append!(cand, get(ff.bond_resolver.idx, (:class, c1, c2), Int[]))
+    append!(cand, get(ff.bond_resolver.idx, (:class, c2, c1), Int[]))
+    append!(cand, get(ff.bond_resolver.idx, (:wild,  "", ""), Int[]))
+
+    best = nothing
+    best_spec = Int8(-1)
+    for i in cand
+        r = ff.bond_resolver.rules[i]
+        if (matches(r.p1, t1, ff.type_to_class) && matches(r.p2, t2, ff.type_to_class)) ||
+           (matches(r.p1, t2, ff.type_to_class) && matches(r.p2, t1, ff.type_to_class))
+            if r.specificity > best_spec
+                best_spec = r.specificity
+                best = r.params
+            end
+        end
+    end
+
+    # Symmetric caching
+    ff.bond_resolver.cache[(t1, t2)] = best
+    ff.bond_resolver.cache[(t2, t1)] = best
+    return best
+end
+
+function resolve_angle(ff::MolecularForceField, t1::AbstractString, t2::AbstractString,
+                       t3::AbstractString)
+    key = (t1, t2, t3)
+    ares = ff.angle_resolver
+    if haskey(ares.angle_cache, key)
+        return ares.angle_cache[key], ares.urey_cache[key]
+    end
+
+    cand = Int[]
+    append!(cand, get(ares.idx, (:type,  t2), Int[]))
+    append!(cand, get(ares.idx, (:class, get(ff.type_to_class, t2, "")), Int[]))
+    append!(cand, get(ares.idx, (:wild,  ""), Int[]))
+
+    best_angle, best_urey = nothing, nothing
+    best_spec_angle, best_spec_urey = Int8(-1), Int8(-1)
+    for i in cand
+        r = ares.rules[i]
+        if matches(r.p1, t1, ff.type_to_class) && matches(r.p2, t2, ff.type_to_class) &&
+                                                    matches(r.p3, t3, ff.type_to_class)
+            if r isa AngleRule
+                if r.specificity > best_spec_angle
+                    best_spec_angle = r.specificity
+                    best_angle = r.params
+                end
+            elseif r isa UreyBradleyRule
+                if r.specificity > best_spec_urey
+                    best_spec_urey = r.specificity
+                    best_urey = r.params
+                end
+            end
+        end
+        # Neighbor-reversed
+        if matches(r.p1, t3, ff.type_to_class) && matches(r.p2, t2, ff.type_to_class) &&
+                                                    matches(r.p3, t1, ff.type_to_class)
+            if r isa AngleRule
+                if r.specificity > best_spec_angle
+                    best_spec_angle = r.specificity
+                    best_angle = r.params
+                end
+            elseif r isa UreyBradleyRule
+                if r.specificity > best_spec_urey
+                    best_spec_urey = r.specificity
+                    best_urey = r.params
+                end
+            end
+        end
+    end
+
+    # Symmetric caching
+    ares.angle_cache[(t1, t2, t3)] = best_angle
+    ares.angle_cache[(t3, t2, t1)] = best_angle
+    ares.urey_cache[ (t1, t2, t3)] = best_urey
+    ares.urey_cache[ (t3, t2, t1)] = best_urey
+    return best_angle, best_urey
+end
+
+function resolve_proper_torsion(ff::MolecularForceField, t1::AbstractString, t2::AbstractString,
+                                t3::AbstractString, t4::AbstractString)
+    # OpenMM-style lazy resolution via resolver
+    p,  pspec  = find_proper_match(t1, t2, t3, t4; resolver=ff.torsion_resolver,
+                                                        type_to_class=ff.type_to_class)
+    pr, prspec = find_proper_match(t4, t3, t2, t1; resolver=ff.torsion_resolver,
+                                                        type_to_class=ff.type_to_class)
+
+    if !isnothing(p) && isnothing(pr)
+        return (p, (t1, t2, t3, t4))
+    elseif isnothing(p) && !isnothing(pr)
+        return (pr, (t4, t3, t2, t1))
+    elseif !isnothing(p) && !isnothing(pr)
+        ret = (pspec > prspec ? (p, (t1, t2, t3, t4)) : (pr, (t4, t3, t2, t1)))
+        return ret
+    else
+        return (nothing, ("", "", "", ""))
+    end
+end
+
+function resolve_improper_torsion(ff::MolecularForceField, t1::AbstractString, t2::AbstractString,
+                                  t3::AbstractString, t4::AbstractString, indexes, atom_type_of, 
+                                  resnum_of, template_id_of, element_of)
+    # Resolver scans all 6 permutations internally and caches the winner
+    p = find_improper_match(t1, t2, t3, t4, indexes, atom_type_of, resnum_of, template_id_of, 
+                            element_of; resolver=ff.torsion_resolver, 
+                            type_to_class=ff.type_to_class, atom_types=ff.atom_types)
+    if isnothing(p)
+        return nothing
+    end
+
+    # Recover matched permutation from cache to return the oriented key
+    ic = ff.torsion_resolver.improper_cache
+    cache_hit = get(ic, (t1, t2, t3, t4), :miss)
+    return cache_hit
+end
+
+function resolve_cmap(ff::MolecularForceField, t1::AbstractString, t2::AbstractString,
+                      t3::AbstractString, t4::AbstractString, t5::AbstractString)
+    key = (t1,t2,t3,t4,t5)
+    if haskey(ff.cmap_resolver.cache, key)
+        return ff.cmap_resolver.cache[key], true, false
+    end
+    best = first(ff.cmap_resolver.rules).params
+    best_spec = Int8(-1)
+    best_rev = false
+    for r in ff.cmap_resolver.rules
+        match_forward = matches(r.p1, t1, ff.type_to_class) &&
+                            matches(r.p2, t2, ff.type_to_class) &&
+                            matches(r.p3, t3, ff.type_to_class) &&
+                            matches(r.p4, t4, ff.type_to_class) &&
+                            matches(r.p5, t5, ff.type_to_class)
+        if match_forward && r.specificity > best_spec
+            best_spec = r.specificity
+            best = r.params
+            best_rev = false
+        end
+        match_reverse = matches(r.p1, t5, ff.type_to_class) &&
+                            matches(r.p2, t4, ff.type_to_class) &&
+                            matches(r.p3, t3, ff.type_to_class) &&
+                            matches(r.p4, t2, ff.type_to_class) &&
+                            matches(r.p5, t1, ff.type_to_class)
+        if match_reverse && r.specificity > best_spec
+            best_spec = r.specificity
+            best = r.params
+            best_rev = true
+        end
+    end
+    if best_spec == Int8(-1)
+        return best, false, false
+    else
+        if !best_rev
+            ff.cmap_resolver.cache[(t1,t2,t3,t4,t5)] = best
+        end
+        return best, true, best_rev
+    end
+end
+
+# Map an atom name in a residue to the global atom index
+function atom_name_to_global_i(atom_name, template_atoms, rgraph_atom_inds, matches)
+    atom_name_ind = findfirst(isequal(atom_name), template_atoms)
+    return rgraph_atom_inds[findfirst(isequal(atom_name_ind), matches)]
+end
+
+function add_virtual_sites!(virtual_sites::Vector{<:VirtualSite{T, <:Any, P}}, template, rgraph,
+                            matches) where {T, P}
+    for vst in template.virtual_sites
+        atom_ind = atom_name_to_global_i(vst.name       , template.atoms, rgraph.atom_inds, matches)
+        atom_1   = atom_name_to_global_i(vst.atom_name_1, template.atoms, rgraph.atom_inds, matches)
+        if vst.type == 1
+            atom_2 = 0
+        else
+            atom_2 = atom_name_to_global_i(vst.atom_name_2, template.atoms, rgraph.atom_inds, matches)
+        end
+        if vst.type in (1, 2)
+            atom_3 = 0
+        else
+            atom_3 = atom_name_to_global_i(vst.atom_name_3, template.atoms, rgraph.atom_inds, matches)
+        end
+        vs = VirtualSite(vst.type, atom_ind, atom_1, atom_2, atom_3, T(vst.weight_1),
+                         T(vst.weight_2), T(vst.weight_3), T(vst.weight_12), T(vst.weight_13),
+                         T(vst.weight_cross), T.(vst.local_weights), P.(vst.local_position))
+        push!(virtual_sites, vs)
+    end
+    return virtual_sites
+end
+
+"""
+    MissingResidueTemplateError(msg)
+
+An error when a residue cannot be matched to a residue template.
+"""
+struct MissingResidueTemplateError <: Exception
+    msg::String
+end
+
+function Base.showerror(io::IO, e::MissingResidueTemplateError)
+    return print(io, "MissingResidueTemplateError: ", e.msg)
+end
+
+# The charge type of each atom from the residue template it matched, see `charge_types` in
+#   `System`
+function charge_type_labels(charge_types, templates, template_of, template_id_of)
+    type_charges = Dict{String, Set{Any}}()
+    template_type_charges = Dict{Tuple{String, String}, Set{Any}}()
+    for t in templates, (type, q) in zip(t.types, t.charges)
+        push!(get!(Set{Any}, type_charges, type), q)
+        push!(get!(Set{Any}, template_type_charges, (t.name, type)), q)
+    end
+    return map(template_of, template_id_of) do t, m
+        type = t.types[m]
+        if charge_types == :atom_type || (charge_types == :auto && length(type_charges[type]) == 1)
+            return type
+        elseif charge_types == :template_type || (charge_types == :auto && length(template_type_charges[(t.name, type)]) == 1)
+            return "$(t.name)/$type"
+        else
+            # The type keeps these labels distinct from the template and type ones
+            return "$(t.name)/$type/$(t.atoms[m])"
+        end
+    end
+end
+
+"""
+    System(coordinate_file, force_field; <keyword arguments>)
+
+Read a coordinate file in a file format readable by Chemfiles and apply a
+force field, such as a [`MolecularForceField`](@ref), to it.
+
+Each residue is matched to a residue template of the force field, and a
+[`Molly.MissingResidueTemplateError`](@ref) is thrown if no template matches.
+
+# Arguments
+- `boundary=nothing`: the bounding box used for simulation, read from the
+    file by default.
+- `velocities=nothing`: the velocities of the atoms in the system, set to
+    zero by default.
+- `units::Bool=true`: whether to use Unitful quantities. Should match the
+    corresponding argument used for the force field argument.
+- `array_type=Array`: the array type for the simulation, for example
+    use `CuArray` or `ROCArray` for GPU support.
+- `float_type`: the floating point type of the system, defaults to `Float64` on CPU
+    and `Float32` on GPU.
+- `float_type_high`: the floating point type used for accumulation where
+    higher precision is useful, such as the potential energy and the virial.
+    `Float64` by default, or `float_type` on backends that do not support
+    `Float64` such as Metal.
+- `dist_cutoff=1.0u"nm"`: cutoff distance for the non-bonded interactions.
+- `dist_buffer=0.2u"nm"`: distance added to `dist_cutoff` when calculating
+    classical neighbor lists every few steps.
+- `constraints=:none`: which constraints to apply during the simulation, options
+    are `:none`, `:hbonds` (bonds involving hydrogen), `:allbonds` (all bonds)
+    and `:hangles` (all bonds plus H-X-H and H-O-X angles). Note that not all options
+    may be supported depending on the bonding topology. Urey-Bradley bond terms are
+    not treated as bonds when adding constraints.
+- `rigid_water=false`: whether to constrain the bonds and angle in water
+    molecules. Applied on top of `constraints`, so `constraints=:hangles` and
+    `rigid_water=false` gives rigid water.
+- `constraint_algorithm=SetupLINCS()`: Constraint algorithm to use for enforcing the
+    constraints. Can be an instance of [`SetupLINCS`](@ref) or [`SetupSHAKE_RATTLE`](@ref).
+- `nonbonded_method=SetupCoulombReactionField()`: method for long range interaction summation,
+    can be an instance of [`SetupCoulombReactionField`](@ref) (reaction field method),
+    [`SetupPME`](@ref) (particle mesh Ewald summation), [`SetupEwald`](@ref)
+    (Ewald summation, slow), or a cutoff like [`DistanceCutoff`](@ref) (short range only).
+    For a cutoff, the cutoff distance must not exceed `dist_cutoff`.
+- `lj_cutoff=nothing`: the cutoff method to use for the Lennard-Jones interaction,
+    by default uses `DistanceCutoff(dist_cutoff)`. The cutoff distance must not exceed
+    `dist_cutoff`. If the long-range Lennard-Jones dispersion correction is being used,
+    this must be a [`DistanceCutoff`](@ref).
+- `dispersion_correction=nothing`: whether to use the long-range Lennard-Jones
+    dispersion correction, [`LJDispersionCorrection`](@ref). Defaults to the force
+    field setting, which defaults to `true`.
+- `hydrogen_mass=false`: if set to a number or unitful value (e.g. `2` or `2u"g/mol"`)
+    then hydrogens are given the specified mass, which is transferred from the
+    atom they are bonded to. This is applied before constraints are generated.
+- `center_coords::Bool=true`: whether to center the coordinates in the
+    simulation box.
+- `neighbor_finder_type`: which neighbor finder to use, default is
+    [`CellListMapNeighborFinder`](@ref) on CPU, [`GPUNeighborFinder`](@ref)
+    on CUDA compatible GPUs and [`GPUCellListNeighborFinder`](@ref) on non-CUDA
+    compatible GPUs, falling back to [`DistanceNeighborFinder`](@ref) there when the
+    box is too small for a cell list. [`NoNeighborFinder`](@ref) can be used but in
+    this case bonded atoms will not be excluded from the non-bonded interactions.
+- `neighbor_finder_n_steps=10`: the number of steps between neighbor finder
+    updates. Can be tuned along with `dist_buffer` to ensure that particles
+    do not cross the buffer distance during the update interval.
+- `launch_config=CUDALaunchConfig()`: stored CUDA launch overrides for this
+    system. Ignored on CPU and non-CUDA GPU backends.
+- `autotune_launch=true`: whether to autotune CUDA launch parameters at the end
+    of setup. This is a no-op on CPU and non-CUDA GPU backends.
+- `data=nothing`: arbitrary data associated with the system.
+- `implicit_solvent=nothing`: the implicit solvent model to use, can be `nothing`
+    or an instance of [`SetupImplicitSolventOBC`](@ref) or
+    [`SetupImplicitSolventGBN2`](@ref).
+- `disulfide_bonds=true`: whether or not to look for disulfide bonds between CYS
+    residues in the structure file and add them to the topology. Uses geometric
+    arguments to assign them.
+- `loggers=()`: the loggers that record properties of interest during a
+    simulation.
+- `n_threads=Threads.nthreads()`: the number of threads the simulation will likely
+    be run on, used for example when setting up PME and implicit solvent. Only
+    relevant when running on CPU.
+- `grad_safe=false`: should be set to `true` if the system is going to be used
+    with Enzyme.jl.
+- `strictness=:warn`: determines behavior when encountering possible problems,
+    options are `:warn` to emit warnings, `:nowarn` to suppress warnings or
+    `:error` to error.
+- `charge_types=:auto`: how atoms are grouped into charge parameters for
+    [`extract_parameters`](@ref) and [`inject_gradients`](@ref) when the force field
+    takes charges from the residue templates, options are `:auto`, `:atom_type`,
+    `:template_type` or `:template_atom`. See [High-level gradient interface](@ref).
+"""
+function System(coord_file::AbstractString,
+                force_field::MolecularForceField;
+                boundary=nothing,
+                velocities=nothing,
+                units::Bool=true,
+                array_type::Type{AT}=Array,
+                float_type=(array_type <: AbstractGPUArray ? Float32 : Float64),
+                float_type_high=default_float_type_high(array_type, float_type),
+                dist_cutoff=add_units(1.0, u"nm", units),
+                dist_buffer=add_units(0.2, u"nm", units),
+                constraints=:none,
+                rigid_water::Bool=false,
+                constraint_algorithm=SetupLINCS(),
+                nonbonded_method=SetupCoulombReactionField(),
+                lj_cutoff=nothing,
+                dispersion_correction=nothing,
+                hydrogen_mass::Union{Bool, Number}=false,
+                center_coords::Bool=true,
+                neighbor_finder_type=nothing,
+                neighbor_finder_n_steps::Integer=10,
+                launch_config=CUDALaunchConfig(),
+                autotune_launch::Bool=true,
+                data=nothing,
+                implicit_solvent=nothing,
+                disulfide_bonds::Bool=true,
+                loggers=(),
+                n_threads=Threads.nthreads(),
+                grad_safe::Bool=false,
+                strictness=default_strictness(),
+                force_separate_lj14::Bool=false,
+                charge_types::Symbol=:auto) where {AT <: AbstractArray}
+    check_strictness(strictness)
+    if !(charge_types in (:auto, :atom_type, :template_type, :template_atom))
+        throw(ArgumentError("charge_types is $(repr(charge_types)), use :auto, :atom_type, " *
+                            ":template_type or :template_atom"))
+    end
+    if units != force_field.units
+        throw(ArgumentError("units argument to System is $units but force field has " *
+                            "units $(force_field.units)"))
+    end
+    if dist_cutoff <= zero(dist_cutoff)
+        throw(ArgumentError("dist_cutoff ($dist_cutoff) should be positive"))
+    end
+    if dist_buffer < zero(dist_buffer)
+        throw(ArgumentError("dist_buffer ($dist_buffer) should not be less than zero"))
+    end
+    if !(constraints in (:none, :hbonds, :allbonds, :hangles))
+        throw(ArgumentError("constraints ($constraints) must be one of :none, :hbonds, " *
+                            ":allbonds or :hangles"))
+    end
+    if !(nonbonded_method isa SetupCoulombReactionField ||
+                nonbonded_method isa AbstractSetupEwald ||
+                nonbonded_method isa AbstractCutoff)
+        throw(ArgumentError("nonbonded_method ($nonbonded_method) must be a setup type like " *
+                            "SetupCoulombReactionField/SetupPME/SetupEwald or an AbstractCutoff"))
+    end
+    if !(isnothing(lj_cutoff) || lj_cutoff isa AbstractCutoff)
+        throw(ArgumentError("lj_cutoff ($lj_cutoff) must be nothing or an AbstractCutoff"))
+    end
+    if nonbonded_method isa AbstractCutoff && hasproperty(nonbonded_method, :dist_cutoff) &&
+            nonbonded_method.dist_cutoff > dist_cutoff
+        throw(ArgumentError("the cutoff distance for nonbonded_method " *
+                "($(nonbonded_method.dist_cutoff)) must not exceed dist_cutoff ($dist_cutoff)"))
+    end
+    if hasproperty(lj_cutoff, :dist_cutoff) && lj_cutoff.dist_cutoff > dist_cutoff
+        throw(ArgumentError("the cutoff distance for lj_cutoff " *
+                "($(lj_cutoff.dist_cutoff)) must not exceed dist_cutoff ($dist_cutoff)"))
+    end
+    if nonbonded_method == NoCutoff() && neighbor_finder_type != NoNeighborFinder
+        err_str = "nonbonded_method is NoCutoff() but a neighbor finder is being used, this " *
+                  "means that interactions may depend on internal details of the neighbor finder"
+        report_issue(err_str, strictness)
+    end
+    if lj_cutoff == NoCutoff() && neighbor_finder_type != NoNeighborFinder
+        err_str = "lj_cutoff is NoCutoff() but a neighbor finder is being used, this " *
+                  "means that interactions may depend on internal details of the neighbor finder"
+        report_issue(err_str, strictness)
+    end
+    if neighbor_finder_type == NoNeighborFinder
+        err_str = "neighbor_finder_type is NoNeighborFinder, this means that bonded atoms " *
+                  "will not be excluded from the non-bonded interactions"
+        report_issue(err_str, strictness)
+    end
+    if neighbor_finder_n_steps <= 0
+        throw(ArgumentError("neighbor_finder_n_steps ($neighbor_finder_n_steps) must be positive"))
+    end
+    if !(isnothing(implicit_solvent) || implicit_solvent isa AbstractSetupGBSA)
+        throw(ArgumentError("implicit_solvent must be nothing or a setup type like " *
+                    "SetupImplicitSolventOBC/SetupImplicitSolventGBN2, found $implicit_solvent"))
+    end
+    if !isnothing(implicit_solvent) && nonbonded_method isa AbstractSetupEwald
+        err_str = "Ewald summation or PME is being used with implicit " *
+                  "solvent, this may not be intended since long range electrostatics " *
+                  "and implicit solvent both model the effect of the solvent, " *
+                  "nonbonded_method=DistanceCutoff(dist_cutoff) is usual with implicit solvent"
+        report_issue(err_str, strictness)
+    end
+    if isa(hydrogen_mass, Bool) && hydrogen_mass
+        throw(ArgumentError("hydrogen_mass can be false, a number or a unitful value " *
+                            "(e.g. `2` or `2u\"g/mol\"`)"))
+    end
+    if !isa(hydrogen_mass, Bool) && !(hydrogen_mass > zero(hydrogen_mass))
+        throw(ArgumentError("hydrogen_mass should be greater than zero"))
+    end
+    if grad_safe && neighbor_finder_type == GPUNeighborFinder
+        throw(ArgumentError("GPUNeighborFinder is not compatible with grad_safe"))
+    end
+    if isnothing(dispersion_correction)
+        disp_corr = force_field.dispersion_correction
+    else
+        if dispersion_correction != force_field.dispersion_correction
+            err_str = "dispersion_correction is $dispersion_correction but value in the force " *
+                      "field is $(force_field.dispersion_correction), using $dispersion_correction"
+            report_issue(err_str, strictness)
+        end
+        disp_corr = dispersion_correction
+    end
+    if disp_corr && force_field.custom_nonbonded
+        throw(ArgumentError("dispersion correction is not supported with CustomNonbondedForce"))
+    end
+    if disp_corr && !(isnothing(lj_cutoff) || lj_cutoff isa DistanceCutoff)
+        throw(ArgumentError("dispersion correction is not supported with lj_cutoff values " *
+                            "other than DistanceCutoff, found $lj_cutoff"))
+    end
+    dist_neighbors = dist_cutoff + dist_buffer
+    T, TH = float_type, float_type_high
+    if units
+        E  = typeof(zero(T) * u"kJ * mol^-1")
+        IC = typeof(zero(T) * u"nm^-1")
+    else
+        E, IC = T, T
+    end
+
+    resname_replacements  = force_field.residue_name_replacements
+    atomname_replacements = force_field.atom_name_replacements
+    standard_bonds        = force_field.standard_bonds
+
+    # Read structure
+    traj = Chemfiles.Trajectory(coord_file)
+    frame = Chemfiles.read(traj)
+    top = Chemfiles.Topology(frame)
+    n_atoms = size(top)
+
+    # Boundary
+    if isnothing(boundary)
+        boundary_used = boundary_from_chemfiles(Chemfiles.UnitCell(frame), T,
+                                                            (units ? u"nm" : NoUnits))
+    else
+        boundary_used = boundary
+    end
+    if has_infinite_boundary(boundary_used) && nonbonded_method isa AbstractSetupEwald
+        throw(ArgumentError("Ewald summation or PME cannot be used with " *
+                            "infinite boundaries, boundary can be set in structure file or " *
+                            "with boundary argument"))
+    end
+    min_box_side = minimum(box_sides(boundary_used))
+    if min_box_side < (2 * dist_cutoff)
+        report_box_size_issue(min_box_side, dist_cutoff, strictness)
+    end
+
+    # Units and coordinates
+    coords = add_units(
+        [T.(SVector{3}(col) / 10.0) for col in eachcol(Chemfiles.positions(frame))],
+        u"nm",
+        units,
+    )
+    if center_coords
+        coords = coords .- (mean(coords),) .+ (box_center(boundary_used),)
+    end
+    coords = wrap_coords.(coords, (boundary_used,))
+
+    # Atom names the force field gives zero mass and no element, so that a virtual site is read as
+    #   an extra particle even when it is named like an element
+    extra_particle_names = Set(tpl.atoms[j] for tpl in values(force_field.residues)
+                               for j in eachindex(tpl.atoms) if tpl.extras[j] &&
+                               iszero_value(force_field.atom_types[tpl.types[j]].mass))
+    canonical_system, assume_one_res = canonicalize_system(top, resname_replacements,
+                                            atomname_replacements, extra_particle_names, strictness)
+
+    atom_lookup = build_atom_residue_lookup(canonical_system)
+
+    top_bonds = create_bonds!(canonical_system, standard_bonds)
+    if disulfide_bonds
+        top_bonds = create_disulfide_bonds(coords, boundary_used, canonical_system,
+                                           atom_lookup, top_bonds)
+    end
+    top_bonds = read_extra_bonds!(atom_lookup, top, top_bonds)
+
+    # Templates are checked in name order so that the assignment is reproducible
+    sorted_template_names = sort(collect(keys(force_field.residues)))
+    # Match each residue graph to a template and assign atom types/charges
+    atom_type_of = Vector{String}(undef, n_atoms)
+    charge_of = Vector{Union{T, Missing}}(undef, n_atoms)
+    element_of = Vector{String}(undef, n_atoms)
+    template_id_of = Vector{Int}(undef, n_atoms)
+    template_of = Vector{ResidueTemplate}(undef, n_atoms)
+    resnum_of = Vector{Int}(undef, n_atoms)
+    use_charge_from_residue = ("charge" in force_field.attributes_from_residue)
+    # Index of each atom type in the force field, avoiding repeated linear searches
+    atom_type_index = Dict{String, Int}(at => i
+                                        for (i, at) in enumerate(force_field.atom_type_order))
+
+    virtual_sites = VirtualSite{T, IC, typeof(inv(oneunit(IC)))}[]
+    # Identical residues, e.g. the water molecules in a solvated system, match the same
+    #   template so the search is only carried out once for each distinct residue
+    match_cache = Dict{ResidueMatchKey, Tuple{Union{ResidueTemplate, Nothing},
+                                              Union{Vector{Int}, Nothing},
+                                              Union{String, Nothing},
+                                              Union{Vector{String}, Nothing}}}()
+    for (chain, resids) in canonical_system
+        for (res_id, rgraph) in resids
+            template, matches = match_residue(rgraph, force_field, sorted_template_names,
+                                              chain, res_id, strictness, match_cache)
+            matched = !isnothing(matches)
+            if matched
+                for (r_i, m_i) in enumerate(matches)
+                    global_idx = rgraph.atom_inds[r_i]
+                    atom_type_of[global_idx] = template.types[m_i]
+                    charge_of[global_idx] = template.charges[m_i]
+                    element_of[global_idx] = force_field.atom_types[template.types[m_i]].element
+                    template_id_of[global_idx] = m_i
+                    template_of[global_idx] = template
+                    resnum_of[global_idx] = resnum_from_atom_idx(global_idx, atom_lookup)
+                end
+                add_virtual_sites!(virtual_sites, template, rgraph, matches)
+            end
+            if !matched
+                n_names = length(rgraph.atom_names)
+                if n_names > 30
+                    atom_str = join(rgraph.atom_names[1:30], ", ") * " and $(n_names - 30) more"
+                else
+                    atom_str = join(rgraph.atom_names, ", ")
+                end
+                throw(MissingResidueTemplateError("could not match residue $(rgraph.res_name) " *
+                    "(residue number $res_id of chain \"$chain\") to any of the residue templates " *
+                    "in the force field. " * residue_match_error(rgraph, force_field.residues) *
+                    " The residue has $n_names atoms: $atom_str. See the Molly documentation " *
+                    "section on simulating a protein for tips on obtaining compatible files."))
+            end
+        end
+    end
+    virtual_sites_type = (length(virtual_sites) > 0 ? virtual_sites : [])
+
+    adj           = build_adjacency(n_atoms, top_bonds)
+    top_angles    = build_angles(adj, top_bonds)
+    top_torsions  = build_torsions(adj, top_angles)
+    top_impropers = build_impropers(adj)
+    if length(force_field.cmap_resolver.rules) > 0
+        top_cmap = build_cmaps(adj, top_torsions)
+    else
+        top_cmap = []
+    end
+
+    # Allocate interaction lists and particles
+    atoms_abst = Atom[]
+    atoms_data = AtomData[]
+    bonds_il  = InteractionList2Atoms(HarmonicBond)
+    angles_il = InteractionList3Atoms(HarmonicAngle)
+    tors_il   = InteractionList4Atoms(PeriodicTorsion)
+    imps_il   = InteractionList4Atoms(PeriodicTorsion)
+    htors_il  = InteractionList4Atoms(HarmonicTorsion{E, T})
+    cmaps_il  = InteractionList5Atoms(CMAPTorsion)
+    bonds_ub_flags = Bool[] # Whether a bond is a Urey-Bradley bond
+    excluded_pairs = Tuple{Int32, Int32}[]
+    special_pairs  = Tuple{Int32, Int32}[]
+    torsion_n_terms = 6
+    weight_14_coulomb, weight_14_lj = T(force_field.weight_14_coulomb), T(force_field.weight_14_lj)
+    σs_14 = (units ? typeof(one(T) * u"nm")[] : T[])
+    ϵs_14 = (units ? typeof(one(T) * u"kJ * mol^-1")[] : T[])
+    separate_lj14 = force_separate_lj14
+
+    # Whether each atom belongs to a residue that is not a standard PDB residue
+    # The Chemfiles property is read once per residue rather than once per atom
+    hetero_atoms = fill(assume_one_res, n_atoms)
+    if !assume_one_res
+        for ri in 1:Chemfiles.count_residues(top)
+            res_cfl = chemfiles_residue(top, ri - 1)
+            if "is_standard_pdb" in Chemfiles.list_properties(res_cfl)
+                hetero_res = !Chemfiles.property(res_cfl, "is_standard_pdb")
+            else
+                hetero_res = false
+            end
+            if hetero_res
+                for ai_zero in Chemfiles.atoms(res_cfl)
+                    hetero_atoms[Int(ai_zero) + 1] = true
+                end
+            end
+        end
+    end
+
+    if use_charge_from_residue
+        # The matched templates include patched ones, which are not in the force field
+        templates = union(values(force_field.residues), template_of)
+        charge_type_of = charge_type_labels(charge_types, templates, template_of, template_id_of)
+    end
+
+    # Atoms
+    for ai in 1:n_atoms
+        atype = atom_type_of[ai]
+        at = force_field.atom_types[atype]
+        # Convert atom type to an index
+        ati = get(atom_type_index, atype, nothing)
+        if (units && T(at.σ) < zero(T)u"nm") || (!units && T(at.σ) < zero(T))
+            error("atom $ai type $atype has unset σ or ϵ")
+        end
+        if use_charge_from_residue
+            ch = charge_of[ai]
+            if ismissing(ch)
+                error("atom $ai (type $atype) has no charge in the residue template it " *
+                      "was matched to, the force field uses " *
+                      "<UseAttributeFromResidue name=\"charge\"/> so every atom in a " *
+                      "residue template needs a charge attribute")
+            end
+            ch = T(ch)
+        else
+            ch = force_field.atom_types[atype].charge
+            if ismissing(ch)
+                error("atom $ai has type $atype, which has no charge set in a " *
+                      "NonbondedForce entry of the force field")
+            end
+            ch = T(ch)
+        end
+        push!(atoms_abst, Atom(index=Int32(ai), atom_type=Int32(ati), mass=T(at.mass), charge=ch,
+                               σ=T(at.σ), ϵ=T(at.ϵ), λ=T(1.0)))
+
+        if !ismissing(at.σ14)
+            push!(σs_14, T(at.σ14))
+            separate_lj14 = true
+        else
+            push!(σs_14, T(at.σ))
+        end
+        if !ismissing(at.ϵ14)
+            push!(ϵs_14, T(at.ϵ14))
+            separate_lj14 = true
+        else
+            push!(ϵs_14, T(at.ϵ))
+        end
+
+        chain_ai, resnum_ai, res, local_idx_ai = atom_lookup[ai]
+        push!(atoms_data, AtomData(
+            atom_type=atype,
+            atom_name=res.atom_names[local_idx_ai],
+            res_number=resnum_ai,
+            res_name=res.res_name,
+            chain_id=chain_ai,
+            element=element_of[ai],
+            hetero_atom=hetero_atoms[ai],
+            charge_type=(use_charge_from_residue ? charge_type_of[ai] : atype),
+        ))
+    end
+    atoms = to_device([atoms_abst...], AT)
+
+    # Bonds
+    for (i, j) in top_bonds
+        t1, t2 = atom_type_of[i], atom_type_of[j]
+        hb = resolve_bond(force_field, t1, t2)
+        if isnothing(hb)
+            error("no bond parameters found for ($t1, $t2)")
+        end
+        push!(bonds_il.is, i)
+        push!(bonds_il.js, j)
+        push!(bonds_il.types, atom_types_to_string(t1,t2))
+        push!(bonds_il.inters, HarmonicBond(T(hb.k), T(hb.r0)))
+        push!(bonds_ub_flags, false)
+        push!(excluded_pairs, (Int32(i), Int32(j)))
+    end
+
+    # Angles
+    for (i, j, k) in top_angles
+        t1, t2, t3 = atom_type_of[i], atom_type_of[j], atom_type_of[k]
+        ha, hb = resolve_angle(force_field, t1, t2, t3)
+        if isnothing(ha) && isnothing(hb)
+            error("no angle parameters found for ($t1, $t2, $t3)")
+        end
+        if !isnothing(ha)
+            push!(angles_il.is, i)
+            push!(angles_il.js, j)
+            push!(angles_il.ks, k)
+            push!(angles_il.types, atom_types_to_string(t1, t2, t3))
+            push!(angles_il.inters, HarmonicAngle(T(ha.k), T(ha.θ0)))
+            push!(excluded_pairs, (Int32(i), Int32(k)))
+        end
+        if !isnothing(hb)
+            push!(bonds_il.is, i)
+            push!(bonds_il.js, k)
+            push!(bonds_il.types, atom_types_to_string(t1, t2, t3))
+            push!(bonds_il.inters, HarmonicBond(T(hb.k), T(hb.r0)))
+            push!(bonds_ub_flags, true)
+            push!(excluded_pairs, (Int32(i), Int32(k)))
+        end
+    end
+
+    add_virtual_site_exclusions!(excluded_pairs, virtual_sites, n_atoms)
+
+    # Proper torsions
+    for (i,j,k,l) in top_torsions
+        t1, t2, t3, t4 = atom_type_of[i], atom_type_of[j], atom_type_of[k], atom_type_of[l]
+        tt, key = resolve_proper_torsion(force_field, t1, t2, t3, t4)
+        isnothing(tt) && continue
+
+        n_terms = length(tt.periodicities)
+        for s in 1:torsion_n_terms:n_terms
+            e = min(s+torsion_n_terms-1, n_terms)
+            push!(tors_il.is, i)
+            push!(tors_il.js, j)
+            push!(tors_il.ks, k)
+            push!(tors_il.ls, l)
+            push!(tors_il.types, atom_types_to_string(key...))
+            push!(tors_il.inters, PeriodicTorsion(
+                periodicities=tt.periodicities[s:e],
+                phases=T.(tt.phases[s:e]),
+                ks=T.(tt.ks[s:e]),
+                proper=true,
+            ))
+        end
+        push!(special_pairs, (Int32(i), Int32(l)))
+    end
+
+    # Impropers (Amber ordering)
+    for (c, j, k, l) in top_impropers
+        t1, t2, t3, t4 = atom_type_of[c], atom_type_of[j], atom_type_of[k], atom_type_of[l]
+
+        # See if signature is already in cache
+        ic = force_field.torsion_resolver.improper_cache
+        hit = get(ic, (t1, t2, t3, t4), :miss)
+        if hit == nothing
+            # Previously checked, and doesn't appear in the database
+            continue
+        elseif hit != :miss
+            # Signature was cached
+            # Collect permutation and parameters
+            perm, ridx = hit
+            r = force_field.torsion_resolver.rules[ridx]
+            tt = force_field.torsion_resolver.rules[ridx].params
+            isnothing(tt) && continue
+            tt isa HarmonicTorsionType && continue
+
+            # Reorder indices based on how atoms were permuted
+            src_atoms = (c, j, k, l)
+            j = src_atoms[perm[2]]
+            k = src_atoms[perm[3]]
+            l = src_atoms[perm[4]]
+            src = (t1, t2, t3, t4)
+            types = (src[perm[1]], src[perm[2]], src[perm[3]], src[perm[4]])
+        end
+
+        if hit == :miss
+            # Signature was not found
+            # Resolve improper params and oriented key (central first)
+            hit = resolve_improper_torsion(force_field, t1, t2, t3, t4, (c,j,k,l), 
+                             atom_type_of, resnum_of, template_id_of, element_of)
+            if hit == nothing
+                continue
+            elseif hit == :miss
+                error("Can't match torsion, but something wrong in implementation")
+            end
+            perm, ridx = hit
+            r = force_field.torsion_resolver.rules[ridx]
+            tt = force_field.torsion_resolver.rules[ridx].params               
+            isnothing(tt) && continue
+            tt isa HarmonicTorsionType && continue
+
+            # Reorder indices based on how atoms were permuted
+            src_atoms = (c, j, k, l)
+            j = src_atoms[perm[2]]
+            k = src_atoms[perm[3]]
+            l = src_atoms[perm[4]]
+            src = (t1, t2, t3, t4)
+            types = (src[perm[1]], src[perm[2]], src[perm[3]], src[perm[4]])
+        end
+        if hit != :miss
+            if r.ordering=="smirnoff"
+                a1, a2, a3, a4 = c, j, k, l
+                for (x1, x2, x3, x4) in ((a1,a2,a3,a4),
+                                        (a1,a3,a4,a2),
+                                        (a1,a4,a2,a3))
+                    push!(imps_il.is, x1)
+                    push!(imps_il.js, x2)
+                    push!(imps_il.ks, x3)
+                    push!(imps_il.ls, x4)
+                    push!(imps_il.types, atom_types_to_string(types...))
+                    push!(imps_il.inters, PeriodicTorsion(periodicities=tt.periodicities,
+                                                phases=T.(tt.phases), ks=T.(tt.ks), proper=false))
+                end
+            else
+                push!(imps_il.is, j)
+                push!(imps_il.js, k)
+                push!(imps_il.ks, c)
+                push!(imps_il.ls, l)
+                push!(imps_il.types, atom_types_to_string(types...))
+                push!(imps_il.inters, PeriodicTorsion(periodicities=tt.periodicities,
+                                                    phases=T.(tt.phases), ks=T.(tt.ks), proper=false))
+            end
+        end
+    end
+    empty!(force_field.torsion_resolver.improper_cache)
+
+    # Custom impropers
+    for (c, j, k, l) in top_impropers
+        t1, t2, t3, t4 = atom_type_of[c], atom_type_of[j], atom_type_of[k], atom_type_of[l]
+
+        # See if signature is already in cache
+        ic = force_field.torsion_resolver.improper_cache
+        hit = get(ic, (t1, t2, t3, t4), :miss)
+        if hit == nothing
+            # Previously checked, and doesn't appear in the database
+            continue
+        elseif hit != :miss
+            # Signature was cached
+            # Collect permutation and parameters
+            perm, ridx = hit
+            tt = force_field.torsion_resolver.rules[ridx].params
+            isnothing(tt) && continue
+            tt isa PeriodicTorsionType && continue
+
+            # Reorder indices based on how atoms were permuted
+            src_atoms = (c, j, k, l)
+            j = src_atoms[perm[2]]
+            k = src_atoms[perm[3]]
+            l = src_atoms[perm[4]]
+            src = (t1, t2, t3, t4)
+            types = (src[perm[1]], src[perm[2]], src[perm[3]], src[perm[4]])
+        end
+
+        if hit == :miss
+            # Signature was not found
+            # Resolve improper params and oriented key (central first)
+            hit = resolve_improper_torsion(force_field, t1, t2, t3, t4, (c,j,k,l), 
+                             atom_type_of, resnum_of, template_id_of, element_of)
+            if hit == nothing
+                continue
+            elseif hit == :miss
+                error("Can't match torsion, but something wrong in implementation")
+            end
+            perm, ridx = hit
+            tt = force_field.torsion_resolver.rules[ridx].params               
+            isnothing(tt) && continue
+            tt isa PeriodicTorsionType && continue
+
+            # Reorder indices based on how atoms were permuted
+            src_atoms = (c, j, k, l)
+            j = src_atoms[perm[2]]
+            k = src_atoms[perm[3]]
+            l = src_atoms[perm[4]]
+            src = (t1, t2, t3, t4)
+            types = (src[perm[1]], src[perm[2]], src[perm[3]], src[perm[4]])
+        end
+        if hit != :miss
+            push!(htors_il.is, c)
+            push!(htors_il.js, j)
+            push!(htors_il.ks, k)
+            push!(htors_il.ls, l)
+            push!(htors_il.types, atom_types_to_string(types...))
+            push!(htors_il.inters, HarmonicTorsion(k=T(tt.k), θ0=T(tt.θ0)))
+        end
+    end
+
+    # CMAP corrections
+    cmaps_maps_vec = []
+    # The same CMAP appears in many torsions, so only build its coefficients once
+    cmap_coeffs = IdDict{Any, Any}()
+    index = 0
+    for (i,j,k,l,m) in top_cmap
+        t1,t2,t3,t4,t5 = atom_type_of[i], atom_type_of[j], atom_type_of[k], atom_type_of[l], atom_type_of[m]
+        cmap, found_cmap, matched_rev = resolve_cmap(force_field, t1,t2,t3,t4,t5)
+        found_cmap || continue
+        if matched_rev
+            push!(cmaps_il.is, m)
+            push!(cmaps_il.js, l)
+            push!(cmaps_il.ks, k)
+            push!(cmaps_il.ls, j)
+            push!(cmaps_il.ms, i)
+            push!(cmaps_il.types, atom_types_to_string(t5, t4, t3, t2, t1))
+        else
+            push!(cmaps_il.is, i)
+            push!(cmaps_il.js, j)
+            push!(cmaps_il.ks, k)
+            push!(cmaps_il.ls, l)
+            push!(cmaps_il.ms, m)
+            push!(cmaps_il.types, atom_types_to_string(t1, t2, t3, t4, t5))
+        end
+        push!(cmaps_il.inters, CMAPTorsion(index, cmap.size))
+        index += 4*cmap.size*cmap.size
+        push!(cmaps_maps_vec, get!(() -> cmap_coefficients(cmap.size, T.(cmap.energy)),
+                                   cmap_coeffs, cmap))
+    end
+    cmaps_maps = vcat(cmaps_maps_vec...)
+
+    tors_pad = [PeriodicTorsion(periodicities=t.periodicities, phases=t.phases, ks=t.ks,
+                                proper=t.proper, n_terms=torsion_n_terms) for t in tors_il.inters]
+    imps_pad = [PeriodicTorsion(periodicities=t.periodicities, phases=t.phases, ks=t.ks,
+                                proper=t.proper, n_terms=torsion_n_terms) for t in imps_il.inters]
+
+    lj_exceptions_σ = Dict{Tuple{Int, Int}, typeof(first(atoms_abst).σ)}()
+    lj_exceptions_ϵ = Dict{Tuple{Int, Int}, typeof(first(atoms_abst).ϵ)}()
+    atis_present = Set(a.atom_type for a in atoms_abst)
+    atclasses_present = Set(force_field.type_to_class[force_field.atom_type_order[i]]
+                            for i in atis_present)
+    # Loop over classes first as types are more specific than classes
+    for nbfix_pair in force_field.nbfix_pairs
+        if nbfix_pair.class1 != "" && haskey(force_field.class_to_types, nbfix_pair.class1) &&
+                                haskey(force_field.class_to_types, nbfix_pair.class2) &&
+                                nbfix_pair.class1 in atclasses_present &&
+                                nbfix_pair.class2 in atclasses_present
+            for type1 in force_field.class_to_types[nbfix_pair.class1]
+                for type2 in force_field.class_to_types[nbfix_pair.class2]
+                    ati1 = get(atom_type_index, type1, nothing)
+                    ati2 = get(atom_type_index, type2, nothing)
+                    if ati1 in atis_present && ati2 in atis_present
+                        lj_exceptions_σ[(ati1, ati2)] = T(nbfix_pair.σ)
+                        lj_exceptions_ϵ[(ati1, ati2)] = T(nbfix_pair.ϵ)
+                    end
+                end
+            end
+        end
+    end
+    for nbfix_pair in force_field.nbfix_pairs
+        if nbfix_pair.type1 != ""
+            ati1 = get(atom_type_index, nbfix_pair.type1, nothing)
+            ati2 = get(atom_type_index, nbfix_pair.type2, nothing)
+            if ati1 in atis_present && ati2 in atis_present
+                lj_exceptions_σ[(ati1, ati2)] = T(nbfix_pair.σ)
+                lj_exceptions_ϵ[(ati1, ati2)] = T(nbfix_pair.ϵ)
+            end
+        end
+    end
+
+    eligible = SparsePairMatrix(n_atoms, excluded_pairs; listed=false)
+    special  = SparsePairMatrix(n_atoms, special_pairs; listed=true)
+
+    return System(T, TH, AT, atoms, coords, boundary_used, velocities,
+                  atoms_data, virtual_sites_type, loggers, data, force_field.global_params, bonds_il, bonds_ub_flags,
+                  angles_il, tors_il, imps_il, tors_pad, imps_pad, htors_il, cmaps_il, cmaps_maps,
+                  lj_exceptions_σ, lj_exceptions_ϵ, σs_14, ϵs_14, separate_lj14, eligible, special,
+                  units, dist_cutoff, constraints, rigid_water, nonbonded_method, lj_cutoff,
+                  neighbor_finder_type, neighbor_finder_n_steps, implicit_solvent,
+                  grad_safe, dist_neighbors, weight_14_lj, weight_14_coulomb, disp_corr,
+                  hydrogen_mass, strictness, launch_config, autotune_launch,
+                  constraint_algorithm, n_threads)
+end
+
+#=
+A virtual site shares the non-bonded exclusions of, and is excluded from, the first atom it
+    is defined by, which is what OpenMM does with the default of its `excludeWith` attribute.
+The sites are processed in order and a site sees the exclusions added for earlier sites,
+    so for example a second site on the same atom is excluded from the first.
+`excluded_pairs` holds the exclusions found so far, the new ones are appended.
+=#
+function add_virtual_site_exclusions!(excluded_pairs, virtual_sites, n_atoms)
+    isempty(virtual_sites) && return excluded_pairs
+    partners = [Int32[] for _ in 1:n_atoms]
+    for (i, j) in excluded_pairs
+        push!(partners[i], j)
+        push!(partners[j], i)
+    end
+    function exclude!(i, j)
+        if i != j
+            push!(excluded_pairs, (Int32(i), Int32(j)))
+            push!(partners[i], j)
+            push!(partners[j], i)
+        end
+    end
+    for vs in virtual_sites
+        i, j = vs.atom_ind, vs.atom_1
+        # Copied since excluding the site from j extends the list of j
+        for k in copy(partners[j])
+            exclude!(i, k)
+        end
+        exclude!(i, j)
+    end
+    return excluded_pairs
+end
+
+const water_residue_names = ("SOL", "WAT", "HOH", "H2O")
+
+# H-X-H and H-O-X angles, where X is any element
+function is_h_angle(atoms_data, i, j, k)
+    el_i, el_j, el_k = atoms_data[i].element, atoms_data[j].element, atoms_data[k].element
+    return (el_i == "H" && el_k == "H") || (el_j == "O" && (el_i == "H" || el_k == "H"))
+end
+
+# Map each bonded pair to the equilibrium distance of the first bond between those atoms
+function bond_r0_lookup(bonds_all)
+    lookup = Dict{Tuple{Int, Int}, typeof(first(bonds_all.inters).r0)}()
+    for (bi, bj, inter) in zip(bonds_all.is, bonds_all.js, bonds_all.inters)
+        get!(lookup, (min(bi, bj), max(bi, bj)), inter.r0)
+    end
+    return lookup
+end
+
+function find_bond_r0(bond_r0s, i, j)
+    r0 = get(bond_r0s, (min(i, j), max(i, j)), nothing)
+    if isnothing(r0)
+        error("atoms $i and $j are in an angle constraint but the bond cannot be found")
+    end
+    return r0
+end
+
+function exchange_constraints(T, bonds_all, angles_all, bonds_ub_flags, atoms_data,
+                              constraints_type, rigid_water, units, strictness, masses,
+                              constraint_algorithm)
+    if (constraints_type == :none && !rigid_water) || iszero(length(bonds_all.is))
+        return (), bonds_all, angles_all
+    end
+
+    bonds = InteractionList2Atoms(HarmonicBond)
+    angles = InteractionList3Atoms(HarmonicAngle)
+    dist_constraints, angle_constraints = [], []
+    angle_dist_pairs = Set{Tuple{Int, Int}}()
+    bond_r0s = bond_r0_lookup(bonds_all)
+
+    for (i, j, k, inter, type) in zip(angles_all.is, angles_all.js, angles_all.ks,
+                                      angles_all.inters, angles_all.types)
+        if (constraints_type == :hangles && is_h_angle(atoms_data, i, j, k)) ||
+                (rigid_water && atoms_data[i].res_name in water_residue_names)
+            r0_ij = find_bond_r0(bond_r0s, i, j)
+            r0_jk = find_bond_r0(bond_r0s, j, k)
+            push!(angle_constraints, AngleConstraint(i, j, k, inter.θ0, r0_ij, r0_jk))
+            push!(angle_dist_pairs, (min(i, j), max(i, j)))
+            push!(angle_dist_pairs, (min(j, k), max(j, k)))
+        else
+            push!(angles.is, i)
+            push!(angles.js, j)
+            push!(angles.ks, k)
+            push!(angles.inters, inter)
+            push!(angles.types, type)
+        end
+    end
+
+    for (i, j, inter, type, ub_bond) in zip(bonds_all.is, bonds_all.js, bonds_all.inters,
+                                            bonds_all.types, bonds_ub_flags)
+        if !ub_bond && (
+                    constraints_type in (:allbonds, :hangles) ||
+                    (constraints_type == :hbonds && (atoms_data[i].element == "H" || atoms_data[j].element == "H")) ||
+                    (rigid_water && atoms_data[i].res_name in water_residue_names))
+            if !((min(i, j), max(i, j)) in angle_dist_pairs)
+                # Only add distance constraints that are not part of an angle constraint
+                push!(dist_constraints, DistanceConstraint(i, j, inter.r0))
+            end
+        else
+            push!(bonds.is, i)
+            push!(bonds.js, j)
+            push!(bonds.inters, inter)
+            push!(bonds.types, type)
+        end
+    end
+
+    if length(dist_constraints) > 0 || length(angle_constraints) > 0
+        algo = build_constraint_algorithm(T, dist_constraints, angle_constraints, atoms_data,
+                                          units, strictness, masses, constraint_algorithm)
+        constraints = (algo,)
+    else
+        constraints = ()
+    end
+    return constraints, bonds, angles
+end
+
+function hydrogen_mass_repartition(atoms, atoms_data, bond_is, bond_js,
+                                   hydrogen_mass, units, T)
+    atoms_cpu = from_device(atoms)
+    modified_masses = mass.(atoms_cpu)
+    if units
+        if dimension(hydrogen_mass) == NoDims
+            new_h_mass = T(hydrogen_mass * u"g/mol")
+        else
+            new_h_mass = T(uconvert(u"g/mol", hydrogen_mass))
+        end
+    else
+        if dimension(hydrogen_mass) == NoDims
+            new_h_mass = T(hydrogen_mass)
+        else
+            new_h_mass = ustrip(T, u"g/mol", hydrogen_mass)
+        end
+    end
+
+    for i in eachindex(atoms_cpu)
+        if !is_heavy_atom(atoms_cpu[i], atoms_data[i])
+            mass_change = new_h_mass - modified_masses[i]
+            modified_masses[i] = new_h_mass
+
+            matches_is = findall(isequal(i), bond_is)
+            matches_js = findall(isequal(i), bond_js)
+            n_matches = length(matches_is) + length(matches_js)
+            if iszero(n_matches)
+                error("the hydrogen atom at index $i is not bonded to any other atoms")
+            elseif n_matches > 1
+                error("the hydrogen atom at index $i is bonded to $n_matches atoms")
+            end
+            if length(matches_is) == 1
+                bonded_atom_i = bond_js[only(matches_is)]
+            else
+                bonded_atom_i = bond_is[only(matches_js)]
+            end
+
+            modified_masses[bonded_atom_i] -= mass_change
+            if modified_masses[bonded_atom_i] <= zero(new_h_mass)
+                # This will catch the H-H case
+                error("the mass of atom $bonded_atom_i went non-positive when transferring " *
+                      "mass to hydrogen, hydrogen_mass is set to $hydrogen_mass")
+            end
+        end
+    end
+    atoms_new_mass = [Atom(a.index, a.atom_type, mm, a.charge, a.σ, a.ϵ, a.λ, a.alch_role)
+                      for (a, mm) in zip(atoms_cpu, modified_masses)]
+    return to_device(atoms_new_mass, array_type(atoms))
+end
+
+# Separated out as a function to allow other setup paths
+function System(T, TH, AT, atoms, coords, boundary, velocities, atoms_data, virtual_sites,
+                loggers, data, global_params, bonds_all, bonds_ub_flags, angles_all, torsions,
+                impropers, torsion_inters_pad, improper_inters_pad, htors_il, cmaps_il, cmaps_maps,
+                lj_exceptions_σ, lj_exceptions_ϵ, σs_14, ϵs_14, separate_lj14, eligible, special,
+                units, dist_cutoff, constraints_type, rigid_water, nonbonded_method, lj_cutoff,
+                neighbor_finder_type, neighbor_finder_n_steps,
+                implicit_solvent, grad_safe, dist_neighbors, weight_14_lj,
+                weight_14_coulomb, dispersion_correction,
+                hydrogen_mass, strictness, launch_config, autotune_launch, constraint_algorithm,
+                n_threads)
+    coords_dev = to_device(coords, AT)
+    using_neighbors = (neighbor_finder_type != NoNeighborFinder)
+
+    if length(lj_exceptions_σ) > 0
+        σ_mix = MixingException(LorentzMixing(), ExceptionList(lj_exceptions_σ))
+    else
+        σ_mix = LorentzMixing()
+    end
+    if length(lj_exceptions_ϵ) > 0
+        ϵ_mix = MixingException(GeometricMixing(), ExceptionList(lj_exceptions_ϵ))
+    else
+        ϵ_mix = GeometricMixing()
+    end
+
+    # For the purposes of assigning molecules, add connections from atoms to virtual sites
+    bonds_all_vs_is, bonds_all_vs_js = copy(bonds_all.is), copy(bonds_all.js)
+    for vs in virtual_sites
+        for ai in (vs.atom_1, vs.atom_2, vs.atom_3)
+            if !iszero(ai)
+                push!(bonds_all_vs_is, ai)
+                push!(bonds_all_vs_js, vs.atom_ind)
+            end
+        end
+    end
+    if length(bonds_all_vs_is) > 0
+        topology = MolecularTopology(bonds_all_vs_is, bonds_all_vs_js, length(coords_dev))
+    else
+        topology = nothing
+    end
+
+    if hydrogen_mass != false # false, number or unitful mass
+        atoms = hydrogen_mass_repartition(atoms, atoms_data, bonds_all.is, bonds_all.js,
+                                          hydrogen_mass, units, T)
+    end
+
+    masses = mass.(from_device(atoms))
+    constraints, bonds, angles = exchange_constraints(T, bonds_all, angles_all, bonds_ub_flags,
+                                    atoms_data, constraints_type, rigid_water, units, strictness,
+                                    masses, constraint_algorithm)
+
+    # Only add present interactions and ensure that array types are concrete
+    specific_inter_array = []
+    if length(bonds) > 0
+        push!(specific_inter_array, InteractionList2Atoms(
+            to_device(bonds.is, AT),
+            to_device(bonds.js, AT),
+            to_device([bonds.inters...], AT),
+            bonds.types,
+        ))
+    end
+    if length(angles) > 0
+        push!(specific_inter_array, InteractionList3Atoms(
+            to_device(angles.is, AT),
+            to_device(angles.js, AT),
+            to_device(angles.ks, AT),
+            to_device([angles.inters...], AT),
+            angles.types,
+        ))
+    end
+    if length(torsions) > 0
+        push!(specific_inter_array, InteractionList4Atoms(
+            to_device(torsions.is, AT),
+            to_device(torsions.js, AT),
+            to_device(torsions.ks, AT),
+            to_device(torsions.ls, AT),
+            to_device(torsion_inters_pad, AT),
+            torsions.types,
+        ))
+    end
+    if length(impropers) > 0
+        push!(specific_inter_array, InteractionList4Atoms(
+            to_device(impropers.is, AT),
+            to_device(impropers.js, AT),
+            to_device(impropers.ks, AT),
+            to_device(impropers.ls, AT),
+            to_device(improper_inters_pad, AT),
+            impropers.types,
+        ))
+    end
+    if length(htors_il) > 0
+        push!(specific_inter_array, InteractionList4Atoms(
+            to_device(htors_il.is, AT),
+            to_device(htors_il.js, AT),
+            to_device(htors_il.ks, AT),
+            to_device(htors_il.ls, AT),
+            to_device(htors_il.inters, AT),
+            htors_il.types,
+        ))
+    end
+    if length(cmaps_il) > 0
+        push!(specific_inter_array, InteractionList5Atoms(
+            to_device(cmaps_il.is, AT),
+            to_device(cmaps_il.js, AT),
+            to_device(cmaps_il.ks, AT),
+            to_device(cmaps_il.ls, AT),
+            to_device(cmaps_il.ms, AT),
+            to_device(cmaps_il.inters, AT),
+            cmaps_il.types,
+            to_device(cmaps_maps, AT),
+        ))
+    end
+
+    # Add specific interactions for Lennard-Jones 1-4 since σ/ϵ are different
+    # It is assumed that these interactions are always within the cutoff distance
+    if separate_lj14 && length(torsions.is) > 0
+        inds_used = Int[]
+        pairs_used = Set{Tuple{Int, Int}}()
+        lj14_inters = []
+        atoms_cpu = from_device(atoms)
+        for (torsion_i, (i, l)) in enumerate(zip(torsions.is, torsions.ls))
+            # Multiple torsions can have the same i and l atoms
+            # i and l can be part of an angle too, e.g. in a ring, so ignore those cases
+            if (min(i, l), max(i, l)) in pairs_used || !eligible[i, l]
+                continue
+            end
+            # Don't add shortcut interactions unless they are changed by a NBFixPair entry
+            if iszero_value(σs_14[i]) || iszero_value(σs_14[l]) ||
+                            iszero_value(ϵs_14[i]) || iszero_value(ϵs_14[l])
+                shortcut = true
+            else
+                shortcut = false
+            end
+            # NBFixPair entry takes priority
+            if length(lj_exceptions_σ) > 0
+                σ14 = (shortcut ? zero(σs_14[i]) : xy_mixing(σ_mix.mixing, σs_14[i], σs_14[l]))
+                ati, atl = atoms_cpu[i].atom_type, atoms_cpu[l].atom_type
+                σ14 = get_pair(σ_mix.exceptions, ati, atl, σ14)
+            else
+                σ14 = (shortcut ? zero(σs_14[i]) : xy_mixing(σ_mix, σs_14[i], σs_14[l]))
+            end
+            if length(lj_exceptions_ϵ) > 0
+                ϵ14 = (shortcut ? zero(ϵs_14[i]) : xy_mixing(ϵ_mix.mixing, ϵs_14[i], ϵs_14[l]))
+                ati, atl = atoms_cpu[i].atom_type, atoms_cpu[l].atom_type
+                ϵ14 = get_pair(ϵ_mix.exceptions, ati, atl, ϵ14)
+            else
+                ϵ14 = (shortcut ? zero(ϵs_14[i]) : xy_mixing(ϵ_mix, ϵs_14[i], ϵs_14[l]))
+            end
+            if !iszero_value(σ14) && !iszero_value(ϵ14)
+                push!(inds_used, torsion_i)
+                push!(pairs_used, (min(i, l), max(i, l)))
+                push!(lj14_inters, LennardJones14(σ14, ϵ14, weight_14_lj))
+            end
+        end
+        if length(inds_used) > 0
+            push!(specific_inter_array, InteractionList2Atoms(
+                to_device(torsions.is[inds_used], AT),
+                to_device(torsions.ls[inds_used], AT),
+                to_device([lj14_inters...], AT),
+                torsions.types[inds_used],
+            ))
+        end
+    end
+
+    cutoff_lj = (isnothing(lj_cutoff) ? DistanceCutoff(T(dist_cutoff)) : lj_cutoff)
+    if global_params[1] == zero(T)
+        # If we are adding specific interactions for Lennard-Jones 1-4, set the weight
+        #   to zero for the pairwise interaction
+        pi_weight_14_lj = (separate_lj14 ? zero(T) : weight_14_lj)
+        lj = LennardJones(
+            cutoff=cutoff_lj,
+            use_neighbors=using_neighbors,
+            σ_mixing=σ_mix,
+            ϵ_mixing=ϵ_mix,
+            weight_special=pi_weight_14_lj,
+        )
+    else
+        lj = DoubleExponential(
+            cutoff=cutoff_lj,
+            use_neighbors=using_neighbors,
+            α=T(global_params[1]),
+            β=T(global_params[2]),
+            σ_mixing=σ_mix,
+            ϵ_mixing=ϵ_mix,
+            weight_special=zero(T),
+        )
+    end
+
+    if nonbonded_method isa AbstractSetupEwald
+        coul = setup_coulomb_pairwise(nonbonded_method, dist_cutoff, weight_14_coulomb,
+                                      using_neighbors, units, T)
+
+        excluded_pairs = find_excluded_pairs(eligible, special)
+        exclusion_data = EwaldExclusionData(T(dist_cutoff); error_tol=T(nonbonded_method.error_tol))
+        ewald_exclusions = InteractionList2Atoms(
+            to_device([ep[1] for ep in excluded_pairs], AT),
+            to_device([ep[2] for ep in excluded_pairs], AT),
+            to_device(fill(EwaldExclusion(), length(excluded_pairs)), AT),
+            fill("", length(excluded_pairs)),
+            exclusion_data,
+        )
+        push!(specific_inter_array, ewald_exclusions)
+
+        ewald = setup_coulomb_general(nonbonded_method, atoms, boundary, dist_cutoff,
+                                      n_threads, grad_safe, units, T)
+        general_inters_ewald = (ewald,)
+    elseif nonbonded_method isa AbstractCutoff
+        coul = Coulomb(
+            cutoff=nonbonded_method,
+            use_neighbors=using_neighbors,
+            weight_special=weight_14_coulomb,
+            coulomb_const=convert_setup_quantity(coulomb_const, units, T),
+        )
+        general_inters_ewald = ()
+    else # Includes SetupCoulombReactionField
+        coul = setup_coulomb_pairwise(nonbonded_method, dist_cutoff, weight_14_coulomb,
+                                      using_neighbors, units, T)
+        general_inters_ewald = ()
+    end
+
+    pairwise_inters = (lj, coul)
+    specific_inter_lists = tuple(specific_inter_array...)
+
+    if neighbor_finder_type == NoNeighborFinder
+        neighbor_finder = NoNeighborFinder()
+    elseif neighbor_finder_type in (nothing, GPUNeighborFinder) && uses_gpu_neighbor_finder(AT) && !grad_safe
+        excluded_pairs, special_pairs = dense_masks_to_pair_lists(eligible, special)
+        neighbor_finder = GPUNeighborFinder(
+            n_atoms=size(eligible, 1),
+            # GPUNeighborFinder reuses Morton ordering and tile metadata across
+            # `n_steps`, so its search radius needs the same buffer as the other
+            # neighbor finders
+            dist_cutoff=T(dist_neighbors),
+            excluded_pairs=excluded_pairs,
+            special_pairs=special_pairs,
+            n_steps=neighbor_finder_n_steps,
+            array_type=AT,
+            strictness=strictness,
+        )
+    elseif neighbor_finder_type in (nothing, GPUCellListNeighborFinder) &&
+                AT <: AbstractGPUArray && gpu_cell_list_suitable(boundary, dist_neighbors)
+        neighbor_finder = GPUCellListNeighborFinder(
+            eligible=eligible,
+            special=special,
+            n_steps=neighbor_finder_n_steps,
+            dist_cutoff=T(dist_neighbors),
+            array_type=AT,
+            ragged=false,
+            strictness=strictness,
+        )
+    elseif neighbor_finder_type in (nothing, DistanceNeighborFinder) &&
+                (AT <: AbstractGPUArray || has_infinite_boundary(boundary))
+        neighbor_finder = DistanceNeighborFinder(
+            eligible=eligible,
+            special=special,
+            n_steps=neighbor_finder_n_steps,
+            dist_cutoff=T(dist_neighbors),
+            array_type=AT,
+            strictness=strictness,
+        )
+    elseif neighbor_finder_type in (nothing, CellListMapNeighborFinder) && !(AT <: AbstractGPUArray)
+        # CellListMap requires the cell list cutoff to fit twice in the box
+        min_box_side = minimum(box_sides(boundary))
+        if !has_infinite_boundary(boundary) && min_box_side < (2 * dist_neighbors)
+            throw(ArgumentError("the minimum box side ($min_box_side) is less than " *
+                    "2 * (dist_cutoff + dist_buffer) ($(2 * dist_neighbors)), which the " *
+                    "cell list neighbor finder does not support. Reduce dist_cutoff or " *
+                    "dist_buffer, use a larger box, or pass " *
+                    "neighbor_finder_type=DistanceNeighborFinder."))
+        end
+        neighbor_finder = CellListMapNeighborFinder(
+            eligible=eligible,
+            special=special,
+            n_steps=neighbor_finder_n_steps,
+            x0=coords,
+            boundary=boundary,
+            dist_cutoff=T(dist_neighbors),
+            strictness=strictness,
+        )
+    else
+        neighbor_finder = neighbor_finder_type(
+            eligible=to_device(eligible, AT),
+            special=to_device(special, AT),
+            n_steps=neighbor_finder_n_steps,
+            dist_cutoff=T(dist_neighbors),
+        )
+    end
+
+    if isnothing(velocities)
+        if units
+            vels = zero(ustrip_vec.(coords_dev))u"nm * ps^-1"
+        else
+            vels = zero(coords_dev)
+        end
+    else
+        vels = to_device(velocities, AT)
+    end
+
+    if !isnothing(implicit_solvent)
+        gi_is = setup_implicit_solvent(implicit_solvent, atoms, atoms_data, bonds_all, n_threads)
+        general_inters_is = (gi_is,)
+    else
+        general_inters_is = ()
+    end
+    # Infinite boundaries give infinite volume, hence no dispersion correction
+    if dispersion_correction && !has_infinite_boundary(boundary)
+        if isnothing(lj_cutoff) || !hasproperty(lj_cutoff, :dist_cutoff)
+            lj_dist_cutoff = T(dist_cutoff)
+        else
+            lj_dist_cutoff = lj_cutoff.dist_cutoff
+        end
+        general_inters_disp = (LJDispersionCorrection(atoms, lj_dist_cutoff, σ_mix, ϵ_mix),)
+    else
+        general_inters_disp = ()
+    end
+    general_inters = (general_inters_ewald..., general_inters_is..., general_inters_disp...)
+
+    k = (units ? Unitful.Na * Unitful.k : ustrip(u"kJ * K^-1 * mol^-1", Unitful.Na * Unitful.k))
+    virtual_sites_dev = (length(virtual_sites) > 0 ? to_device(virtual_sites, AT) : virtual_sites)
+
+    sys = System(
+        atoms=atoms,
+        coords=coords_dev,
+        boundary=boundary,
+        velocities=vels,
+        atoms_data=atoms_data,
+        topology=topology,
+        pairwise_inters=pairwise_inters,
+        specific_inter_lists=specific_inter_lists,
+        general_inters=general_inters,
+        constraints=constraints,
+        virtual_sites=virtual_sites_dev,
+        neighbor_finder=neighbor_finder,
+        loggers=loggers,
+        force_units=(units ? u"kJ * mol^-1 * nm^-1" : NoUnits),
+        energy_units=(units ? u"kJ * mol^-1" : NoUnits),
+        k=k,
+        float_type=T,
+        float_type_high=TH,
+        data=data,
+        grad_safe=grad_safe,
+        strictness=strictness,
+        launch_config=launch_config,
+    )
+
+    # Virtual sites are in the structure file but not necessarily in the correct place
+    place_virtual_sites!(sys; n_threads=n_threads)
+    maybe_optimize_cuda_launch_config!(sys; enabled=autotune_launch)
+    return sys
+end
+
+"""
+    is_any_atom(at, at_data)
+
+Placeholder function that returns `true`, used to select any [`Atom`](@ref).
+"""
+is_any_atom(at, at_data) = true
+
+"""
+    is_heavy_atom(at, at_data)
+
+Determine whether an [`Atom`](@ref) is a heavy atom, i.e. any element other than hydrogen.
+"""
+function is_heavy_atom(at, at_data)
+    if isnothing(at_data) || at_data.element in ("?", "")
+        return mass(at) > 1.01u"g/mol"
+    else
+        return !(at_data.element in ("H", "D"))
+    end
+end
+
+"""
+    add_position_restraints(sys, k; atom_selector=Molly.is_any_atom,
+                            restrain_coords=sys.coords)
+
+Return a copy of a [`System`](@ref) with [`HarmonicPositionRestraint`](@ref)s added to restrain the
+atoms.
+
+The force constant `k` can be a single value or an array of equal length to the number of atoms
+in the system.
+The `atom_selector` function takes in each atom and atom data and determines whether to restrain
+that atom.
+For example, [`Molly.is_heavy_atom`](@ref) means non-hydrogen atoms are restrained.
+"""
+function add_position_restraints(sys::System{<:Any, AT, T, TH},
+                                 k;
+                                 atom_selector::Function=is_any_atom,
+                                 restrain_coords=sys.coords,
+                                 strictness=default_strictness()) where {AT, T, TH}
+    k_array = isa(k, AbstractArray) ? k : fill(k, length(sys))
+    if length(k_array) != length(sys)
+        throw(ArgumentError("the system has $(length(sys)) atoms but there are " *
+                            "$(length(k_array)) k values"))
+    end
+    is = Int32[]
+    types = String[]
+    inters = HarmonicPositionRestraint[]
+    atoms_data = (length(sys.atoms_data) > 0 ? sys.atoms_data : fill(nothing, length(sys)))
+    for (i, (at, at_data, k_res, x0)) in enumerate(zip(from_device(sys.atoms), atoms_data, k_array,
+                                                       from_device(restrain_coords)))
+        if atom_selector(at, at_data)
+            push!(is, i)
+            push!(types, "")
+            push!(inters, HarmonicPositionRestraint(k_res, x0))
+        end
+    end
+    restraints = InteractionList1Atoms(to_device(is, AT), to_device([inters...], AT), types)
+    sis = (sys.specific_inter_lists..., restraints)
+    return System(
+        atoms=deepcopy(sys.atoms),
+        coords=copy(sys.coords),
+        boundary=deepcopy(sys.boundary),
+        velocities=copy(sys.velocities),
+        atoms_data=deepcopy(sys.atoms_data),
+        topology=deepcopy(sys.topology),
+        pairwise_inters=deepcopy(sys.pairwise_inters),
+        specific_inter_lists=sis,
+        general_inters=deepcopy(sys.general_inters),
+        constraints=deepcopy(sys.constraints),
+        virtual_sites=deepcopy(sys.virtual_sites),
+        neighbor_finder=deepcopy(sys.neighbor_finder),
+        loggers=deepcopy(sys.loggers),
+        force_units=sys.force_units,
+        energy_units=sys.energy_units,
+        k=sys.k,
+        float_type=T,
+        float_type_high=TH,
+        data=sys.data,
+        grad_safe=sys.grad_safe,
+        strictness=strictness,
+        launch_config=sys.launch_config,
+    )
+end

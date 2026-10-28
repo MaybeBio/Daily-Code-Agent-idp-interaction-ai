@@ -1,0 +1,19 @@
+# The simulation environment (Python 3.12; versions used for the tracked results). The main pipeline does not
+# need it; 01 and 06 run in the main environment, 02-05 here. The CPU build of OpenMM is enough.
+calvados @ git+https://github.com/KULL-Centre/CALVADOS.git@69815423632cb9b9b08f4b0aea34d8ba43a057c4
+openmm==8.4.0.post2
+MDAnalysis==2.10.0
+mdtraj==1.11.2
+numpy==2.5.4
+pandas==3.0.6
+biopython==1.88
+Jinja2==3.1.6
+tqdm==4.70.1
+matplotlib==3.11.2
+PyYAML==6.0.3
+pydantic==2.14.1
+statsmodels==0.15.0
+numba==0.68.0
+scipy==1.18.1
+requests==2.34.2
+# install calvados with --no-deps: its metadata requests openmm[cuda12], which pulls the CUDA libraries

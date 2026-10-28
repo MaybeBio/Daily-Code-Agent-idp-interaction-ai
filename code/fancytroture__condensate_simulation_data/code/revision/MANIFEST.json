@@ -1,0 +1,1098 @@
+{
+  "release": "2026-10-18",
+  "manuscript_version": "20261017_v15",
+  "files": [
+    {
+      "path": "fus/fus_protein_single_simulation/thermo_figure1_rg_ree_relaxation.py",
+      "kind": "code",
+      "bytes": 17048,
+      "source_sha256": "c438fb13a39cbc93ff3c205483bc6015d4a5cd43b86f6c6aa40ebcdbc68c6f37",
+      "release_sha256": "c438fb13a39cbc93ff3c205483bc6015d4a5cd43b86f6c6aa40ebcdbc68c6f37",
+      "adaptations": []
+    },
+    {
+      "path": "ppt_5_11_figures/compute_interchain_contact_relaxation_parts.py",
+      "kind": "code",
+      "bytes": 33841,
+      "source_sha256": "4d4683262a427dc72761489e84310dcc7ba416a9a641a12af885c5d8be78275d",
+      "release_sha256": "4d4683262a427dc72761489e84310dcc7ba416a9a641a12af885c5d8be78275d",
+      "adaptations": []
+    },
+    {
+      "path": "ppt_5_11_figures/compute_interchain_partner_survival.py",
+      "kind": "code",
+      "bytes": 24591,
+      "source_sha256": "059d35e9f92e60a57fb39fe2ef27717185001880d930cd8042d5d6bebd6589df",
+      "release_sha256": "059d35e9f92e60a57fb39fe2ef27717185001880d930cd8042d5d6bebd6589df",
+      "adaptations": []
+    },
+    {
+      "path": "ppt_5_11_figures/compute_intrachain_contact_relaxation.py",
+      "kind": "code",
+      "bytes": 21535,
+      "source_sha256": "131501521cec54132c4ddbfa877f30bde195f04ef235ea18fa49af8c370ab5f2",
+      "release_sha256": "131501521cec54132c4ddbfa877f30bde195f04ef235ea18fa49af8c370ab5f2",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/make_figure1_thermodynamic_conformational_ensemble.py",
+      "kind": "code",
+      "bytes": 28824,
+      "source_sha256": "5beb768e6e2d0c62128d75617b4b0ed67c2b0db1bafa4565686744ab8c3bdab8",
+      "release_sha256": "5beb768e6e2d0c62128d75617b4b0ed67c2b0db1bafa4565686744ab8c3bdab8",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/make_figure2_dynamics_story.py",
+      "kind": "code",
+      "bytes": 28927,
+      "source_sha256": "35906f162d1ccd0493498904d13630d368fcf2d4bc81660188dbf23b3b106b41",
+      "release_sha256": "35906f162d1ccd0493498904d13630d368fcf2d4bc81660188dbf23b3b106b41",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/make_figure3_msm_story.py",
+      "kind": "code",
+      "bytes": 36524,
+      "source_sha256": "ba2976f4a21953984db10512d3f7a58546d88c9afb4d0a7db875d82a1c40dae6",
+      "release_sha256": "ba2976f4a21953984db10512d3f7a58546d88c9afb4d0a7db875d82a1c40dae6",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/make_s2_s3_structural_controls.py",
+      "kind": "code",
+      "bytes": 19121,
+      "source_sha256": "2b5ad41015db2b610ef0657044cc607f39e156fc749fb3bc0f601c199925a56f",
+      "release_sha256": "2b5ad41015db2b610ef0657044cc607f39e156fc749fb3bc0f601c199925a56f",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/make_supplementary_figures.py",
+      "kind": "code",
+      "bytes": 1115,
+      "source_sha256": "afa6a27266f537a5504b2b24d30b2c4526fa7746cfe811500f50bb5179937eb3",
+      "release_sha256": "afa6a27266f537a5504b2b24d30b2c4526fa7746cfe811500f50bb5179937eb3",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/__init__.py",
+      "kind": "code",
+      "bytes": 1434,
+      "source_sha256": "4b97c8876037587a655074cf51675d45ccbeae2f7f61422cfeb076fcbca60c77",
+      "release_sha256": "4b97c8876037587a655074cf51675d45ccbeae2f7f61422cfeb076fcbca60c77",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s01.py",
+      "kind": "code",
+      "bytes": 3062,
+      "source_sha256": "2c20bc5dc9a4b33cfd3e18d4acc4c9395c209dff56bf565aadc3fa033f9658d0",
+      "release_sha256": "2c20bc5dc9a4b33cfd3e18d4acc4c9395c209dff56bf565aadc3fa033f9658d0",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s02.py",
+      "kind": "code",
+      "bytes": 8104,
+      "source_sha256": "e6a8c43ee98051d3b4c890343a5580c851ef674b65dcc3903603d8b24c3bc66c",
+      "release_sha256": "e6a8c43ee98051d3b4c890343a5580c851ef674b65dcc3903603d8b24c3bc66c",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s03.py",
+      "kind": "code",
+      "bytes": 2254,
+      "source_sha256": "b10700f8d92119145da072bb3bacfbbdb4e5e3e55304babf4adc30e1050a2a00",
+      "release_sha256": "b10700f8d92119145da072bb3bacfbbdb4e5e3e55304babf4adc30e1050a2a00",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s04.py",
+      "kind": "code",
+      "bytes": 6928,
+      "source_sha256": "e724f1b000f4273ff25211d720456a6de9acb911d5ec16119ba580657d272132",
+      "release_sha256": "e724f1b000f4273ff25211d720456a6de9acb911d5ec16119ba580657d272132",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s05.py",
+      "kind": "code",
+      "bytes": 7477,
+      "source_sha256": "161ededdb49648ebefde4c12d71f0b221cde8a7169fc75d6279f195cf0451eb9",
+      "release_sha256": "161ededdb49648ebefde4c12d71f0b221cde8a7169fc75d6279f195cf0451eb9",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s06.py",
+      "kind": "code",
+      "bytes": 14285,
+      "source_sha256": "52bc642607ff2590650a59eb08f790c55b4243151e834ffbee4137a2965ca0af",
+      "release_sha256": "52bc642607ff2590650a59eb08f790c55b4243151e834ffbee4137a2965ca0af",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s07.py",
+      "kind": "code",
+      "bytes": 4839,
+      "source_sha256": "3adc6ba574a508355377d193b0814cdcc89bc3785d6b00acbf0ef1f1d58c6e6d",
+      "release_sha256": "3adc6ba574a508355377d193b0814cdcc89bc3785d6b00acbf0ef1f1d58c6e6d",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s08.py",
+      "kind": "code",
+      "bytes": 4780,
+      "source_sha256": "f3ad9bd95a76829b8438aba4233fb0a5b4e01249a45da5c1f8e410aff45791c3",
+      "release_sha256": "f3ad9bd95a76829b8438aba4233fb0a5b4e01249a45da5c1f8e410aff45791c3",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s09.py",
+      "kind": "code",
+      "bytes": 3584,
+      "source_sha256": "6f5cba17f3eacd47186d2569984a150630a09589c708ec4d46436fc078b47c4c",
+      "release_sha256": "6f5cba17f3eacd47186d2569984a150630a09589c708ec4d46436fc078b47c4c",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s10.py",
+      "kind": "code",
+      "bytes": 5512,
+      "source_sha256": "2bdb1f313033f896a471fab7386023be825897001ebdf77a4a3c273aa41dc2b0",
+      "release_sha256": "2bdb1f313033f896a471fab7386023be825897001ebdf77a4a3c273aa41dc2b0",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/figure_s11.py",
+      "kind": "code",
+      "bytes": 7898,
+      "source_sha256": "6ff59f5f35b1e53cab19b52d838301a9428b610f58bd67be28f53c439b10d167",
+      "release_sha256": "6ff59f5f35b1e53cab19b52d838301a9428b610f58bd67be28f53c439b10d167",
+      "adaptations": []
+    },
+    {
+      "path": "project_figure/scripts/supplementary_figures/shared.py",
+      "kind": "code",
+      "bytes": 23031,
+      "source_sha256": "f3ed513594011443ffca4c90eb9e8ce014ed580f4421917b1b7c18b0c7f0789a",
+      "release_sha256": "f3ed513594011443ffca4c90eb9e8ce014ed580f4421917b1b7c18b0c7f0789a",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/analyze.py",
+      "kind": "code",
+      "bytes": 13724,
+      "source_sha256": "79eb1afa82020b9102e93d81550bf05872759f74b40377894ec4487cdb9804c6",
+      "release_sha256": "79eb1afa82020b9102e93d81550bf05872759f74b40377894ec4487cdb9804c6",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/audit_outputs.py",
+      "kind": "code",
+      "bytes": 2305,
+      "source_sha256": "7e7b2d8407acccd3f5f9c5a49b38e6fc41fac1f5ab26aaf51169c0312278daae",
+      "release_sha256": "7e7b2d8407acccd3f5f9c5a49b38e6fc41fac1f5ab26aaf51169c0312278daae",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/compute.py",
+      "kind": "code",
+      "bytes": 8607,
+      "source_sha256": "bd24bfeaf9326b3fa2e13f495a44e7afcd7a47271c0e3d1e44a442337e981020",
+      "release_sha256": "bd24bfeaf9326b3fa2e13f495a44e7afcd7a47271c0e3d1e44a442337e981020",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/sensitivity.py",
+      "kind": "code",
+      "bytes": 4737,
+      "source_sha256": "9bba657368c36569803f88aebdd571a898a3520171d4f7abdc124c053ffcc9c8",
+      "release_sha256": "9bba657368c36569803f88aebdd571a898a3520171d4f7abdc124c053ffcc9c8",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/test_analysis.py",
+      "kind": "code",
+      "bytes": 2081,
+      "source_sha256": "3e1f00fc87f69aa13a12c8a0450980a7bd46d0ac34a00e0a2d1d609de22f8edb",
+      "release_sha256": "3e1f00fc87f69aa13a12c8a0450980a7bd46d0ac34a00e0a2d1d609de22f8edb",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/test_compute.py",
+      "kind": "code",
+      "bytes": 2108,
+      "source_sha256": "a2a237f05354c097a5516f321fe2c2902bbcc395ca4e40d89f85c8a0de3e72fc",
+      "release_sha256": "a2a237f05354c097a5516f321fe2c2902bbcc395ca4e40d89f85c8a0de3e72fc",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/validate_raw.py",
+      "kind": "code",
+      "bytes": 1962,
+      "source_sha256": "6406f619642a9557c7995391fe2bb2fd4d8cf031f823ed484206a3db0ce16172",
+      "release_sha256": "6406f619642a9557c7995391fe2bb2fd4d8cf031f823ed484206a3db0ce16172",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/validate_raw_units.py",
+      "kind": "code",
+      "bytes": 3124,
+      "source_sha256": "074162520c40e41993bb4a8c5e825799c78ad43fce037ba338cf4e17f4d83407",
+      "release_sha256": "074162520c40e41993bb4a8c5e825799c78ad43fce037ba338cf4e17f4d83407",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/interchain_recompute/verification_suite.py",
+      "kind": "code",
+      "bytes": 1683,
+      "source_sha256": "3b4172b736c93c37c7060afb576e475e2736e6017973da8ceccc2bd17ad0d97f",
+      "release_sha256": "3b4172b736c93c37c7060afb576e475e2736e6017973da8ceccc2bd17ad0d97f",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/selection_density/corrected_time_pilot/run_corrected_contacts.py",
+      "kind": "code",
+      "bytes": 13489,
+      "source_sha256": "9244e9e08771c7a753778217ee1244270ad2d589445ef822332eb76f5adc189c",
+      "release_sha256": "9244e9e08771c7a753778217ee1244270ad2d589445ef822332eb76f5adc189c",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/state_audit/audit_states.py",
+      "kind": "code",
+      "bytes": 12304,
+      "source_sha256": "5a674d0bdb2fbdc43dda75672c6b834dd8fca714d1b015519e8bbc550d4e67aa",
+      "release_sha256": "7450e12c18a8f31414f486d0639b8fa49a416a4ae24df97fa9aaada8bfbe4404",
+      "adaptations": [
+        "Use parent public repository root"
+      ]
+    },
+    {
+      "path": "revision_2026_09_30/state_audit/label_permutation_diagnostic.py",
+      "kind": "code",
+      "bytes": 2742,
+      "source_sha256": "465e8cd18b140800bee455c84bb15c216a5a42655c5c12048e54808f6dbc0e81",
+      "release_sha256": "465e8cd18b140800bee455c84bb15c216a5a42655c5c12048e54808f6dbc0e81",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/state_audit/test_metrics.py",
+      "kind": "code",
+      "bytes": 1602,
+      "source_sha256": "f3f1486b56fc18ad968ee5249a08a6b2099de44e043bdb5975836df6feca8d60",
+      "release_sha256": "f3f1486b56fc18ad968ee5249a08a6b2099de44e043bdb5975836df6feca8d60",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/state_sampling/analyze.py",
+      "kind": "code",
+      "bytes": 15747,
+      "source_sha256": "08eda67517693132440802d4bc2eb1cd23f3a877716f92a1f10312c8ff0d8f94",
+      "release_sha256": "ff5f67605bb05c8b77f529fda76c44b1101bd2b15402e9bcfeb704ebc1f35449",
+      "adaptations": [
+        "Use parent public repository for existing shared code/data"
+      ]
+    },
+    {
+      "path": "revision_2026_09_30/state_sampling/build_absolute.py",
+      "kind": "code",
+      "bytes": 5467,
+      "source_sha256": "189811bb2cfea6e51bb6c5e68747c6afe77f97f9d40e81e4de3ce996fdbb73da",
+      "release_sha256": "189811bb2cfea6e51bb6c5e68747c6afe77f97f9d40e81e4de3ce996fdbb73da",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_09_30/state_sampling/test_analysis.py",
+      "kind": "code",
+      "bytes": 4307,
+      "source_sha256": "2471cfce0418afc1fff1a665316b9c0eadafcad33f9d38f72b797e373efc04c9",
+      "release_sha256": "2471cfce0418afc1fff1a665316b9c0eadafcad33f9d38f72b797e373efc04c9",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/FUS_slab_temperature_jump/analyze_pilot_acf.py",
+      "kind": "code",
+      "bytes": 16623,
+      "source_sha256": "2fbff7daf6dd0687c6f4169522082fef2d5535727e6fe9ec7f887fca51fd3d51",
+      "release_sha256": "2fbff7daf6dd0687c6f4169522082fef2d5535727e6fe9ec7f887fca51fd3d51",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/FUS_slab_temperature_jump/protocol.py",
+      "kind": "code",
+      "bytes": 15435,
+      "source_sha256": "0882cc16e3ffcaed46a800bd561178907eb65cee2ae386852757aa24a77caa49",
+      "release_sha256": "0882cc16e3ffcaed46a800bd561178907eb65cee2ae386852757aa24a77caa49",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/density_labels_20261016/density_report.json",
+      "kind": "plot_input",
+      "bytes": 2045,
+      "source_sha256": "334f85208740fd065d6dd9eb31e1f5018525e1928700e6d4bba687751e2256e0",
+      "release_sha256": "334f85208740fd065d6dd9eb31e1f5018525e1928700e6d4bba687751e2256e0",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/density_labels_20261016/density_summary.npz",
+      "kind": "plot_input",
+      "bytes": 22189,
+      "source_sha256": "7cbd5a168de6d944394101c68625ec443a6dbe710c187592e1e18a8fdb3dbc5f",
+      "release_sha256": "7cbd5a168de6d944394101c68625ec443a6dbe710c187592e1e18a8fdb3dbc5f",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/density_labels_20261016/make_density.py",
+      "kind": "code",
+      "bytes": 4028,
+      "source_sha256": "26b2ac7a4f20fc8329931e6d3c86f785d703ecf620a93950a91c5f3a010fcace",
+      "release_sha256": "26b2ac7a4f20fc8329931e6d3c86f785d703ecf620a93950a91c5f3a010fcace",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/figure_order.py",
+      "kind": "code",
+      "bytes": 1300,
+      "source_sha256": "b208caced0b129b0e523fc343ce770f7ba4baa5b4098384d7d09be5f1307bf88",
+      "release_sha256": "b208caced0b129b0e523fc343ce770f7ba4baa5b4098384d7d09be5f1307bf88",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/final_dynamics_20261013/Fig3_updated_ratios.csv",
+      "kind": "plot_input",
+      "bytes": 483,
+      "source_sha256": "008f533045fc45735de5ff9ec993e069c53a0ba73169c604c357d87c36a42c5d",
+      "release_sha256": "008f533045fc45735de5ff9ec993e069c53a0ba73169c604c357d87c36a42c5d",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/final_dynamics_20261013/FigS12_partner_events.csv",
+      "kind": "plot_input",
+      "bytes": 499,
+      "source_sha256": "eca9031ef519304efa0932faffc0a8d7332ec85479497aad0881cf799b697ed5",
+      "release_sha256": "eca9031ef519304efa0932faffc0a8d7332ec85479497aad0881cf799b697ed5",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/phase_diagram_20261013/plot_phase_diagram.py",
+      "kind": "code",
+      "bytes": 5129,
+      "source_sha256": "3a03c7a9d712b9da7a0e411f25b17c67de1aeb050480270abe533038e300a1fd",
+      "release_sha256": "3a03c7a9d712b9da7a0e411f25b17c67de1aeb050480270abe533038e300a1fd",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/refit_critical_temperature.py",
+      "kind": "code",
+      "bytes": 2023,
+      "source_sha256": "8cfd02d5fcf918d47c5ab2a96755542658816d2ad0349029ddf5d4883b222b32",
+      "release_sha256": "0dd4df0a570d34698e9681481e8dd285777344fd84a2fed37e3201d311bf1b8e",
+      "adaptations": [
+        "Default input points to the included nine density pairs"
+      ]
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/remove_R6B_20261016/plot_mobility.py",
+      "kind": "code",
+      "bytes": 2528,
+      "source_sha256": "422bc9be7c22884c086cc6d62bcf9d7f58d4c738a8ae672d10a3b1188b4a1c38",
+      "release_sha256": "422bc9be7c22884c086cc6d62bcf9d7f58d4c738a8ae672d10a3b1188b4a1c38",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015/extend_partner_lags.py",
+      "kind": "code",
+      "bytes": 5052,
+      "source_sha256": "ceade29b4f1e89d81607eeb3dc761b6a85b144f2d865c46108e15145bae08652",
+      "release_sha256": "ceade29b4f1e89d81607eeb3dc761b6a85b144f2d865c46108e15145bae08652",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015/extended_partner/ratios.csv",
+      "kind": "plot_input",
+      "bytes": 1813,
+      "source_sha256": "9736413b0eade59f526bac4ecdd929fdee1180b857bfab2fc320dbecf1cadc89",
+      "release_sha256": "9736413b0eade59f526bac4ecdd929fdee1180b857bfab2fc320dbecf1cadc89",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v2/complete_residence.py",
+      "kind": "code",
+      "bytes": 6847,
+      "source_sha256": "859196719df3d2b4ea2694ca850ccf0a9e367e51557111e7d3ede8f13f790c04",
+      "release_sha256": "859196719df3d2b4ea2694ca850ccf0a9e367e51557111e7d3ede8f13f790c04",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v2/rebuild_intramolecular.py",
+      "kind": "code",
+      "bytes": 4418,
+      "source_sha256": "5ec1ba31b5fdaa2e2170f45f4e6e02a4597916d075edc5018c584f37efa574a3",
+      "release_sha256": "5ec1ba31b5fdaa2e2170f45f4e6e02a4597916d075edc5018c584f37efa574a3",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v2/refine_residence_intra.py",
+      "kind": "code",
+      "bytes": 2647,
+      "source_sha256": "16949b4425abd5463ab538eca2964b52ca2381a660818c90d66e598bb25abe90",
+      "release_sha256": "16949b4425abd5463ab538eca2964b52ca2381a660818c90d66e598bb25abe90",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v2/residence/new_ratios.csv",
+      "kind": "plot_input",
+      "bytes": 1821,
+      "source_sha256": "78a68d95c4b279feb0056623ad8972ae7877f9f16d9d346d01901b9bb7c90fc0",
+      "release_sha256": "78a68d95c4b279feb0056623ad8972ae7877f9f16d9d346d01901b9bb7c90fc0",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v2/sensitivity_ratios.csv",
+      "kind": "plot_input",
+      "bytes": 16364,
+      "source_sha256": "9f69d6bb0fa68ba7262aea055a277b66c528ddd9759efe9f6e25abcd9473523e",
+      "release_sha256": "9f69d6bb0fa68ba7262aea055a277b66c528ddd9759efe9f6e25abcd9473523e",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v2/sensitivity_statistics.py",
+      "kind": "code",
+      "bytes": 3458,
+      "source_sha256": "ab1023e2d3d131fb4af9952421820ab83083a529d4c936b31af6e78226780862",
+      "release_sha256": "ab1023e2d3d131fb4af9952421820ab83083a529d4c936b31af6e78226780862",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v2/validate_analysis.py",
+      "kind": "code",
+      "bytes": 4148,
+      "source_sha256": "bbbbc0d2fa89d60b24654d1599824722ba8c6af6abd8a472ff61852e2fdea53d",
+      "release_sha256": "bbbbc0d2fa89d60b24654d1599824722ba8c6af6abd8a472ff61852e2fdea53d",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v3/plot_figures.py",
+      "kind": "code",
+      "bytes": 9890,
+      "source_sha256": "f857c2efcbdb1ca0fe8dd3b2ede837dcec7c7398598adb5937af267039db1bf3",
+      "release_sha256": "f857c2efcbdb1ca0fe8dd3b2ede837dcec7c7398598adb5937af267039db1bf3",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261015_v3/plotted_values.json",
+      "kind": "plot_input",
+      "bytes": 54761,
+      "source_sha256": "fc299eb0be14ee7f60dd53d43525ec61061cc77b7edaa1a72a92116edf98cd6f",
+      "release_sha256": "fc299eb0be14ee7f60dd53d43525ec61061cc77b7edaa1a72a92116edf98cd6f",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/response_revision_20261016/plot_figures.py",
+      "kind": "code",
+      "bytes": 9961,
+      "source_sha256": "8780450f20c950196a322a3e8283946e80a394b5bac0c303ac7c8f5ba5d250a8",
+      "release_sha256": "8780450f20c950196a322a3e8283946e80a394b5bac0c303ac7c8f5ba5d250a8",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/tj_notation_20261017/make_figures.py",
+      "kind": "code",
+      "bytes": 1983,
+      "source_sha256": "bed6e786fde0c642ffc5598c703a498d2287837b2ca7ee192073edeba7a1f6ed",
+      "release_sha256": "bed6e786fde0c642ffc5598c703a498d2287837b2ca7ee192073edeba7a1f6ed",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/JCP_revision/update_dynamics_figures.py",
+      "kind": "code",
+      "bytes": 9030,
+      "source_sha256": "c4638db331c48d3e483cfeb1cab7099e0ef121c90fd8d423a83342c322a9e2b5",
+      "release_sha256": "c4638db331c48d3e483cfeb1cab7099e0ef121c90fd8d423a83342c322a9e2b5",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/build_results.py",
+      "kind": "code",
+      "bytes": 19360,
+      "source_sha256": "adb7d75ccbeb8dbfa9c24abfa99326e91852ef8e6bd4ad47e26172e809f0bd76",
+      "release_sha256": "9e44387c7d3efd9350fcbd3b1eb2eefbe887f2676b7b622bf77375981c39e85c",
+      "adaptations": [
+        "Trim trailing blank lines at end of file"
+      ]
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/followup/analyze_followup.py",
+      "kind": "code",
+      "bytes": 21626,
+      "source_sha256": "839bb08f49f8f919008b16baf54b7cc691223568b870adffa60ef05996104a40",
+      "release_sha256": "839bb08f49f8f919008b16baf54b7cc691223568b870adffa60ef05996104a40",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/followup/test_followup.py",
+      "kind": "code",
+      "bytes": 2577,
+      "source_sha256": "52bfadfceefef024df51744b90abad508502288ace9bd851d335cd5f1652d13c",
+      "release_sha256": "52bfadfceefef024df51744b90abad508502288ace9bd851d335cd5f1652d13c",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/no_population_filter/analyze.py",
+      "kind": "code",
+      "bytes": 17021,
+      "source_sha256": "d696c51cb8f4e2df7c0221199bc931d233640ad33c1b209fa915c8bda31bdbab",
+      "release_sha256": "d696c51cb8f4e2df7c0221199bc931d233640ad33c1b209fa915c8bda31bdbab",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/Table_R2C2_1_state_assignments.csv",
+      "kind": "plot_input",
+      "bytes": 2544,
+      "source_sha256": "da940146e6968d8a56deae3451711213d7b8abe30ddb3059fb3d89499905872f",
+      "release_sha256": "da940146e6968d8a56deae3451711213d7b8abe30ddb3059fb3d89499905872f",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/Table_R2C2_2_metrics.csv",
+      "kind": "plot_input",
+      "bytes": 6731,
+      "source_sha256": "c29d89c6f12edaf435720ad8c166dcb5c70b99acaca4c25330571b2819be2c95",
+      "release_sha256": "c29d89c6f12edaf435720ad8c166dcb5c70b99acaca4c25330571b2819be2c95",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/Table_R2C2_3_contrasts.csv",
+      "kind": "plot_input",
+      "bytes": 3155,
+      "source_sha256": "6d09645425e30e1d61fabd5a4b9c8e3fe19b1ad1fc0ecaa6d8e5f3cc2fc8e6b7",
+      "release_sha256": "6d09645425e30e1d61fabd5a4b9c8e3fe19b1ad1fc0ecaa6d8e5f3cc2fc8e6b7",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/Table_R2C2_4_common_coverage.csv",
+      "kind": "plot_input",
+      "bytes": 2060,
+      "source_sha256": "3d9ad859d98c85dcb8f9f5fff2aa8fa0440521bcd8cf23c53d1c43b688b9c67a",
+      "release_sha256": "3d9ad859d98c85dcb8f9f5fff2aa8fa0440521bcd8cf23c53d1c43b688b9c67a",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/all_local_populations.csv",
+      "kind": "plot_input",
+      "bytes": 11426,
+      "source_sha256": "bfdda0446cb2dc56831c98c39700b278627c86f5101902e09f1e93f0a8d56b66",
+      "release_sha256": "bfdda0446cb2dc56831c98c39700b278627c86f5101902e09f1e93f0a8d56b66",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/build_package.py",
+      "kind": "code",
+      "bytes": 15814,
+      "source_sha256": "9c9d6bd37f0b43b7cf02f6da1894c14358a3d4c0e42dba0b5ed6ce31f0462edb",
+      "release_sha256": "9c9d6bd37f0b43b7cf02f6da1894c14358a3d4c0e42dba0b5ed6ce31f0462edb",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/common_population_changes.csv",
+      "kind": "plot_input",
+      "bytes": 9537,
+      "source_sha256": "76d88cee1f28a99c4faeeb787d1b16b5d414669175c816fc9050817b2a504044",
+      "release_sha256": "76d88cee1f28a99c4faeeb787d1b16b5d414669175c816fc9050817b2a504044",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/common_transition_changes.csv",
+      "kind": "plot_input",
+      "bytes": 14767,
+      "source_sha256": "7efa9cfb8700c4fc2abc3acd545c638f9cc2b7244e497a1893e1b7b630f33e84",
+      "release_sha256": "7efa9cfb8700c4fc2abc3acd545c638f9cc2b7244e497a1893e1b7b630f33e84",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/response_package/full_transition_matrices.csv",
+      "kind": "plot_input",
+      "bytes": 12219,
+      "source_sha256": "a5371d1ea50108c0d86b8e298906a0806e3a57bb9d3a98017359b72bdd80b024",
+      "release_sha256": "a5371d1ea50108c0d86b8e298906a0806e3a57bb9d3a98017359b72bdd80b024",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/state_validation/analyze.py",
+      "kind": "code",
+      "bytes": 12599,
+      "source_sha256": "c1c9b02d46f6700c24ae08a1d4eec8cd978b6749a1df9ad4dd11a4a4ce925563",
+      "release_sha256": "c1c9b02d46f6700c24ae08a1d4eec8cd978b6749a1df9ad4dd11a4a4ce925563",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/tdp43_index_fix/compare_fixed.py",
+      "kind": "code",
+      "bytes": 19933,
+      "source_sha256": "fec8525425a0fbd47023a7d5557a302f3496e9548c8536b00cd619d78242350b",
+      "release_sha256": "fec8525425a0fbd47023a7d5557a302f3496e9548c8536b00cd619d78242350b",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/tdp43_index_fix/rebuild_contacts.py",
+      "kind": "code",
+      "bytes": 10139,
+      "source_sha256": "7cfbdc1d8558c23a70c4234ade9cb08613f6974a87605a37e3618e6f5b2bf4f8",
+      "release_sha256": "7cfbdc1d8558c23a70c4234ade9cb08613f6974a87605a37e3618e6f5b2bf4f8",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/tdp43_index_fix/test_index_fix.py",
+      "kind": "code",
+      "bytes": 2748,
+      "source_sha256": "ab86a7780dd9103eda314ae1f7937c3bf01eac992411d714757db55671ee023e",
+      "release_sha256": "ab86a7780dd9103eda314ae1f7937c3bf01eac992411d714757db55671ee023e",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C2_state_remodeling/tdp43_index_fix/validate_sources.py",
+      "kind": "code",
+      "bytes": 3266,
+      "source_sha256": "b98e3fdfb613faa2e0f935251504a5b786f2673aaf6c2cedb042c947e89a347f",
+      "release_sha256": "b98e3fdfb613faa2e0f935251504a5b786f2673aaf6c2cedb042c947e89a347f",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/Table_C3_1_all_populations.csv",
+      "kind": "plot_input",
+      "bytes": 5790,
+      "source_sha256": "b32332dda705bd14398934a79df601c356e7b5df4adf5d98780511c375d5f1bc",
+      "release_sha256": "b32332dda705bd14398934a79df601c356e7b5df4adf5d98780511c375d5f1bc",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/Table_C3_2_state_agreement.csv",
+      "kind": "plot_input",
+      "bytes": 8035,
+      "source_sha256": "a8a2433a13303f40b9f14bfe606febb272a872c1e5545dd15e54dab51106b582",
+      "release_sha256": "a8a2433a13303f40b9f14bfe606febb272a872c1e5545dd15e54dab51106b582",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/Table_C3_3_full_transition_matrices.csv",
+      "kind": "plot_input",
+      "bytes": 21036,
+      "source_sha256": "ccb380175213fd36c45206f5c3306a2ae6d8575a02ef4e743fa9e4f253830662",
+      "release_sha256": "ccb380175213fd36c45206f5c3306a2ae6d8575a02ef4e743fa9e4f253830662",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/Table_C3_4_temperature_distances.csv",
+      "kind": "plot_input",
+      "bytes": 2384,
+      "source_sha256": "e8bc09f5cd9c83e668099360dce2203332ffd5e7cc49e7bca0d58bf2329fae99",
+      "release_sha256": "e8bc09f5cd9c83e668099360dce2203332ffd5e7cc49e7bca0d58bf2329fae99",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/Table_C3_5_condensate_minus_free.csv",
+      "kind": "plot_input",
+      "bytes": 999,
+      "source_sha256": "f67acf49a9884b1ef3a67dd02e98e96e75fd1b1688caa6519391eb6837aed5cd",
+      "release_sha256": "f67acf49a9884b1ef3a67dd02e98e96e75fd1b1688caa6519391eb6837aed5cd",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/Table_C3_6_number_reconciliation.csv",
+      "kind": "plot_input",
+      "bytes": 2554,
+      "source_sha256": "5aab39733c774ca93e8fce4c6e7ec7fa39aa00138331e7bb18a245fef6376418",
+      "release_sha256": "5aab39733c774ca93e8fce4c6e7ec7fa39aa00138331e7bb18a245fef6376418",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/add_sampling.py",
+      "kind": "code",
+      "bytes": 4089,
+      "source_sha256": "ba898315f6871ce1c95ca9ee6196c811c3ed47ead5e8132cddb4cf684cdf7600",
+      "release_sha256": "ba898315f6871ce1c95ca9ee6196c811c3ed47ead5e8132cddb4cf684cdf7600",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/complete_local_5_by_5_matrices.csv",
+      "kind": "plot_input",
+      "bytes": 21036,
+      "source_sha256": "ccb380175213fd36c45206f5c3306a2ae6d8575a02ef4e743fa9e4f253830662",
+      "release_sha256": "ccb380175213fd36c45206f5c3306a2ae6d8575a02ef4e743fa9e4f253830662",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/condensate_minus_free.csv",
+      "kind": "plot_input",
+      "bytes": 669,
+      "source_sha256": "f8d472517be35d65ee54f152f7a883d58ac8d2d3f990648f67cd997eea18ec0e",
+      "release_sha256": "f8d472517be35d65ee54f152f7a883d58ac8d2d3f990648f67cd997eea18ec0e",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/distance_comparison.csv",
+      "kind": "plot_input",
+      "bytes": 2013,
+      "source_sha256": "589b4b188c0f8b7411f0af69172b09dde5724f9180e1f796a378bc38ceda9e54",
+      "release_sha256": "589b4b188c0f8b7411f0af69172b09dde5724f9180e1f796a378bc38ceda9e54",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/original_display_mapping.csv",
+      "kind": "plot_input",
+      "bytes": 1539,
+      "source_sha256": "7c43fcdb3991a6448924b3c094f1b06865e275cd817828cacc4d0baf037c8cdc",
+      "release_sha256": "7c43fcdb3991a6448924b3c094f1b06865e275cd817828cacc4d0baf037c8cdc",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/recalculate.py",
+      "kind": "code",
+      "bytes": 10930,
+      "source_sha256": "1baa403207412187b8598ebe2008534083277d7caa0f20e5c93d39502628af43",
+      "release_sha256": "1baa403207412187b8598ebe2008534083277d7caa0f20e5c93d39502628af43",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/squared_distance_decomposition.csv",
+      "kind": "plot_input",
+      "bytes": 525,
+      "source_sha256": "5b4832df8782a88d7c85c36559ef426d09315a55b06a6db5277737068521d2fc",
+      "release_sha256": "5b4832df8782a88d7c85c36559ef426d09315a55b06a6db5277737068521d2fc",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/trajectory_and_model_contrasts.csv",
+      "kind": "plot_input",
+      "bytes": 2725,
+      "source_sha256": "965ef3a97e877cbd4736cafebdd50fb622534b823352be26a6cd7f609f7ed612",
+      "release_sha256": "965ef3a97e877cbd4736cafebdd50fb622534b823352be26a6cd7f609f7ed612",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/trajectory_and_model_intervals.csv",
+      "kind": "plot_input",
+      "bytes": 5719,
+      "source_sha256": "9c1d0627ad487593b3f89f9465ebd0cb1e39f92dc14abc218c82e9385c0c3713",
+      "release_sha256": "9c1d0627ad487593b3f89f9465ebd0cb1e39f92dc14abc218c82e9385c0c3713",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/all_edges_recalculation_2026_10_09/unmasked_original_display_matrices.csv",
+      "kind": "plot_input",
+      "bytes": 9185,
+      "source_sha256": "dc81f2543ca4d5a477e739d1610938c2f4ad502ceef8a8789ae8baa15d94de90",
+      "release_sha256": "dc81f2543ca4d5a477e739d1610938c2f4ad502ceef8a8789ae8baa15d94de90",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/analyze.py",
+      "kind": "code",
+      "bytes": 22546,
+      "source_sha256": "5facaaa79d287356721efedeb51087e934cc026859c373e06b6963bb2df7882d",
+      "release_sha256": "5facaaa79d287356721efedeb51087e934cc026859c373e06b6963bb2df7882d",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/condition_summary.csv",
+      "kind": "plot_input",
+      "bytes": 2726,
+      "source_sha256": "29f817bc59f346120d99120d12b38a269c7e9338d97ab529d900819ac6ed3276",
+      "release_sha256": "29f817bc59f346120d99120d12b38a269c7e9338d97ab529d900819ac6ed3276",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/per_model_populations.csv",
+      "kind": "plot_input",
+      "bytes": 57778,
+      "source_sha256": "b9c019bde4bc44dfd820565425ab9dcd86fcfdd11dc9d2698b650c9654f327d9",
+      "release_sha256": "b9c019bde4bc44dfd820565425ab9dcd86fcfdd11dc9d2698b650c9654f327d9",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C3_model_consistency/test_outputs.py",
+      "kind": "code",
+      "bytes": 7385,
+      "source_sha256": "cb32b454ce9af69cd5f82e14302f429def1aa97cd058b736377d44739f71f4e9",
+      "release_sha256": "cb32b454ce9af69cd5f82e14302f429def1aa97cd058b736377d44739f71f4e9",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/analyze.py",
+      "kind": "code",
+      "bytes": 14770,
+      "source_sha256": "942514386e3513a909084644c6ce40022358f04fbface9a16a1656cc43431d1a",
+      "release_sha256": "942514386e3513a909084644c6ce40022358f04fbface9a16a1656cc43431d1a",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/audit_training.py",
+      "kind": "code",
+      "bytes": 4531,
+      "source_sha256": "4c985fa2c56bd2f41df175d5659ce7e959c3f08851e374d9ef776a04c6113511",
+      "release_sha256": "4c985fa2c56bd2f41df175d5659ce7e959c3f08851e374d9ef776a04c6113511",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/central60.py",
+      "kind": "code",
+      "bytes": 6643,
+      "source_sha256": "224e0cb94f72f0e60edc0398f7dd7df26ac5c18350a46857c566d0f4087ef711",
+      "release_sha256": "224e0cb94f72f0e60edc0398f7dd7df26ac5c18350a46857c566d0f4087ef711",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/central60_2026_10_10/mobility_summary.csv",
+      "kind": "plot_input",
+      "bytes": 15860,
+      "source_sha256": "6c55e77345b87c64201f68b7eb3bffb0132eb7b3c8f1f197775e38e566fa051e",
+      "release_sha256": "6c55e77345b87c64201f68b7eb3bffb0132eb7b3c8f1f197775e38e566fa051e",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/central60_2026_10_10/temperature_ratios.csv",
+      "kind": "plot_input",
+      "bytes": 5945,
+      "source_sha256": "72cc941bd1a17676960472fb571097189f72fdfa058da29e11728f499edd0b57",
+      "release_sha256": "72cc941bd1a17676960472fb571097189f72fdfa058da29e11728f499edd0b57",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/extract.py",
+      "kind": "code",
+      "bytes": 8202,
+      "source_sha256": "dfe7deafde650126a2328cfad0dfbbd7def7a9bf3448e9f2f5546c6d2ca5d4cc",
+      "release_sha256": "54aff0350bee2c6c47c85adab98ed757adf097c0b16947111699e72568b32baa",
+      "adaptations": [
+        "Use parent public repository for existing shared code/data"
+      ]
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/summarize.py",
+      "kind": "code",
+      "bytes": 12452,
+      "source_sha256": "55c2a2e05f5a7237d55b2b0f9d1cb2f93f71cb7e645a96b32b89007439f44bb2",
+      "release_sha256": "55c2a2e05f5a7237d55b2b0f9d1cb2f93f71cb7e645a96b32b89007439f44bb2",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/test_analysis.py",
+      "kind": "code",
+      "bytes": 2046,
+      "source_sha256": "cd452243f82bd47f43e0d728b70fceb387692297b3a6e2b598ac3ec0f00d80f1",
+      "release_sha256": "cd452243f82bd47f43e0d728b70fceb387692297b3a6e2b598ac3ec0f00d80f1",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/R2C5_chain_selection/verify.py",
+      "kind": "code",
+      "bytes": 3531,
+      "source_sha256": "1d1608697959f2b52e0a2a57c2247d6ffa184900fd96a9ccee2b8efa0c232259",
+      "release_sha256": "1d1608697959f2b52e0a2a57c2247d6ffa184900fd96a9ccee2b8efa0c232259",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/critical_temperature_slab_simulations/assess_tc_20261012.py",
+      "kind": "code",
+      "bytes": 9177,
+      "source_sha256": "eb45358c1ab186a03696d837e527bd47fc1c7302a50eb39ec6b6c1ef7c21830c",
+      "release_sha256": "99d7c49d9fbf3e691e9559ebf5439445d3fd36de828321281de179d6f7002b52",
+      "adaptations": [
+        "Resolve the workspace root relative to this script"
+      ]
+    },
+    {
+      "path": "revision_2026_10_08/critical_temperature_slab_simulations/check_density_3to7us.py",
+      "kind": "code",
+      "bytes": 10594,
+      "source_sha256": "31d72ce23ce113931c4fdd9a4dc2881bf14bb2a3c38bce442f77177e947e4fd7",
+      "release_sha256": "31d72ce23ce113931c4fdd9a4dc2881bf14bb2a3c38bce442f77177e947e4fd7",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/critical_temperature_slab_simulations/common.py",
+      "kind": "code",
+      "bytes": 4949,
+      "source_sha256": "4cfb34a0ed70aaed635c731c93ed2f8694824cd3bb287b6a7a9bca51f5f1f0ec",
+      "release_sha256": "4cfb34a0ed70aaed635c731c93ed2f8694824cd3bb287b6a7a9bca51f5f1f0ec",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/critical_temperature_slab_simulations/density_3to7us_20261012/si_figure/critical_temperature_fit.csv",
+      "kind": "plot_input",
+      "bytes": 343,
+      "source_sha256": "4e59c3087e052551fe531e0bc12baade4be089060192654f00ce297bc29c9729",
+      "release_sha256": "4e59c3087e052551fe531e0bc12baade4be089060192654f00ce297bc29c9729",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/critical_temperature_slab_simulations/density_3to7us_20261012/si_figure/critical_temperature_input_densities.csv",
+      "kind": "plot_input",
+      "bytes": 1723,
+      "source_sha256": "5a037a5c06250c82b0890c523e839deb7f1d3876e472cbc4a6ac70cb3828ee75",
+      "release_sha256": "5a037a5c06250c82b0890c523e839deb7f1d3876e472cbc4a6ac70cb3828ee75",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/critical_temperature_slab_simulations/plot_density_si_3to7us.py",
+      "kind": "code",
+      "bytes": 4309,
+      "source_sha256": "7aeac2b4096fc689d56e031e025485081b7b07c30d1da8117000a314981dad71",
+      "release_sha256": "7aeac2b4096fc689d56e031e025485081b7b07c30d1da8117000a314981dad71",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/analysis_full20ns_2026_10_09/bootstrap_pair_weights.npz",
+      "kind": "plot_input",
+      "bytes": 15865,
+      "source_sha256": "0af61793eb4f1e1904e89468ca8aa4646efafcbc6921f824bb264a10efd05da9",
+      "release_sha256": "0af61793eb4f1e1904e89468ca8aa4646efafcbc6921f824bb264a10efd05da9",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/analysis_full20ns_2026_10_09/paired_dynamic_contrasts.csv",
+      "kind": "plot_input",
+      "bytes": 101416,
+      "source_sha256": "9d4f33c516066f02a3d6a4f5fe33572b9ae02ba78eaa7bf13a518d0fdb81c896",
+      "release_sha256": "9d4f33c516066f02a3d6a4f5fe33572b9ae02ba78eaa7bf13a518d0fdb81c896",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/analysis_full20ns_2026_10_09/per_snapshot_time_evolution.csv",
+      "kind": "plot_input",
+      "bytes": 613784,
+      "source_sha256": "034aeeee1f456845295d7d0a3b7e39167d72a229e2d7873dfc9e5b3cd2117602",
+      "release_sha256": "034aeeee1f456845295d7d0a3b7e39167d72a229e2d7873dfc9e5b3cd2117602",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/analyze_full20ns.py",
+      "kind": "code",
+      "bytes": 26299,
+      "source_sha256": "3a846a2b3e72f904b24c0ced43aaf8718002b9668d9217c82b29397543a3abbf",
+      "release_sha256": "3a846a2b3e72f904b24c0ced43aaf8718002b9668d9217c82b29397543a3abbf",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/audit_density.py",
+      "kind": "code",
+      "bytes": 8398,
+      "source_sha256": "29700e188318f607379db9908abc21086697e214394c90a26edd7f2f890ca541",
+      "release_sha256": "29700e188318f607379db9908abc21086697e214394c90a26edd7f2f890ca541",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/check_full20ns_thermo.py",
+      "kind": "code",
+      "bytes": 2667,
+      "source_sha256": "49dd6d1c90dfb66f0efcf9e50f4c62ee16b0ff7b22de67f5eb82746e13c32ccf",
+      "release_sha256": "49dd6d1c90dfb66f0efcf9e50f4c62ee16b0ff7b22de67f5eb82746e13c32ccf",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/extract_full20ns.py",
+      "kind": "code",
+      "bytes": 9196,
+      "source_sha256": "b3946e1ad9756921e44e42625f2560b69a78bf7b3bb1305b1235934abfd23565",
+      "release_sha256": "b3946e1ad9756921e44e42625f2560b69a78bf7b3bb1305b1235934abfd23565",
+      "adaptations": []
+    },
+    {
+      "path": "revision_2026_10_08/paired_slab_temperature_jump/protocol.py",
+      "kind": "code",
+      "bytes": 10991,
+      "source_sha256": "819fe3240175da4b0ebc7e1eebbcf1291740c9f27b50cf458c955fc6126c102e",
+      "release_sha256": "c135b6890ccc1cd10a7c4fdfc240d81bbf76ae3c4a44fa7cf3884bae93f8ec06",
+      "adaptations": [
+        "Trim trailing blank lines at end of file"
+      ]
+    },
+    {
+      "path": "revision_2026_09_30/state_audit/full_local_transition_matrices.csv",
+      "kind": "plot_input",
+      "bytes": 27041,
+      "source_sha256": "181279f42042c1b894cb855372473c6ac17df14714ef5480444e63dce7c075b2",
+      "release_sha256": "181279f42042c1b894cb855372473c6ac17df14714ef5480444e63dce7c075b2",
+      "adaptations": []
+    },
+    {
+      "path": "figure3_inputs/curves.npz",
+      "kind": "derived_plot_input",
+      "bytes": 490443,
+      "release_sha256": "7b58df83395970a3143d8f5a1fcfbe88f84df50e4d459481cbb2b91334274858",
+      "adaptations": [
+        "Compact export from existing analysis; see figure3_inputs/provenance.json"
+      ]
+    },
+    {
+      "path": "figure3_inputs/intrachain_contact_relaxation_ratio.csv",
+      "kind": "derived_plot_input",
+      "bytes": 424,
+      "release_sha256": "f865b44dcb72ad3cb6ef92705f0e7633702f54a5f8c47b390e5d5a4850bb52c7",
+      "adaptations": [
+        "Compact export from existing analysis; see figure3_inputs/provenance.json"
+      ]
+    },
+    {
+      "path": "figure3_inputs/provenance.json",
+      "kind": "derived_plot_input",
+      "bytes": 6630,
+      "release_sha256": "1c3dfef47afba20d1d32bf877718715c91e489f80c8e003e82422dd5aed58cc7",
+      "adaptations": [
+        "Compact export from existing analysis; see figure3_inputs/provenance.json"
+      ]
+    },
+    {
+      "path": "figure3_inputs/rg_heating_response_percent.json",
+      "kind": "derived_plot_input",
+      "bytes": 591,
+      "release_sha256": "d692376e7da028c3b2b1146c0b69d0b5ae9742b2e575a36d47868619cd5be71c",
+      "adaptations": [
+        "Compact export from existing analysis; see figure3_inputs/provenance.json"
+      ]
+    },
+    {
+      "path": "reproduce_figures.py",
+      "kind": "release_entrypoint",
+      "bytes": 6646,
+      "release_sha256": "3827a12e8a9fed33f75855526315c62de05e63c5917e2647a2cbf7549ca9f784",
+      "adaptations": []
+    },
+    {
+      "path": "export_figure3_inputs.py",
+      "kind": "release_entrypoint",
+      "bytes": 3973,
+      "release_sha256": "0a201ef26165aa04cea6d42528ecbd88d250ebb72d57c0c3e5b43bb754dddeb5",
+      "adaptations": []
+    },
+    {
+      "path": "make_figure3.py",
+      "kind": "release_entrypoint",
+      "bytes": 3537,
+      "release_sha256": "67fe944ce2b1b19fad4a957c0a3bbc962fdc9326c59dee6fb02c1f624fa148c7",
+      "adaptations": []
+    },
+    {
+      "path": "README.md",
+      "kind": "documentation",
+      "bytes": 7876,
+      "release_sha256": "319cf10ce7e2a6d0e8f4f0636ed9626f1719f63f291d4769c05811d4a15b0836",
+      "adaptations": []
+    },
+    {
+      "path": ".gitignore",
+      "kind": "documentation",
+      "bytes": 143,
+      "release_sha256": "8384ce3eb907655df9ac0c074cd874d870c76b5e58c12ce16a33adaa80cb8a10",
+      "adaptations": []
+    },
+    {
+      "path": ".gitattributes",
+      "kind": "documentation",
+      "bytes": 106,
+      "release_sha256": "e439847e3c4c2de55be8da2c55afb01e0bb53c50acffcd58fbda90e3d5e197e1",
+      "adaptations": []
+    }
+  ]
+}

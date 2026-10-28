@@ -1,0 +1,6 @@
+chime
+darkdetect
+matplotlib
+numpy
+PySide6
+scipy

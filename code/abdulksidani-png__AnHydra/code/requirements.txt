@@ -1,0 +1,27 @@
+# Core ML
+-e .                      # install the src-layout package for module commands and the app
+torch>=2.2
+transformers>=4.40          # ESM-2 via facebook/esm2_*
+scikit-learn>=1.4           # classifier heads, GroupKFold, metrics, calibration
+tqdm>=4.66                 # progress bar for embedding
+numpy>=1.26
+pandas>=2.2
+
+# App
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+python-dotenv>=1.0
+requests>=2.31             # UniProt / DisProt data pulls (tardiscreen.data)
+httpx>=0.27                 # Gemini REST
+PyJWT[crypto]>=2.10,<3
+SQLAlchemy>=2.0,<3
+alembic>=1.13,<2
+psycopg[binary]>=3.2,<4
+
+# Plots for the README (evals)
+matplotlib>=3.8
+
+# External tool (not pip): CD-HIT for clustering — https://sites.google.com/view/cd-hit
+#   macOS:  brew install cd-hit
+#   linux:  apt-get install cd-hit  (or conda install -c bioconda cd-hit)

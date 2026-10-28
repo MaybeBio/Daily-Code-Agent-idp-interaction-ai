@@ -1,0 +1,356 @@
+export 
+    DoubleExponential,
+    DoubleExponentialSoftCore
+
+@doc raw"""
+    DoubleExponential(; cutoff, use_neighbors, α, β, shortcut, σ_mixing, ϵ_mixing,
+                      weight_special)
+
+The double exponential interaction between two atoms.
+
+See [Wu and Brooks 2019](https://doi.org/10.1063/1.5107505).
+The potential energy is defined as
+```math
+V(r_{ij}) = \varepsilon_{ij} \left[
+    \frac{\beta e^\alpha}{\alpha - \beta} e^{-\alpha r_{ij} / r_m}
+    - \frac{\alpha e^\beta}{\alpha - \beta} e^{-\beta r_{ij} / r_m}
+\right]
+```
+and the force on each atom by
+```math
+\vec{F}_i = \frac{\varepsilon_{ij}}{r_m} \left[
+    \frac{\alpha\beta e^\alpha}{\alpha - \beta} e^{-\alpha r_{ij} / r_m}
+    - \frac{\alpha\beta e^\beta}{\alpha - \beta} e^{-\beta r_{ij} / r_m}
+\right] \frac{\vec{r}_{ij}}{r_{ij}}
+```
+where
+```math
+r_m = 2^{1/6}\sigma_{ij}
+```
+and ``\sigma_{ij}`` and ``\varepsilon_{ij}`` are mixed with `σ_mixing` and `ϵ_mixing`.
+"""
+struct DoubleExponential{C, T, SC, S, E, W} <: PairwiseInteraction
+    cutoff::C
+    use_neighbors::Bool
+    α::T
+    β::T
+    shortcut::SC
+    σ_mixing::S
+    ϵ_mixing::E
+    weight_special::W
+end
+
+function DoubleExponential(; cutoff=NoCutoff(), use_neighbors=false, α, β,
+                           shortcut=LJZeroShortcut(), σ_mixing=LorentzMixing(),
+                           ϵ_mixing=GeometricMixing(), weight_special=1)
+    return DoubleExponential(cutoff, use_neighbors, α, β, shortcut, σ_mixing, ϵ_mixing,
+                             weight_special)
+end
+
+use_neighbors(inter::DoubleExponential) = inter.use_neighbors
+
+required_atom_fields(inter::DoubleExponential) = (:σ, :ϵ, :λ,
+            mixing_atom_fields(inter.σ_mixing)..., mixing_atom_fields(inter.ϵ_mixing)...)
+
+function Base.zero(i::DoubleExponential{C, T, SC, S, E, W}) where {C, T, SC, S, E, W}
+    return DoubleExponential(
+        i.cutoff,
+        false,
+        zero(T),
+        zero(T),
+        i.shortcut,
+        i.σ_mixing,
+        i.ϵ_mixing,
+        zero(W)
+    )
+end
+
+function Base.:+(i1::DoubleExponential, i2::DoubleExponential)
+    return DoubleExponential(
+        i1.cutoff,
+        false,
+        i1.α + i2.α,
+        i1.β + i2.β,
+        i1.shortcut,
+        i1.σ_mixing,
+        i1.ϵ_mixing,
+        i1.weight_special + i2.weight_special
+    )
+end
+
+parameter_prefix(::DoubleExponential) = "inter_DEXP_"
+parameter_fields(::Type{<:DoubleExponential}) =
+    ((:α, "alpha"), (:β, "beta"), (:weight_special, "weight_14"))
+
+
+const two_power_sixth = 2 ^ (1 / 6)
+
+@inline function force(
+    inter::DoubleExponential{C, T},
+    dr,
+    atom_i,
+    atom_j,
+    force_units=u"kJ * mol^-1 * nm^-1",
+    special=false,
+    args...
+) where {C, T}
+
+    if shortcut_pair(inter.shortcut, atom_i, atom_j, special)
+        return zero_pairwise_force(dr, force_units)
+    end
+    r = sqrt(sum(abs2, dr))
+    σ = σ_mixing(inter.σ_mixing, atom_i, atom_j)
+    ϵ = ϵ_mixing(inter.ϵ_mixing, atom_i, atom_j)
+    rm = σ * T(two_power_sixth)
+    α, β = inter.α, inter.β
+    params = (α, β, rm, ϵ)
+    f = force_cutoff(inter.cutoff, inter, r, params)
+    fdr = (f / r) * dr
+    if special
+        return fdr * inter.weight_special
+    else
+        return fdr
+    end
+end
+
+@inline function pairwise_force(::DoubleExponential, r, (α, β, rm, ϵ))
+    x = 1 - r / rm
+    return ϵ * α * β * (exp(α * x) - exp(β * x)) / (rm * (α - β))
+end
+
+@inline function potential_energy(
+    inter::DoubleExponential{C, T},
+    dr, 
+    atom_i,
+    atom_j,
+    energy_units=u"kJ * mol^-1", 
+    special=false,
+    args...
+) where {C, T}
+
+    if shortcut_pair(inter.shortcut, atom_i, atom_j, special)
+        return zero_pairwise_energy(dr, energy_units)
+    end
+    r = sqrt(sum(abs2, dr))
+    σ = σ_mixing(inter.σ_mixing, atom_i, atom_j)
+    ϵ = ϵ_mixing(inter.ϵ_mixing, atom_i, atom_j)
+    rm = σ * T(two_power_sixth)
+    α, β = inter.α, inter.β
+    params = (α, β, rm, ϵ)
+    pe = pe_cutoff(inter.cutoff, inter, r, params)
+    if special
+        return pe * inter.weight_special
+    else
+        return pe
+    end
+end
+
+@inline function pairwise_pe(::DoubleExponential, r, (α, β, rm, ϵ))
+    x = 1 - r / rm
+    return ϵ * (β * exp(α * x) - α * exp(β * x)) / (α - β)
+end
+
+@doc raw"""
+    DoubleExponentialSoftCore(; cutoff, use_neighbors, α, β, shortcut, σ_mixing,
+                              ϵ_mixing, λ_mixing, scheduler, weight_special)
+
+The double exponential interaction between two atoms with a soft core, used for
+the appearing and disappearing of atoms.
+
+See [Horton et al. 2023](https://doi.org/10.1039/d3dd00070b).
+The potential energy is defined as
+```math
+V(r_{ij}) = \lambda\varepsilon_{ij} \left[
+    \frac{\beta_s e^{\alpha_s}}{\alpha_s - \beta_s} e^{-\alpha_s r_{ij} / r_m}
+    - \frac{\alpha_s e^{\beta_s}}{\alpha_s - \beta_s} e^{-\beta_s r_{ij} / r_m}
+\right]
+```
+and the force on each atom by
+```math
+\vec{F}_i = \frac{\lambda\varepsilon_{ij}}{r_m} \left[
+    \frac{\alpha_s\beta_s e^{\alpha_s}}{\alpha_s - \beta_s} e^{-\alpha_s r_{ij} / r_m}
+    - \frac{\alpha_s\beta_s e^{\beta_s}}{\alpha_s - \beta_s} e^{-\beta_s r_{ij} / r_m}
+\right] \frac{\vec{r}_{ij}}{r_{ij}}
+```
+where
+```math
+r_m = 2^{1/6}\sigma_{ij}
+```
+```math
+\alpha_s = 1.1 + \lambda(\alpha - 1.1)
+```
+```math
+\beta_s = 1 + \lambda(\beta - 1)
+```
+
+``\lambda`` is the steric coupling of the pair, which `scheduler`, a
+[`Molly.LambdaScheduler`](@ref), gives from the `λ` of the atoms mixed with `λ_mixing` and
+their alchemical roles.
+If ``\lambda`` is 1 this gives the standard [`DoubleExponential`](@ref) potential, and if
+it is 0 the interaction is turned off.
+``\alpha`` and ``\beta`` determine the shape of the double exponential potential.
+"""
+struct DoubleExponentialSoftCore{C, T, SC, S, E, LM, SCH, W} <: PairwiseInteraction
+    cutoff::C
+    use_neighbors::Bool
+    # The scheduler follows `use_neighbors`, as in the other λ interactions, so that their
+    #   Bools fill one word; placed after α and β, Enzyme dropped the gradients of
+    #   `weight_special` and of every later interaction in the tuple once the interaction
+    #   was read back out of a System
+    λ_mixing::LM
+    scheduler::SCH
+    α::T
+    β::T
+    shortcut::SC
+    σ_mixing::S
+    ϵ_mixing::E
+    weight_special::W
+end
+
+function DoubleExponentialSoftCore(; cutoff=NoCutoff(), use_neighbors=false, α, β,
+                                   shortcut=LJZeroShortcut(), σ_mixing=LorentzMixing(),
+                                   ϵ_mixing=GeometricMixing(), λ_mixing=MinimumMixing(),
+                                   scheduler=DefaultLambdaScheduler(), weight_special=1)
+    return DoubleExponentialSoftCore(cutoff, use_neighbors, λ_mixing, scheduler, α, β, shortcut,
+                                     σ_mixing, ϵ_mixing, weight_special)
+end
+
+use_neighbors(inter::DoubleExponentialSoftCore) = inter.use_neighbors
+
+required_atom_fields(inter::DoubleExponentialSoftCore) = (:σ, :ϵ, :λ, :alch_role,
+            mixing_atom_fields(inter.σ_mixing)..., mixing_atom_fields(inter.ϵ_mixing)...,
+            mixing_atom_fields(inter.λ_mixing)...)
+
+function Base.zero(i::DoubleExponentialSoftCore{C, T, SC, S, E, LM, SCH, W}) where {C, T, SC, S, E, LM, SCH, W}
+    return DoubleExponentialSoftCore(
+        i.cutoff,
+        false,
+        i.λ_mixing,
+        i.scheduler,
+        zero(T),
+        zero(T),
+        i.shortcut,
+        i.σ_mixing,
+        i.ϵ_mixing,
+        zero(W)
+    )
+end
+
+function Base.:+(i1::DoubleExponentialSoftCore, i2::DoubleExponentialSoftCore)
+    return DoubleExponentialSoftCore(
+        i1.cutoff,
+        false,
+        i1.λ_mixing,
+        i1.scheduler,
+        i1.α + i2.α,
+        i1.β + i2.β,
+        i1.shortcut,
+        i1.σ_mixing,
+        i1.ϵ_mixing,
+        i1.weight_special + i2.weight_special
+    )
+end
+
+parameter_prefix(::DoubleExponentialSoftCore) = "inter_DEXP_"
+parameter_fields(::Type{<:DoubleExponentialSoftCore}) =
+    ((:α, "alpha"), (:β, "beta"), (:weight_special, "weight_14"))
+
+
+# The double exponential has one soft core, so the soft core chosen for Lennard-Jones does not
+#   apply to it
+function to_lambda_function(inter::DoubleExponential; λ_mixing=MinimumMixing(),
+                            scheduler=DefaultLambdaScheduler())
+    return DoubleExponentialSoftCore(cutoff=inter.cutoff, use_neighbors=inter.use_neighbors,
+                                     α=inter.α, β=inter.β, shortcut=inter.shortcut,
+                                     σ_mixing=inter.σ_mixing, ϵ_mixing=inter.ϵ_mixing,
+                                     λ_mixing=λ_mixing, scheduler=scheduler,
+                                     weight_special=inter.weight_special)
+end
+
+# Energy prefactor, soft-core coupling and mixed σ/ϵ of a pair, from the scheduler as for the
+# Lennard-Jones soft cores
+@inline function dexp_lambda_params(inter::DoubleExponentialSoftCore{C, T}, atom_i, atom_j,
+                                    special) where {C, T}
+    λ, λR, _, σ, ϵ = λ_params_function(inter.scheduler, inter.λ_mixing, inter.σ_mixing,
+                                       inter.ϵ_mixing, atom_i, atom_j, special)
+    return T(λ), T(λ * λR), σ, ϵ
+end
+
+@inline function force(
+    inter::DoubleExponentialSoftCore{C, T},
+    dr,
+    atom_i,
+    atom_j,
+    force_units=u"kJ * mol^-1 * nm^-1",
+    special=false,
+    args...
+) where {C, T}
+
+    λ, λ_soft, σ, ϵ = dexp_lambda_params(inter, atom_i, atom_j, special)
+    if λ <= 0
+        return zero_pairwise_force(dr, force_units)
+    end
+    if shortcut_pair(inter.shortcut, atom_i, atom_j, special)
+        return zero_pairwise_force(dr, force_units)
+    end
+    r = sqrt(sum(abs2, dr))
+    if iszero_value(r)
+        return zero_pairwise_force(dr, force_units)
+    end
+
+    rm = σ * T(two_power_sixth)
+    # Following  https://doi.org/10.1039/d3dd00070b
+    # αs = (1.1 + λ(α − 1.1)) and βs = (1 + λ(β − 1))
+    α_s = T(1.1 + λ_soft * (inter.α - 1.1))
+    β_s = T(1 + λ_soft * (inter.β - 1))
+    params = (α_s, β_s, rm, ϵ)
+    f = force_cutoff(inter.cutoff, inter, r, params)
+    fdr = (λ * f / r) * dr
+    if special
+        return fdr * inter.weight_special
+    else
+        return fdr
+    end
+end
+
+@inline function pairwise_force(::DoubleExponentialSoftCore, r, (α, β, rm, ϵ))
+    x = 1 - r / rm
+    return ϵ * α * β * (exp(α * x) - exp(β * x)) / (rm * (α - β))
+end
+
+@inline function potential_energy(
+    inter::DoubleExponentialSoftCore{C, T},
+    dr,
+    atom_i,
+    atom_j,
+    energy_units=u"kJ * mol^-1",
+    special=false,
+    args...
+) where {C, T}
+
+    λ, λ_soft, σ, ϵ = dexp_lambda_params(inter, atom_i, atom_j, special)
+    if λ <= 0
+        return zero_pairwise_energy(dr, energy_units)
+    end
+    if shortcut_pair(inter.shortcut, atom_i, atom_j, special)
+        return zero_pairwise_energy(dr, energy_units)
+    end
+    r = sqrt(sum(abs2, dr))
+    rm = σ * T(two_power_sixth)
+    # Following  https://doi.org/10.1039/d3dd00070b
+    # αs = (1.1 + λ(α − 1.1)) and βs = (1 + λ(β − 1))
+    α_s = T(1.1 + λ_soft * (inter.α - 1.1))
+    β_s = T(1 + λ_soft * (inter.β - 1))
+    params = (α_s, β_s, rm, ϵ)
+    pe = pe_cutoff(inter.cutoff, inter, r, params)
+    if special
+        return λ * pe * inter.weight_special
+    else
+        return λ * pe
+    end
+end
+
+@inline function pairwise_pe(::DoubleExponentialSoftCore, r, (α, β, rm, ϵ))
+    x = 1 - r / rm
+    return ϵ * (β * exp(α * x) - α * exp(β * x)) / (α - β)
+end

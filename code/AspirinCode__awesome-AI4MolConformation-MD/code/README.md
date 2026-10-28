@@ -1,0 +1,4521 @@
+[![License: GPL](https://img.shields.io/badge/License-GPL-yellow)](https://github.com/AspirinCode/awesome-AI4MolConformation-MD)
+
+## awesome-AI4MolConformation-MD
+List of **molecules ( small molecules, RNA, peptide, protein, enzymes, antibody, and PPIs) conformations** and **molecular dynamics (force fields)** using **generative artificial intelligence** and **deep learning**
+
+
+![Protein Space and Conformations](https://github.com/AspirinCode/awesome-AI4MolConformation-MD/blob/main/figure/afpro.png)
+
+
+**Updating ...**  
+
+
+## Menu
+
+  - [Deep Learning-molecular conformations](#deep-learning-molecular-conformations)
+
+| Menu | Menu | Menu | Menu |
+| ------ | :---------- | ------ | ------ |
+| [Reviews](#reviews) | [Datasets and Package](#datasets-and-package) | [Molecular dynamics](#molecular-dynamics) | [Molecular Force Fields](#molecular-force-fields) |
+| [Neural Molecular Force Fields](#neural-molecular-force-fields) | [MD Engines-Frameworks](#md-engines-frameworks) | [AI4MD Engines-Frameworks](#ai4md-engines-frameworks) | [MD Trajectory Processing-Analysis](#md-trajectory-processing-analysis) |
+| [Visualization](#visualization) | [CGMD](#cgmd) | [AI4MD](#ai4md) | [Neural Network Potentials](#neural-network-potentials) |
+| [Neural Reactive Potential](#neural-reactive-potential) | [Reactive Force Fields](#reactive-force-fields) | [Free Energy Perturbation](#free-energy-perturbation) | [Solvent Potential](#solvent-potential) |
+| [Theoretical Chemistry](#theoretical-chemistry) | [QuantumChem](#quantumchem) | [Ab Initio](#ab-initio) | [AI-QuantumChem](#ai-quantumchem) |
+| [AlphaFold-based](#alphaFold-based) | [Autoregressive-Based](#autoregressive-Based)  | [LSTM-based](#lstm-based) | [Transformer-based](#transformer-based) |
+| [VAE-based](#vae-based) | [GAN-based](#gan-based) | [Flow-based](#flow-based) | [Flow Matching-based](#flow-matching-based) |
+| [Diffusion-based](#diffusion-based) | [Score-Based](#score-Based) | [Energy-based](#energy-based) | [Bayesian-based](#bayesian-based) |
+| [Active Learning-based](#active-learning-based) | [GNN-based](#gnn-based) | [LLM-MD](#llm-md) | [Agent-based-MD](#agent-based-md) |
+
+                                       
+  - [Molecular conformational dynamics by methods](#molecular-conformational-dynamics-by-methods)
+
+| Menu | Menu | Menu |
+| ------ | :---------- | ------ |
+| [Small molecule conformational dynamics](#small-molecule-conformational-dynamics) | [RNA conformational dynamics](#rna-conformational-dynamics) | [Peptide conformational dynamics](#peptide-conformational-dynamics) |
+| [Protein conformational dynamics](#protein-conformational-dynamics) | [Enzymes conformational dynamics](#enzymes-conformational-dynamics)  | [Antibody conformational dynamics](#antibody-conformational-dynamics) |
+| [Ligand-Protein conformational dynamics](#ligand-protein-conformational-dynamics) | [RNA-Peptide conformational dynamics](#rna-peptide-conformational-dynamics) | [PPI conformational dynamics](#ppi-conformational-dynamics) |
+| [Antibody-Protein conformational dynamics](#antibody-protein-conformational-dynamics) | [Nucleic acid-Protein conformational dynamics](#nucleic-acid-protein-conformational-dynamics) | [Material ensembles](#material-dynamics) |
+| [Nucleic acid-Ligand conformational dynamics](#nucleic-acid-ligand-conformational-dynamics) |  |  |
+
+
+
+
+
+
+
+
+## Reviews
+
+
+
+
+
+* **Benchmarking Generative AI and Physics-Based Molecular Simulation for Sampling Conformational Heterogeneity in T4 Lysozyme** [2026]  
+Soumendranath Bhakat.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c02044)  
+
+* **The Allosteric Revolution: From Static Structures to Conformational Ensembles and Next-Generation Therapeutics** [2026]  
+Nussinov, Ruth, and Hyunbum Jang.  
+[Journal of Molecular Biology(2026)](https://doi.org/10.1016/j.jmb.2026.169985)  
+
+* **Predicting Biomolecular Interactions in the Next Decade: Physics-Based Methods Meet AI-Driven Approaches** [2026]  
+Ruqaiya Khalil, Elena Frasnetti, Han Kurt, Tareq Hameduh, Mohd Athar, Giorgio Colombo, and Attilio Vittorio Vargiu.  
+[J. Phys. Chem. Lett. (2026)](https://doi.org/10.1021/acs.jpclett.6c01412)  
+
+* **Replacing Quantum Chemistry With Machine-Learned Interatomic Potentials: Revolution or Evolution?** [2026]  
+Andrew J. Medford and David S. Sholl.  
+[ACS Cent. Sci.(2026)](https://doi.org/10.1021/acscentsci.6c00615)  
+
+* **Toward a unified framework for determining conformational ensembles of disordered proteins** [2026]  
+Ghafouri, H., Kadeřávek, P., Melo, A.M. et al.  
+[Nat Methods (2026)](https://doi.org/10.1038/s41592-026-03003-2)  
+
+* **Graph neural networks for molecular dynamics simulations** [2026]  
+Ahsan, Mohd, Chinmai Pindi, Souvik Sinha, Amun C. Patel, and Giulia Palermo.  
+[Current Opinion in Structural Biology (2026)](https://doi.org/10.1016/j.sbi.2026.103238)  
+
+* **Enhanced Sampling in the Age of Machine Learning: Algorithms and Applications** [2025]  
+Kai Zhu, Enrico Trizio, Jintu Zhang, Renling Hu, Linlong Jiang, Tingjun Hou, Luigi Bonati.  
+[arXiv:2509.04291 (2025)](https://doi.org/10.48550/arXiv.2509.04291)  
+
+* **Generative AI techniques for conformational diversity and evolutionary adaptation of proteins** [2025]  
+Brownless, Alfie-Louise R., Dariia Yehorova, Colin L. Welsh, and Shina Caroline Lynn Kamerlin.  
+[Curr Opin Struct Biol. (2025)](https://doi.org/10.1016/j.sbi.2025.103135)  
+
+* **Generation of protein dynamics by machine learning** [2025]  
+Janson G, Feig M..  
+[Curr Opin Struct Biol. (2025)](https://doi.org/10.1016/j.sbi.2025.103115)  
+
+* **A critical review of machine learning interatomic potentials and Hamiltonian** [2025]  
+Li, Y.; Zhang, X.; Liu, M.; Shen, L.  
+  [J. Mater. Inf. (2025)](http://dx.doi.org/10.20517/jmi.2025.17)  
+
+* **Generation of protein dynamics by machine learning** [2025]  
+Janson, Giacomo, and Michael Feig.  
+  [Current Opinion in Structural Biology 93 (2025)](https://doi.org/10.1016/j.sbi.2025.103115)  
+
+* **Beyond static structures: protein dynamic conformations modeling in the post-AlphaFold era** [2025]  
+ Xinyue Cui, Lingyu Ge, Xia Chen, Zexin Lv, Suhui Wang, Xiaogen Zhou, Guijun Zhang.  
+  [Briefings in Bioinformatics (2025)](https://doi.org/10.1093/bib/bbaf340)  
+
+* **From sequence to protein structure and conformational dynamics with artificial intelligence/machine learning** [2025]  
+ Alexander M. Ille, Emily Anas, Michael B. Mathews, Stephen K. Burley.  
+  [Struct. Dyn. 12, 030902 (2025)](https://doi.org/10.1063/4.0000765)  
+
+* **Application of machine learning interatomic potentials in heterogeneous catalysis** [2025]  
+ Olajide, Gbolagade, Khagendra Baral, Sophia Ezendu, Ademola Soyemi, and Tibor Szilvasi.  
+  [Journal of Catalysis (2025)](https://doi.org/10.1016/j.jcat.2025.116202)  
+
+* **The evolution of machine learning potentials for molecules, reactions and materials** [2025]   
+ Xia, Junfan and Zhang, Yaolong and Jiang, Bin.  
+  [Chem. Soc. Rev. (2025)](https://doi.org/10.1039/D5CS00104H)  
+
+* **Advancing Molecular Simulations: Merging Physical Models, Experiments, and AI to Tackle Multiscale Complexity** [2025]   
+ Giorgio Bonollo, Gauthier Trèves, Denis Komarov, Samman Mansoor, Elisabetta Moroni, and Giorgio Colombo.  
+  [J. Phys. Chem. Lett. (2025)](https://doi.org/10.1021/acs.jpclett.5c00652)  
+
+* **A comparison of probabilistic generative frameworks for molecular simulations** [2025]   
+ Richard John, Lukas Herron, Pratyush Tiwary.  
+  [J. Chem. Phys. (2025)](https://doi.org/10.1063/5.0249683)  
+
+* **Recent Advances in Machine Learning and Coarse-Grained Potentials for Biomolecular Simulations and Their Applications** [2025]   
+ B. Poma A, Hinostroza Caldas A, Cofas-Vargas L, Jones M, L. Ferguson A, Medrano Sandonas L.  
+  [JChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-vxjlk)  
+
+* **Recent Advances in Simulation Software and Force Fields: Their Importance in Theoretical and Computational Chemistry and Biophysics** [2024]   
+ Christophe Chipot.  
+  [J. Phys. Chem. B (2024)](https://doi.org/10.1021/acs.jpcb.4c06231)  
+
+* **Graph theory approaches for molecular dynamics simulations** [2024]   
+ Patel AC, Sinha S, Palermo G.  
+  [Quarterly Reviews of Biophysics. (2024)](https://doi.org/10.1017/S0033583524000143)  
+
+* **Deep learning for intrinsically disordered proteins: From improved predictions to deciphering conformational ensembles** [2024]   
+ Erdős, G., & Dosztányi, Z.   
+  [Current opinion in structural biology (2024)](https://doi.org/10.1016/j.sbi.2024.102950)  
+
+* **Recent advances in protein conformation sampling by combining machine learning with molecular simulation** [2024]   
+ Tang, Y., Yang, Z., Yao, Y., Zhou, Y., Tan, Y., Wang, Z., Pan, T., Xiong, R., Sun, J. and Wei, G.   
+  [Chinese Physics B. (2024)](https://iopscience.iop.org/article/10.1088/1674-1056/ad1a92)  
+
+* **Alchemical Transformations and Beyond: Recent Advances and Real-World Applications of Free Energy Calculations in Drug Discovery** [2024]   
+ Qian, Runtong, Jing Xue, You Xu, and Jing Huang.   
+  [J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c01024)  
+
+* **The need to implement FAIR principles in biomolecular simulations** [2024]   
+ Amaro, Rommie, Johan Åqvist, Ivet Bahar, Federica Battistini, Adam Bellaiche, Daniel Beltran, Philip C. Biggin et al.   
+  [arXiv:2407.16584 (2024)](https://arxiv.org/abs/2407.16584)  
+
+* **An overview about neural networks potentials in molecular dynamics simulation** [2024]   
+ Martin‐Barrios, Raidel, Edisel Navas‐Conyedo, Xuyi Zhang, Yunwei Chen, and Jorge Gulín‐González.   
+  [International Journal of Quantum Chemistry 124.11 (2024)](https://doi.org/10.1002/qua.27389)  
+
+* **Artificial Intelligence Enhanced Molecular Simulations** [2023]   
+ Zhang, Jun, Dechin Chen, Yijie Xia, Yu-Peng Huang, Xiaohan Lin, Xu Han, Ningxi Ni et al.   
+  [J. Chem. Theory Comput. (2023)](https://doi.org/10.1021/acs.jctc.3c00214)  
+
+* **Machine Learning Generation of Dynamic Protein Conformational Ensembles** [2023]   
+ Zheng, Li-E., Shrishti Barethiya, Erik Nordquist, and Jianhan Chen.   
+  [Molecules 28.10 (2023)](https://doi.org/10.3390/molecules28104047)  
+
+
+
+
+
+## Datasets and Package
+
+
+### Datasets
+
+
+
+
+* **DynaRepo: The repository of macromolecular conformational dynamics** [2025]  
+Omid Mokhtari, Emmanuelle Bignon, Hamed Khakzad, Yasaman Karami.   
+[Nucleic Acids Research (2025)](https://doi.org/10.1093/nar/gkaf1130) | [bioRxiv (2025)](https://doi.org/10.1101/2025.08.14.670260) | [data](https://dynarepo.inria.fr/)  
+
+* **MS25: Materials Science-Focused Benchmark Data Set for Machine Learning Interatomic Potentials** [2025]  
+Tristan Maxson, Ademola Soyemi, Xinglong Zhang, Benjamin W. J. Chen, and Tibor Szilvási.   
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01262) | [data](https://doi.org/10.5281/zenodo/10901820)  
+
+* **A Benchmark for Quantum Chemistry Relaxations via Machine Learning Interatomic Potentials** [2025]  
+Fu, Cong, Yuchao Lin, Zachary Krueger, Wendi Yu, Xiaoning Qian, Byung-Jun Yoon, Raymundo Arróyave et al.  
+[arXiv:2506.23008 (2025)](https://doi.org/10.48550/arXiv.2506.23008) | [data](https://huggingface.co/divelab)  
+
+* **The Open Molecules 2025 (OMol25) Dataset, Evaluations, and Models** [2025]  
+Levine, Daniel S., Muhammed Shuaibi, Evan Walter Clark Spotte-Smith, Michael G. Taylor, Muhammad R. Hasyim, Kyle Michel, Ilyes Batatia, G'abor Cs'anyi, Misko Dzamba, Peter K. Eastman, Nathan C. Frey, Xiang Fu, Vahe Gharakhanyan, Aditi S. Krishnapriyan, Joshua A. Rackers, Sanjeev Raja, Ammar Rizvi, Andrew S. Rosen, Zachary W. Ulissi, Santiago Vargas, C. Lawrence Zitnick, Samuel M. Blau and Brandon M. Wood.   
+[arXiv:2505.08762 (2025)](https://arxiv.org/abs/2505.08762) | [data](https://huggingface.co/facebook/OMol25)  
+
+* **Enhanced Sampling, Public Dataset and Generative Model for Drug-Protein Dissociation Dynamics** [2025]  
+Maodong Li, Jiying Zhang, Bin Feng, Wenqi Zeng, Dechin Chen, Zhijun Pan, Yu Li, Zijing Liu, Yi Isaac Yang.   
+[arXiv:2504.18367 (2025)](https://arxiv.org/abs/2504.18367) | [data](https://huggingface.co/SZBL-IDEA)  
+
+* **QMe14S: A Comprehensive and Efficient Spectral Data Set for Small Organic Molecules** [2025]  
+Cristian Gabellini, Nikhil Shenoy, Stephan Thaler, Semih Canturk, Daniel McNeela, Dominique Beaini, Michael Bronstein, Prudencio Tossou.   
+[J. Phys. Chem. Lett. (2025)](https://doi.org/10.1021/acs.jpclett.5c00839) | [data](https://figshare.com/s/889262a4e999b5c9a5b3)  
+
+* **UniSim: A Unified Simulator for Time-Coarsened Dynamics of Biomolecules** [2025]  
+Ziyang Yu, Wenbing Huang, Yang Liu.  
+[ICML 2025 (2025)](https://doi.org/10.48550/arXiv.2506.03157) | [code&data](https://zenodo.org/records/15394209)  
+
+* **The QCML dataset, Quantum chemistry reference data from 33.5M DFT and 14.7B semi-empirical calculations** [2025]  
+Ganscha, S., Unke, O.T., Ahlin, D. et al.  
+[Sci Data 12, 406 (2025)](https://doi.org/10.1038/s41597-025-04720-7) | [data](https://zenodo.org/records/14859804)  
+
+* **OpenQDC: Open Quantum Data Commons** [2024]  
+Cristian Gabellini, Nikhil Shenoy, Stephan Thaler, Semih Canturk, Daniel McNeela, Dominique Beaini, Michael Bronstein, Prudencio Tossou.   
+[arXiv:2411.19629 (2024)](https://arxiv.org/abs/2411.19629) | [data](https://github.com/valence-labs/openQDC)  
+
+* **Molecular Quantum Chemical Data Sets and Databases for Machine Learning Potentials** [2024]  
+Antonio Mirarchi, Toni Giorgino, G. D. Fabritiis.   
+[ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-w3ld0-v2) | [code](https://github.com/Arif-PhyChem/datasets_and_databases_4_MLPs)  
+
+* **mdCATH: A Large-Scale MD Dataset for Data-Driven Computational Biophysics** [2024]  
+Antonio Mirarchi, Toni Giorgino, G. D. Fabritiis.   
+[	arXiv:2407.14794 (2024)](https://arxiv.org/abs/2407.14794) | [code](https://github.com/compsciencelab/mdCATH)  
+
+* **nablaDFT: Large-Scale Conformational Energy and Hamiltonian Prediction benchmark and dataset** [2022]  
+Khrabrov, Kuzma and Shenbin, Ilya and Ryabov, Alexander and Tsypin, Artem and Telepov, Alexander and Alekseev, Anton and Grishin, Alexander and Strashnov, Pavel and Zhilyaev, Petr and Nikolenko, Sergey and Kadurin, Artur.   
+[Phys. Chem. Chem. Phys. (2022)](https://doi.org/10.1039/D2CP03966D) | [code](https://github.com/AIRI-Institute/nablaDFT)  
+
+
+
+
+### Package
+
+
+
+
+**MMolearn**  
+a Python package streamlining the design of generative models of biomolecular dynamics  
+
+https://github.com/LumosBio/MolData   
+
+
+
+
+
+
+
+
+
+
+## Molecular dynamics
+
+
+
+
+
+
+* **PySTARC: GPU-accelerated Brownian dynamics for bimolecular association rate constants** [2026]  
+Anupam Anand Ojha, Gary Huber, Shiksha Dutta, Sonya M. Hanson.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.09.28.754770) | [code](https://github.com/anandojha/PySTARC)  
+
+* **Large integration time-step in molecular dynamics simulation artificially enhances the strength of hydrophobic interaction** [2026]  
+Dilipkumar N. Asthagiri.  
+[arXiv:2609.30109(2026)](https://doi.org/10.48550/arXiv.2609.30109)  
+
+* **Early-Enrichment Hit Discovery via Reversible-Work c(t) Estimation in Metadynamics (CTMD)** [2026]  
+Venkata Sai Sreyas Adury, Pratyush Tiwary, Xinyu Gu, Mrinal Shekhar.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.02.05.703972) | [code](https://github.com/mrinal-shekhar/CTMD)  
+
+* **Gaussian Accelerated Molecular Dynamics in GROMACS** [2026]  
+Yuefeng Yang.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.10.743837)  
+
+* **Ab Initio Molecular Dynamics Simulations for Organic Chemists─It is About Time!** [2026]  
+Nielsen, M.M., Wagen, C.C., Gomes, L.A., Tantillo, D.J., Lopez, S.A. and Jacobsen, E.N.  
+[J. Am. Chem. Soc. (2026)](https://doi.org/10.1021/jacs.5c20878)  
+
+* **High-Performance Semiempirical Excited-State Molecular Dynamics: A Step Toward Data-Driven Photodynamics** [2025]  
+Athavale V, Kulichenko M, Fernandez-Alberti S, Niklasson A, Tretiak S.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-6h565)  
+
+* **STORMM: Structure and topology replica molecular mechanics for chemical simulations** [2024]  
+David S. Cerutti, Rafal Wiewiora, Simon Boothroyd, Woody Sherman.  
+[J. Chem. Phys. (2024)](https://doi.org/10.1063/5.0211032) | [code](https://github.com/psivant/stormm)  
+
+
+
+
+
+
+
+### Molecular Force Fields
+
+
+
+
+
+
+
+
+
+* **Leveraging Machine Learning Interatomic Potentials into Fitting Fast and Accurate AMBER-Compatible Precise Force Field** [2026]  
+Xuchao Zhou, Xujian Wang, Jiahao Xie, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15008812/v1) | [code](https://github.com/ClickFF/MAPLE) | [Zenodo](https://doi.org/10.5281/zenodo.21428725)  
+
+* **Quantum Field Approaches to Chemical Systems** [2026]  
+Reza Karimpour, Matteo Gori, Alexandre Tkatchenko.  
+[Journal American Chemical Society (2026)](https://doi.org/10.1021/jacs.6c02077)  
+
+* **Stapline: Development of a Force Field Library for Stapled Peptide Residues** [2026]  
+Dr. Evangelia Notari, Dr. Marie T. J. Bluntzer, Prof. Julien Michel, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv-2025-xfcnm/v2) | [code](https://github.com/michellab/Stapline)  
+
+* **Force Field and Membrane Patch Size Effects on Atomistic Models of Aquaporin-7** [2026]  
+Marta S. P. Batista, Miguel Machuqueiro, and Bruno L. Victor.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00007)  
+
+* **Automated Force Field Developer and Optimizer Platform: Torsion Reparameterization** [2026]  
+Alejandro Blanco-Gonzalez, William Betancourt, Ryan Michael Snyder, Shi Zhang, Timothy J. Giese, Zeke A. Piskulich, Andreas W. Götz, Kenneth M. Merz Jr., Darrin M. York, Hasan Metin Aktulga, and Madushanka Manathunga.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00528) | [web](https://www.attmosdiscovery.com/tools)  
+
+* **LignAmb25: A Comprehensive AMBER Force Field Addressing Lignin's Structural and Chemical Diversity** [2026]  
+Marco Lapsien, Michele Bonus, Julian Greb, Holger Gohlke.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.01.03.697499)  
+
+* **Charge Scaling Force Field for Biologically Relevant Ions Utilizing a Global Optimization Method** [2025]  
+Shujie Fan, Philip E. Mason, Victor Cruces Chamorro, Brennon L. Shanks, Hector Martinez-Seara, and Pavel Jungwirth.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00873)  
+
+* **ABEEM Polarizable Force Field for PC Lipids: Parameterization and Molecular Dynamics Simulations** [2025]  
+Xiaoyu Wang, Linlin Liu, Peiran Meng, Jian Zhao, Lei Wang, Cui Liu, Lidong Gong, and Zhongzhi Yang.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01704)  
+
+* **The PHAST 2.0 Force Field for General Small Molecule and Materials Simulations** [2025]  
+Adam Hogan, Logan Ritter, and Brian Space.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00134)  
+
+* **Martini3-IDP: improved Martini 3 force field for disordered proteins** [2025]  
+Wang, L., Brasnett, C., Borges-Araújo, L. et al.  
+[Nat Commun 16, 2874 (2025)](https://doi.org/10.1038/s41467-025-58199-2) | [code](https://github.com/Martini-Force-Field-Initiative/Martini3-IDP-parameters)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Neural Molecular Force Fields
+
+
+
+
+
+
+
+
+* **Learning consistent molecular mechanics force fields from first principles** [2026]  
+Berkay Günes, Leif Seute, Jigyasa Nigam, Frauke Gräter.  
+[arXiv:2610.08020(2026)](https://doi.org/10.48550/arXiv.2610.08020)  
+
+* **Machine-learning force-field scoring rivals free-energy perturbation for congeneric ligand ranking across public benchmarks** [2026]  
+Kevin Ryczko, Sarah Maier, Amogh Sood, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15008810/v1)  
+
+* **UniFlow: Unifying protein conformational ensemble generation and machine-learned force fields with a scalable normalizing Flow** [2026]  
+Yikai Liu, Ming Chen, Guang Lin.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.07.17.739266) | [code](https://github.com/Harrydirk41/UniFlow)  
+
+* **Full-data accuracy with fewer labels for training and fine-tuning machine-learning force fields** [2026]  
+Sheng Bi, Yi-Ze Wang, Jun Cheng.  
+[arXiv:2607.14486 (2026)(2026)](https://doi.org/10.48550/arXiv.2607.14486)  
+
+* **UniFFBench: evaluating universal machine learning force fields against experimental measurements** [2026]  
+Mannan, S., Bihani, V., Gonzales, C. et al.  
+[Nat Comput Sci (2026)(2026)](https://doi.org/10.1038/s43588-026-01019-4) | [code](https://github.com/M3RG-IITD/UniFFBench) | [Zenodo](https://doi.org/10.5281/zenodo.20165458)  
+
+* **seekrflow: Towards end-to-end automated simulation pipeline with machine-learned force fields for accelerated drug-target kinetic and thermodynamic predictions** [2026]  
+Anupam A. Ojha, Lane W. Votapka, Shiksha Dutta, Anson F. Noland, Sonya M. Hanson, Rommie E. Amaro.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00659) | [bioRxiv. (2026)](https://doi.org/10.1101/2025.08.13.669965) | [code](https://github.com/seekrcentral/seekrflow)  
+
+* **Fast training of bespoke SMIRNOFF-format molecular mechanics force fields using machine learning potentials** [2026]  
+Finlay Clark, Thomas Pope, Sarah Maier, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15004169/v1) | [code](https://github.com/cole-group/presto)  
+
+* **Bridging quantum mechanics to liquid properties via a universal organic force field** [2026]  
+  Zheng, T., Xu, X., Wang, Z. et al.  
+  [Nat Commun (2026)](https://doi.org/10.1038/s41467-026-73566-3) | [code](https://github.com/ByteDance-Seed/byteff2)  
+
+* **MAPLE: a machine-learning force-field-native platform for automated reaction modeling and enzyme design** [2026]  
+  Wang, Xujian, Zeyu Sun, Yilu Zhang, Carlo Asam, Ruzhan Zhu, Wan-Lu Li, and Junmei Wang.  
+  [Chemical Science (2026)](https://doi.org/10.1039/D6SC01279E) | [code](https://github.com/ClickFF/MAPLE)  
+
+* **aims-PAX: Parallel Active Exploration Enables Expedited Construction of Machine Learning Force Fields for Molecules and Materials** [2026]  
+Henkes, Tobias, Shubham Sharma, Alexandre Tkatchenko, Mariana Rossi, and Igor Poltavsky..  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.5c02682) | [code](https://github.com/tohenkes/aims-PAX)  
+
+* **DeFecT-FF: a machine learning force field framework for high throughput defect modeling in CdTe-based solar cells** [2026]  
+Rahman, Md Habibur, Maitreyo Biswas, and Arun Mannodi-Kanakkithodi.  
+[Phys. Chem. Chem. Phys. (2026)](https://doi.org/10.1039/D6CP00170J) | [data](https://nanohub.org/resources/defectdatabase)  
+
+* **Accurate Hydration Free Energy Calculations for Diverse Organic Molecules With a Machine Learning Force Field** [2026]  
+Xiaowei Xie, John L. Weber, Mats Svensson, Ryne C. Johnston, Edward D. Harder, and Leif D. Jacobson.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.5c02019) | [code](https://github.com/leifjacobson/MLFF_HFE/)  
+
+* **Training a force field for proteins and small molecules from scratch** [2026]  
+Alexandre Blanco-González, Thea K Schulze, Evianne Rovers, Joe G Greener.  
+[arXiv:2603.16770 (2026)](https://doi.org/10.48550/arXiv.2603.16770) | [code](https://github.com/greener-group/garnet)  
+
+* **A scalable and quantum-accurate foundation model for biomolecular force fields via linearly tensorized quadrangle attention** [2026]  
+Su, Q., Zhu, K., Gou, Q. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-70377-4) | [code](https://github.com/lingcon01/LiTEN/tree/master)  
+
+* **Machine Learning Accelerated Finite-Field Simulations for Electrochemical Interfaces** [2025]  
+Chaoqiang Feng and Bin Jiang.  
+[JACS Au (2025)](https://doi.org/10.1021/jacsau.5c00792) | [code](https://github.com/bjiangch/FIREANN)  
+
+* **Bayesian learning for accurate and robust biomolecular force fields** [2025]  
+Vojtech Kostal, Brennon L. Shanks, Pavel Jungwirth, Hector Martinez-Seara.  
+[arXiv:2511.05398 (2025)](https://doi.org/10.48550/arXiv.2511.05398)  
+
+* **Physical embedding machine learning force fields for organic systems** [2025]  
+Junbao Hu, Dingyu Hou, Jian Jiang.  
+[arXiv:2509.10270 (2025)](https://doi.org/10.48550/arXiv.2509.10270)  
+
+* **DEQuify your force field: More efficient simulations using deep equilibrium models** [2025]  
+Andreas Burger, Luca Thiede, Alán Aspuru-Guzik, Nandita Vijaykumar.  
+[arXiv:2509.08734 (2025)](https://doi.org/10.48550/arXiv.2509.08734)  
+
+* **Deep Residual Learning for Molecular Force Fields** [2025]  
+Jiang X, Chen M, Cao D, Yu J, Zhang R, Fu Z, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-003lg-v2) | [code](https://github.com/Ameki0/ResFF)  
+
+* **aims-PAX: Parallel Active eXploration for the automated construction of Machine Learning Force Fields** [2025]  
+Tobias Henkes, Shubham Sharma, Alexandre Tkatchenko, Mariana Rossi, Igor Poltavskyi.  
+[arXiv:2508.12888 (2025)](https://doi.org/10.48550/arXiv.2508.12888) | [code](https://github.com/tohenkes/aims-PAX)  
+
+* **A density based machine learning force field for molecule-molecule nonbonded interactions** [2025]  
+Wang L-W.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-83grg)  
+
+* **Force field optimization by end-to-end differentiable atomistic simulation** [2025]  
+Abhijeet Sadashiv Gangan, Ekin Dogus Cubuk, Samuel S. Schoenholz, Mathieu Bauchy, and N. M. Anoop Krishnan.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01784) | [code](https://github.com/M3RG-IITD/Force-field-optimization)  
+
+* **Operator Forces For Coarse-Grained Molecular Dynamics** [2025]  
+Klein, Leon, Atharva Kelkar, Aleksander Durumeric, Yaoyi Chen, and Frank Noé.  
+[arXiv:2506.19628 (2025)](https://doi.org/10.48550/arXiv.2506.19628) | [code](https://github.com/noegroup/OperatorForces4CG)  
+
+* **Evolutionary machine learning of physics-based force fields in high-dimensional parameter-space** [2025]  
+van der Spoel D, Marrades J, Kriz K, Hosseini AN, Nordman A, Ateide Martins JP, et al.  
+[	Digital Discovery (2025)](https://doi.org/10.1039/D5DD00178A) | [code](https://github.com/AlexandriaChemistry/ACT)  
+
+* **To Use or Not to Use a Universal Force Field** [2025]  
+Denan Li, Jiyuan Yang, Xiangkai Chen, Lintao Yu, Shi Liu.  
+[arXiv:2503.08207 (2025)](https://arxiv.org/abs/2503.08207)  
+
+* **Understanding and Mitigating Distribution Shifts For Machine Learning Force Fields** [2025]  
+Kreiman, Tobias, and Aditi S. Krishnapriyan.  
+[arXiv:2503.08674 (2025)](https://arxiv.org/abs/2503.08674) | [code](https://github.com/ASK-Berkeley/MLFF-distribution-shifts)  
+
+* **Accelerating CO2 direct air capture screening for metal-organic frameworks with a transferable machine learning force field** [2025]  
+Yunsung Lim and Hyunsoo Park and Aron Walsh and Jihan Kim.  
+[Matter (2025)](https://doi.org/10.1016/j.matt.2025.102203) | [code](https://github.com/hspark1212/DAC-SIM)  
+
+* **On the design space between molecular mechanics and machine learning force fields** [2025]  
+Wang, Yuanqing, Kenichiro Takaba, Michael S. Chen, Marcus Wieder, Yuzhi Xu, Tong Zhu, John ZH Zhang et al.  
+[Appl. Phys. Rev. (2025)](https://doi.org/10.1063/5.0237876)  
+
+* **ABFML: A problem-oriented package for rapidly creating, screening, and optimizing new machine learning force fields** [2025]  
+Xingze Geng, Jianing Gu, Gaowu Qin, Lin-Wang Wang, Xiangying Meng.  
+[J. Chem. Phys. (2025)](https://doi.org/10.1063/5.0247559) | [code](https://github.com/gengxingze/ABFML)  
+
+* **Reversible molecular simulation for training classical and machine-learning force fields** [2025]  
+Greener, Joe G.   
+[Proc. Natl. Acad. Sci. (2025)](https://doi.org/10.1073/pnas.2426058122) | [code](https://github.com/greener-group/rev-sim)  
+
+* **Artificial Intelligence for Direct Prediction of Molecular Dynamics Across Chemical Space** [2025]  
+Ge F, Dral PO.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-kc7sn) | [code](https://github.com/dralgroup/mlatom)  
+
+* **NepoIP/MM: Toward Accurate Biomolecular Simulation with a Machine Learning/Molecular Mechanics Model Incorporating Polarization Effects** [2025]  
+Ge Song and Weitao Yang.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00372) | [code](https://github.com/Yang-Laboratory/NepoIP)  
+
+* **Efficient Long-Range Machine Learning Force Fields for Liquid and Materials Properties** [2025]  
+Weber, John L., Rishabh D. Guha, Garvit Agarwal, Yujing Wei, Aidan A. Fike, Xiaowei Xie, James Stevenson et al.  
+[arXiv:2505.06462 (2025)](https://arxiv.org/abs/2505.06462) | [code](https://github.com/leifjacobson/MLFF_test_data)  
+
+* **MACE-OFF: Short-Range Transferable Machine Learning Force Fields for Organic Molecules** [2025]  
+Dávid Péter Kovács, J. Harry Moore, Nicholas J. Browning, Ilyes Batatia, Joshua T. Horton, Yixuan Pu, Venkat Kapil, William C. Witt, Ioan-Bogdan Magdău, Daniel J. Cole, and Gábor Csányi.  
+[J. Am. Chem. Soc. (2025)](https://doi.org/10.1021/jacs.4c07099) | [code](https://github.com/ACEsuit/mace-off)  
+
+* **Grappa--A Machine Learned Molecular Mechanics Force Field** [2025]  
+Seute, Leif, Eric Hartmann, Jan Stühmer, and Frauke Gräter.  
+[Chemical Science 16.6 (2025)](https://doi.org/10.1039/D4SC05465B) | [arXiv:2404.00050 (2024)](https://arxiv.org/abs/2404.00050) | [code](https://github.com/graeter-group/grappa)  
+
+* **ILVES: Accurate and efficient bond length and angle constraints in molecular dynamics** [2025]  
+López-Villellas, L., Mikkelsen, C.C.K., Galano-Frutos, J.J., Marco-Sola, S., Alastruey-Benedé, J., Ibáñez, P., Moretó, M., De Rosa, M.C. and García-Risueño, P.  
+[arXiv:2503.13075 (2025)](https://arxiv.org/abs/2503.13075)  
+
+* **Towards Fast, Specialized Machine Learning Force Fields: Distilling Foundation Models via Energy Hessians** [2025]  
+Ishan Amin, Sanjeev Raja, Aditi Krishnapriyan.  
+[arXiv:2501.09009 (2025)](https://arxiv.org/abs/2501.09009) | [code](https://github.com/ASK-Berkeley/MLFF-distill)  
+
+* **BoostMD: Accelerated Molecular Sampling Leveraging ML Force Field Features** [2025]  
+Zhaoxin Xie, Yanheng Li, Yijie Xia, Jun Zhang, Sihao Yuan, Cheng Fan, Yi Isaac Yang, and Yi Qin Gao.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01449)  
+
+* **Efficient and Precise Force Field Optimization for Biomolecules Using DPA-2** [2024]  
+Junhan Chang, Duo Zhang, Yuqing Deng, Hongrui Lin, Zhirong Liu, Linfeng Zhang, Hang Zheng, Xinyan Wang.   
+[arXiv:2406.09817 (2024)](https://arxiv.org/abs/2406.09817) | [code](https://github.com/deepmodeling/DeePDih)  
+
+* **FeNNol: An efficient and flexible library for building force-field-enhanced neural network potentials** [2024]  
+Thomas Plé, Olivier Adjoua, Louis Lagardère, Jean-Philip Piquemal.   
+[J. Chem. Phys. (2024)](https://doi.org/10.1063/5.0217688) | [code](https://github.com/thomasple/FeNNol)  
+
+* **Reversible molecular simulation for training classical and machine learning force fields** [2024]  
+Joe G Greener.   
+[arXiv:2412.04374 (2024)](https://arxiv.org/abs/2412.04374) | [code](https://github.com/JuliaMolSim/Molly.jl)  
+
+* **HessFit: A Toolkit to Derive Automated Force Fields from Quantum Mechanical Information** [2024]  
+Falbo, E. and Lavecchia, A.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c00540) | [code](https://github.com/emanuelefalbo/HessFit)  
+
+* **A Euclidean transformer for fast and stable machine learned force fields** [2024]  
+Frank, J.T., Unke, O.T., Müller, KR. et al.   
+[Nat Commun 15, 6539 (2024)](https://doi.org/10.1038/s41467-024-50620-6) | [code](https://github.com/microsoft/AI2BMD/tree/ViSNet/chignolin_data)
+
+* **Differentiable simulation to develop molecular dynamics force fields for disordered proteins** [2024]  
+Greener, Joe G.   
+[Chemical Science 15.13 (2024)](https://doi.org/10.1039/D3SC05230C) | [code](https://github.com/greener-group/GB99dms)  
+
+* **Grappa--A Machine Learned Molecular Mechanics Force Field** [2024]  
+Seute, Leif, Eric Hartmann, Jan Stühmer, and Frauke Gräter.  
+[arXiv:2404.00050 (2024)](https://arxiv.org/abs/2404.00050) | [code](https://github.com/graeter-group/grappa)  
+
+* **An implementation of the Martini coarse-grained force field in OpenMM** [2023]  
+MacCallum, J. L., Hu, S., Lenz, S., Souza, P. C., Corradi, V., & Tieleman, D. P.   
+[Biophysical Journal 122.14 (2023)](https://doi.org/10.1016/j.bpj.2023.04.007)  
+
+* **Improving machine learning force fields for molecular dynamics simulations with fine-grained force metrics** [2023]  
+Zun Wang, Hongfei Wu, Lixin Sun, Xinheng He, Zhirong Liu, Bin Shao, Tong Wang, Tie-Yan Liu.   
+[J. Chem. Phys. (2023)](https://doi.org/10.1063/5.0147023) | [data](https://figshare.com/articles/dataset/Revised_MD17_dataset_rMD17_/12672038)    
+
+* **End-to-end differentiable construction of molecular mechanics force fields** [2022]  
+Wang, Yuanqing, Josh Fass, Benjamin Kaminow, John E. Herr, Dominic Rufa, Ivy Zhang, Iván Pulido et al.   
+[Chemical Science (2022)](https://doi.org/10.1039/D2SC02739A) | [code](https://github.com/openforcefield/openff-nagl)  
+
+* **Improving molecular force fields across configurational space by combining supervised and unsupervised machine learning** [2021]  
+Gregory Fonseca, Igor Poltavsky, Valentin Vassilev-Galindo, Alexandre Tkatchenko.   
+[J. Chem. Phys. (2021)](https://doi.org/10.1063/5.0035530)  
+
+
+
+
+### MD Engines-Frameworks
+
+* [Amber](http://ambermd.org/) - A suite of biomolecular simulation programs.  
+* [Gromacs](http://www.gromacs.org/) - A molecular dynamics package mainly designed for simulations of proteins, lipids and nucleic acids.
+* [OpenMM](http://openmm.org/) - A toolkit for molecular simulation using high performance GPU code.  
+* [CHARMM](https://www.charmm.org/) - A molecular simulation program with broad application to many-particle systems.  
+* [HTMD](https://github.com/Acellera/htmd) - Programming Environment for Molecular Discovery.  
+* [ACEMD](https://www.acellera.com/acemd) - The next generation molecular dynamic simulation software.  
+* [NAMD](https://www.ks.uiuc.edu/Research/namd/) - A parallel molecular dynamics code for large biomolecular systems.
+* [StreaMD](https://github.com/ci-lab-cz/streamd) - A tool to perform high-throughput automated molecular dynamics simulations.
+* [BEMM-GEN](https://github.com/y4suda/BEMM-GEN) - A Toolkit for Generating a Biomolecular Environment-Mimicking Model for Molecular Dynamics Simulation.
+* [BioSimSpace](https://github.com/OpenBioSim/biosimspace) - An interoperable Python framework for biomolecular simulation.
+* [STORMM](https://github.com/Psivant/stormm) - Structure and TOpology Replica Molecular Mechanics.
+* [multiSMD](https://github.com/kszewc/multiSMD) - A Python Toolset for Multidirectional Steered Molecular Dynamics.
+* [CCD2MD](https://github.com/keb721/CCD2MD) - A Suite of Packages for Preparing Co-Folded Outputs for Molecular Dynamics Simulations.
+
+
+
+
+
+* **CCD2MD: A Suite of Packages for Preparing Co-Folded Outputs for Molecular Dynamics Simulations** [2025]  
+Katarina E. Blow, Matyas Parrag, and Phillip J. Stansfeld.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c02066) | [code](https://github.com/keb721/CCD2MD)  
+
+* **multiSMD – A Python Toolset for Multidirectional Steered Molecular Dynamics** [2025]  
+Katarzyna Walczewska-Szewc, Beata Niklas, Kamil Szewc, and Wiesław Nowak.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01742) | [code](https://github.com/kszewc/multiSMD)  
+
+* **OpenCafeMol: A GPU-accelerated coarse-grained biomolecular dynamics simulator with OpenMM library** [2025]  
+Barnett, Simon, and John D. Chodera.  
+[bioRxiv. (2025)](https://doi.org/10.1101/2025.02.20.639390)  
+
+
+
+
+
+### AI4MD Engines-Frameworks
+
+* [OpenMM 8](https://github.com/openmm/openmm) - Molecular Dynamics Simulation with Machine Learning Potentials.  
+* [DeePMD-kit](https://github.com/deepmodeling/deepmd-kit) - A deep learning package for many-body potential energy representation and molecular dynamics.  
+* [TorchMD](https://github.com/torchmd/torchmd) - End-To-End Molecular Dynamics (MD) Engine using PyTorch.  
+* [TorchMD-NET](https://github.com/torchmd/torchmd-net) - TorchMD-NET provides state-of-the-art neural networks potentials (NNPs) and a mechanism to train them.  
+* [OpenMM-Torch](https://github.com/openmm/openmm-torch) - OpenMM plugin to define forces with neural networks.  
+* [AI<sup>2</sup>BMD](https://github.com/microsoft/AI2BMD) - AI-powered ab initio biomolecular dynamics simulation.  
+* [NeuralMD](https://github.com/chao1224/NeuralMD) - A Multi-Grained Symmetric Differential Equation Model for Learning Protein-Ligand Binding Dynamics.  
+* [TorchSim](https://github.com/Radical-AI/torch-sim) - A next-generation open-source atomistic simulation engine for the MLIP era.  
+
+
+
+
+### MD Trajectory Processing-Analysis
+
+
+* [MDAnalysis](https://www.mdanalysis.org/) - An object-oriented Python library to analyze trajectories from molecular dynamics (MD) simulations in many popular formats.  
+* [MDTraj](http://mdtraj.org/) - A python library that allows users to manipulate molecular dynamics (MD) trajectories.  
+* [PyTraj](https://amber-md.github.io/pytraj/) - A Python front-end package of the popular cpptraj program.  
+* [CppTraj](https://github.com/Amber-MD/cpptraj) - Biomolecular simulation trajectory/data analysis.  
+* [WEDAP](https://github.com/chonglab-pitt/wedap) - A Python Package for Streamlined Plotting of Molecular Simulation Data. 
+* [Melodia](https://github.com/rwmontalvao/Melodia_py) - A Python library for protein structure analysis. 
+* [MDANCE](https://github.com/mqcomplab/MDANCE) - A flexible n-ary clustering package that provides a set of tools for clustering Molecular Dynamics trajectories.  
+* [PENSA](https://github.com/drorlab/pensa) - A collection of python methods for exploratory analysis and comparison of biomolecular conformational ensembles.
+* [eRMSF](https://github.com/pablo-arantes/ermsfkit) - A Python Package for Ensemble-Based RMSF Analysis of Biomolecular Systems.
+
+
+
+
+
+
+
+* **Pharmacon: A Molecular Dynamics Simulation Analysis Toolkit** [2026]  
+Kyriakos Georgiou and Antonios Kolocouris.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00837) | [code](https://github.com/k-georgiou/pharmacon)  
+
+* **Accelerating molecular dynamics simulations using fast Ewald summation with prolates** [2026]  
+Liang, J., Lu, L., Barnett, A. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-73232-8)  
+
+* **MonicaMD: Molecules and Internal Cluster Analysis of Molecular Dynamics Simulations** [2026]  
+Ferdinand L. Pointner, Sebastian Reiter, Benjamin P. Fingerhut, and Regina de Vivie-Riedle.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00502)  
+
+* **CRISP: Enhancing ASE Workflows With Advanced Molecular Simulation Post-Processing** [2026]  
+I.Saha, D.Willimetz, and L.Grajciar.  
+[Journal of Computational Chemistry (2026)](https://doi.org/10.1002/jcc.70384)  
+
+* **Ensemble Analyzer: An Open-Source Python Framework for Automated Conformer Ensemble Refinement** [2026]  
+Andrea Pellegrini, Paolo Righi, Andrea Mazzanti, and Michele Mancinelli.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00273) | [code](https://github.com/andre-cloud/ensemble_analyzer)  
+
+* **FastMDAnalysis: Software for Automated Analysis of Molecular Dynamics Trajectories** [2026]  
+A.Aina and D.Kwan.  
+[Journal of Computational Chemistry (2026)](https://doi.org/10.1002/jcc.70350) | [code](https://github.com/aai-research-lab/FastMDAnalysis)  
+
+* **Hierarchical geometric deep learning enables scalable analysis of molecular dynamics** [2025]  
+Zihan Pengmei, Spencer C. Guo, Chatipat Lorpaiboon, Aaron R. Dinner.  
+[arXiv:2512.06520(2025)](https://doi.org/10.48550/arXiv.2512.06520) | [code](https://github.com/dinner-group/geom2vec)  
+
+* **eRMSF: A Python Package for Ensemble-Based RMSF Analysis of Biomolecular Systems** [2025]  
+Pablo Ricardo Arantes, Rodrigo Ligabue-Braun, and Conrado Pedebos.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c02413) | [code](https://github.com/pablo-arantes/ermsfkit)  
+
+* **apoCHARMM: High-performance molecular dynamics simulations on GPUs for advanced simulation methods** [2025]  
+Samarjeet Prasad, Felix Aviat, James E. Gonzales, Bernard R. Brooks.  
+[J. Chem. Phys. (2025)](https://doi.org/10.1063/5.0264937) | [code](https://github.com/samarjeet/apocharmm)  
+
+* **Self-Supervised Evolution Operator Learning for High-Dimensional Dynamical Systems** [2025]  
+Giacomo Turri, Luigi Bonati, Kai Zhu, Massimiliano Pontil, Pietro Novelli.  
+[arXiv:2505.18671 (2025)](https://doi.org/10.48550/arXiv.2505.18671) | [code](https://github.com/pietronvll/encoderops)  
+
+* **NeuralTSNE: A Python Package for the Dimensionality Reduction of Molecular Dynamics Data Using Neural Networks** [2025]  
+Patryk Tajs, Mateusz Skarupski, Jakub Rydzewski.  
+[arXiv:2505.16476(2025)](https://doi.org/10.48550/arXiv.2505.16476) | [code](https://github.com/NeuralTSNE/NeuralTSNE)  
+
+* **GEODES: Geometric Descriptors for the Assessment of Global and Local Flexibility of Proteins During Molecular Dynamics Simulation** [2025]  
+Pats, Karina and Glukhov, Igor and Petrosian, Stepan and Mamaeva, Maria and Sergushichev, Alexey and Devignes, Marie-Dominique and Molnár, Ferdinand.  
+[IEEE Access (2025)](https://doi.org/10.1109/ACCESS.2025.3558781) | [code](https://github.com/rinnifox/GEODES)  
+
+* **gmx_RRCS: a precision tool for detecting subtle conformational dynamics in molecular simulations** [2025]  
+Wei Han, Zhenghan Chen, Ming-Wei Wang, Qingtong Zhou.  
+[Journal of Molecular Biology (2025)](https://doi.org/10.1016/j.jmb.2025.169129) | [code](https://github.com/RuijinHospitalRCMSB/gmx_RRCS)  
+
+* **Systematic analysis of biomolecular conformational ensembles with PENSA** [2025]  
+Vögele, Martin, Neil J. Thomson, Sang T. Truong, Jasper McAvity, Ulrich Zachariae, and Ron O. Dror.  
+[The Journal of Chemical Physics 162.1 (2025)](https://doi.org/10.1063/5.0235544) | [code](https://github.com/drorlab/pensa)  
+
+* **MDRefine: a Python package for refining Molecular Dynamics trajectories with experimental data** [2024]  
+Ivan Gilardoni, Valerio Piomponi, Thorben Fröhlking, Giovanni Bussi.   
+[	arXiv:2411.07798 (2024)](https://arxiv.org/abs/2411.07798) | [code](https://github.com/bussilab/MDRefine)  
+
+* **NRIMD, a Web Server for Analyzing Protein Allosteric Interactions Based on Molecular Dynamics Simulation** [2024]  
+He, Yi, Shuang Wang, Shuai Zeng, Jingxuan Zhu, Dong Xu, Weiwei Han, and Juexin Wang.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c00783) | [web](https://nrimd.luddy.indianapolis.iu.edu/)  
+
+
+
+
+
+### Reference
+
+https://github.com/ipudu/awesome-molecular-dynamics  
+
+
+
+### Visualization
+
+* [VMD](http://www.ks.uiuc.edu/Research/vmd/) - A molecular visualization program for displaying, animating, and analyzing large biomolecular systems using 3-D graphics and built-in scripting.  
+* [NGLview](https://github.com/arose/nglview) - IPython widget to interactively view molecular structures and trajectories.  
+* [PyMOL](https://pymol.org/2/) - A user-sponsored molecular visualization system on an open-source foundation, maintained and distributed by Schrödinger.  
+* [Avogadro](https://avogadro.cc/) - An advanced molecule editor and visualizer designed for cross-platform use in computational chemistry, molecular modeling, bioinformatics, materials science, and related areas.  
+
+
+
+
+
+
+## CGMD
+**Coarse-Grained Molecular Dynamics Simulations**
+
+
+
+
+
+
+
+* **Light Martini water accelerates sampling in coarse-grained molecular dynamics simulations** [2026]  
+Aladdin Elgendy, André P. Zeipelt, Lars V. Schäfer.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.03.741232) | [code](https://doi.org/10.17877/RESOLV-2026-MS4UJFFM)  
+
+* **CTGoMartini: A Python Framework for Simulating Biomolecular Conformational Transitions with Gō-Martini Models** [2026]  
+Song Yang, Chen Song.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.04.30.721921) | [code](https://github.com/ComputBiophys/CTGoMartini)  
+
+* **Learning chemically transferable protein-protein binding energetics from peptide potential of mean force building blocks** [2026]  
+Tariq Shereef, Emiel Kram, Alexander J. Pak.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15004324/v1) | [code](https://gitlab.com/pak-group/pebble_m01)  
+
+* **StruCloze: A Unified Framework for Backmapping and Inpainting Biomolecule Structures** [2026]  
+Junjie Zhu, Zirui Fan, Zhengxin Li, Zhuoqi Zheng, Kresten Lindorff-Larsen, and Hai-Feng Chen.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00214) | [code](https://github.com/Junjie-Zhu/StruCloze)  
+
+* **Martini Mapper: An Automated Fragment-Based Mapping Algorithm for Developing Coarse-Grained Models within the Martini 3 Framework** [2026]  
+Kevin V. Bigting, Shubhadeep Nag, and Yaxin An.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.5c02903) | [code](https://github.com/eliobaby/Martini_mapper)  
+
+* **Probabilistic Forecasting for Coarse-Grained Molecular Dynamics** [2026]  
+Luc F. Christians, Anna Wojnar, and Alexander J. Pak.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.5c02131) | [code](https://gitlab.com/pak-group/pfcg_m01)  
+
+* **Learning data-efficient coarse-grained molecular dynamics from forces and noise** [2026]  
+Durumeric, A.E.P., Chen, Y., Pasos-Trejo, A.S. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-70818-0) | [data](https://zenodo.org/records/18784685)  
+
+* **Probabilistic Forecasting for Coarse-Grained Molecular Dynamics** [2025]  
+Christians L, Wojnar A, Pak A.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-vn440)  
+
+* **RNA phase separation with Martini 3** [2025]  
+Zhang Q, Valério M, Grünewald L, Borges-Araújo L, Grünewald F, Wang S, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-ggcq2)  
+
+* **An optimized contact map for GōMartini 3 enabling conformational changes in protein assemblies** [2025]  
+Gustavo E. Olivos-Ramirez, Luis F. Cofas-Vargas, Siewert J. Marrink, Adolfo B. Poma.  
+[bioRxiv. (2025)](https://doi.org/10.1101/2025.11.14.688437) | [code](https://github.com/GoMartini3-tools/ContactFreq)  
+
+* **CGBack: Diffusion Model for Backmapping Large-Scale and Complex Coarse-Grained Molecular Systems** [2025]  
+Diego Ugarte La Torre and Yuji Sugita.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01281) | [data](https://github.com/genesis-release-r-ccs/cgback)  
+
+* **Data-driven particle dynamics: Structure-preserving coarse-graining for emergent behavior in non-equilibrium systems** [2025]  
+Quercus Hernandez, Max Win, Thomas C. O'Connor, Paulo E. Arratia, Nathaniel Trask.  
+[arXiv:2508.12569 (2025)](https://doi.org/10.48550/arXiv.2508.12569) | [code](https://github.com/PIMILab/DataDrivenParticleDynamics)  
+
+* **Understanding Viscoelasticity of an Entangled Silicone Copolymer via Coarse-Grained Molecular Dynamics Simulations** [2025]  
+Weikang Xian, Amitesh Maiti, Andrew P. Saab, and Ying Li.  
+[Macromolecules (2025)](https://doi.org/10.1021/acs.macromol.5c01192)  
+
+* **Navigating protein landscapes with a machine-learned transferable coarse-grained model** [2025]  
+Charron, N.E., Bonneau, K., Pasos-Trejo, A.S. et al.  
+[Nat. Chem. (2025)](https://doi.org/10.1038/s41557-025-01874-0) | [data](https://github.com/ClementiGroup/mlcg)  
+
+* **Graph-Coarsening for Machine Learning Coarse-grained Molecular Dynamics** [2025]  
+Soumya Mondal, Subhanu Halder, Debarchan Basu, Sandeep Kumar, Tarak Karmakar.  
+[arXiv:2507.16531 (2025)](https://doi.org/10.48550/arXiv.2507.16531)  
+
+* **Fast parameterization of Martini3 models for fragments and small molecules** [2025]  
+Magdalena Szczuka, Gilberto P. Pereira, Luis J. Walter, Marc Gueroult, Pierre Poulain, Tristan Bereau, Paulo C. T. Souza, Matthieu Chavent.  
+[bioRxiv (2025)](https://doi.org/10.1101/2025.07.13.664596) | [data](https://github.com/Martini-Force-Field-Initiative/Automartini_M3)  
+
+* **Martini Mapper: An Automated Fragment-Based Framework for Developing Coarse-Grained Models within the Martini 3 Framework** [2025]  
+Kevin V. Bigting, Shubhadeep Nag, Yaxin An.  
+[arXiv:2511.11859 (2025)](https://doi.org/10.48550/arXiv.2511.11859) | [code](https://github.com/eliobaby/Martini_mapping)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## AI4MD
+
+
+
+
+
+
+
+
+
+
+* **Seamless QM/MM Simulations via a GROMACS-CP2K Interface** [2026]  
+Dmitry Morozov, Christian Blau, Ole Schütt, Vladimir Mironov, Arno Proeme, Holly Judge, Thomas D. Kühne, Berk Hess, Gerrit Groenhof.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c02073)  
+
+* **Enabling Biomolecular Simulations with Neural Network Potentials in GROMACS** [2026]  
+Lukas Müllender, Berk Hess, Erik Lindahl.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00808) | [Code](https://github.com/lmuellender/gmx-nnpot-tools) | [Zenodo](https://doi.org/10.5281/zenodo.19663881)  
+
+* **Edge-Aware Graph Attention Networks for Interpreting Biophysical Mechanisms from Molecular Dynamics Simulations** [2026]  
+Mohd Ahsan, Chinmai Pindi, Giulia Palermo.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.09.03.749137)  
+
+* **MDArena: Evaluating Coding Agents on Realistic Molecular Dynamics Workflows** [2026]  
+Nithishwer Mouroug Anand, Wei-Tse Hsu, Kyle Vaccaro, Eden James Gage, Jonathan David Colburn, Linda Xi Phan, Minjoon Seo, Kevin Guan, Philip C. Biggin.  
+[arXiv:2608.02642(2026)](https://doi.org/10.48550/arXiv.2608.02642) | [code](https://github.com/weitse-hsu/MDArena)  
+
+* **Speculative Sampling For Faster Molecular Dynamics** [2026]  
+Arthur Kosmala, Stephan Günnemann, Meng Gao, Brandon Wood.  
+[arXiv:2606.02455 (2026)](https://doi.org/10.48550/arXiv.2606.02455) | [code](https://github.com/facebookresearch/LSD)  
+
+* **MDForge: Agentic Molecular Dynamics Pipeline Design under Sparse Simulator Feedback** [2026]  
+Zehong Wang, Yijun Ma, Connor R. Schmidt, Tianyi Ma, Weixiang Sun, Ziming Li, Xiaoguang Guo, Chuxu Zhang, Matthew J. Webber, Yanfang Ye.  
+[arXiv:2606.12916 (2026)](https://doi.org/10.48550/arXiv.2606.12916) | [code](https://github.com/Zehong-Wang/MDForge)  
+
+* **Scaling k-Means for Multi-Million Frames: A Stratified NANI Approach for Large-Scale MD Simulations** [2026]  
+herome Brylle Woody Santos, Lexin Chen, and Ramón Alain Miranda-Quintana.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.5c02741) | [code](https://github.com/mqcomplab/MDANCE)  
+
+* **QUASAR: A Universal Autonomous System for Atomistic Simulation and a Benchmark of Its Capabilities** [2026]  
+Fengxu Yang and Jack D. Evans.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00295)  
+
+* **Understanding Adsorption and Reactions at Aqueous Oxide Interfaces with Neural Network Potential Molecular Dynamics** [2026]  
+Sanghyun J. Park, Abhinav S. Raman, and Annabella Selloni.  
+[Acc. Mater. Res. (2026)](https://doi.org/10.1021/accountsmr.6c00001) | [code](https://github.com/sanghyunjonathan/Methanol-Adsorbed-TiO2-Interface)  
+
+* **Force-free molecular dynamics through autoregressive equivariant networks** [2026]  
+Thiemann, F.L., Reschützegger, T., Esposito, M. et al.  
+[Nat Mach Intell (2026)](https://doi.org/10.1038/s42256-026-01227-7) | [code](http://github.com/IBM/trajcast)  
+
+* **Machine learning enabled molecular dynamics-Monte Carlo framework for nanoconfined fluid adsorption** [2026]  
+Liu, J., Chen, G., He, S. et al.  
+[Commun Chem (2026)](https://doi.org/10.1038/s42004-026-02053-z) | [Zenodo](https://zenodo.org/records/19488275)  
+
+* **Learning Structure, Energy, and Dynamics: A Survey of Artificial Intelligence for Protein Dynamics** [2026]  
+Haocheng Tang, Liang Shi, Ya-Shi Zhang, Xixian Liu, Jian Tang, Jiarui Lu.  
+[arXiv:2604.25244 (2026)](https://doi.org/10.48550/arXiv.2604.25244)  
+
+* **Faster Molecular Dynamics with Neural Network Potentials via Distilled Multiple Time-Stepping and Non-Conservative Forces** [2026]  
+Nicolaï Gouraud, Côme Cattin, Thomas Plé, Olivier Adjoua, Louis Lagardère, Jean-Philip Piquemal.  
+[J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c00653) | [arXiv:2602.14975 (2026)](https://doi.org/10.48550/arXiv.2602.14975) | [code](https://github.com/FeNNol-tools/FeNNol)  
+
+* **Transferable generative models bridge femtosecond to nanosecond time-step molecular dynamics** [2026]  
+Juan Viguera Diez et al.  
+[Sci. Adv.12,eaed2333(2026)](https://doi.org/10.1126/sciadv.aed2333) | [code](https://github.com/olsson-group/tito)  
+
+* **MDAgent2: Large Language Model for Code Generation and Knowledge Q&A in Molecular Dynamics** [2026]  
+Zhuofan Shi, Hubao A, Yufei Shao, Mengyan Dai, Yadong Yu, Pan Xiang, Dongliang Huang, Hongxu An, Chunxiao Xin, Haiyang Shen, Zhenyu Wang, Yunshan Na, Gang Huang, Xiang Jing.  
+[arXiv:2601.02075 (2026)](https://doi.org/10.48550/arXiv.2601.02075) | [code](https://github.com/FredericVAN/PKU_MDAgent2)  
+
+* **LAMMPS-ANI: Large Scale Molecular Dynamics Simulations with ANI Neural Network Potential** [2025]  
+Xue J, Terrel N, Pickering I, Roitberg A.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-8v03m) | [code](https://github.com/roitberg-group/lammps-ani)  
+
+* **Data-driven enhanced sampling of mechanistic pathways** [2025]  
+R. Elangovan,S. Chatterjee, & D. Ray.  
+[Proc. Natl. Acad. Sci. (2025)](https://doi.org/10.1073/pnas.2517169122) | [code](https://github.com/Revanth27-08/Multitask_MFEP)  
+
+* **Machine learning driven advances in molecular dynamics of bulk and interfacial aqueous systems** [2025]  
+Wang R, Meraz VJ, Tiwary P.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-6vdl2-v2)  
+
+* **Hierarchical geometric deep learning enables scalable analysis of molecular dynamics** [2025]  
+Zihan Pengmei, Spencer C. Guo, Chatipat Lorpaiboon, Aaron R. Dinner.  
+[arXiv:2512.06520(2025)](https://doi.org/10.48550/arXiv.2512.06520) | [code](https://github.com/dinner-group/geom2vec)  
+
+* **Accelerating Molecular Dynamics Simulations with Foundation Neural Network Models using Multiple Time-Step and Distillation** [2025]  
+Côme Cattin, Thomas Plé, Olivier Adjoua, Nicolaï Gouraud, Louis Lagardère, Jean-Philip Piquemal.  
+[arXiv:2510.06562 (2025)](https://doi.org/10.48550/arXiv.2510.06562)  
+
+* **MOLECULE: Molecular-dynamics and Optimized deep Learning for Entropy-regularized Classification and Uncertainty-aware Ligand Evaluation** [2025]  
+Ivan Cucchi, Elena Frasnetti, Francesco Frigerio, Fabrizio Cinquini, Silvia Pavoni, Luca F. Pavarino, and Giorgio Colombo.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01140)  
+
+* **NVNMD-v2: Scalable and Accurate Deep Learning Molecular Dynamics Model Based on Non-Von Neumann Architectures** [2025]  
+Xiaoyun Yu, Guang Yang, Zhuoying Zhao, Junhua Li, Xinyu Xiao, Xin Zhang, Jie Liu, and Pinghui Mo.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01050) | [code](https://github.com/LiuGroupHNU/deepmd-kit)  
+
+* **TorchSim: An efficient atomistic simulation engine in PyTorch** [2025]  
+Orion Cohen, Janosh Riebesell, Rhys Goodall, Adeesh Kolluru, Stefano Falletta, Joseph Krause, Jorge Colindres, Gerbrand Ceder, Abhijeet S. Gangan.  
+[arXiv:2508.06628 (2025)](https://doi.org/10.48550/arXiv.2508.06628) | [code](https://github.com/Radical-AI/torch-sim)  
+
+* **TorchSim: An efficient atomistic simulation engine in PyTorch** [2025]  
+Orion Cohen, Janosh Riebesell, Rhys Goodall, Adeesh Kolluru, Stefano Falletta, Joseph Krause, Jorge Colindres, Gerbrand Ceder, Abhijeet S. Gangan.  
+[arXiv:2508.06628 (2025)](https://doi.org/10.48550/arXiv.2508.06628) | [code](https://github.com/Radical-AI/torch-sim)  
+
+* **chemtrain-deploy: A parallel and scalable framework for machine learning potentials in million-atom MD simulations** [2025]  
+Paul Fuchs, Weilong Chen, Stephan Thaler, Julija Zavadlav.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00996) | [arXiv:2506.04055 (2025)](https://doi.org/10.48550/arXiv.2506.04055) | [data](https://github.com/tummfm/chemtrain)  
+
+* **Action-Minimization Meets Generative Modeling: Efficient Transition Path Sampling with the Onsager-Machlup Functional** [2025]  
+Sanjeev Raja, Martin Šípka, Michael Psenka, Tobias Kreiman, Michal Pavelka, Aditi S. Krishnapriyan.  
+[ICML 2025 (2025)](https://arxiv.org/abs/2504.18506) | [data](https://github.com/ASK-Berkeley/OM-TPS)  
+
+* **Operator Forces For Coarse-Grained Molecular Dynamics** [2025]  
+Leon Klein, Atharva Kelkar, Aleksander Durumeric, Yaoyi Chen, Frank Noé.  
+[arXiv:2506.19628 (2025)](https://doi.org/10.48550/arXiv.2506.19628) | [data](https://github.com/noegroup/OperatorForces4CG)  
+
+* **Memory kernel minimization-based neural networks for discovering slow collective variables of biomolecular dynamics** [2025]  
+Liu, B., Cao, S., Boysen, J.G. et al.  
+[Nat Comput Sci (2025)](https://doi.org/10.1038/s43588-025-00815-8) | [code](https://github.com/markovmodel/mdshare)  
+
+* **UniSim: A Unified Simulator for Time-Coarsened Dynamics of Biomolecules** [2025]  
+Ziyang Yu, Wenbing Huang, Yang Liu.  
+[ICML 2025 (2025)](https://doi.org/10.48550/arXiv.2506.03157) | [code](https://github.com/yaledeus/UniSim) | [data](https://zenodo.org/records/15394209)  
+
+* **FlashMD: long-stride, universal prediction of molecular dynamics** [2025]  
+Bigi, Filippo, Sanggyu Chong, Agustinus Kristiadi, and Michele Ceriotti.  
+[arXiv:2505.19350 (2025)](https://arxiv.org/abs/2505.19350) | [code](https://github.com/lab-cosmo/flashmd)  
+
+* **Investigating the Nature of PRM:SH3 Interactions Using Artificial Intelligence and Molecular Dynamics** [2025]  
+Se-Jun Kim, Da-Eun Hwang, Hyungjun Kim, and Jeong-Mo Choi.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c00342) | [code](https://github.com/sejunkim6370/AlphaFold2-and-Molecular-Dynamics)  
+
+* **Towards Unraveling Biomolecular Conformational Landscapes with a Generative Foundation Model** [2025]  
+The OpenComplex Team, Qiwei Ye.  
+[bioRxiv. (2025)](https://doi.org/10.1101/2025.05.01.651643)  
+
+* **Deep Signature: Characterization of Large-Scale Molecular Dynamics** [2025]  
+Tiexin Qin, Mengxu ZHU, Chunyang Li, Terry Lyons, Hong Yan, Haoliang Li.  
+[ICLR (2025)](https://openreview.net/forum?id=xayT1nn8Mg) | [code](https://github.com/WonderSeven/Deep-Signature)  
+
+* **A Foundation Model for Accurate Atomistic Simulations in Drug Design** [2025]  
+Plé T, Adjoua O, Benali A, Posenitskiy E, Villot C, Lagardère L, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-f1hgn) | [code](https://github.com/thomasple/FeNNol-PMC)  
+
+* **Orb-v3: atomistic simulation at scale** [2025]  
+Benjamin Rhodes, Sander Vandenhaute, Vaidotas Šimkus, James Gin, Jonathan Godwin, Tim Duignan, Mark Neumann.  
+[arXiv:2504.06231 (2025)](https://arxiv.org/abs/2504.06231) | [code](https://github.com/orbital-materials/orb-models)  
+
+* **A predictive machine learning force-field framework for liquid electrolyte development** [2025]  
+Gong, S., Zhang, Y., Mu, Z. et al.  
+[Nat Mach Intell (2025)](https://doi.org/10.1038/s42256-025-01009-7) | [code](https://github.com/bytedance/bamboo)  
+
+* **Fast, Modular, and Differentiable Framework for Machine Learning-Enhanced Molecular Simulations** [2025]  
+Henrik Christiansen, Takashi Maruyama, Federico Errica, Viktor Zaverkin, Makoto Takamoto, Francesco Alesiani.  
+[arXiv:2503.20541 (2025)](https://arxiv.org/abs/2503.20541) | [code](https://github.com/nec-research/DIMOS)  
+
+* **Kinetically Consistent Coarse Graining using Kernel-based Extended Dynamic Mode Decomposition** [2025]  
+Vahid Nateghi, Feliks Nüske.   
+[arXiv:2409.16396 (2025)](https://arxiv.org/abs/2409.16396) | [code](https://zenodo.org/records/13808938)  
+
+* **Advancing nonadiabatic molecular dynamics simulations in solids with E(3) equivariant deep neural hamiltonians** [2025]  
+Zhang, C., Zhong, Y., Tao, ZG. et al.   
+[Nat Commun 16, 2033 (2025)](https://doi.org/10.1038/s41467-025-57328-1) | [code](https://github.com/QuantumLab-ZY/HamGNN)  
+
+* **BoostMD: Accelerated Molecular Sampling Leveraging ML Force Field Features** [2024]  
+Schaaf, Lars Leon, Ilyes Batatia, Jules Tilly, and Thomas D. Barrett.   
+[NeurIPS 2024 Workshop on Data-driven and Differentiable Simulations, Surrogates, and Solvers. (2024)](https://openreview.net/forum?id=H0USH61HnF)  
+
+* **A Multi-Grained Symmetric Differential Equation Model for Learning Protein-Ligand Binding Dynamics** [2024]  
+Shengchao Liu, Weitao Du, Hannan Xu, Yanjing Li, Zhuoxinran Li, Vignesh Bhethanabotla, Divin Yan, Christian Borgs, Anima Anandkumar, Hongyu Guo, Jennifer Chayes.   
+[arXiv:2401.15122 (2024)](https://arxiv.org/abs/2401.15122) | [code](https://github.com/chao1224/NeuralMD)  
+
+* **Accelerating Molecular Dynamics Simulations with Quantum Accuracy by Hierarchical Classification** [2024]  
+Brunken, Christoph, Sebastien Boyer, Mustafa Omar, Bakary N'tji Diallo, Karim Beguir, Nicolas Lopez Carranza, and Oliver Bent.   
+[ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-20q1v) | [code](https://github.com/multiscale-modelling/humf)  
+
+* **Machine learning of force fields towards molecular dynamics simulations of proteins at DFT accuracy** [2024]  
+Brunken, Christoph, Sebastien Boyer, Mustafa Omar, Bakary N'tji Diallo, Karim Beguir, Nicolas Lopez Carranza, and Oliver Bent.   
+[ICLR 2024 Workshop on Generative and Experimental Perspectives for Biomolecular Design (2024)](https://openreview.net/forum?id=hrvvIOx7EM) | [code](https://github.com/ACEsuit/mace-jax)  
+
+* **Unsupervised and supervised AI on molecular dynamics simulations reveals complex characteristics of HLA-A2-peptide immunogenicity** [2024]  
+Jeffrey K Weber, Joseph A Morrone, Seung-gu Kang, Leili Zhang, Lijun Lang, Diego Chowell, Chirag Krishna, Tien Huynh, Prerana Parthasarathy, Binquan Luan, Tyler J Alban, Wendy D Cornell, Timothy A Chan.   
+[Briefings in Bioinformatics (2024)](https://doi.org/10.1093/bib/bbad504) | [code](https://github.com/BiomedSciAI)
+
+* **Biomolecular dynamics with machine-learned quantum-mechanical force fields trained on diverse chemical fragments** [2024]  
+Unke, Oliver T., Martin Stöhr, Stefan Ganscha, Thomas Unterthiner, Hartmut Maennel, Sergii Kashubin, Daniel Ahlin et al.   
+[Science Advances 10.14 (2024)](https://www.science.org/doi/10.1126/sciadv.adn4397) | [data](https://zenodo.org/records/10720941)
+
+* **DeePMD-kit v2: A software package for deep potential models** [2023]  
+Zeng, Jinzhe, Duo Zhang, Denghui Lu, Pinghui Mo, Zeyu Li, Yixiao Chen, Marián Rynik et al.   
+[The Journal of Chemical Physics 159.5 (2023)](https://doi.org/10.1063/5.0155600) | [code](https://github.com/deepmodeling/deepmd-kit)  
+
+* **Enhancing Biomolecular Sampling with Reinforcement Learning: A Tree Search Molecular Dynamics Simulation Method** [2019]  
+Kento Shin, Duy Phuoc Tran, Kazuhiro Takemura, Akio Kitao, Kei Terayama, and Koji Tsuda.   
+[ACS Omega (2019)](https://doi.org/10.1021/acsomega.9b01480) | [code](https://github.com/tsudalab/TSMD)  
+
+* **DeePMD-kit: A deep learning package for many-body potential energy representation and molecular dynamics** [2018]  
+Wang, Han, Linfeng Zhang, Jiequn Han, and E. Weinan.   
+[Computer Physics Communications 228 (2018)](https://doi.org/10.1016/j.cpc.2018.03.016) | [code](https://github.com/deepmodeling/deepmd-kit)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Neural Network Potentials
+
+
+
+
+
+
+
+* **Physics-Aligned Electronic Ground-State Learning Improves Generalization** [2026]  
+Eike S. Eberhard, Xaver Kainz, Viktor Kotsev, Abdulrahman Aldossary, Stephan Günnemann.  
+[arXiv:2610.10298(2026)](https://doi.org/10.48550/arXiv.2610.10298) | [Code](https://github.com/ESEberhard/ML4DFT)  
+
+* **Enabling Biomolecular Simulations with Neural Network Potentials in GROMACS** [2026]  
+Lukas Müllender, Berk Hess, Erik Lindahl.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00808) | [Code](https://github.com/lmuellender/gmx-nnpot-tools) | [Zenodo](https://doi.org/10.5281/zenodo.19663881)  
+
+* **Train for Accuracy, Execute at Scale: Architecture-Preserving Inference for Equivariant Atomistic Foundation Models** [2026]  
+Lei Fu, Zihui Feng, Yongheng Li, Hongwei Du, Xin He, Junyi Wu, Kejie Bao, Yueyu Zhang, Zeyu Deng, Ziheng Lu, Bonan Zhu.  
+[arXiv:2610.01036 (2026)](https://doi.org/10.48550/arXiv.2610.01036) | [Code](https://github.com/bonan-group/symmetrix-xl)  
+
+* **Dielectric Response of Short and Long Range Models of Nonuniform Liquids and Implications for Machine Learned Interatomic Potentials** [2026]  
+Atul C. Thakur, Harender S. Dhattarwal, Richard C. Remsing.  
+[arXiv:2610.04224 (2026)](https://doi.org/10.48550/arXiv.2610.04224)  
+
+* **Leveraging Machine Learning Interatomic Potentials into Fitting Fast and Accurate AMBER-Compatible Precise Force Field** [2026]  
+Xuchao Zhou, Xujian Wang, Jiahao Xie, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15008812/v1) | [code](https://github.com/ClickFF/MAPLE) | [Zenodo](https://doi.org/10.5281/zenodo.21428725)  
+
+* **Advancing density functional tight-binding method for large organic molecules through equivariant neural networks** [2026]  
+Leonardo Medrano Sandonas, Mirela Puleva, Zekiye Erarslan, Ricardo Parra Payano, Martin Stöhr, Gianaurelio Cuniberti, Alexandre Tkatchenko.  
+[Phys. Chem. Chem. Phys.(2026)](https://doi.org/10.1039/d6cp00038j) | [Code](https://github.com/lmedranos/EquiDTB)  
+
+* **El Agente Potente: High-Throughput Agentic Atomistic Simulations** [2026]  
+Tsz Wai Ko, Jiaru Bai, Thomas Swanick, Yeonghun Kang, Changhyeok Choi, Angelina Qihong Jiang, Aiwei Yin, Varinia Bernales, Alán Aspuru-Guzik.  
+[arXiv:2609.14840 (2026)](https://doi.org/10.48550/arXiv.2609.14840)  
+
+* **Universal Thermodynamic Interatomic Potentials for Crystalline Materials** [2026]  
+Juno Nam, Bowen Deng, Xiaochen Du, Luis Barroso-Luque, Benjamin Kurt Miller, Rafael Gómez-Bombarelli.  
+[arXiv:2608.14502 (2026)](https://doi.org/10.48550/arXiv.2608.14502)  
+
+* **GRACE-OFF: A Machine-Learned Interatomic Potential for Organic Liquids Using the GRACE Architecture** [2026]  
+Anna Katharina Picha, Johannes Karwounopoulos, Linus C. Erhard, Stefan Boresch, Esther Heid.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c01169) | [Code](https://github.com/heid-lab/grace-off/)  
+
+* **pdb2reaction: End-to-End Reaction-Path Elucidation from PDB Structures Using Machine-Learning Interatomic Potentials** [2026]  
+Takuto Ohmura, Hajime Sato, Tohru Terada.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15003538/v2) | [Code](https://github.com/t-0hmura/pdb2reaction)  
+
+* **Quantum-accurate atomistic modeling of enzyme catalysis using a machine learned potential** [2026]  
+Meng Gao, Armin Shayesteh Zadeh, Aniruddha Seal, Siva Dasetty, Siddarth K. Achar, Misko Dzamba, Benjamin K. Miller, Leif D. Jacobson, C. Lawrence Zitnick, Brandon M. Wood, Zachary W. Ulissi, Daniel S. Levine, Andrew L. Ferguson.  
+[arXiv:2609.09293(2026)](https://doi.org/10.48550/arXiv.2609.09293) | [Code](https://github.com/facebookresearch/fairchem)  
+
+* **MLIP Detective: Active Failure Mode Discovery Beyond Benchmark Scores for Machine-Learning Interatomic Potentials** [2026]  
+Ryuhei Okuno, Nontawat Charoenphakdee, Kaoru Hisama, Yuta Tsuboi.  
+[arXiv:2609.08399 (2026)](https://doi.org/10.48550/arXiv.2609.08399)  
+
+* **AdaptNTK: Adaptive Uncertainty Quantification and Active Learning for Neural Network Potentials** [2026]  
+Prajwal Ananth, Shuwen Yue.  
+[arXiv:2609.00488(2026)](https://doi.org/10.48550/arXiv.2609.00488)  
+
+* **Atomistic machine learning with irreducible Cartesian natural tensors** [2026]  
+Chen, Q., Pattamatta, A.S.L.S., Wang, B. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-77263-z) | [Code](https://github.com/wengroup/carnet)  
+
+* **Accurate and Transferable Intermolecular Potential Based on Machine-Learned Molecular Electron Density** [2026]  
+Dahvyd Wing, Mihail Bogojeski, Szabolcs Goger, Klaus-Robert Müller, Alexandre Tkatchenko.  
+[arXiv:2608.20753 (2026)](https://doi.org/10.48550/arXiv.2608.20753)  
+
+* **Exploring Conformational Transitions of Adenine RNA Dimer via Machine Learning Potentials** [2026]  
+Leonardo Medrano Sandonas, Macarena Tolmos Nehme, Luis Fernando Cofas-Vargas, Gustavo E. Olivos-Ramirez, Gianaurelio Cuniberti, Simón Poblete, Adolfo B. Poma.  
+[J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c01213) | [Zenodo](https://doi.org/10.5281/zenodo.20838383)  
+
+* **Quantum machine learning interatomic potential: Application of variational quantum algorithm** [2026]  
+Kohei Numata, Wataru Mizukami, Kosuke Mitarai, Keisuke Fujii, Yutaka Imamura.  
+[arXiv:2607.27841 (2026)](https://doi.org/10.48550/arXiv.2607.27841)  
+
+* **Chemical intuition on bond-dissociation energies as an emergent ability of universal machine-learning interatomic potentials** [2026]  
+Hattori, S., Shimamura, K., Nomura, Ki. et al..  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-74919-8) | [code](https://doi.org/10.5281/zenodo.20264297) | [Zenodo](https://doi.org/10.5281/zenodo.20264297)  
+
+* **Reaction Pathway Detection using Machine-Learned Energy Potentials -- Decomposition of Energized CF3CHOO** [2026]  
+Cangtao Yin, Markus Meuwly.  
+[arXiv:2607.06380 (2026)](https://doi.org/10.48550/arXiv.2607.06380)  
+
+* **Dyna-Mat: End-to-end benchmarking of foundation machine learning interatomic potentials in finite-temperature ensembles** [2026]  
+Gawkowski, M.J., Artrith, N., Bonfanti, S., Gangan, A., Heenen, H.H., Kioseoglou, J., Lonvcari'c, I., Myneni, H., Riebesell, J., Rossi, M., Rupp, M., Schmidt, J., Sharma, S., Shi, B.X., Wadowski, A., Hormann, L., & Kapil, V.  
+[arXiv:2607.03433 (2026)](https://doi.org/10.48550/arXiv.2607.03433)  
+
+* **Machine learning potentials for modeling alloys across compositions** [2026]  
+Killian Sheriff et al.  
+[Sci. Adv. (2026)](https://doi.org/10.1126/sciadv.aea9951) | [code](https://github.com/killiansheriff/ChemicalMotifIdentifier) | [Zenodo](https://doi.org/10.5281/zenodo.16129603)  
+
+* **Replacing Quantum Chemistry With Machine-Learned Interatomic Potentials: Revolution or Evolution?** [2026]  
+Andrew J. Medford and David S. Sholl.  
+[ACS Cent. Sci.(2026)](https://doi.org/10.1021/acscentsci.6c00615)  
+
+* **Bias in Universal Machine-Learned Interatomic Potentials and Its Effects on Fine-Tuning** [2026]  
+Nicolas H. Wong and Julia H. Yang.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00425) | [code](https://github.com/YangLab-GT/umlip_bias_finetuning)  
+
+* **Universal Interatomic Potentials as Configuration-Space Generators for One-Shot and Iterative Fine-Tuning of Ab Initio-Accurate Material-Specific Models** [2026]  
+Jonas Hänseroth, Aaron Flötotto, Christian Dreßler.  
+[arXiv:2606.23214 (2026)](https://doi.org/10.48550/arXiv.2606.23214) | [code](https://github.com/microsoft/mattersim) | [Zenodo](https://zenodo.org/records/20792778)  
+
+* **Leveraging neural network interatomic potentials for a foundation model of chemistry** [2026]  
+Kim, S.Y., Park, Y.J. & Li, J.  
+[npj Comput Mater (2026)](https://doi.org/10.1038/s41524-026-02167-x) | [code](https://github.com/parkyjmit/HackNIP)  
+
+* **How Long Is Long Enough? Extrapolation of Machine-Learning Interatomic Potentials for Oligomeric and Polymeric Systems** [2026]  
+Natalie E. Hooven, Arthur Y. Lin, Charles H. Carroll, and Rose K. Cersonsky.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00365) | [code](https://doi.org/10.5281/zenodo.17227874)  
+
+* **Angular relational knowledge distillation of machine learning interatomic potentials for scalable catalyst exploration** [2026]  
+Natalie E. Hooven, Arthur Y. Lin, Charles H. Carroll, and Rose K. Cersonsky.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00365) | [code](https://doi.org/10.5281/zenodo.17227874)  
+
+* **Fine-tuning MLIP foundation models: strategies for accuracy and transferability** [2026]  
+Tamás Lajos Tompa, Eszter Varga-Umbrich, Ilyes Batatia, Alin M. Elena, Noam Bernstein, Gábor Csányi.  
+[arXiv:2606.12704 (2026)](https://doi.org/10.48550/arXiv.2606.12704)  
+
+* **Angular relational knowledge distillation of machine learning interatomic potentials for scalable catalyst exploration** [2026]  
+Lim, H., Choung, S., Moon, J. et al.  
+[npj Comput Mater 12, 193 (2026)](https://doi.org/10.1038/s41524-026-02062-5) | [code](https://github.com/hyukjunlim/ARK)  
+
+* **Transferable Machine Learning of Electronic Hamiltonians with Superposition-of-Atomic-Potentials Features** [2026]  
+Chaoqun Zhang, Christian Venturella, Enzhi Chen, Tianyu Zhu.  
+[arXiv:2606.12326 (2026)](https://doi.org/10.48550/arXiv.2606.12326)  
+
+* **Six Open Questions in Machine-Learned Interatomic Potential Foundation Models** [2026]  
+Isabel Creed, Tim Rein, Ingvars Vitenburgs, Wojciech G. Stark, Viktor Ellingsson, Ahmed Y. Ismail, Guangyu Liu, Yuchen Lou, Bradley A. A. Martin, Cyprien Bone, Matthew A. H. Walker, Mueen Taj, Shirui Wang, Kelvin Wong, Ruiqi Wu, Prakriti Kayastha, Bingqing Cheng, Aditi Krishnapriyan, Michele Ceriotti, Marcel F. Langer, Jarvist Moore Frost, Alex M. Ganose, Venkat Kapil, Keith T. Butler.  
+[arXiv:2606.07327 (2026)](https://doi.org/10.48550/arXiv.2606.07327)  
+
+* **Accuracy and Efficiency Benchmarks of Pretrained Machine Learning Potentials for Molecular Simulations** [2026]  
+Peter Eastman, Evan Pretti, and Thomas E. Markland.  
+[J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c00130) | [code](https://github.com/peastman/mlipbenchmarks)  
+
+* **Transferable Neural Network Potential for Elastic and Vibrational Properties of Carbon, Hydrogen, Oxygen, and Nitrogen-Based Two Dimensional Covalent Organic Frameworks** [2026]  
+Yunrui Yan, Somayeh Faraji, and Mingjie Liu.  
+[Chem. Mater. (2026)](https://doi.org/10.1021/acs.chemmater.6c00169)  
+
+* **Fast training of bespoke SMIRNOFF-format molecular mechanics force fields using machine learning potentials** [2026]  
+Finlay Clark, Thomas Pope, Sarah Maier, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15004169/v1) | [code](https://github.com/cole-group/presto)  
+
+* **DPA4: Pushing the Accuracy-Cost Frontier of Interatomic Potentials with EMFA SO(2) Convolution** [2026]  
+Tiancheng Li, Wentao Li, Anyang Peng, Jianming Xue, Linfeng Zhang, Duo Zhang, Han Wang.  
+[arXiv:2606.02419 (2026)](https://doi.org/10.48550/arXiv.2606.02419) | [code](https://github.com/deepmodeling/deepmd-kit)  
+
+* **Understanding Adsorption and Reactions at Aqueous Oxide Interfaces with Neural Network Potential Molecular Dynamics** [2026]  
+Sanghyun J. Park, Abhinav S. Raman, and Annabella Selloni.  
+[Acc. Mater. Res. (2026)](https://doi.org/10.1021/accountsmr.6c00001) | [code](https://github.com/sanghyunjonathan/Methanol-Adsorbed-TiO2-Interface)  
+
+* **Benchmarking machine-learned interatomic potentials for molecular infrared spectroscopy** [2026]  
+Nitik Bhatia, Ondrej Krejci, Patrick Rinke.  
+[arXiv:2605.22367 (2026)](https://doi.org/10.48550/arXiv.2605.22367) | [code](https://gitlab.com/cest-group/ml4ir-bench)  
+
+* **Machine Learning Interatomic Potentials: Advancing Open-Source Software for Efficient and Scalable Molecular Simulation** [2026]  
+Christoph Brunken, Titouan Cormier, Lucien Walewski, Marco Carobene, Yessine Khanfir, Zachary Weller-Davies, Miguel Bragança, Armand Picard, Adrien Pichard, Leon Wehrhan, Heloise Chomet, Eszter Varga-Umbrich, Marie Bluntzer, Massimo Bortone, Valentin Heyraud, Silvia Acosta-Gutiérrez, Jules Tilly, Olivier Peltre.  
+[arXiv:2605.22698 (2026)](https://doi.org/10.48550/arXiv.2605.22698) | [code](https://huggingface.co/collections/InstaDeepAI/ml-interatomic-potentials)  
+
+* **Reweighting free energy profiles between universal machine learning interatomic potentials for fast consensus building** [2026]  
+Sauradeep Majumdar, Miguel Steiner, Johannes C. B. Dietschreit, Swagata Roy, Daniel Willimetz, Lukaš Grajciar, Rafael Gómez-Bombarelli.  
+[arXiv:2605.15630 (2026)](https://doi.org/10.48550/arXiv.2605.15630) | [code](https://github.com/sauradeep93/Reweighting-free-energies) | [Zenodo](https://zenodo.org/records/20142456)  
+
+* **MLIP-Enhanced Thermochemistry Predictions across Organic Chemical Space** [2026]  
+Rishabh Dey, Salvina Sharipova, Konstantin Popov.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15003003/v2) | [code](https://github.com/chimie-paristech-CTM/ThermoMLIP)  
+
+* **All-atomistic Transferable Neural Potentials for Protein Solvation** [2026]  
+Rishabh Dey, Salvina Sharipova, Konstantin Popov.  
+[arXiv:2605.14584 (2026)](https://doi.org/10.48550/arXiv.2605.14584)  
+
+* **Systematic Fine-Tuning of MACE Interatomic Potentials for Catalysis** [2026]  
+Nima Karimitari, Jacob Clary, Derek Vigil-Fowler, Ravishankar Sundararaman, Gábor Csányi, Christopher Sutton.  
+[arXiv:2605.09394 (2026)](https://doi.org/10.48550/arXiv.2605.09394) | [Zenodo](https://doi.org/10.5281/zenodo.20043317)  
+
+* **Integrating Machine Learning Interatomic Potentials with MMPBSA for Accurate Protein–Ligand Binding Free Energy Calculations** [2026]  
+Wei, Xue-Xin, Yuxinxin Chen, Yuedong Yang, Mingyuan Xu, Pavlo O. Dral, and Hongming Chen.  
+[J. Phys. Chem. B (2026)](https://doi.org/10.1021/acs.jpcb.6c00306) | [code](https://github.com/XueXinWei-AI4S/AIQM-PBSA)  
+
+* **AiiDA-TrainsPot: towards automated training of neural-network interatomic potentials** [2026]  
+Bidoggia, Davide and Manko, Nataliia and Peressi, Maria and Marrazzo, Antimo.  
+[Digital Discovery (2026)](https://doi.org/10.1039/D6DD00005C) | [code](https://github.com/aiida-trieste-developers/aiida-trains-pot)  
+
+* **Platonic representation of foundation machine learning interatomic potentials** [2026]  
+Li, Z., Walsh, A.  
+[Nat Mach Intell (2026)](https://doi.org/10.1038/s42256-026-01235-7) | [code](https://github.com/WMD-group/PlatonicRep)  
+
+* **Evaluating mechanical property prediction across material classes using molecular dynamics simulations with universal machine-learned interatomic potentials** [2026]  
+Stracke, K., Edwards, C.W. & Evans, J.D.  
+[Commun Chem (2026)](https://doi.org/10.1038/s42004-026-02057-9) | [Zenodo](https://zenodo.org/records/17730689)  
+
+* **Knowing when to trust machine-learned interatomic potentials** [2026]  
+Shams Mehdi, Ilkwon Cho, Olexandr Isayev.  
+[arXiv:2605.00640 (2026)](https://doi.org/10.48550/arXiv.2605.00640) | [code](https://github.com/isayevlab/PROBE)  
+
+* **Anchor-Based Relative Free Energy Simulations using Machine-Learned Interatomic Potentials** [2026]  
+Anna Katharina Picha, Stefan Boresch.  
+[ChemRxiv (2026)](https://doi.org/10.26434/chemrxiv.15001438/v1) | [code](https://github.com/cbc-univie/anchor-4D)  
+
+* **Benchmarking Universal Machine-Learned Interatomic Potentials for High-Temperature Metal-Organic Framework Chemistry** [2026]  
+Connor W. Edwards, Jack D. Evans.  
+[arXiv:2604.25262 (2026)](https://doi.org/10.48550/arXiv.2604.25262) | [code](https://doi.org/10.25909/32061111)  
+
+* **Faster Molecular Dynamics with Neural Network Potentials via Distilled Multiple Time-Stepping and Non-Conservative Forces** [2026]  
+Nicolaï Gouraud, Côme Cattin, Thomas Plé, Olivier Adjoua, Louis Lagardère, Jean-Philip Piquemal.  
+[J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c00653) | [arXiv:2602.14975 (2026)](https://doi.org/10.48550/arXiv.2602.14975) | [code](https://github.com/FeNNol-tools/FeNNol)  
+
+* **Generalization of long-range machine learning potentials in complex chemical spaces** [2026]  
+Sanocki, M. and Zavadlav, J..  
+[Digital Discovery (2026)](https://doi.org/10.1039/D5DD00570A) | [code](https://github.com/msan9908/MLIP_generalizability)  
+
+* **Machine-Learned Electrostatic Potentials for Accurate Hydration Free Energy Calculations** [2026]  
+Mathias Hilfiker, Leonardo Medrano Sandonas, Alexandre Tkatchenko, Ola Engkvist, and Marco Klähn.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.5c02086) | [code](https://github.com/mathilfiker/ml_for_charges)  
+
+* **Extending AIMNet2 to Macrocyclic Peptides Through Data-Efficient Continual Training** [2026]  
+Runtian Gao, Roman Zubatyuk, Olexandr Isayev.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15002334/v1)  
+
+* **MolCryst-MLIPs: A Machine-Learned Interatomic Potentials Database for Molecular Crystals** [2026]  
+Lahouari, Adam, Shen Ai, Jihye Han, Jillian Hoffstadt, Philipp Hoellmer, Charlotte Infante, Pulkita Jain et al.  
+[arXiv:2604.13897 (2026)](https://doi.org/10.48550/arXiv.2604.13897) | [code](https://github.com/adamlaho/MolCryst)  
+
+* **Quantum-Accurate Enhanced Sampling and Mini-Protein Folding through Replica Exchange for Multiscale Neural Network Potentials** [2026]  
+Riccardo Solazzo, Igor Gordiy, Sereina Riniker.  
+[ChemRxiv (2026)](https://doi.org/10.26434/chemrxiv.15001723/v1) | [code](https://github.com/rinikerlab/rest2_ampmm)  
+
+* **Performance-Based Selection of Machine Learning Interatomic Potentials for Studying Solid-State Electrolytes** [2026]  
+Donghee Chang, Amir Taqieddin, and Forrest Laskowski.  
+[Chem. Mater. (2026)](https://doi.org/10.1021/acs.chemmater.5c02352)  
+
+* **Importance of Electronic Entropy for Machine Learning Interatomic Potentials** [2026]  
+Martin Hoffmann Petersen, Steen Lysgaard, Arghya Bhowmik, Kedar Hippalgaonkar, Juan Maria Garcia Lastra.  
+[arXiv:2603.26471 (2026)](https://doi.org/10.48550/arXiv.2603.26471)  
+
+* **PFP/MM: A Hybrid Approach Combining a Universal Neural Network Potential with Classical Force Fields for Large-Scale Reactive Simulations** [2026]  
+Yu Miyazaki, Atsuhiro Tomita, Akihide Hayashi, So Takemoto, Mizuki Takemoto, Hodaka Mori.  
+[arXiv:2603.16061 (2026)](https://doi.org/10.48550/arXiv.2603.16061)  
+
+* **Design Space of Self--Consistent Electrostatic Machine Learning Interatomic Potentials** [2026]  
+William J. Baldwin, Ilyes Batatia, Martin Vondrák, Johannes T. Margraf, Gábor Csányi.  
+[arXiv:2603.14700 (2026)](https://doi.org/10.48550/arXiv.2603.14700)  
+
+* **Simulating enzyme catalysis with electrostatically embedded machine learning potentials** [2026]  
+Gradisteanu, Valentin, Elliot W. Chan, Lester Hedges, Meritxell Malagarriga, Rolf David, Miguel de la Puente, Damien Laage, Iñaki Tuñón, Marc W. van der Kamp, and Kirill Zinovjev.  
+[Chem. Sci. (2026)](https://doi.org/10.1039/D6SC01156J) | [code](https://github.com/chemle/emle-enzymes-paper)  
+
+* **Bias in Universal Machine-Learned Interatomic Potentials and its Effects on Fine-Tuning** [2026]  
+Nicolas Wong, Julia H. Yang.  
+[arXiv:2603.10159 (2026)](https://doi.org/10.48550/arXiv.2603.10159) | [code](https://github.com/YangLab-GT/uMLIP_Finetuning)  
+
+* **Constructing Diabatic Potential Energy Matrices with Quantum Dynamic Accuracy: A Neural Network Based Δ-Machine Learning Approach** [2026]  
+Siting Hou, Zejie Zhang, and Changjian Xie.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.5c01758)  
+
+* **Resolving the body-order paradox of machine learning interatomic potentials** [2026]  
+Sanggyu Chong, Tong Jiang, Michelangelo Domina, Filippo Bigi, Federico Grasselli, Joonho Lee, Michele Ceriotti.  
+[J. Chem. Phys.(2026)](https://doi.org/10.1063/5.0303302)  
+
+* **AceFF: A State-of-the-Art Machine Learning Potential for Small Molecules** [2026]  
+Stephen E. Farr, Stefan Doerr, Antonio Mirarchi, Francesc Sabanes Zariquiey, Gianni De Fabritiis.  
+[arXiv:2601.00581 (2026)](https://doi.org/10.48550/arXiv.2601.00581) | [code](https://huggingface.co/Acellera/AceFF-2.0)  
+
+* **MAPLE: A General Framework for Automated Molecular Modeling across Machine-Learning Potentials** [2026]  
+Wang X, Zhang Y, Sun Z, Zhu R, Asam C, Li W-L, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv-2026-k7znx) | [code](https://github.com/ClickFF/MAPLE)  
+
+* **Ab Initio Melting Properties of Water and Ice from Machine Learning Potentials** [2025]  
+Yifan Li, Bingjia Yang, Chunyi Zhang, Axel Gomez, Pinchen Xie, Yixiao Chen, Pablo M. Piaggi, Roberto Car.  
+[arXiv:2512.23939 (2025)](https://doi.org/10.48550/arXiv.2512.23939)  
+
+* **Advanced Machine Learning Interatomic Potential for Accelerated Atomistic Simulations of Lithiation Dynamics in Large-Scale Si@C Core–Shell Anodes** [2025]  
+Yujie Liao, Pengfei Suo, Changhao Wang, Jincang Zhang, and Yunsong Li.  
+[ACS Appl. Mater. Interfaces (2025)](https://doi.org/10.1021/acsami.5c18142)  
+
+* **LAMMPS-ANI: Large Scale Molecular Dynamics Simulations with ANI Neural Network Potential** [2025]  
+Xue J, Terrel N, Pickering I, Roitberg A.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-8v03m) | [code](https://github.com/roitberg-group/lammps-ani)  
+
+* **Domain oriented universal machine learning potential enables fast exploration of chemical space of battery electrolytes** [2025]  
+Wang, F., Tang, YH., Ma, ZB. et al.  
+[Nat Commun (2025)](https://doi.org/10.1038/s41467-025-67982-0) | [code](https://doi.org/10.12463/AI4EC/QZCYP1)  
+
+* **Automated Machine Learning Pipeline: Large Language Models-Assisted Automated Data set Generation for Training Machine-Learned Interatomic Potentials** [2025]  
+Adam Lahouari, Jutta Rogal, and Mark E. Tuckerman.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01610) | [code](https://github.com/adamlaho/AMLP)  
+
+* **Node-Equivariant Message Passing for Efficient and Accurate Machine Learning Interatomic Potentials** [2025]  
+Yaolong Zhang* and Hua Guo.  
+[Chem. Sci.(2025)](https://doi.org/10.1039/D5SC07248D) | [code](https://github.com/zhangylch/NEMP)  
+
+* **Enhanced Sampling for Efficient Learning of Coarse-Grained Machine Learning Potentials** [2025]  
+Weilong Chen, Franz Görlich, Paul Fuchs, and Julija Zavadlav.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01712) | [code](https://github.com/tummfm/biased-force-matching)  
+
+* **Benchmarking Universal Interatomic Potentials on Elemental Systems** [2025]  
+Hossein Tahmasbi, Andreas Knüpfer, Thomas D. Kühne, Hossein Mirhosseini.  
+[arXiv:2512.20230 (2025)](https://doi.org/10.48550/arXiv.2512.20230) | [code](https://codebase.helmholtz.cloud/casus-datalad/atomistic_foundation_model.datalad/project)  
+
+* **Machine learning interatomic potentials at the centennial crossroads of quantum mechanics** [2025]  
+Kalita, B., Gokcan, H. & Isayev, O.  
+[Nat Comput Sci 5, 1120–1132 (2025)](https://doi.org/10.1038/s43588-025-00930-6)  
+
+* **Evidential deep learning for interatomic potentials** [2025]  
+Dongjin Kim, Bingqing Cheng.  
+[Nat Commun (2025)](https://doi.org/10.1038/s41467-025-67663-y) | [code](https://github.com/xuhan323/eIP) | [Zenodo](https://doi.org/10.5281/zenodo.17730621)  
+
+* **Challenges and Opportunities of Machine Learning Interatomic Potentials in Heterogeneous Catalysis** [2025]  
+Loveday O, Kazmierczak K, López N.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-vk805)  
+
+* **Long-range electrostatics for machine learning interatomic potentials is easier than we thought** [2025]  
+Dongjin Kim, Bingqing Cheng.  
+[arXiv:2512.18029 (2025)](https://doi.org/10.48550/arXiv.2512.18029) | [code](https://github.com/ChengUCB/les)  
+
+* **Thermal dynamics and coalescence of Au144(SR)60 clusters from a machine-learned potential** [2025]  
+Sabooni Asre Hazer, M., Malola, S. & Häkkinen, H.  
+[Nat Commun (2025)](https://doi.org/10.1038/s41467-025-67700-w) | [data](https://doi.org/10.23729/fd-a31ffb92-7fd0-33c0-bcd9-100d48367687)  
+
+* **Generalization of Long-Range Machine Learning Potentials in Complex Chemical Spaces** [2025]  
+Michal Sanocki, Julija Zavadlav.  
+[arXiv:2512.10989 (2025)](https://doi.org/10.48550/arXiv.2512.10989) | [code](https://github.com/tummfm/chemtrain)  
+
+* **Platonic representation of foundation machine learning interatomic potentials** [2025]  
+Zhenzhu Li, Aron Walsh.  
+[arXiv:2512.05349 (2025)](https://doi.org/10.48550/arXiv.2512.05349) | [code](https://github.com/WMD-group/PlatonicRep)  
+
+* **Accurate machine learning interatomic potentials for polyacene molecular crystals: application to single molecule host-guest systems** [2025]  
+Gurlek, B., Sharma, S., Lazzaroni, P. et al.  
+[npj Comput Mater 11, 318 (2025)](https://doi.org/10.1038/s41524-025-01825-w) | [Zenodo](https://doi.org/10.5281/zenodo.17100564)  
+
+* **Modeling Equilibrium Solid–Liquid Interfaces under Effective Constant Chemical Potential Using Machine Learning Interatomic Potentials** [2025]  
+Ademola Soyemi, Khagendra Baral, and Tibor Szilvási.  
+[J. Phys. Chem. A (2025)](https://doi.org/10.1021/acs.jpca.5c06453) | [code](https://zenodo.org/records/17088343)  
+
+* **A foundation model for atomistic materials chemistry** [2025]  
+Batatia, Ilyes, Philipp Benner, Yuan Chiang, Alin M. Elena, Dávid P. Kovács, Janosh Riebesell, Xavier R. Advincula et al.  
+[J. Chem. Phys. 163, 184110 (2025)](https://doi.org/10.1063/5.0297006) | [code](http://github.com/acesuit/mace-mp)  
+
+* **Peering inside the black box by learning the relevance of many-body functions in neural network potentials** [2025]  
+Bonneau, K., Lederer, J., Templeton, C. et al.  
+[Nat Commun 16, 9898 (2025)](https://doi.org/10.1038/s41467-025-65863-0) | [code](https://github.com/jnsLs/gnn-lrp-cg.git)  
+
+* **TorchANI 2.0: An extensible, high performance library for the design, training, and use of NN-IPs** [2025]  
+Pickering I, Xue J, Huddleston K, Terrel N, Roitberg A.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01853) | [ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-w0w7d) | [code](https://github.com/aiqm/torchani)  
+
+* **Python Library for Monte Carlo Simulations with Ab Initio and Machine-Learned Interatomic Potentials** [2025]  
+Woodrow N. WilsonVivek S. BharadwajNeeraj Rai*.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01148) | [code](https://github.com/MSELRai/ASE-MC_ESI)  
+
+* **Anticipating the Selectivity of Cyclization Reaction Pathways with Neural Network Potentials** [2025]  
+Nicholas Casetti, Dylan Anstine, Olexandr Isayev, and Connor W. Coley.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01161) | [code](https://github.com/ncasetti7/REVAMP)  
+
+* **Weighted active space protocol for multireference machine-learned potentials** [2025]  
+A. Seal,S. Perego,M.R. Hennefarth,U. Raucci,L. Bonati,A.L. Ferguson,M. Parrinello, & L. Gagliardi.  
+[Proc. Natl. Acad. Sci. (2025)](https://doi.org/10.1073/pnas.2513693122) | [code](https://github.com/GagliardiGroup/wasp)  
+
+* **Machine learning of charges and long-range interactions from energies and forces** [2025]  
+King, D.S., Kim, D., Zhong, P. et al.  
+[Nat Commun 16, 8763 (2025)](https://doi.org/10.1038/s41467-025-63852-x) | [code](https://github.com/BingqingCheng/cace-lr-fit)  
+
+* **Learning non-local molecular interactions via equivariant local representations and charge equilibration** [2025]  
+Fuchs, P., Sanocki, M. & Zavadlav, J.  
+[npj Comput Mater 11, 287 (2025)](https://doi.org/10.1038/s41524-025-01790-4) | [code](https://github.com/tummfm/chemtrain)  
+
+* **Scalable Foundation Interatomic Potentials via Message-Passing Pruning and Graph Partitioning** [2025]  
+Lingyu Kong, Jaeheon Shim, Guoxiang Hu, Victor Fung.  
+[arXiv:2509.21694 (2025)](https://doi.org/10.48550/arXiv.2509.21694) | [code](https://github.com/Fung-Lab/MatterTune)  
+
+* **Weighted active space protocol for multireference machine-learned potentials** [2025]  
+A. Seal,S. Perego,M.R. Hennefarth,U. Raucci,L. Bonati,A.L. Ferguson,M. Parrinello, & L. Gagliardi.  
+[Proc. Natl. Acad. Sci. (2025)](https://doi.org/10.1073/pnas.2513693122) | [code](https://github.com/GagliardiGroup/wasp)  
+
+* **One to Rule Them All: A Universal Interatomic Potential Learning across Quantum Chemical Levels** [2025]  
+Yuxinxin Chen and Pavlo O. Dral.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00858) | [code](https://github.com/dralgroup/aio-ani)  
+
+* **Learning Long-Range Interactions in Equivariant Machine Learning Interatomic Potentials via Electronic Degrees of Freedom** [2025]  
+Maruf, Moin Uddin, Sungmin Kim, and Zeeshan Ahmad.  
+[J. Phys. Chem. Lett. (2025)](https://doi.org/10.1021/acs.jpclett.5c02352) | [code](https://github.com/ahmad-research-group/nequip-charge/tree/charge-encoding)  
+
+* **Graph atomic cluster expansion for foundational machine learning interatomic potentials** [2025]  
+Yury Lysogorskiy, Anton Bochkarev, Ralf Drautz.  
+  [arXiv:2508.17936 (2025)](https://doi.org/10.48550/arXiv.2508.17936)  
+
+* **A critical review of machine learning interatomic potentials and Hamiltonian** [2025]  
+Li, Y.; Zhang, X.; Liu, M.; Shen, L.  
+  [J. Mater. Inf. (2025)](http://dx.doi.org/10.20517/jmi.2025.17)  
+
+* **PIL-Net: a physics-informed graph convolutional network for predicting atomic multipoles** [2025]  
+Dario Coscia, Pim de Haan, Max Welling.  
+[arXiv:2508.14022 (2025)](https://arxiv.org/abs/2508.14022) | [code](https://github.com/dario-coscia/blip)  
+
+* **FastTrack: a fast method to evaluate mass transport in solid leveraging universal machine learning interatomic potential** [2025]  
+Hanwen Kang, Tenglong Lu, Zhanbin Qi, Jiandong Guo, Sheng Meng, Miao Liu.  
+[arXiv:2508.10505 (2025)](https://doi.org/10.48550/arXiv.2508.10505)  
+
+* **PIL-Net: a physics-informed graph convolutional network for predicting atomic multipoles** [2025]  
+Whitter, Caitlin, Alex Pothen, and Aurora Clark.  
+[Digital Discovery (2025)](https://doi.org/10.1039/D5DD00228A) | [code](https://github.com/rinikerlab/EquivariantMultipoleGNN)  
+
+* **Performance of universal machine-learned potentials with explicit long-range interactions in biomolecular simulations** [2025]  
+Viktor Zaverkin, Matheus Ferraz, Francesco Alesiani, Mathias Niepert.  
+[arXiv:2508.10841 (2025)](https://doi.org/10.48550/arXiv.2508.10841) | [code](https://github.com/nec-research/ictp)  
+
+* **chemtrain-deploy: A parallel and scalable framework for machine learning potentials in million-atom MD simulations** [2025]  
+Paul Fuchs, Weilong Chen, Stephan Thaler, Julija Zavadlav.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00996) | [arXiv:2506.04055 (2025)](https://doi.org/10.48550/arXiv.2506.04055) | [data](https://github.com/tummfm/chemtrain)  
+
+* **Augmenting Molecular Graphs with Geometries via Machine Learning Interatomic Potentials** [2025]  
+Fu, Cong, Yuchao Lin, Zachary Krueger, Haiyang Yu, Maho Nakata, Jianwen Xie, Emine Kucukbenli, Xiaofeng Qian, and Shuiwang Ji.  
+[arXiv:2507.00407 (2025)](https://doi.org/10.48550/arXiv.2507.00407) | [data](https://huggingface.co/divelab)  
+
+* **Tensor Decomposition Networks for Fast Machine Learning Interatomic Potential Computations** [2025]  
+Lin, Yuchao, Cong Fu, Zachary Krueger, Haiyang Yu, Maho Nakata, Jianwen Xie, Emine Kucukbenli, Xiaofeng Qian, and Shuiwang Ji.  
+[arXiv:2507.01131 (2025)](https://doi.org/10.48550/arXiv.2507.01131) | [data](https://huggingface.co/divelab)  
+
+* **A Benchmark for Quantum Chemistry Relaxations via Machine Learning Interatomic Potentials** [2025]  
+Fu, Cong, Yuchao Lin, Zachary Krueger, Wendi Yu, Xiaoning Qian, Byung-Jun Yoon, Raymundo Arróyave et al.  
+[arXiv:2506.23008 (2025)](https://doi.org/10.48550/arXiv.2506.23008) | [data](https://huggingface.co/divelab)  
+
+* **Enhancing Machine Learning Potentials through Transfer Learning across Chemical Elements** [2025]  
+Sebastien Röcken and Julija Zavadlav.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c00293) | [code](https://github.com/tummfm/TL_MLP)  
+
+* **Distillation of atomistic foundation models across architectures and chemical domains** [2025]  
+Gardner, John LA, Daniel F. Toit, Chiheb Ben Mahmoud, Zoé Faure Beaulieu, Veronika Juraskova, Laura-Bianca Paşca, Louise AM Rosset et al.  
+[arXiv:2506.10956 (2025)](https://arxiv.org/abs/2506.10956) | [code](https://github.com/jla-gardner/augment-atoms)  
+
+* **Spin-informed universal graph neural networks for simulating magnetic ordering** [2025]  
+W. Xu,R.Y. Sanspeur,A. Kolluru,B. Deng,P. Harrington,S. Farrell,K. Reuter,& J.R. Kitchin.  
+[Proc. Natl. Acad. Sci. (2025)](https://doi.org/10.1073/pnas.2422973122) | [code](https://github.com/Wenbintum/ocp_mag)  
+
+* **UMA: A Family of Universal Models for Atoms** [2025]  
+Brandon M. Wood, Misko Dzamba, Xiang Fu, Meng Gao, Muhammed Shuaibi, Luis Barroso-Luque, Kareem Abdelmaqsoud, Vahe Gharakhanyan, John R. Kitchin, Daniel S. Levine, Kyle Michel, Anuroop Sriram, Taco Cohen, Abhishek Das, Ammar Rizvi, Sushree Jagriti Sahoo, Zachary W. Ulissi, C. Lawrence Zitnick.  
+[arXiv:2506.23971(2025)](https://doi.org/10.48550/arXiv.2506.23971) | [code](https://huggingface.co/facebook/UMA)  
+
+* **Application-specific Machine-Learned Interatomic Potentials: Exploring the Trade-off Between Precision and Computational Cost** [2025]  
+Baghishov, Ilgar, Jan Janssen, Graeme Henkelman, and Danny Perez.  
+[arXiv:2506.05646 (2025)](https://arxiv.org/abs/2506.05646)  
+
+* **DeePEST-OS: A Generic Machine Learning Potential for Accelerating Transition State Search in Organic Synthesis** [2025]  
+Ren K, Tang K, Zhao Y, Zhang L, Du J, Meng Q, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-mzz6w)  
+
+* **AIMNet2-rxn: A Machine Learned Potential for Generalized Reaction Modeling on a Millions-of-Pathways Scale** [2025]  
+Anstine DM, Zhao Q, Zubatiuk R, Zhang S, Singla V, Nikitin F, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-hpdmg) | [code](https://github.com/isayevlab/aimnetcentral)  
+
+* **Global universal scaling and ultrasmall parameterization in machine-learning interatomic potentials with superlinearity** [2025]  
+Y. Hu,Y. Sheng,J. Huang,X. Xu,Y. Yang,M. Zhang,Y. Wu,C. Ye,J. Yang,& W. Zhang,  
+[Proc. Natl. Acad. Sci. (2025)](https://doi.org/10.1073/pnas.2503439122) | [code](https://github.com/hu-yanxiao/SUS2-MLIP)  
+
+* **Machine Learning Potentials for Alloys: A Detailed Workflow to Predict Phase Diagrams and Benchmark Accuracy** [2025]  
+Siya Zhu and Doğuhan Sarıtürk and Raymundo Arroyave.  
+[arXiv:2506.16771(2025)](https://arxiv.org/abs/2506.16771) | [code](https://github.com/dogusariturk/PhaseForge)  
+
+* **DistMLIP: A Distributed Inference Platform for Machine Learning Interatomic Potentials** [2025]  
+Kevin Han, Bowen Deng, Amir Barati Farimani, Gerbrand Ceder.  
+[arXiv:2506.02023 (2025)](https://doi.org/10.48550/arXiv.2506.02023)  
+
+* **Weighted Active Space Protocol for Multireference Machine-Learned Potentials** [2025]  
+Aniruddha Seal, Simone Perego, Matthew R. Hennefarth, Umberto Raucci, Luigi Bonati, Andrew L. Ferguson, Michele Parrinello, Laura Gagliardi.  
+[arXiv:2505.10505 (2025)](https://arxiv.org/abs/2505.10505)  
+
+* **Discovering High-Entropy Oxides with a Machine-Learning Interatomic Potential** [2025]  
+Sivak, Jacob T., Saeed SI Almishal, Mary Kathleen Caucci, Yueze Tan, Dhiya Srikanth, Joseph Petruska, Matthew Furst et al.  
+[Phys. Rev. Lett. (2025)](https://doi.org/10.1103/PhysRevLett.134.216101)  
+
+* **Fast and Fourier Features for Transfer Learning of Interatomic Potentials** [2025]  
+Pietro Novelli, Giacomo Meanti, Pedro J. Buigues, Lorenzo Rosasco, Michele Parrinello, Massimiliano Pontil, Luigi Bonati.  
+[arXiv:2505.05652 (2025)](https://doi.org/10.48550/arXiv.2505.05652) | [code](https://franken.readthedocs.io/)  
+
+* **Practical Machine Learning Strategies. 2. Accurate Prediction of ωB97X-V/6-311+G(2df,2p), ωB97M-V/6-311+G(2df,2p) and ωB97M(2)/6-311+G(2df,2p) Energies From Neural Networks Trained From ωB97X-D/6-31G* Equilibrium Geometries and Energies** [2025]  
+Philip Klunzinger, Thomas Hehre, Bernard Deppmeier, William Ohlinger, Warren Hehre.  
+[Computer Physics Communications (2025)](https://doi.org/10.1002/jcc.70129)  
+
+* **Structure and Dynamics of CO2 at the Air–Water Interface from Classical and Neural Network Potentials** [2025]  
+Nitesh Kumar and Vyacheslav S. Bryantsev.  
+[J. Phys. Chem. Lett. (2025)](https://doi.org/10.1021/acs.jpclett.5c01206)  
+
+* **chemtrain: Learning deep potential models via automatic differentiation and statistical physics** [2025]  
+Fuchs, Paul, Stephan Thaler, Sebastien Röcken, and Julija Zavadlav.  
+[Computer Physics Communications (2025)](https://doi.org/10.1016/j.cpc.2025.109512) | [code](https://github.com/tummfm/chemtrain)  
+
+* **Accurate and efficient machine learning interatomic potentials for finite temperature modelling of molecular crystals** [2025]  
+Della Pia, Flaviano and Shi, Benjamin X. and Kapil, Venkat and Zen, Andrea and Alfè, Dario and Michaelides, Angelos.  
+[Chem. Sci. (2025)](https://doi.org/10.1039/D5SC01325A) | [code](https://github.com/water-ice-group/MolCrys-MACE)  
+
+* **Impact of Derivative Observations on Gaussian Process Machine Learning Potentials: A Direct Comparison of Three Modeling Approaches** [2025]  
+Yulian T. Manchev and Paul L. A. Popelier.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00344)  
+
+* **INN-FF: A Scalable and Efficient Machine Learning Potential for Molecular Dynamics** [2025]  
+Taskin Mehereen, Sourav Saha, Intesar Jawad Jaigirdar, Chanwook Park.  
+[arXiv:2505.18141 (2025)](https://doi.org/10.48550/arXiv.2505.18141)  
+
+* **Transferability of MACE Graph Neural Network for Range Corrected Δ-Machine Learning Potential QM/MM Applications** [2025]  
+Timothy J. Giese, Jinzhe Zeng, and Darrin M. York.  
+[J. Phys. Chem. B (2025)](https://doi.org/10.1021/acs.jpcb.5c02006)  
+
+* **OMNI-P2x: A Universal Neural Network Potential for Excited-State Simulations** [2025]  
+Martyka M, Tong X-Y, Jankowska J, Dral PO.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-j207x) | [code](https://github.com/dralgroup/omni-p2x)  
+
+* **Interpolation and differentiation of alchemical degrees of freedom in machine learning interatomic potentials** [2025]  
+Nam, J., Peng, J. & Gómez-Bombarelli, R.  
+[Nat Commun 16, 4350 (2025)](https://doi.org/10.1038/s41467-025-59543-2) | [code](https://github.com/learningmatter-mit/alchemical-mlip)  
+
+* **Uncertainty quantification for neural network potential foundation models** [2025]  
+Bilbrey, J.A., Firoz, J.S., Lee, MS. et al..  
+[npj Comput Mater 11, 109 (2025)](https://doi.org/10.1038/s41524-025-01572-y) | [code](https://github.com/pnnl/SNAP)  
+
+* **DeePMD-kit v3: A Multiple-Backend Framework for Machine Learning Potentials** [2025]  
+Zeng, Jinzhe, Duo Zhang, Anyang Peng, Xiangyu Zhang, Sensen He, Yan Wang, Xinzijian Liu et al.  
+[J. Chem. Theory Comput. (2025)](https://arxiv.org/abs/2502.19161) | [arXiv:2502.19161 (2025)](https://arxiv.org/abs/2502.19161) | [code](https://github.com/njzjz/benchmark-dpv3)  
+
+* **Multi-fidelity learning for interatomic potentials: Low-level forces and high-level energies are all you need** [2025]  
+Mitchell Messerly, Sakib Matin, Alice E. A. Allen, Benjamin Nebgen, Kipton Barros, Justin S. Smith, Nicholas Lubbers, Richard Messerly.  
+[arXiv:2505.01590 (2025)](https://doi.org/10.48550/arXiv.2505.01590)  
+
+* **Egret-1: Pretrained Neural Network Potentials For Efficient and Accurate Bioorganic Simulation** [2025]  
+Corin C. Wagen, Elias L. Mann, Jonathon E. Vandezande, Arien M. Wagen, Spencer C. Schneider.  
+[arXiv:2504.20955(2025)](https://arxiv.org/abs/2504.20955) | [code](https://github.com/rowansci/egret-public)  
+
+* **AIMNet2: A Neural Network Potential to Meet your Neutral, Charged, Organic, and Elemental-Organic Needs** [2025]  
+Isayev, Olexandr and Anstine, Dylan and Zubaiuk, Roman.  
+[Chem. Sci. (2025)](http://dx.doi.org/10.1039/D4SC08572H) | [code](https://github.com/isayevlab/aimnetcentral)  
+
+* **Advancing Density Functional Tight-Binding method for Large Organic Molecules through Equivariant Neural Networks** [2025]  
+Medrano Sandonas LR, Puleva M, Parra Payano R, Stöhr M, Cuniberti G, Tkatchenko A.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-z3mhh) | [code](https://github.com/lmedranos/EquiDTB)  
+
+* **Evaluating Universal Interatomic Potentials for Molecular Dynamics of Real-World Minerals** [2025]  
+Sajid Mannan, Carmelo Gonzales, Vaibhav Bihani, Kin Long Kelvin Lee, Nitya Nand Gosvami, Santiago Miret, N M Anoop Krishnan.  
+[ ICLR 2025 Workshop AI4MAT (2025)](https://openreview.net/forum?id=me0flBb1hi)  
+
+* **Improving robustness and training efficiency of machine-learned potentials by incorporating short-range empirical potentials** [2025]  
+Yan, Zihan, Zheyong Fan, and Yizhou Zhu.  
+[arXiv:2504.15925 (2025)](https://doi.org/10.48550/arXiv.2504.15925) | [code](https://github.com/zhyan0603/GPUMDkit)  
+
+* **Automated Pynta-Based Curriculum for ML-Accelerated Calculation of Transition States** [2025]  
+revor Price, Saurabh Sivakumar, Matthew S. Johnson, Judit Zádor, and Ambarish Kulkarni.  
+[J. Phys. Chem. C (2025)](https://doi.org/10.1021/acs.jpcc.5c00305) | [code](https://github.com/tdprice-858/Pynta-ML)  
+
+* **Extending atomic decomposition and many-body representation with a chemistry-motivated approach to machine learning potentials** [2025]  
+Yu, Q., Ma, R., Qu, C. et al.  
+[Nat Comput Sci (2025)](https://doi.org/10.1038/s43588-025-00790-0) | [code](https://doi.org/10.5281/zenodo.14954863)  
+
+* **Learning Pairwise Interaction for Extrapolative and Interpretable Machine Learning Interatomic Potentials with Physics-Informed Neural Network** [2025]  
+Hoje Chun, Minjoon Hong, Seung Hyo Noh, and Byungchan Han.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00090) | [code](https://figshare.com/s/d13b57f2fbca1d0d4b57)  
+
+* **Accurate and Affordable Simulation of Molecular Infrared Spectra with AIQM Models** [2025]  
+Yi-Fan Hou, Cheng Wang, and Pavlo O. Dral.  
+[J. Phys. Chem. A  (2025)](https://doi.org/10.1021/acs.jpca.5c00146) | [code](https://github.com/dralgroup/mlatom)  
+
+* **PET-MAD, a universal interatomic potential for advanced materials modeling** [2025]  
+BArslan Mazitov, Filippo Bigi, Matthias Kellner, Paolo Pegolo, Davide Tisi, Guillaume Fraux, Sergey Pozdnyakov, Philip Loche, Michele Ceriotti.  
+[arXiv:2503.14118 (2025)](https://doi.org/10.48550/arXiv.2503.14118) | [code](https://github.com/lab-cosmo/pet-mad)  
+
+* **Generator of Neural Network Potential for Molecular Dynamics: Constructing Robust and Accurate Potentials with Active Learning for Nanosecond-Scale Simulations** [2025]  
+Benjamin Rhodes, Sander Vandenhaute, Vaidotas Šimkus, James Gin, Jonathan Godwin, Tim Duignan, Mark Neumann.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01613)  
+
+* **Orb-v3: atomistic simulation at scale** [2025]  
+Benjamin Rhodes, Sander Vandenhaute, Vaidotas Šimkus, James Gin, Jonathan Godwin, Tim Duignan, Mark Neumann.  
+[arXiv:2504.06231 (2025)](https://arxiv.org/abs/2504.06231) | [code](https://github.com/orbital-materials/orb-models)  
+
+* **Orb-v3: atomistic simulation at scale** [2025]  
+Benjamin Rhodes, Sander Vandenhaute, Vaidotas Šimkus, James Gin, Jonathan Godwin, Tim Duignan, Mark Neumann.  
+[arXiv:2504.06231 (2025)](https://arxiv.org/abs/2504.06231) | [code](https://github.com/orbital-materials/orb-models)  
+
+* **Carbonic anhydrase II simulated with a universal neural network potential** [2025]  
+Timothy T. Duignan.  
+[arXiv:2503.13789 (2025)](https://arxiv.org/abs/2503.13789) | [code](https://github.com/timduignan/CAII-Orb-d3-v2)  
+
+* **Machine learning interatomic potential can infer electrical response** [2025]  
+Peichen Zhong, Dongjin Kim, Daniel S. King, Bingqing Cheng.  
+[arXiv:2504.05169 (2025)](https://arxiv.org/abs/2504.05169) | [code](https://github.com/BingqingCheng/cace)  
+
+* **QuantumBind-RBFE: Accurate Relative Binding Free Energy Calculations Using Neural Network Potentials** [2025]  
+Zariquiey, Francesc Sabanés, Stephen E. Farr, Stefan Doerr, and Gianni De Fabritiis.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c00033) | [arXiv:2501.01811 (2025)](https://arxiv.org/abs/2501.01811) | [code](https://github.com/Acellera/quantumbind_rbfe)  
+
+* **DeePMD-GNN: A DeePMD-kit Plugin for External Graph Neural Network Potentials** [2025]  
+Jinzhe Zeng, Timothy J. Giese, Duo Zhang, Han Wang, and Darrin M. York.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.4c02441) | [code](https://gitlab.com/RutgersLBSR/deepmd-gnn)  
+
+* **An Investigation of Physics Informed Neural Networks to Solve the Poisson–Boltzmann Equation in Molecular Electrostatics** [2025]  
+Martín A. Achondo, Jehanzeb H. Chaudhry, and Christopher D. Cooper.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01747) | [code](https://github.com/MartinAchondo/XPPBE)  
+
+* **Hierarchical Deep Potential with Structure Constraints for Efficient Coarse-Grained Modeling** [2025]  
+Qi Huang, Yedi Li, Lei Zhu, and Wenjie Yu.  
+[J. Chem. Inf. Model.(2025)](https://doi.org/10.1021/acs.jcim.4c02042) | [code](https://github.com/huang-qi/HDP-SC/)  
+
+* **Does Hessian Data Improve the Performance of Machine Learning Potentials?** [2025]  
+Austin Rodriguez, Justin S. Smith, Jose L. Mendoza-Cortes.  
+[arXiv:2503.07839 (2025)](https://arxiv.org/abs/2503.07839)  
+
+* **Free energy profiles for chemical reactions in solution from high-dimensional neural network potentials: The case of the Strecker synthesis** [2025]  
+Alea Miako Tokita, Timothée Devergne, A. Marco Saitta, Jörg Behler.  
+[arXiv:2503.05370 (2025)](https://arxiv.org/abs/2503.05370)  
+
+* **Accurate Free Energy Calculation via Multiscale Simulations Driven by Hybrid Machine Learning and Molecular Mechanics Potentials** [2025]  
+Wang X, Wu X, Brooks B, Wang J.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2024-zq975-v2)  
+
+* **ANI-1xBB: an ANI based reactive potential** [2025]  
+Zhang S, Zubatyuk R, Yang Y, Roitberg A, Isayev O.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-m2nqq)  
+
+* **Efficient Training of Neural Network Potentials for Chemical and Enzymatic Reactions by Continual Learning** [2025]  
+Yao-Kun Lei, Kiyoshi Yagi, and Yuji Sugita.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01393)   
+
+* **Efficient equivariant model for machine learning interatomic potentials** [2025]  
+Yang, Z., Wang, X., Li, Y. et al.  
+[npj Comput Mater 11, 49 (2025)](https://doi.org/10.1038/s41524-025-01535-3) | [code](https://github.com/Shen-Group/E2GNN)   
+
+* **Neural Network Potential with Multiresolution Approach Enables Accurate Prediction of Reaction Free Energies in Solution** [2025]  
+Felix Pultar, Moritz Thürlemann, Igor Gordiy, Eva Doloszeski, and Sereina Riniker.  
+[J. Am. Chem. Soc. (2025)](https://doi.org/10.1021/jacs.4c17015) | [code](https://github.com/rinikerlab/amp_qmmm)  
+
+* **End-To-End Learning of Classical Interatomic Potentials for Benchmarking Anion Polarization Effects in Lithium Polymer Electrolytes** [2025]  
+Pablo A. Leon, Avni Singhal, Jurgis Ruza, Jeremiah A. Johnson, Yang Shao-Horn, and Rafael Gomez-Bombarelli.  
+[Chem. Mater. (2025)](https://doi.org/10.1021/acs.chemmater.4c02529) | [code](https://github.com/learningmatter-mit/AutoBADDIE)   
+
+* **Learning Smooth and Expressive Interatomic Potentials for Physical Property Prediction** [2025]  
+Xiang Fu, Brandon M. Wood, Luis Barroso-Luque, Daniel S. Levine, Meng Gao, Misko Dzamba, C. Lawrence Zitnick.  
+[arXiv:2502.12147 (2025)](https://arxiv.org/abs/2502.12147) | [code](https://github.com/FAIR-Chem/fairchem)   
+
+* **PiNN: Equivariant Neural Network Suite for Modeling Electrochemical Systems** [2025]  
+Jichen Li, Lisanne Knijff, Zhan-Yun Zhang, Linnéa Andersson, and Chao Zhang.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01570) | [code](https://teoroo-cmc.github.io/PiNN/master/usage/pinet)   
+
+* **An automated framework for exploring and learning potential-energy surfaces** [2024]  
+Liu, Yuanbin, Joe D. Morrow, Christina Ertural, Natascia L. Fragapane, John LA Gardner, Aakash A. Naik, Yuxing Zhou, Janine George, and Volker L. Deringer.  
+[arXiv:2412.16736 (2024)](https://arxiv.org/abs/2412.16736) | [code](https://github.com/autoatml/autoplex)   
+
+* **The Importance of Being Scalable: Improving the Speed and Accuracy of Neural Network Interatomic Potentials Across Chemical Domains** [2024]  
+Eric Qu, Aditi S. Krishnapriyan.  
+[arXiv:2410.24169 (2024)](https://arxiv.org/abs/2410.24169v1)   
+
+* **Cartesian atomic moment machine learning interatomic potentials** [2024]  
+Mingjian Wen, Wei-Fan Huang, Jin Dai, Santosh Adhikari.  
+[arXiv:2411.12096 (2024)](https://doi.org/10.48550/arXiv.2411.12096) | [code](https://github.com/wengroup/camp)  
+
+* **DeepConf: Leveraging ANI-ML Potentials for Exploring Local Minima with A Focus on Bioactive Conformations** [2024]  
+Tayfuroglu O, Zengin İN, Koca MS, Kocak A.  
+[ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-xqbdp-v2) | [code](https://github.com/otayfuroglu/DeepConf)  
+
+* **Universal Machine Learning Interatomic Potentials are Ready for Phonons** [2024]  
+Antoine Loew, Dewen Sun, Hai-Chen Wang, Silvana Botti, Miguel A. L. Marques.  
+[arXiv:2412.16551 (2024)](https://arxiv.org/abs/2412.16551) | [code](https://github.com/hyllios/utils)   
+
+* **Neural Network Potentials for Enabling Advanced Small-Molecule Drug Discovery and Generative Design** [2024]  
+Barnett, Simon, and John D. Chodera.  
+[GEN Biotechnology 3.3 (2024)](https://doi.org/10.1089/genbio.2024.0011)    
+
+* **Online Test-time Adaptation for Interatomic Potentials** [2024]  
+Taoyong Cui, Chenyu Tang, Dongzhan Zhou, Yuqiang Li, Xingao Gong, Wanli Ouyang, Mao Su, Shufei Zhang.  
+[arXiv:2405.08308 (2024)](https://arxiv.org/abs/2405.08308) | [code](https://github.com/TaoyongCui/TAIP-codes)   
+
+* **Uncertainty-biased molecular dynamics for learning uniformly accurate interatomic potentials** [2024]  
+Zaverkin, V., Holzmüller, D., Christiansen, H. et al.  
+[npj Comput Mater 10, 83 (2024)](https://doi.org/10.1038/s41524-024-01254-1) | [code](https://github.com/nec-research/alebrew)   
+
+* **General-purpose machine-learned potential for 16 elemental metals and their alloys** [2024]  
+Song, K., Zhao, R., Liu, J. et al.  
+[Nat Commun 15, 10208 (2024)](https://doi.org/10.1038/s41467-024-54554-x) | [code](https://github.com/brucefan1983/GPUMD)    
+
+* **Scalable Parallel Algorithm for Graph Neural Network Interatomic Potentials in Molecular Dynamics Simulations** [2024]  
+Yutack Park, Jaesun Kim, Seungwoo Hwang, and Seungwu Han.  
+[J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00190) | [code](https://github.com/MDIL-SNU/SevenNet)  
+
+* **Ab initio Accuracy Neural Network Potential for Drug-like Molecules** [2024]  
+Yang M, Zhang D, Wang X, Zhang L, Zhu T, Wang H.  
+[ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-sq8nh) | [data](https://www.aissquare.com/datasets/detail?pageType=datasets&name=Drug%28drug-like-molecule%29_DPA_v1_0&id=143)    
+
+* **HH130: a standardized database of machine learning interatomic potentials, datasets, and its applications in the thermal transport of half-Heusler thermoelectrics** [2024]  
+Yang, Yuyan, Yifei Lin, Shengnan Dai, Yifan Zhu, Jinyang Xi, Lili Xi, Xiaokun Gu, David J. Singh, Wenqing Zhang, and Jiong Yang.  
+[Digital Discovery (2024)](https://doi.org/10.1039/D4DD00240G) | [data](http://www.mathub3d.net)    
+
+* **Efficient Training of Neural Network Potentials for Chemical and Enzymatic Reactions by Continual Learning** [2024]  
+Lei Y-K, Yagi K, Sugita Y.  
+[ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-xkxd5)  
+
+* **Learning together: Towards foundation models for machine learning interatomic potentials with meta-learning** [2024]  
+Allen, A.E.A., Lubbers, N., Matin, S. et al.  
+[npj Comput Mater 10, 154 (2024)](https://doi.org/10.1038/s41524-024-01339-x)  
+
+* **Quantum-accurate machine learning potentials for metal-organic frameworks using temperature driven active learning** [2024]  
+Sharma, A., Sanvito, S.  
+[npj Comput Mater 10, 237 (2024)](https://doi.org/10.1038/s41524-024-01427-y) | [code](https://github.com/asharma-ms/MOF_MLP_2024)  
+
+* **Molecular Simulations with a Pretrained Neural Network and Universal Pairwise Force Fields** [2024]  
+Kabylda A, Frank JT, Dou SS, Khabibrakhmanov A, Sandonas LM, Unke OT, et al.  
+[ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-bdfr0) | [code](https://github.com/general-molecular-simulations/so3lr)  
+
+* **AMARO: All Heavy-Atom Transferable Neural Network Potentials of Protein Thermodynamics** [2024]  
+Mirarchi, Antonio, Raul P. Pelaez, Guillem Simeon, and Gianni De Fabritiis.  
+[arXiv:2409.17852 (2024)](https://arxiv.org/abs/2409.17852) | [code](https://github.com/compsciencelab/amaro)  
+
+* **Revisiting Aspirin Polymorphic Stability Using a Machine Learning Potential** [2024]  
+Hattori, Shinnosuke, and Qiang Zhu.  
+[ACS Omega (2024)](https://doi.org/10.1021/acsomega.4c04782)  
+
+* **Enhancing Protein–Ligand Binding Affinity Predictions Using Neural Network Potentials** [2024]  
+Sabanés Zariquiey, F., Galvelis, R., Gallicchio, E., Chodera, J.D., Markland, T.E. and De Fabritiis, G.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.3c02031) | [code](https://github.com/compsciencelab/ATM_benchmark/tree/main/ATM_With_NNPs)  
+
+* **Universal-neural-network-potential molecular dynamics for lithium metal and garnet-type solid electrolyte interface** [2024]  
+Iwasaki, R., Tanibata, N., Takeda, H. et al.   
+[Commun Mater 5, 148 (2024)](https://doi.org/10.1038/s43246-024-00595-0)  
+
+* **The Potential of Neural Network Potentials** [2024]  
+Duignan, Timothy T.   
+[ACS Physical Chemistry Au 4.3 (2024)](https://doi.org/10.1021/acsphyschemau.4c00004)  
+
+* **GPIP: Geometry-enhanced Pre-training on Interatomic Potentials** [2024]  
+Su, M., S. Zhang, T. Cui, C. Tang, Y. Li, Y. Dong, X. Gong, W. Ouyang, and L. Bai.  
+[arXiv:2309.15718 (2024)](https://doi.org/10.1038/s42256-024-00818-6) | [code](https://github.com/cuitaoyong/GPIP)  
+
+* **AIMNet2: A Neural Network Potential to Meet your Neutral, Charged, Organic, and Elemental-Organic Needs** [2024]  
+Anstine, Dylan, Roman Zubatyuk, and Olexandr Isayev.   
+[chemrxiv-2023-296ch-v2 (2024)](https://doi.org/10.26434/chemrxiv-2023-296ch-v2) | [code](https://github.com/isayevlab/aimnet2)  
+
+* **NNP/MM: Accelerating Molecular Dynamics Simulations with Machine Learning Potentials and Molecular Mechanics** [2023]  
+Galvelis, R., Varela-Rial, A., Doerr, S., Fino, R., Eastman, P., Markland, T.E., Chodera, J.D. and De Fabritiis, G.   
+[J. Chem. Inf. Model. (2023)](https://doi.org/10.1021/acs.jcim.3c00773) | [code](https://github.com/openmm/nnpops)  
+
+* **CHGNet as a pretrained universal neural network potential for charge-informed atomistic modelling** [2023]  
+Deng, B., Zhong, P., Jun, K. et al.  
+[Nat Mach Intell 5, 1031–1041 (2023)](https://doi.org/10.1038/s42256-023-00716-3) | [code](https://github.com/CederGroupHub/chgnet)  
+
+* **Towards universal neural network potential for material discovery applicable to arbitrary combination of 45 elements** [2022]  
+Takamoto, S., Shinagawa, C., Motoki, D. et al.   
+[Nat Commun 13, 2991 (2022)](https://doi.org/10.1038/s41467-022-30687-9) | [data](https://doi.org/10.6084/m9.figshare.19658538)  
+
+* **E(3)-equivariant graph neural networks for data-efficient and accurate interatomic potentials** [2022]  
+Batzner, S., Musaelian, A., Sun, L. et al.   
+[Nat Commun 13, 2453 (2022)](https://doi.org/10.1038/s41467-022-29939-5) | [data](https://github.com/teddykoker/nequip-eqx)  
+
+* **Teaching a neural network to attach and detach electrons from molecules** [2021]  
+Zubatyuk, R., Smith, J.S., Nebgen, B.T. et al.   
+[Nat Commun 12, 4870 (2021)](https://doi.org/10.1038/s41467-021-24904-0)  | [code](https://github.com/isayevlab/aimnetnse)  
+
+* **Four Generations of High-Dimensional Neural Network Potentials** [2021]  
+Behler, Jorg.   
+[Chemical Reviews 121.16 (2021)](https://doi.org/10.1021/acs.chemrev.0c00868)  
+
+* **DP-GEN: A concurrent learning platform for the generation of reliable deep learning based potential energy models** [2020]  
+Zhang, Yuzhi, Haidi Wang, Weijie Chen, Jinzhe Zeng, Linfeng Zhang, Han Wang, and E. Weinan.   
+[Computer Physics Communications 253 (2020)](https://doi.org/10.1016/j.cpc.2020.107206)  | [code](https://github.com/deepmodeling/dpgen)  
+
+
+
+
+
+
+
+
+
+
+### Neural Reactive Potential
+
+
+
+
+
+
+
+
+* **Label-Free, Quantum-Mechanically Informed Scoring of Protein–Ligand Complexes with Machine-Learned Interatomic Potentials** [2026]  
+  ilkwon cho, Hatice Gokcan, Olexandr Isayev.  
+  [ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15006459/v2) | [code](https://github.com/isayevlab/aimnetcentral)  
+
+* **Enerzyme: A Framework for Efficient Training of Reactive Neural Network Potentials for Enzyme Catalysis with Application to Methyltransferases** [2026]  
+  Weiliang Luo, Heather J. Kulik.  
+  [arXiv:2607.01362 (2026)](https://doi.org/10.48550/arXiv.2607.01362) | [code](https://github.com/Benzoin96485/Enerzyme)  
+
+* **Concerted Electron-Ion Transport by Polyacrylonitrile Elucidated with Reactive Deep Learning Potentials** [2026]  
+Rajni Chahal-Crockett, Michael D. Toomey, Logan T. Kearney, Yawei Gao, Joshua T. Damron, Amit K. Naskar, and Santanu Roy.  
+[J. Am. Chem. Soc.(2025)](https://doi.org/10.1021/jacs.6c05078) | [code](https://github.com/rajnichahal/AIMMS-Research-Group/tree/main/Reactive%20PAN%20NNIP)  
+
+* **A Fast, Accurate, and Reactive Equivariant Foundation Potential** [2025]  
+Tsz Wai Ko, Runze Liu, Adesh Rohan Mishra, Zihan Yu, Ji Qi, Shyue Ping Ong.  
+[arXiv:2511.07249 (2025)](https://doi.org/10.1002/anie.202516763) | [code](https://github.com/materialsvirtuallab/maml)  
+
+* **AIMNet2-NSE: A Transferable Reactive Neural Network Potential for Open-Shell Chemistry** [2025]  
+B. Kalita, R. Zubatyuk, D. M. Anstine, M. Bergeler, V. Settels, C. Stork, S. Spicher, O. Isayev.  
+[Angew. Chem. Int. Ed. (2025)](https://doi.org/10.1002/anie.202516763) | [code](https://github.com/isayevlab/aimnetcentral/)  
+
+* **A Large Scale Molecular Hessian Database for Optimizing Reactive Machine Learning Interatomic Potentials** [2025]  
+Cui, T., Han, Y., Jia, H. et al.  
+[Sci Data (2025)](https://doi.org/10.1021/acs.jctc.5c00920) | [code](https://github.com/deepprinciple/HORM/releases/tag/v1.0) | [Zenodo](https://doi.org/10.5281/zenodo.17217897)  
+
+* **Accelerating Transition State Search and Ligand Screening for Organometallic Catalysis with Reactive Machine Learning Potential** [2025]  
+Kun Tang, Yujing Zhao, Lei Zhang, Jian Du, Qingwei Meng, and Qilei Liu.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01047) | [code](https://github.com/Senppoa/RMLP-for-OMCat/tree/main)  
+
+* **Reactive Active Learning: An Efficient Approach for Training Machine Learning Interatomic Potentials for Reacting Systems** [2025]  
+Achar, S. K., Shukla, P. B., Mhatre, C. V., Bernasconi, L., Vinger, C. Y., & Johnson, J. K.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00920) | [code](https://github.com/siddarthachar/reactive_active_learning)  
+
+* **AIMNet2-NSE: A Transferable Reactive Neural Network Potential for Open-Shell Chemistry** [2025]  
+Kalita B, Zubatyuk R, Anstine DM, Bergeler M, Settels V, Stork C, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-kdg6n) | [data](https://figshare.com/s/988db758cceb66f220c1?file=56714804)  
+
+* **Machine learning prediction of a chemical reaction over 8 decades of energy** [2025]  
+Daniel Julian, Jesús Pérez-Ríos.  
+[arXiv:2507.01793 (2025)](https://doi.org/10.48550/arXiv.2507.01793)  
+
+* **AIMNet2-rxn: A Machine Learned Potential for Generalized Reaction Modeling on a Millions-of-Pathways Scale** [2025]  
+Anstine DM, Zhao Q, Zubatiuk R, Zhang S, Singla V, Nikitin F, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-hpdmg) | [code](https://github.com/isayevlab/aimnetcentral)  
+
+* **Harnessing Machine Learning to Enhance Transition State Search with Interatomic Potentials and Generative Models** [2025]   
+ Zhao Q, Han Y, Zhang D, Wang J, Zhong P, Cui T, et al.  
+  [ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-mt6hc-v2)  
+
+* **Capturing Excited State Proton Transfer Dynamics with Reactive Machine Learning Potentials** [2025]   
+ Umberto Raucci.  
+  [J. Phys. Chem. Lett. (2025)](https://doi.org/10.1021/acs.jpclett.5c00688)  
+
+* **ANI-1xBB: An ANI-Based Reactive Potential for Small Organic Molecules** [2025]   
+ Shuhao Zhang, Roman Zubatyuk, Yinuo Yang, Adrian Roitberg, and Olexandr Isayev.  
+  [J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00347) | [code](https://github.com/amateurcat/ANI-1xBB)  
+
+* **The evolution of machine learning potentials for molecules, reactions and materials** [2025]   
+ Xia, Junfan and Zhang, Yaolong and Jiang, Bin.  
+  [Chem. Soc. Rev. (2025)](https://doi.org/10.1039/D5CS00104H)  
+
+* **Reaction dynamics of Diels–Alder reactions from machine learned potentials** [2022]  
+ Young, Tom A., Tristan Johnston-Wood, Hanwen Zhang, and Fernanda Duarte.  
+  [Physical Chemistry Chemical Physics 24.35 (2022)](https://doi.org/10.1039/D2CP02978B) | [code](https://github.com/duartegroup/mlp-train)  
+
+
+
+
+
+
+
+
+### Reactive Force Fields
+
+
+
+
+
+* **Boosting ReaxFF Reactive Force Field Optimization with Adaptive Sampling** [2025]   
+ Shuang Li, Siyuan Yang, Sibing Chen, Wei Zheng, Zejian Dong, Langli Luo, Weiwei Zhang, and Xing Chen.  
+  [J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01748) | [code](https://github.com/tju-chen-group/Adaptive-Sampling-Optimization-code)  
+
+
+
+
+
+
+
+
+
+
+
+
+### Free Energy Perturbation
+
+
+
+
+
+
+
+
+* **Optimizing Absolute Binding Free Energy Calculations for Production Usage** [2026]  
+Dr. Zhiyi Wu, Dr. Gerhard Koenig, Prof. Stefan Boresch, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv-2025-q08ld-v2)  
+
+* **Machine-learning force-field scoring rivals free-energy perturbation for congeneric ligand ranking across public benchmarks** [2026]  
+Kevin Ryczko, Sarah Maier, Amogh Sood, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15008810/v1)  
+
+* **Evaluating Electrostatic Embedding MLIP/MM for Relative Binding Free Energy Calculations** [2026]  
+Stephen E. Farr, Gianni De Fabritiis.  
+[arXiv:2608.13355(2026)](https://doi.org/10.48550/arXiv.2608.13355) | [code](https://huggingface.co/Acellera)  
+
+* **An OpenMM-Based ML/MM–MMGBSA Workflow for End-point Protein–Ligand Binding Energy Ranking** [2026]  
+Chenchen Wang, Shihang Wang, Silong Zhai, Li Qin, Kai Xu, Jianmin Wang, Huanxiang Liu, Xiaojun Yao.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c01539) | [code](https://github.com/ChenchenWang-AIDD/mlmm-gbsa)  
+
+* **Estimation of Absolute Protein–DNA Binding Free Energy Using Streamlined Geometric Formalism** [2026]  
+Shreya Mukherjee, Diship Srivastava, and Niladri Patra.  
+[J. Phys. Chem. Lett. (2026)](https://doi.org/10.1021/acs.jpclett.6c01789)  
+
+* **Free Energy Calculations Meet Generative Machine Learning** [2026]  
+Xinqiang Ding, Haoming Su, Jiaqi Zhu.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15004549/v1)  
+
+* **Accurate Determination of Host–Guest Standard Binding Free Energies and Kinetic Parameters from Replica Exchange Molecular Dynamics Simulation** [2026]  
+Leyun Wu, Zijian Han, Zhaoyin Zhou, Jinan Wang, Weiliang Zhu, and Zhijian Xu.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.5c02914)  
+
+* **Reweighting free energy profiles between universal machine learning interatomic potentials for fast consensus building** [2026]  
+Sauradeep Majumdar, Miguel Steiner, Johannes C. B. Dietschreit, Swagata Roy, Daniel Willimetz, Lukaš Grajciar, Rafael Gómez-Bombarelli.  
+[arXiv:2605.15630 (2026)](https://doi.org/10.48550/arXiv.2605.15630) | [code](https://github.com/sauradeep93/Reweighting-free-energies) | [Zenodo](https://zenodo.org/records/20142456)  
+
+* **Integrating Machine Learning Interatomic Potentials with MMPBSA for Accurate Protein–Ligand Binding Free Energy Calculations** [2026]  
+Wei, Xue-Xin, Yuxinxin Chen, Yuedong Yang, Mingyuan Xu, Pavlo O. Dral, and Hongming Chen.  
+[J. Phys. Chem. B (2026)](https://doi.org/10.1021/acs.jpcb.6c00306) | [code](https://github.com/XueXinWei-AI4S/AIQM-PBSA)  
+
+* **Dual-LAO for calculating fast and robust relative binding free energies of simple and complex transformations** [2026]  
+Ansari, N., Aviat, F., Hénin, J. et al.  
+[Commun Chem (2026)](https://doi.org/10.1038/s42004-026-02022-6) | [code](https://github.com/ansarinarjes/RBFE-L-ABF-OPES)  
+
+* **Anchor-Based Relative Free Energy Simulations using Machine-Learned Interatomic Potentials** [2026]  
+Anna Katharina Picha, Stefan Boresch.  
+[ChemRxiv (2026)](https://doi.org/10.26434/chemrxiv.15001438/v1) | [code](https://github.com/cbc-univie/anchor-4D)  
+
+* **Machine-Learned Electrostatic Potentials for Accurate Hydration Free Energy Calculations** [2026]  
+Mathias Hilfiker, Leonardo Medrano Sandonas, Alexandre Tkatchenko, Ola Engkvist, and Marco Klähn.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.5c02086) | [code](https://github.com/mathilfiker/ml_for_charges)  
+
+* **Thermodynamically consistent machine learning model for excess Gibbs energy** [2026]  
+Hoffmann, M., Specht, T., Göttl, Q. et al.  
+[Nat Commun 17, 3485 (2026)](https://doi.org/10.1038/s41467-026-71430-y) | [code](https://doi.org/10.5281/zenodo.18952614)  
+
+* **Development and large-scale benchmarks of a protein-ligand absolute binding free energy toolkit** [2026]  
+Yu Liu, Ailun Wang, Yu Xia, Zhi Wang, Wen Yan.  
+[arXiv:2603.22274 (2026)](https://doi.org/10.48550/arXiv.2603.22274)  
+
+* **Accurate Hydration Free Energy Calculations for Diverse Organic Molecules With a Machine Learning Force Field** [2026]  
+Xiaowei Xie, John L. Weber, Mats Svensson, Ryne C. Johnston, Edward D. Harder, and Leif D. Jacobson.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.5c02019) | [code](https://github.com/leifjacobson/MLFF_HFE/)  
+
+* **Large-scale collaborative assessment of binding free energy calculations for drug discovery using OpenFE** [2025]  
+Baumann HM, Horton JT, Henry MM, Travitz A, Ries B, Gowers RJ, et al.  
+  [ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-7sthd)  
+
+* **Massively Parallel Free Energy Calculations for In Silico Affinity Maturation of Designed Miniproteins** [2025]  
+Dylan Novack, Si Zhang, and Vincent A. Voelz.  
+  [J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00703) | [data](https://github.com/DJNovack/Massively_Parallel_Free_Energy_Calculations_of_HA_Binders_2024)  
+
+* **Benchmarking Alchemical Relative Binding Free Energy Calculations for Nucleotide Binding to Multimeric ATPases** [2025]  
+Apoorva Purohit, Xiaolin Cheng*.  
+  [J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01069)  
+
+* **Machine Learning Guided AQFEP: A Fast and Efficient Absolute Free Energy Perturbation Solution for Virtual Screening** [2025]  
+Jordan E. Crivelli-Decker, Zane Beckwith, Gary Tom, Ly Le, Sheenam Khuttan, Romelia Salomon-Ferrer, Jackson Beall, Rafael Gómez-Bombarelli, and Andrea Bortolato.  
+  [J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c00399) | [data](https://zenodo.org/records/12827945)  
+
+* **Considerations in the use of machine learning force fields for free energy calculations** [2025]  
+Orlando A. Mendible-Barreto, Jonathan K. Whitmer, Yamil J. Colón.  
+  [J. Chem. Phys. (2025)](https://doi.org/10.1063/5.0252043) | [code](https://github.com/omendibleba/Considerations_for_MLPs_FES)  
+
+* **Narjes Ansari, Zhifeng Francis Jing, Antoine Gagelin, Florent Hédin, Félix Aviat, Jérôme Hénin, Jean-Philip Piquemal, and Louis Lagardère** [2025]  
+Narjes Ansari, Zhifeng Francis Jing, Antoine Gagelin, Florent Hédin, Félix Aviat, Jérôme Hénin, Jean-Philip Piquemal, and Louis Lagardère.  
+  [J. Phys. Chem. Lett. (2025)](https://doi.org/10.1021/acs.jpclett.5c00683) | [code](https://github.com/ansarinarjes/ABFE-L-ABF-OPES)  
+
+* **Applying Absolute Free Energy Perturbation Molecular Dynamics to Diffusively Binding Ligands** [2025]  
+Laracuente, Xavier E., Bryan M. Delfing, Xingyu Luo, Audrey Olson, William Jeffries, Steven R. Bowers, Kenneth W. Foreman et al.  
+  [J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00121) | [code](https://github.com/KlimovLab/AFEP-REST_KKPK_impa)  
+
+* **QuantumBind-RBFE: Accurate Relative Binding Free Energy Calculations Using Neural Network Potentials** [2025]  
+Zariquiey, Francesc Sabanés, Stephen E. Farr, Stefan Doerr, and Gianni De Fabritiis.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c00033) | [arXiv:2501.01811 (2025)](https://arxiv.org/abs/2501.01811) | [code](https://github.com/Acellera/quantumbind_rbfe)  
+
+* **Free energy profiles for chemical reactions in solution from high-dimensional neural network potentials: The case of the Strecker synthesis** [2025]  
+Alea Miako Tokita, Timothée Devergne, A. Marco Saitta, Jörg Behler.  
+[arXiv:2503.05370 (2025)](https://arxiv.org/abs/2503.05370)  
+
+* **Accurate Free Energy Calculation via Multiscale Simulations Driven by Hybrid Machine Learning and Molecular Mechanics Potentials** [2025]  
+Wang X, Wu X, Brooks B, Wang J.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2024-zq975-v2)  
+
+* **Robust protein–ligand interaction modeling through integrating physical laws and geometric knowledge for absolute binding free energy calculation** [2025]   
+Su, Qun, Jike Wang, Qiaolin Gou, Renling Hu, Linlong Jiang, Hui Zhang, Tianyue Wang et al.  
+  [Chemical Science (2025)](https://doi.org/10.1039/D4SC07405J) | [code](https://github.com/lingcon01/LumiNet)  
+
+* **Lambda-ABF-OPES: Faster Convergence with High Accuracy in Alchemical Free Energy Calculations** [2025]  
+Narjes Ansari, Francis Jing, Antoine Gagelin, Florent Hédin, Félix Aviat, Jérôme Hénin, Jean-Philip Piquemal, Louis Lagardère.  
+  [arXiv:2502.17233 (2025)](https://arxiv.org/abs/2502.17233)   
+
+* **Comparison of Methodologies for Absolute Binding Free Energy Calculations of Ligands to Intrinsically Disordered Proteins** [2024]   
+Michail Papadourakis, Zoe Cournia, Antonia S. J. S. Mey, and Julien Michel.    
+  [J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00942) | [code](https://github.com/michellab/idpabfe)  
+
+* **FEP-SPell-ABFE: An Open-Source Automated Alchemical Absolute Binding Free Energy Calculation Workflow for Drug Discovery** [2024]   
+Pengfei Li,Tingting Pu ,Ye Mei.    
+  [ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-tkvrh) | [code](https://github.com/freeenergylab/FEP-SPell-ABFE)    
+
+* **Studying the Collective Functional Response of a Receptor in Alchemical Ligand Binding Free Energy Simulations with Accelerated Solvation Layer Dynamics** [2024]   
+Wei Jiang.   
+  [J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00191)  
+
+* **Alchemical Transformations and Beyond: Recent Advances and Real-World Applications of Free Energy Calculations in Drug Discovery** [2024]   
+ Qian, Runtong, Jing Xue, You Xu, and Jing Huang.   
+  [J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c01024)  
+
+* **Automated Adaptive Absolute Binding Free Energy Calculations** [2024]  
+Clark, Finlay, Graeme Robb, Daniel Cole, and Julien Michel.   
+[J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00806) | [code](https://github.com/michellab/a3fe)  
+
+* **Machine Learning Guided AQFEP: A Fast and Efficient Absolute Free Energy Perturbation Solution for Virtual Screening** [2024]  
+Crivelli-Decker, J.E., Beckwith, Z., Tom, G., Le, L., Khuttan, S., Salomon-Ferrer, R., Beall, J., Gómez-Bombarelli, R. and Bortolato, A.   
+[J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00399) | [code](https://zenodo.org/records/12827945)  
+
+* **The maximal and current accuracy of rigorous protein-ligand binding free energy calculations** [2023]  
+Ross, G.A., Lu, C., Scarabelli, G. et al.  
+  [Commun Chem 6, 222 (2023)](https://doi.org/10.1038/s42004-023-01019-9) | [code](https://github.com/schrodinger/public_binding_free_energy_benchmark)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Solvent Potential
+
+
+
+
+
+
+
+
+* **Solvating machine-learning interatomic potentials for solution-phase chemistry** [2026]  
+Anton Z. Ni, Joonho Lee.  
+  [arXiv:2610.17226 (2026)](https://doi.org/10.48550/arXiv.2610.17226) | [code](https://github.com/Ant-on-knee/anysolv)  
+
+* **Transferable Implicit Solvent Machine Learning Potential for Drugs and Proteins Approaching Ab Initio Accuracy** [2026]  
+Jan Eckwert, Julija Zavadlav.  
+  [arXiv:2607.10887 (2026)](https://doi.org/10.48550/arXiv.2607.10887)  
+
+* **ConSolv: Solvent-Conditional Machine Learning Implicit Solvent Potential** [2026]  
+Linying Zhang, Julija Zavadlav.  
+  [arXiv:2606.24983 (2026)](https://doi.org/10.48550/arXiv.2606.24983)  
+
+
+
+
+
+
+
+
+
+
+
+### Theoretical Chemistry
+
+
+
+
+
+
+
+
+* **How Atoms Interact Within Molecules** [2026]  
+Adil Kabylda, Malte Esders, Matteo Gori, Stefan Chmiela, Klaus-Robert Müller, Alexandre Tkatchenko.  
+  [arXiv:2605.28960 (2026)](https://doi.org/10.48550/arXiv.2605.28960)  
+
+* **A New Paradigm for Computational Chemistry** [2026]  
+Raphael T. Husistein, Markus Reiher.  
+  [arXiv:2604.01360 (2026)](https://doi.org/10.48550/arXiv.2604.01360)  
+
+* **ChemGraph as an agentic framework for computational chemistry workflows** [2026]  
+Pham, T.D., Tanikanti, A. & Keçeli, M.  
+  [Commun Chem (2026)](https://doi.org/10.1038/s42004-025-01776-9) | [code](https://github.com/argonne-lcf/ChemGraph)  
+
+
+
+
+
+
+
+
+
+### QuantumChem
+
+
+
+
+
+
+* [PSI4](https://psicode.org/) - Open-Source Quantum Chemistry – an electronic structure package in C++ driven by Python.
+* [PySCF](https://github.com/pyscf/) - Python module for quantum chemistry.
+* [gpu4pyscf](https://github.com/pyscf/gpu4pyscf) - A plugin to use Nvidia GPU in PySCF package.
+* [PyFock](https://github.com/manassharma07/PyFock) - An efficient and fully parallelized pure python DFT code with GPU acceleration.
+* [Auto-QChem](https://github.com/doyle-lab-ucla/auto-qchem) - An automated workflow for the generation and storage of DFT calculations for organic molecules.
+
+
+
+
+
+
+
+
+
+* **ARES: a plane-wave density-functional-theory code in Rust** [2026]  
+Zehan Liu, Qian Wang, Xiangyu Zheng, Jiaxiang Li, Chuntian Wu, Yongshuo Chen, Xuecheng Shao, Qiang Xu, Yu Xie, Yanming Ma.  
+[arXiv:2610.17854 (2026)](https://doi.org/10.48550/arXiv.2610.17854)  
+
+* **BOS-TMC Data Set: DFT Properties of 159k Experimentally Characterized Transition Metal Complexes Spanning Multiple Charge and Spin States** [2026]  
+Aaron G. Garrison, Jacob W. Toney, Tatiana Nikolaeva, Roland G. St Michel, Christopher J. Stein, Heather J. Kulik.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c01792) | [Zenodo](https://doi.org/10.5281/zenodo.21383037)  
+
+* **A note on the accuracy of spin-densities from Kohn-Sham Density Functional Theory** [2026]  
+Rodrigo A. Mendes, Zachary W. Windom, Ajith Perera, Roberto L. A. Haiduke, Rodney J. Bartlett.  
+[arXiv:2609.17385(2026)](https://doi.org/10.48550/arXiv.2609.17385)  
+
+* **Performance of a minimally empirical local-hybrid density functional for molecular chemistry** [2026]  
+Erin R. Johnson, Kyle R. Bryenton.  
+[arXiv:2609.06162 (2026)](https://doi.org/10.48550/arXiv.2609.06162)  
+
+* **PyFock: A Just-In-Time Compiled Gaussian Basis DFT Python Code for CPU and GPU Architectures** [2026]  
+Manas Sharma, Marek Sierka.  
+[J. Phys. Chem. A (2026)](https://doi.org/10.1021/acs.jpca.6c03727) | [web](https://pyfock.bragitoff.com/) | [Code](https://github.com/manassharma07/pyfock)  
+
+* **PrimaDORAC: An improved Web Interface for Rapid GAFF2 Parameter Assignment with ABCG2 Charge Models for Drug Design Applications** [2026]  
+Piero Procacci.  
+[Journal of computational chemistry (2026)](https://doi.org/10.1002/jcc.70444) | [web](http://www1.chim.unifi.it/orac/primadorac/)  
+
+* **PpF: a density functional fine-tuned for noncovalent interactions of protein and peptide residues** [2026]  
+Zhou, Yini, Tao Li, Yaqi Li, Jianda Yue, Qifeng Tian, Zhonghua Liu, Donald G. Truhlar, and Ying Wang.  
+[Chem. Sci. (2026)](https://doi.org/10.1039/D6SC01551D) | [Zenodo](https://doi.org/10.5281/zenodo.16889519)  
+
+* **A quantum-mechanical framework for million-atom scale biological systems** [2026]  
+Wieners, L., Garcia, M.E.  
+[Commun Chem 9, 170 (2026)](https://doi.org/10.1038/s42004-026-02038-y) | [Zenodo](https://doi.org/10.5281/zenodo.16889519)  
+
+
+
+
+
+
+
+
+
+### Ab Initio
+
+
+
+
+
+
+
+
+
+
+* **Imitation and Accuracy in Automated Electronic-Structure Method Selection** [2026]  
+Qianying Liu, Yuki Kurashige, Ruiqi Zhang.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15010313/v2) | [code](https://github.com/zenqiaz/Q-planner)  
+
+* **An ab initio foundation model of wavefunctions that accurately describes chemical bond breaking** [2026]  
+Foster, A., Schätzle, Z., Szabó, P.B. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-76604-2) | [code](https://github.com/microsoft/oneqmc)  
+
+* **Ab initio side-chain sampling with PUD+ enables high-fidelity protein dynamics across AI-driven and classical simulations** [2026]  
+Dianwei Wu, Tong Wang.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.10.743906)  
+
+* **Universal Interatomic Potentials as Configuration-Space Generators for One-Shot and Iterative Fine-Tuning of Ab Initio-Accurate Material-Specific Models** [2026]  
+Jonas Hänseroth, Aaron Flötotto, Christian Dreßler.  
+[arXiv:2606.23214 (2026)](https://doi.org/10.48550/arXiv.2606.23214) | [code](https://github.com/microsoft/mattersim) | [Zenodo](https://zenodo.org/records/20792778)  
+
+* **GMFCC-UMA: A Fragment-Based Machine Learning Framework for Scalable Ab Initio-Quality Protein Energies** [2026]  
+Wan-sheng Ren, Jin Xiao, Yingfeng Zhang, Tong Zhu, and John Z. H. Zhang.  
+[J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c00459)  
+
+* **Accurate density functional theory for noncovalent interactions in charged systems** [2026]  
+Zhao, H., Lőrincz, B.D., Henkes, T., Berta, D., Nagy, P.R., Tkatchenko, A. and Vuckovic, S.  
+[Sci. Adv. (2026)](https://doi.org/10.1126/sciadv.adz8521) | [code](https://github.com/bertadenes/qm_selector)  
+
+* **Predicting Molecular Laser Properties from First-Principles Using Machine Learning-Based Nuclear Ensemble Approach Spectra** [2026]  
+Luis Cerdán, Antonio Francés-Monerris, Michael G. S. Londesborough, and Daniel Roca-Sanjuán.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.5c01866)  
+
+* **Ab Initio Molecular Dynamics Simulations for Organic Chemists─It is About Time!** [2026]  
+Nielsen, M.M., Wagen, C.C., Gomes, L.A., Tantillo, D.J., Lopez, S.A. and Jacobsen, E.N.  
+[J. Am. Chem. Soc. (2026)](https://doi.org/10.1021/jacs.5c20878)  
+
+* **A unified machine learning framework for ab initio multiscale modeling of liquids** [2026]  
+Anna T. Bui, Stephen J. Cox.  
+[arXiv:2603.20493 (2026)](https://doi.org/10.48550/arXiv.2603.20493)  
+
+* **Enhancing non-local interaction modeling for ab initio biomolecular calculations and simulations with ViSNet-PIMA** [2026]  
+Taoyong Cui, Zihan Wang, Tong Wang.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.03.18.712561)  
+
+* **Fundamental Study of Density Functional Theory Applied to Triplet State Reactivity: Introduction of the TRIP50 Data Set** [2026]  
+William B. Hughes, Mihai V. Popescu, and Robert S. Paton.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00144)  
+
+* **Accelerating Discovery Through Integration: A DFT validated Machine Learning Framework for Screening MOF Photocatalysts** [2026]  
+Marco Anselmi, Greg Slabaugh, Rachel Crespo-Otero and Devis Di Tommaso.  
+[J. Mater. Chem. A, (2026)](https://doi.org/10.1039/D5TA08107F)  
+
+* **Ab Initio Melting Properties of Water and Ice from Machine Learning Potentials** [2025]  
+Yifan Li, Bingjia Yang, Chunyi Zhang, Axel Gomez, Pinchen Xie, Yixiao Chen, Pablo M. Piaggi, Roberto Car.  
+[arXiv:2512.23939 (2025)](https://doi.org/10.48550/arXiv.2512.23939)  
+
+* **Deep-learning electronic structure calculations** [2025]  
+Tang, Z., Chen, H., Li, Y. et al.  
+[Nat Comput Sci 5, 1133–1146 (2025)](https://doi.org/10.1038/s43588-025-00932-4)  
+
+* **Accelerating Hartree-Fock and Density Functional Theory Calculations using Tensor Hypercontraction** [2025]  
+Andreas Erbs Hillers-Bendtsen, Todd J. Martínez.  
+[arXiv:2508.19212 (2025)](https://doi.org/10.48550/arXiv.2508.19212)  
+
+* **ChemRefine: An open-source automated and interoperable platform for machine learning and quantum chemistry simulations** [2025]  
+Migliaro I, Weiss MGS, Sterling AJ.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-cvg1x) | [code](https://github.com/sterling-group/ChemRefine)  
+
+* **Ab initio machine-learning simulation of calcium carbonate from aqueous solutions to the solid state** [2025]  
+P.M. Piaggi,J.D. Gale, & P. Raiteri.  
+[Proc. Natl. Acad. Sci. (2025)](https://doi.org/10.1073/pnas.2415663122) | [code](https://github.com/PabloPiaggi/CaCO3-SCAN-ML)  
+
+* **ELECTRA: A Cartesian Network for 3D Charge Density Prediction with Floating Orbitals** [2025]  
+Jonas Elsborg, Luca Thiede, Alán Aspuru-Guzik, Tejs Vegge, Arghya Bhowmik.  
+[arXiv:2503.08305 (2025)](https://doi.org/10.48550/arXiv.2503.08305)  
+
+* **DREAMS: Density Functional Theory Based Research Engine for Agentic Materials Simulation** [2025]  
+Ziqi Wang, Hongshuo Huang, Hancheng Zhao, Changwen Xu, Shang Zhu, Jan Janssen, Venkatasubramanian Viswanathan.  
+[arXiv:2507.14267 (2025)](https://doi.org/10.48550/arXiv.2507.14267) | [code](https://github.com/BattModels/material_agent)  
+
+* **LAMBench: A Benchmark for Large Atomistic Models** [2025]  
+Anyang Peng, Chun Cai, Mingyu Guo, Duo Zhang, Chengqian Zhang, Wanrun Jiang, Yinan Wang, Antoine Loew, Chengkun Wu, Weinan E, Linfeng Zhang, Han Wang.  
+[arXiv:2504.19578 (2025)](https://doi.org/10.48550/arXiv.2504.19578) | [code](https://github.com/deepmodeling/lambench)  
+
+* **DREAMS: Density Functional Theory Based Research Engine for Agentic Materials Simulation** [2025]  
+Ziqi Wang, Hongshuo Huang, Hancheng Zhao, Changwen Xu, Shang Zhu, Jan Janssen, Venkatasubramanian Viswanathan.  
+[arXiv:2507.14267 (2025)](https://doi.org/10.48550/arXiv.2507.14267) | [code](https://github.com/BattModels/material_agent)  
+
+* **Transferring Knowledge from MM to QM: A Graph Neural Network-Based Implicit Solvent Model for Small Organic Molecules** [2025]  
+Xu, M., Wang, S., He, Y. et al.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00728) | [code](https://github.com/rinikerlab/QM-GNNIS)  
+
+* **Efficient modeling of ionic and electronic interactions by a resistive memory-based reservoir graph neural network** [2025]  
+Xu, M., Wang, S., He, Y. et al.  
+[Nat Comput Sci (2025)](https://doi.org/10.1038/s43588-025-00844-3) | [code](https://github.com/hustmeng/RGNN)  
+
+* **OrbitAll: A Unified Quantum Mechanical Representation Deep Learning Framework for All Molecular Systems** [2025]  
+Kang, Beom Seok, Vignesh C. Bhethanabotla, Amin Tavakoli, Maurice D. Hanisch, William A. Goddard III, and Anima Anandkumar.  
+[arXiv:2507.03853 (2025)](https://doi.org/10.48550/arXiv.2507.03853)  
+
+* **An ab initio foundation model of wavefunctions that accurately describes chemical bond breaking** [2025]  
+Adam Foster, Zeno Schätzle, P. Bernát Szabó, Lixue Cheng, Jonas Köhler, Gino Cassella, Nicholas Gao, Jiawei Li, Frank Noé, Jan Hermann.  
+[arXiv:2506.19960 (2025)](https://doi.org/10.48550/arXiv.2506.19960) | [code](https://github.com/microsoft/oneqmc)  
+
+* **Predicting Oxidation Potentials with DFT-Driven Machine Learning** [2025]  
+Shweta Sharma, Natan Kaminsky, Kira Radinsky, and Lilac Amirav.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c00159) | [code](https://github.com/nkami/oxpot)  
+
+* **g-xTB: A General-Purpose Extended Tight-Binding Electronic Structure Method For the Elements H to Lr (Z=1–103)** [2025]  
+Froitzheim T, Müller M, Hansen A, Grimme S.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-bjxvt) | [code](https://github.com/grimme-lab/g-xtb)  
+
+* **Discovery of chemically modified higher tungsten boride by means of hybrid GNN/DFT approach** [2025]  
+Matsokin, N.A., Eremin, R.A., Kuznetsova, A.A. et al.  
+[npj Comput Mater 11, 163 (2025)](https://doi.org/10.1038/s41524-025-01628-z)  
+
+* **Revisiting a large and diverse data set for barrier heights and reaction energies: best practices in density functional theory calculations for chemical kinetics** [2025]  
+Liu, Xiao and Spiekermann, Kevin A. and Menon, Angiras and Green, William H. and Head-Gordon, Martin.  
+[Phys. Chem. Chem. Phys. (2025)](https://doi.org/10.1039/D5CP01181G)  
+
+* **Accurate and scalable exchange-correlation with deep learning** [2025]  
+Luise, Giulia et al.  
+[arXiv:2506.14665 (2025)](https://doi.org/10.48550/arXiv.2506.14665) | [data](https://zenodo.org/records/15387280)  
+
+* **Self-Refining Training for Amortized Density Functional Theory** [2025]  
+Majdi Hassan, Cristian Gabellini, Hatem Helal, Dominique Beaini, Kirill Neklyudov.  
+[arXiv:2506.01225 (2025)](https://arxiv.org/abs/2506.01225) | [code](https://github.com/majhas/self-refining-dft)  
+
+* **Unified deep learning framework for many-body quantum chemistry via Green’s functions** [2025]  
+SVenturella, C., Li, J., Hillenbrand, C. et al.  
+[Nat Comput Sci (2025)](https://doi.org/10.1038/s43588-025-00810-z) | [code](https://github.com/ZhuGroup-Yale/mlgf)  
+
+* **High-order Equivariant Flow Matching for Density Functional Theory Hamiltonian Prediction** [2025]  
+Seongsu Kim, Nayoung Kim, Dongwoo Kim, Sungsoo Ahn.  
+[arXiv:2505.13424 (2025)](https://doi.org/10.48550/arXiv.2505.13424)  
+
+* **The Enduring Relevance of Semiempirical Quantum Mechanics** [2025]  
+Jonathan E. Moussa.  
+[arXiv:2505.18817 (2025)](https://doi.org/10.48550/arXiv.2505.18817)  
+
+* **DENSE SENSE : A novel approach utilizing an electron density augmented machine learning paradigm to understand a complex odour landscape** [2025]  
+Saha P, Sharma M, Balaji S, Barsainyan AA, Kumar R, Steuber V, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-68d6w-v3) | [code](https://github.com/CSIO-FPIL/Dense-Sense-ODOR)  
+
+* **Advancing Density Functional Tight-Binding method for Large Organic Molecules through Equivariant Neural Networks** [2025]  
+Medrano Sandonas LR, Puleva M, Parra Payano R, Stöhr M, Cuniberti G, Tkatchenko A.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-z3mhh) | [code](https://github.com/lmedranos/EquiDTB)  
+
+* **Accurate Electrostatics for Biomolecular Systems through Machine Learning** [2025]  
+Hosseini AN, Kriz K, van der Spoel D.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-q2v9m) | [code](https://github.com/AlexandriaChemistry/ACT)  
+
+* **Accurate Ab-initio Neural-network Solutions to Large-Scale Electronic Structure Problems** [2025]  
+Michael Scherbela, Nicholas Gao, Philipp Grohs, Stephan Günnemann.  
+[arXiv:2504.06087(2025)](https://arxiv.org/abs/2504.06087) | [code](https://arxiv.org/abs/2504.06087)  
+
+* **Analytical ab initio hessian from a deep learning potential for transition state optimization** [2024]  
+KYuan, E.CY., Kumar, A., Guan, X. et al.  
+[Nat Commun 15, 8865 (2024)](https://doi.org/10.1038/s41467-024-52481-5) | [code](https://github.com/zadorlab/sella)  
+
+
+
+
+
+
+
+
+
+
+
+### AI-QuantumChem
+
+
+
+
+
+
+
+
+* **Physics-Aligned Electronic Ground-State Learning Improves Generalization** [2026]  
+Eike S. Eberhard, Xaver Kainz, Viktor Kotsev, Abdulrahman Aldossary, Stephan Günnemann.  
+[arXiv:2610.10298(2026)](https://doi.org/10.48550/arXiv.2610.10298) | [Code](https://github.com/ESEberhard/ML4DFT)  
+
+* **Accurately Generalizing Deep-Learning Hamiltonian Methods to Plane-Wave Density Functional Theory** [2026]  
+Chuntian Wu, Jiaxiang Li, Qiang Xu, Xuecheng Shao, Congwei Xie, Yu Xie, Yanming Ma.  
+[arXiv:2610.18317(2026)](https://doi.org/10.48550/arXiv.2610.18317)  
+
+* **Advancing density functional tight-binding method for large organic molecules through equivariant neural networks** [2026]  
+Leonardo Medrano Sandonas, Mirela Puleva, Zekiye Erarslan, Ricardo Parra Payano, Martin Stöhr, Gianaurelio Cuniberti, Alexandre Tkatchenko.  
+[Phys. Chem. Chem. Phys.(2026)](https://doi.org/10.1039/d6cp00038j) | [Code](https://github.com/lmedranos/EquiDTB)  
+
+* **Complete Neural Electronic Initialization Accelerates Materials DFT** [2026]  
+Felix Ærtebjerg, Jonas Elsborg, Arghya Bhowmik.  
+[arXiv:2609.21759 (2026)](https://doi.org/10.48550/arXiv.2609.21759) | [code](https://github.com/aerte/neural_paw_dft)  
+
+* **A Graph-Based Machine Learning Framework to Assign Empirical Interaction Parameters for Novel Molecules** [2026]  
+Y. Fu, M. Stroet, and M. L. O'Mara.  
+[Journal of Computational Chemistry(2026)](https://doi.org/10.1002/jcc.70508) | [code](https://github.com/OMaraLab/Gravy)  
+
+* **The Open-Shell Organic Systems Database: Diverse CCSD(T)/CBS Reaction Energies for Assessing Density Functional Theory and Machine Learning Methods** [2026]  
+Amir Karton.  
+[J. Phys. Chem. A (2026)](https://doi.org/10.1021/acs.jpca.6c03915)  
+
+* **SALTED: a symmetry-adapted machine-learning program for predicting electron-densities in molecules and materials** [2026]  
+Zekun Lou, Alan M. Lewis, Théophane Bernhard, Lukas Seifert, Agustin Salcedo, Florian Kleemiss, Mariana Rossi, Andrea Grisafi.  
+[arXiv:2609.03576(2026)](https://doi.org/10.48550/arXiv.2609.03576)  
+
+* **PARSEC.py: A Python-based Real-space Kohn–Sham Density Functional Theory Code Accelerated by Machine Learned Charge Density** [2026]  
+Zeyi Zhang, Carlos Mora Perez, Patrick Kwon, et al.  
+[ChemRxiv (2026)](https://doi.org/10.26434/chemrxiv.15005599/v1)  
+
+* **LLM-Guided Test-Time Discovery of Quantum-Chemical Approximation Algorithms** [2026]  
+Masaya Hagai, Yuta Suzuki, Tomoya Murata, Shuhei Kurita, Masaki Adachi.  
+[arXiv:2606.20729 (2026)](https://doi.org/10.48550/arXiv.2606.20729)  
+
+* **Leveraging neural network interatomic potentials for a foundation model of chemistry** [2026]  
+Kim, S.Y., Park, Y.J. & Li, J.  
+[npj Comput Mater (2026)](https://doi.org/10.1038/s41524-026-02167-x) | [code](https://github.com/parkyjmit/HackNIP)  
+
+* **A dataset of 1.2 million molecules with DFT-level quantum chemical annotations for molecular representation learning** [2026]  
+  Wang, H., Zhang, Z. & Gong, H.  
+  [Commun Chem (2026)](https://doi.org/10.1038/s42004-026-02076-6) | [code](https://github.com/GHUSER-haoyu/qcMol) | [Zenodo](https://zenodo.org/records/19183364)  
+
+* **Bridging quantum mechanics to liquid properties via a universal organic force field** [2026]  
+  Zheng, T., Xu, X., Wang, Z. et al.  
+  [Nat Commun (2026)](https://doi.org/10.1038/s41467-026-73566-3) | [code](https://github.com/ByteDance-Seed/byteff2)  
+
+* **NN-xTB: density functional accuracy at semi empirical speed with neural network extended tight binding** [2026]  
+Xia, Y., Thie, A., Soon, J. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-73184-z) | [code](https://github.com/Yufan121/NN-xTB)  
+
+* **Machine learning the quantum topology of chemical bonds** [2026]  
+Michalski, M., & Berski, S.  
+[Phys. Chem. Chem. Phys. (2026)](https://doi.org/10.1039/D6CP00029K)  
+
+* **Incorporating Scientific Knowledge into Neural Network Density Functionals** [2026]  
+Mark Yu. Schneider, Danis U. Zaripov, Roman Yu. Dokin, Alexander A. Ryabov, Timofey V. Losev, and Michael G. Medvedev.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00270)  
+
+* **Efficient and Equivariant Prediction of Distributed Charges for Accurate Molecular Electrostatics** [2026]  
+Eric D. Boittier and Markus Meuwly.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00248)  
+
+* **A. Learning density functionals with differentiable DFT** [2026]  
+von Strachwitz, A.  
+[Nat Rev Phys (2026)](https://doi.org/10.1038/s42254-026-00948-3)  
+
+* **Interpretable ML-DFT Framework for Performance Prediction and Structure–Activity Relationship Analysis of Acidic Copper Plating Levelers** [2026]  
+Bo Yang, Wenmin Liao, Yue Kong, Decheng Li, Yilei Yue, Linan Xu, Tong Liu, Jun Zhong, and Song Lin.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00036)  
+
+* **Accurate and scalable exchange-correlation with deep learning** [2026]  
+Luise, G., Huang, C.W., Vogels, T., Kooi, D.P., Ehlert, S., Lanius, S., Giesbertz, K.J., Karton, A., Gunceler, D., Stanley, M. and Bruinsma, W.P.  
+[arXiv:2506.14665v6 (2026)](https://doi.org/10.48550/arXiv.2506.14665) | [code](https://github.com/microsoft/skala)  
+
+* **QCBench: Evaluating Large Language Models on Domain-Specific Quantitative Chemistry** [2026]  
+Jiaqing Xie, Weida Wang, Ben Gao, Zhuo Yang, Haiyuan Wan, Shufei Zhang, Tianfan Fu, and Yuqiang Li.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.5c02033) | [code](https://github.com/jiaqingxie/QCBench)  
+
+* **QUICK and Robust ESP and RESP Charges for Computational Biochemistry: Open-Source GPU Implementation** [2026]  
+Vikrant Tripathy, Etienne Palos, Kenneth M. Merz Jr., Francesco Paesani, and Andreas W. Götz.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.5c03200) | [code](https://github.com/merzlab/QUICK)  
+
+* **MACE-POLAR-1: A Polarisable Electrostatic Foundation Model for Molecular Chemistry** [2026]  
+Ilyes Batatia, William J. Baldwin, Domantas Kuryla, Joseph Hart, Elliott Kasoar, Alin M. Elena, Harry Moore, Mikołaj J. Gawkowski, Benjamin X. Shi, Venkat Kapil, Panagiotis Kourtis, Ioan-Bogdan Magdău, Gábor Csányi.  
+[arXiv:2602.19411 (2026)](https://doi.org/10.48550/arXiv.2602.19411)  
+
+* **Physics-informed Hamiltonian learning for large-scale optoelectronic property prediction** [2026]  
+Schwade, M., Zhang, S., Vonhoff, F. et al.  
+[Nat Commun 17, 2652 (2026)](https://doi.org/10.1038/s41467-026-70865-7) | [code](https://github.com/TheoFEM-TUM/Hamster.jl)  
+
+* **Developing and benchmarking Sage 2.3.0 with the AshGC neural network charge model** [2026]  
+Wang L, Alibay I, Boothroyd S, Cavender C, Horton J, McIsaac A, et al.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv-2025-597h9)  
+
+* **Accurate Prediction of Excited-State Energies from Molecular Orbital Energies Based on Graph Neural Network with Transfer Learning** [2026]  
+Dongyi Xiao, Sheng-Rui Wang, Xiang-Yang Liu, Wei-Hai Fang, and Ganglong Cui.  
+[J. Phys. Chem. Lett. (2026)](https://doi.org/10.1021/acs.jpclett.5c03616)  
+
+* **ThermoPred: AI-Enhanced Quantum Chemistry Data Set and ML Toolkit for Thermochemical Properties of API-Like Compounds and Their Degradants** [2025]  
+Diullio P. Santos, Jefferson R. Dias-Silva, Luiz H. K. Q. Júnior, and Heibbe C. B. de Oliveira.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01320) | [code](https://github.com/jeffrichardchemistry/thermopred)  
+
+* **Machine learning the quantum topology of chemical bonds** [2025]  
+Michalski M, Berski S.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-zljl9)  
+
+* **A Graph Neural Network Charge Model Targeting Accurate Electrostatic Properties of Organic Molecules** [2025]  
+Charlie Adams, Joshua T. Horton, Lily Wang, Simon Boothroyd, David L. Mobley, David W. Wright, and Daniel J. Cole.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01520) | [code](https://github.com/cole-group/nagl-mbis/)  
+
+* **Multilevel Adaptive and Recursive Grid Refinement for Accelerating Post-Analysis of Machine-Learned Electron Densities** [2025]  
+Gong J, Tang BZ.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-v5p9h) | [code](https://github.com/JGong-CatenaryGong/GED-CRN)  
+
+* **ChemRefine: An open-source automated and interoperable platform for machine learning and quantum chemistry simulations** [2025]  
+Migliaro I, Weiss MGS, Sterling AJ.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-cvg1x) | [code](https://github.com/sterling-group/ChemRefine)  
+
+
+
+
+
+
+## Deep Learning-molecular conformations
+
+
+
+
+
+* **Accurate Electrostatics for Biomolecular Systems through Machine Learning** [2025]  
+Hosseini AN, Kriz K, van der Spoel D.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-q2v9m) | [code](https://github.com/AlexandriaChemistry/ACT)  
+
+* **Molecular Simulations with a Pretrained Neural Network and Universal Pairwise Force Fields** [2024]  
+Kabylda A, Frank JT, Dou SS, Khabibrakhmanov A, Sandonas LM, Unke OT, et al.  
+[ChemRxiv. (2024)](https://doi.org/10.26434/chemrxiv-2024-bdfr0) | [code](https://github.com/general-molecular-simulations/so3lr)  
+
+* **SpaiNN: Equivariant Message Passing for Excited-State Nonadiabatic Molecular Dynamics** [2024]  
+Mausenberger, Sascha, Carolin Müller, Alexandre Tkatchenko, Philipp Marquetand, Leticia González, and Julia Westermayr.   
+[Chemical Science (2024)](https://doi.org/10.1039/D4SC04164J) | [code](https://github.com/schnarc/SchNarc)  
+
+* **GLOW: A Workflow Integrating Gaussian-Accelerated Molecular Dynamics and Deep Learning for Free Energy Profiling** [2022]  
+Do, Hung N., Jinan Wang, Apurba Bhattarai, and Yinglong Miao.   
+[J. Chem. Theory Comput. (2022)](https://doi.org/10.1021/acs.jctc.1c01055) | [code](https://github.com/MiaoLab20/GLOW)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+### AlphaFold-based
+
+
+* [OF3-metadynamics](https://github.com/sbhakat/OF3-metadynamics) - Metadynamics like bias potential with OpenFold3.  
+
+
+
+
+
+* **Multiobjective VHH discovery through integrated high-throughput screening and AlphaFold3-guided structural prioritization** [2026]  
+Max D. Overath et al.  
+[Sci. Adv.12,eaef5325(2026)](https://doi.org/10.1126/sciadv.aef5325)  
+
+* **Several multiple sequence alignment-perturbing methods enhance AlphaFold3 sampling of alternative protein states** [2026]  
+Eriksson Lidbrink, S., Nissen, I., Howard, R.J. et al.  
+[Commun Chem 9, 300 (2026)](https://doi.org/10.1038/s42004-026-02198-x) | [Zenodo](https://doi.org/10.5281/zenodo.20624715)  
+
+* **Label Noise Limits TCR-pMHC Specificity Prediction: Improved Performance Through AlphaFold3-Based Structural Modeling and Data Denoising** [2026]  
+Pilar Ballesteros-Cuartero, Johanne Lund, Morten Nielsen.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.25.746957) | [code](https://github.com/mnielLab/NetTCRfold-1.0)  
+
+* **PathFold: Predicting the Entire Protein Folding Pathway from Protein Sequence Alone** [2026]  
+Zicong Zhang, Nabil Ibtehaz, Yuki Kagaya, Ziyi Xu, Pranav Punuru, Daisuke Kihara.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.26.747321) | [code](https://github.com/kiharalab/PathFold)  
+
+* **GNMCADS: Sampling For Protein Conformation Diversity With Gaussian Network Model Guided Condition Annealed Diffusion Sampler** [2026]  
+Ahmed Selim Uzum, Turkan Haliloglu.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.28.747885) | [code](https://github.com/ahmedselim2017/af3_gnmcads)  
+
+* **Enhanced Sampling of Protein Conformations in AlphaFold3 with Repulsive Bias in the Diffusion Generative Model** [2026]  
+Jun Ohnuki, Kei-ichi Okazaki.  
+[JACS Au(2026)](https://doi.org/10.1021/jacsau.6c00596) | [code](https://github.com/OkazakiLab/af3_red)  
+
+* **AlphaConformers: Structure-guided sampling enables prediction of multiple protein conformations** [2026]  
+Julie Liliane Daniel, Lucas Vitoriano De Queiroz Lira, Diego Javier Zea.  
+[bioRxiv (2026)](https://doi.org/10.1038/s41587-026-03166-5) | [code](https://github.com/diegozea/AlphaConformers.jl)  
+
+* **Experiment-guided AlphaFold3 resolves measurement-consistent protein ensembles** [2026]  
+Maddipatla, A., Sellam Bojan, N., Bojan, M. et al.  
+[Nat Biotechnol (2026)](https://doi.org/10.1038/s41587-026-03166-5) | [code](https://github.com/sai-advaith/guided_alphafold)  
+
+* **Biasing Conformational Sampling in Alphafold 3 and Boltz-2 via Pair Representation Scaling** [2026]  
+Shosuke Suzuki, Toshiyuki Amagasa.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.01.23.701250) | [code](https://github.com/suzuki-2001/pair-representation-scaling)  
+
+* **BilboMD: a web-accessible SAXS and AlphaFold-guided modeling pipeline** [2026]  
+Scott Classen, Joshua Del Mundo, Dhruva Kulkarni, Shreyas Prabhakar, Alan Hicks, Michal Hammel.  
+[Nucleic Acids Research (2026)](https://doi.org/10.1093/nar/gkag377) | [code](https://github.com/bl1231/bilbomd)  
+
+* **PreStoi allows accurate prediction of protein complex stoichiometry by integrating AlphaFold3 and template information** [2026]  
+Liu, J., Neupane, P. & Cheng, J.  
+[Commun Biol (2026)](https://doi.org/10.1038/s42003-026-10126-x) | [code](https://github.com/jianlin-cheng/prestoi)  
+
+* **AlphaUnfold: Probing Potential Unfolding and Structural Fragility in AlphaFold3 Models via Short-Time High-Pressure MD** [2026]  
+Fabio Jordao de Oliveira Pegado Jr., Jose Miguel Ortega Sr., Juliana Rodrigues Pereira Silva Jr.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.04.22.720259) | [code](https://github.com/pegados/pipeline_AlphaUnfold)  
+
+* **ConforNets: Latents-Based Conformational Control in OpenFold3** [2026]  
+Minji Lee, Colin Kalicki, Minkyu Jeon, Aymen Qabel, Alisia Fadini, Mohammed AlQuraishi.  
+[arXiv:2604.18559 (2026)](https://doi.org/10.48550/arXiv.2604.18559)  
+
+* **Atomic resolution ensembles of intrinsically disordered proteins with Alphafold** [2026]  
+Schnapka, V., Morozova, T.I., Sen, S. et al.  
+[Nat Commun 17, 2399 (2026)](https://doi.org/10.1038/s41467-026-69172-y) | [code](https://github.com/plumed/plumed2)  
+
+* **Explaining how mutations affect AlphaFold predictions** [2026]  
+Madeleine F. Clore, Joseph F. Thole, Suchetan Dontha, Pramesh Sharma, Davin Jensen, Brian F. Volkman, Matthew Coudron, Lauren L. Porter.  
+[bioRxiv (2026)](https://doi.org/10.64898/2025.12.30.697132) | [code](https://github.com/prameshsharma25/CAAT)  
+
+* **AlphaFold-RandomWalk and AlphaFold-Ensemble: Sampling Alternative Protein Conformations with Perturbed Versions of AlphaFold** [2025]  
+Ishan Taneja, Manuel A. Llanos, Monica L. Fernández-Quintero, Johannes R. Loeffler, Matthew Holcomb, Andrew B. Ward, and Stefano Forli.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c02004) | [code](https://github.com/forlilab/pafmd)  
+
+* **Enhanced sampling of protein conformations in AlphaFold3 with repulsive bias in the diffusion generative model** [2025]  
+Jun Ohnuki, Kei-ichi Okazaki.  
+[bioRxiv. (2025)](https://doi.org/10.64898/2025.12.17.693105) | [code](https://github.com/OkazakiLab/af3_mmm) | [Zenodo](https://doi.org/10.5281/zenodo.17811671)  
+
+* **Challenging AlphaFold in predicting proteins with large-scale allosteric transitions** [2025]  
+Perkins-Jechow, B.H., Iglesias Ahualli, J.P., Nhu, H.T. et al.  
+[Commun Chem 8, 378 (2025)](https://doi.org/10.1038/s42004-025-01763-0) | [code](https://github.com/bperkinsj/autoinhibitory_protein_prediction) | [Zenodo](https://doi.org/10.5281/zenodo.17307832)  
+
+* **Rapid estimation of protein folding pathways from sequence alone using AlphaFold2** [2025]  
+Chang, L., Perez, A.  
+[Nat Commun (2025)](https://doi.org/10.1038/s41467-025-66870-x) | [code](https://github.com/PDNALab/AlphaFolding)  
+
+* **Applied causality to infer protein dynamics and kinetics** [2025]  
+Akashnathan Aranganathan, Eric R. Beyerle.  
+[arXiv:2508.12060 (2025)](https://doi.org/10.48550/arXiv.2508.12060)  
+
+* **af2rave: Protein Ensemble Generation with Physics-Based Sampling** [2025]  
+Teng D, Meraz VJ, Aranganathan A, Gu X, Tiwary P.  
+[Digital Discovery (2025)](https://doi.org/10.1039/D5DD00201J) | [ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-q3mwr) | [code](https://github.com/tiwarylab/af2rave)  
+
+* **Modeling protein conformational ensembles by guiding AlphaFold2 with Double Electron Electron Resonance (DEER) distance distributions** [2025]  
+Wu, T., Stein, R.A., Kao, TY. et al.  
+[Nat Commun 16, 7107 (2025)](https://doi.org/10.1038/s41467-025-62582-4) | [code](https://github.com/CAAIPD/DEERFold)  
+
+* **Large-scale predictions of alternative protein conformations by AlphaFold2-based sequence association** [2025]  
+Lee, M., Schafer, J.W., Prabakaran, J. et al.  
+[Nat Commun 16, 5622 (2025)](https://doi.org/10.1021/acs.jcim.5c00489) | [code](https://github.com/ncbi/CF-random_software)  
+
+* **Modeling Active-State Conformations of G-Protein-Coupled Receptors Using AlphaFold2 via Template Bias and Explicit Protein Constrains** [2025]  
+Luca Chiesa, Dina Khasanova, and Esther Kellenberger.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c00489) | [code](https://github.com/LIT-CCM-lab/LIT-AlphaFold)  
+
+* **AlphaFold prediction of structural ensembles of disordered proteins** [2025]  
+Brotzakis, Z.F., Zhang, S., Murtada, M.H. et al.  
+[Nat Commun 16, 1632 (2025)](https://doi.org/10.1038/s41467-025-56572-9) | [code](https://github.com/vendruscolo-lab/AlphaFold-IDP)  
+
+* **Hidden Structural States of Proteins Revealed by Conformer Selection with AlphaFold-NMR** [2025]  
+Yuanpeng J. Huang, Theresa A. Ramelot, Laura E. Spaman, Naohiro Kobayashi, Gaetano T. Montelione.  
+[bioRxiv (2025)](https://doi.org/10.1101/2024.06.26.600902) | [code](https://github.rpi.edu/RPIBioinformatics/AlphaFold-NMR)  
+
+* **AFflecto: A web server to generate conformational ensembles of flexible proteins from AlphaFold models** [2025]  
+Pajkos, Mátyás, Ilinka Clerc, Christophe Zanon, Pau Bernadó, and Juan Cortés.  
+[Journal of Molecular Biology (2025)](https://doi.org/10.1016/j.jmb.2025.169003) | [web](https://moma.laas.fr/applications/AFflecto)  
+
+* **Characterizing the Conformational States of G Protein Coupled Receptors Generated with AlphaFold** [2025]  
+Garima Chib, Parisa Mollaei, Amir Barati Farimani.  
+[arXiv:2502.17628(2025)](hhttps://arxiv.org/abs/2502.17628) | [code](https://github.com/garimachib01/GPCR_AlphaFold)  
+
+* **Gradations in protein dynamics captured by experimental NMR are not well represented by AlphaFold2 models and other computational metrics** [2025]  
+Gavalda-Garcia, Jose, Bhawna Dixit, Adrián Díaz, An Ghysels, and Wim Vranken.   
+[Journal of Molecular Biology 437.2 (2025)](https://doi.org/10.1016/j.jmb.2024.168900) | [code](https://zenodo.org/records/14192555)  
+
+* **Modeling Protein Conformations by Guiding AlphaFold2 with Distance Distributions. Application to Double Electron Electron Resonance (DEER) Spectroscopy** [2024]  
+Tianqi Wu, Richard A. Stein, Te-Yu Kao, Benjamin Brown, Hassane S. Mchaourab   
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.10.30.621127)  
+
+* **AlphaFold-Multimer accurately captures interactions and dynamics of intrinsically disordered protein regions** [2024]  
+Alireza Omidi, Mads Harder Møller, Nawar Malhis, and Jörg Gsponer.   
+[bioRxiv. (2024)](https://doi.org/10.1073/pnas.2406407121) | [code](https://github.com/alirezaomidi/AFM-IDR)  
+
+* **Harnessing AlphaFold to reveal hERG channel conformational state secrets** [2024]  
+Khoa Ngo, Pei-Chi Yang, Vladimir Yarov-Yarovoy, Colleen E. Clancy, Igor Vorobyov.   
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.01.27.577468)  
+
+* **AlphaFold2's training set powers its predictions of fold-switched conformations** [2024]  
+Joseph W. Schafer, Lauren Porter.   
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.10.11.617857) | [data](https://github.com/porterll/CFold_AF2)  
+
+* **AlphaFold2 Predicts Alternative Conformation Populations in Green Fluorescent Protein Variants** [2024]  
+Núñez-Franco, Reyes, M. Milagros Muriel-Olaya, Gonzalo Jiménez-Osés, and Francesca Peccati.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c01388) | [data](https://zenodo.org/records/13133811)  
+
+* **AlphaFold Ensemble Competition Screens Enable Peptide Binder Design with Single-Residue Sensitivity** [2024]  
+Vosbein, Pernille, Paula Paredes Vergara, Danny T. Huang, and Andrew R. Thomson.   
+[ACS Chemical Biology (2024)](https://doi.org/10.1016/j.str.2024.09.001)  
+
+* **Assessing AF2’s ability to predict structural ensembles of proteins** [2024]  
+Riccabona, Jakob R., Fabian C. Spoendlin, Anna-Lena M. Fischer, Johannes R. Loeffler, Patrick K. Quoika, Timothy P. Jenkins, James A. Ferguson et al.   
+[Structure (2024)](https://doi.org/10.1016/j.str.2024.09.001)  
+
+* **AlphaFold with conformational sampling reveals the structural landscape of homorepeats** [2024]  
+Bonet, David Fernandez et al.   
+[Structure (2024)](https://doi.org/10.1016/j.str.2024.08.016) | [code](	https://doi.org/10.5281/zenodo.13255318)  
+
+* **Structure prediction of alternative protein conformations** [2024]  
+Bryant, P., Noé, F.   
+[Nat Commun 15, 7328 (2024)](https://doi.org/10.1038/s41467-024-51507-2) | [code](https://github.com/patrickbryant1/Cfold)  
+
+* **AlphaFold predictions of fold-switched conformations are driven by structure memorization** [2024]  
+Chakravarty, D., Schafer, J.W., Chen, E.A. et al.   
+[Nat Commun 15, 7296 (2024)](https://doi.org/10.1038/s41467-024-51801-z) | [code](https://github.com/ncbi/AF2_benchmark)  
+
+* **Predicting protein conformational motions using energetic frustration analysis and AlphaFold2** [2024]  
+Xingyue Guan  and Qian-Yuan Tang  and Weitong Ren  and Mingchen Chen  and Wei Wang  and Peter G. Wolynes  and Wenfei Li.   
+[Proceedings of the National Academy of Sciences (2024)](https://doi.org/10.1073/pnas.2410662121)  
+
+* **Leveraging Machine Learning and AlphaFold2 Steering to Discover State-Specific Inhibitors Across the Kinome** [2024]  
+Francesco Trozzi, Oanh Tran, Carmen Al Masri, Shu-Hang Lin, Balaguru Ravikumar, Rayees Rahman.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.08.16.608358)  
+
+* **A resource for comparing AF-Cluster and other AlphaFold2 sampling methods** [2024]  
+Hannah K Wayment-Steele, Sergey Ovchinnikov, Lucy Colwell, Dorothee Kern.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.07.29.605333)  
+
+* **Integration of AlphaFold with Molecular Dynamics for Efficient Conformational Sampling of Transporter Protein NarK** [2024]  
+Ohnuki, Jun, and Kei-ichi Okazaki.   
+[The Journal of Physical Chemistry B (2024)](https://doi.org/10.1021/acs.jpcb.4c02726)  
+
+* **AFsample2: Predicting multiple conformations and ensembles with AlphaFold2** [2024]  
+Yogesh Kalakoti, Björn Wallner.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.05.28.596195) | [code](https://github.com/iamysk/AFsample2/)  
+
+* **Prediction of Conformational Ensembles and Structural Effects of State-Switching Allosteric Mutants in the Protein Kinases Using Comparative Analysis of AlphaFold2 Adaptations with Sequence Masking and Shallow Subsampling** [2024]  
+Nishank Raisinghani, Mohammed Alshahrani, Grace Gupta, Hao Tian, Sian Xiao, Peng Tao, Gennady Verkhivker.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.05.17.594786) | [code](https://zenodo.org/records/11204773)
+
+* **Empowering AlphaFold2 for protein conformation selective drug discovery with AlphaFold2-RAVE** [2024]  
+Xinyu Gu, Akashnathan Aranganathan, Pratyush Tiwary.   
+[	arXiv:2404.07102 (2024)](https://arxiv.org/abs/2404.07102)  
+
+* **High-throughput prediction of protein conformational distributions with subsampled AlphaFold2** [2024]  
+Monteiro da Silva, G., Cui, J.Y., Dalgarno, D.C. et al.   
+[Nat Commun 15, 2464 (2024)](https://doi.org/10.1038/s41467-024-46715-9) | [code](https://github.com/GMdSilva/gms_natcomms_1705932980_data)
+
+* **AlphaFold Meets Flow Matching for Generating Protein Ensembles** [2024]  
+Jing, Bowen, Bonnie Berger, and Tommi Jaakkola.   
+[arXiv:2402.04845 (2024)](https://arxiv.org/abs/2402.04845) | [code](https://github.com/bjing2016/alphaflow)
+
+* **Predicting multiple conformations via sequence clustering and AlphaFold2** [2024]  
+Wayment-Steele, H.K., Ojoawo, A., Otten, R. et al.   
+[Nature 625, 832–839 (2024)](https://doi.org/10.1038/s41586-023-06832-9) | [code](https://github.com/HWaymentSteele/AF_Cluster)
+
+* **AlphaFold2-RAVE: From Sequence to Boltzmann Ranking** [2023]  
+Bodhi P. Vani, Akashnathan Aranganathan, Dedi Wang, and Pratyush Tiwary.   
+[J. Chem. Theory Comput. (2023)](https://pubs.acs.org/doi/10.1021/acs.jctc.3c00290)) | [code](https://github.com/tiwarylab/alphafold2rave)
+
+* **Investigating the conformational landscape of AlphaFold2-predicted protein kinase structures** [2023]  
+Carmen Al-Masri, Francesco Trozzi, Shu-Hang Lin, Oanh Tran, Navriti Sahni, Marcel Patek, Anna Cichonska, Balaguru Ravikumar, Rayees Rahman.   
+[Bioinformatics Advances. (2023)](https://doi.org/10.1093/bioadv/vbad129)) | [code](https://github.com/Harmonic-Discovery/AF2-kinase-conformational-landscape)
+
+* **Exploring the Druggable Conformational Space of Protein Kinases Using AI-Generated Structures** [2023]  
+Herrington, Noah B., David Stein, Yan Chak Li, Gaurav Pandey, and Avner Schlessinger.   
+[bioRxiv (2023)](https://doi.org/10.1101/2023.08.31.555779) | [code](https://github.com/schlessinger-lab/af2_kinase_conformations/)
+
+* **Sampling alternative conformational states of transporters and receptors with AlphaFold2** [2022]  
+Del Alamo, Diego, Davide Sala, Hassane S. Mchaourab, and Jens Meiler.   
+[Elife 11 (2022)](https://elifesciences.org/articles/75751) | [code](https://github.com/delalamo/af2_conformations)
+
+
+
+
+
+
+
+
+
+### Autoregressive-Based
+
+
+
+
+
+* **Force-free molecular dynamics through autoregressive equivariant networks** [2026]  
+Thiemann, F.L., Reschützegger, T., Esposito, M. et al.  
+[Nat Mach Intell (2026)](https://doi.org/10.1038/s42256-026-01227-7) | [code](http://github.com/IBM/trajcast)  
+
+* **Simultaneous Modeling of Protein Conformation and Dynamics via Autoregression** [2025]   
+Yuning Shen, Lihao Wang, Huizhuo Yuan, Yan Wang, Bangji Yang, Quanquan Gu.  
+[arXiv:2505.17478 (2025)](https://doi.org/10.48550/arXiv.2505.17478)  
+
+* **Force-Free Molecular Dynamics Through Autoregressive Equivariant Networks** [2025]   
+Fabian L. Thiemann, Thiago Reschützegger, Massimiliano Esposito, Tseden Taddese, Juan D. Olarte-Plata, Fausto Martelli.  
+[arXiv:2503.23794 (2025)](https://www.arxiv.org/abs/2503.23794) |  [code](https://github.com/IBM/trajcast)  
+
+
+
+
+
+
+### LSTM-based
+
+
+
+
+
+
+
+* **Learning molecular dynamics with simple language model built upon long short-term memory neural network** [2020]  
+Tsai, ST., Kuo, EJ. & Tiwary, P.   
+[Nat Commun 11, 5115 (2020)](https://doi.org/10.1038/s41467-020-18959-8) | [code](https://github.com/tiwarylab/LSTM-predict-MD)
+
+
+
+
+
+
+
+### Transformer-based
+
+
+
+
+
+
+
+* **Accurate Prediction of the Kinetic Sequence of Physicochemical States Using Generative Artificial Intelligence** [2025]  
+Bera, Palash and Mondal, Jagannath.   
+[Chem. Sci. (2025)](https://doi.org/10.1039/D5SC00108K) | [code](https://github.com/palash892/gpt_state_generation)  
+
+* **Exploring the conformational ensembles of protein-protein complex with transformer-based generative model** [2024]  
+Wang, Jianmin, Xun Wang, Yanyi Chu, Chunyan Li, Xue Li, Xiangyu Meng, Yitian Fang, Kyoung Tai No, Jiashun Mao, and Xiangxiang Zeng.   
+[J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00255) | [bioRxiv (2024)](https://doi.org/10.1101/2024.02.24.581708) | [code](https://github.com/AspirinCode/AlphaPPImd)  
+
+* **Data-Efficient Generation of Protein Conformational Ensembles with Backbone-to-Side-Chain Transformers** [2024]  
+Chennakesavalu, Shriram, and Grant M. Rotskoff.   
+[The Journal of Physical Chemistry B (2024)](https://pubs.acs.org/doi/full/10.1021/acs.jpcb.3c08195) | [code](https://github.com/rotskoff-group/transformer-backmapping)
+
+* **Molecular dynamics without molecules: searching the conformational space of proteins with generative neural networks** [2022]  
+Schwing, Gregory, Luigi L. Palese, Ariel Fernández, Loren Schwiebert, and Domenico L. Gatti.   
+[arXiv:2206.04683 (2022)](https://arxiv.org/abs/2206.04683) | [code](https://github.com/dgattiwsu/MD_without_molecules)
+
+
+
+
+
+
+
+
+### VAE-based
+
+
+
+
+
+
+
+* **Reinforced molecular dynamics: Physics-infused generative machine learning model simulates protein motion** [2026]  
+István Kolossváry.   
+[PNAS Nexus (2026)](https://doi.org/10.1093/pnasnexus/pgaf408) | [Zenodo](https://doi.org/10.5281/zenodo.16459122)  
+
+* **Reinforced molecular dynamics: Physics-infused generative machine learning model explores CRBN activation process** [2025]  
+Talant Ruzmetov, Ta I Hung, Saisri Padmaja Jonnalagedda, Si-han Chen, Parisa Fasihianifard, Zhefeng Guo, Bir Bhanu, Chia-en A. Chang.  
+[bioRxiv. (2025)](https://doi.org/10.1101/2025.02.12.638002)  
+
+* **Sampling Conformational Ensembles of Highly Dynamic Proteins via Generative Deep Learning** [2024]  
+Talant Ruzmetov, Ta I Hung, Saisri Padmaja Jonnalagedda, Si-han Chen, Parisa Fasihianifard, Zhefeng Guo, Bir Bhanu, Chia-en A. Chang.  
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.05.05.592587) | [data](https://github.com/chang-group/ICoN)  
+
+* **Exploring Protein Conformational Changes Using a Large-Scale Biophysical Sampling Augmented Deep Learning Strategy** [2024]  
+Hu, Yao, Hao Yang, Mingwei Li, Zhicheng Zhong, Yongqi Zhou, Fang Bai, and Qian Wang.   
+[Advanced Science (2024)](https://doi.org/10.1002/advs.202400884) | [code](https://github.com/qwang897/PATHpre)  
+
+* **Deciphering the Coevolutionary Dynamics of L2 β-Lactamases via Deep Learning** [2024]  
+  Zhu, Yu, Jing Gu, Zhuoran Zhao, AW Edith Chan, Maria F. Mojica, Andrea M. Hujer, Robert A. Bonomo, and Shozeb Haider.  
+  [J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c00189) | [data](https://zenodo.org/records/10500539)
+
+* **Protein Ensemble Generation Through Variational Autoencoder Latent Space Sampling** [2024]  
+Sanaa Mansoor, Minkyung Baek, Hahnbeom Park, Gyu Rie Lee, and David Baker.   
+[J. Chem. Theory Comput. (2024)](https://pubs.acs.org/doi/10.1021/acs.jctc.3c01057)  
+
+* **Emerging Frontiers in Conformational Exploration of Disordered Proteins: Integrating Autoencoder and Molecular Simulations** [2024]  
+Sanaa Mansoor, Minkyung Baek, Hahnbeom Park, Gyu Rie Lee, and David Baker.  
+[ACS Chem. Neurosci. (2024)](https://doi.org/10.1021/acschemneuro.4c00670)  
+
+* **Phanto-IDP: compact model for precise intrinsically disordered protein backbone generation and enhanced sampling** [2024]  
+  Junjie Zhu, Zhengxin Li, Haowei Tong, Zhouyu Lu, Ningjie Zhang, Ting Wei and Hai-Feng Chen.  
+  [Briefings in Bioinformatics. (2024)](https://academic.oup.com/bib/article/25/1/bbad429/7453435) | [code](https://github.com/Junjie-Zhu/Phanto-IDP)
+
+* **Enhancing Conformational Sampling for Intrinsically Disordered and Ordered Proteins by Variational Auotencoder** [2023]  
+  JunJie Zhu, NingJie Zhang, Ting Wei and Hai-Feng Chen.  
+  [International Journal of Molecular Sciences. (2023)](https://www.mdpi.com/1422-0067/24/8/6896) | [code](https://github.com/Junjie-Zhu/VAE)
+
+* **Encoding the Space of Protein-protein Binding Interfaces by Artificial Intelligence** [2023]  
+  Su, Zhaoqian, Kalyani Dhusia, and Yinghao Wu.  
+  [bioRxiv (2023)](https://doi.org/10.1101/2023.09.08.556812)  
+
+* **Artificial intelligence guided conformational mining of intrinsically disordered proteins** [2022]  
+Gupta, A., Dey, S., Hicks, A. et al.   
+[Commun Biol 5, 610 (2022)](https://doi.org/10.1038/s42003-022-03562-y) | [code](https://github.com/aaayushg/generative_IDPs)
+
+* **LAST: Latent Space-Assisted Adaptive Sampling for Protein Trajectories** [2022]  
+Tian, Hao, Xi Jiang, Sian Xiao, Hunter La Force, Eric C. Larson, and Peng Tao   
+[J. Chem. Inf. Model. (2022)](https://doi.org/10.1021/acs.jcim.2c01213) | [code](https://github.com/smu-tao-group/LAST)
+
+* **Molecular dynamics without molecules: searching the conformational space of proteins with generative neural networks** [2022]  
+Schwing, Gregory, Luigi L. Palese, Ariel Fernández, Loren Schwiebert, and Domenico L. Gatti.   
+[arXiv:2206.04683 (2022)](https://arxiv.org/abs/2206.04683) | [code](https://github.com/dgattiwsu/MD_without_molecules)
+
+* **ProGAE: A Geometric Autoencoder-based Generative Model for Disentangling Protein Conformational Space** [2021]  
+Tatro, Norman Joseph, Payel Das, Pin-Yu Chen, Vijil Chenthamarakshan, and Rongjie Lai.   
+[ICLR (2022)](https://openreview.net/forum?id=LxhlyKH6VP)
+
+* **Explore protein conformational space with variational autoencoder** [2021]  
+  Tian, Hao, Xi Jiang, Francesco Trozzi, Sian Xiao, Eric C. Larson, and Peng Tao.   
+  [Frontiers in molecular biosciences 8 (2021)](https://www.frontiersin.org/articles/10.3389/fmolb.2021.781635/full) | [code](https://github.com/smu-tao-group/protein-VAE)
+
+
+
+
+
+
+
+
+### GAN-based
+
+
+
+
+
+
+* **DeepPath: Overcoming data scarcity for protein transition pathway prediction using physics-based deep learning** [2026]  
+Yui Tik Pang, Katie M. Kuo, Lixinhao Yang, James C. Gumbart.   
+[Chem. Sci. (2026)](https://doi.org/10.1039/D5SC08253F) | [bioRxiv. (2025)](https://doi.org/10.1101/2025.02.27.640693) | [code](https://huggingface.co/andrewytp/deeppath)  
+
+* **Direct generation of protein conformational ensembles via machine learning** [2023]  
+Janson, G., Valdes-Garcia, G., Heo, L. et al.   
+[Nat Commun 14, 774 (2023)](https://doi.org/10.1038/s41467-023-36443-x) | [code](https://github.com/feiglab/idpgan)  
+
+* **Molecular dynamics without molecules: searching the conformational space of proteins with generative neural networks** [2022]  
+Schwing, Gregory, Luigi L. Palese, Ariel Fernández, Loren Schwiebert, and Domenico L. Gatti.   
+[arXiv:2206.04683 (2022)](https://arxiv.org/abs/2206.04683) | [code](https://github.com/dgattiwsu/MD_without_molecules)  
+
+
+
+
+
+
+
+
+
+### Flow-based
+
+
+
+
+
+
+
+
+
+
+* **UniFlow: Unifying protein conformational ensemble generation and machine-learned force fields with a scalable normalizing Flow** [2026]  
+Yikai Liu, Ming Chen, Guang Lin.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.07.17.739266) | [code](https://github.com/Harrydirk41/UniFlow)  
+
+* **Operator Forces For Coarse-Grained Molecular Dynamics** [2025]  
+Leon Klein, Atharva Kelkar, Aleksander Durumeric, Yaoyi Chen, Frank Noé.   
+[arXiv:2506.19628 (2025)](https://doi.org/10.48550/arXiv.2506.19628) | [data](https://github.com/noegroup/OperatorForces4CG)  
+
+* **Enhanced Sampling, Public Dataset and Generative Model for Drug-Protein Dissociation Dynamics** [2025]  
+Maodong Li, Jiying Zhang, Bin Feng, Wenqi Zeng, Dechin Chen, Zhijun Pan, Yu Li, Zijing Liu, Yi Isaac Yang.   
+[arXiv:2504.18367 (2025)](https://arxiv.org/abs/2504.18367) | [data](https://huggingface.co/SZBL-IDEA)  
+
+* **P2DFlow: A Protein Ensemble Generative Model with SE(3) Flow Matching** [2024]  
+Yaowei Jin, Qi Huang, Ziyang Song, Mingyue Zheng, Dan Teng, Qian Shi.   
+[	arXiv:2411.17196 (2024)](https://arxiv.org/abs/2411.17196) | [code](https://github.com/BLEACH366/P2DFlow)  
+
+* **Generative Modeling of Molecular Dynamics Trajectories** [2024]  
+Jing, Bowen, Hannes Stark, Tommi Jaakkola, and Bonnie Berger.   
+[ICML'24 Workshop ML for Life and Material Science: From Theory to Industry Applications (2024)](https://openreview.net/forum?id=LbwM4VCDUU) | [code](https://github.com/bjing2016/mdgen)  
+
+* **Frame-to-Frame Coarse-grained Molecular Dynamics with SE (3) Guided Flow Matching** [2024]  
+Li, Shaoning, Yusong Wang, Mingyu Li, Jian Zhang, Bin Shao, Nanning Zheng, and Jian Tang   
+[arXiv:2405.00751 (2024)](https://arxiv.org/abs/2405.00751)  
+
+* **AlphaFold Meets Flow Matching for Generating Protein Ensembles** [2024]  
+Jing, Bowen, Bonnie Berger, and Tommi Jaakkola.   
+[arXiv:2402.04845 (2024)](https://arxiv.org/abs/2402.04845) | [code](https://github.com/bjing2016/alphaflow)  
+
+
+
+
+
+
+
+
+
+### Flow Matching-based
+
+
+
+
+
+
+
+* **trFlow: ultrafast all-atom protein conformational ensemble generation via conditional flow matching** [2026]  
+Chenxiao Xiang, Kailong Zhao, Zhenling Peng, Wenkai Wang, Jianyi Yang.  
+[bioRxiv.(2026)](https://doi.org/10.64898/2026.10.03.756422) | [code](https://github.com/YangLab-SDU/trFlow)  
+
+* **TopoFlow: Evolutionarily Conditioned Flow Matching for Protein Conformational Ensemble Generation** [2026]  
+Xinguang Yang, Xinyue Cui, Xuhui LI, Dongliang Hou, Suhui Wang, Tengyu Xie, Guijun Zhang.  
+[bioRxiv.(2026)](https://doi.org/10.64898/2026.09.22.753441) | [code](https://github.com/iobio-zjut/Topoflow)  
+
+* **RPDynaFlow: Generating RNA–protein Conformation Ensembles by Atomic Conditional Flow Matching** [2026]  
+Yuntao Li, Kexin Lu.  
+[bioRxiv.(2026)](https://doi.org/10.64898/2026.08.28.747734) | [code](https://github.com/YuntaoOvO/RPDynaFlow)  
+
+* **EPO: Diverse and Realistic Protein Ensemble Generation via Energy Preference Optimization** [2025]  
+Yuancheng Sun, Yuxuan Ren, Zhaoming Chen, Xu Han, Kang Liu, Qiwei Ye.  
+[arXiv:2511.10165 (2025)](https://doi.org/10.48550/arXiv.2511.10165)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Diffusion-based
+
+
+
+
+
+
+
+
+* **Generating Structural Ensembles of Disordered Proteins with Diffusion Models** [2026]  
+Olivier Trottier, Jack H. Gwozdecky, Sarah Rauscher.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.10.02.756250) | [code](https://github.com/rauscher-lab/zephyr)  
+
+* **Breaking timescales with generative sampling of conformational transitions** [2026]  
+Tang, C., Pandey, M.P., Chen, C.G. et al.  
+[Nature (2026)](https://doi.org/10.1038/s41586-026-11025-1) | [code](https://github.com/Tangcyu/Gen-COMPAS)  
+
+* **GNMCADS: Sampling For Protein Conformation Diversity With Gaussian Network Model Guided Condition Annealed Diffusion Sampler** [2026]  
+Ahmed Selim Uzum, Turkan Haliloglu.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.28.747885) | [code](https://github.com/ahmedselim2017/af3_gnmcads)  
+
+* **Spectral Diffusion for Protein Dynamics** [2026]  
+Hew Phipps, Matteo Cagiada, Santiago D. Villalba, Charlotte M. Deane.  
+[arXiv:2607.04134(2026)](https://doi.org/10.48550/arXiv.2607.04134) | [code](https://github.com/HPuntu/DynaMode)  
+
+* **Distance-Restraint-Guided Diffusion Models for Sampling Protein Conformational Changes and Ligand Dissociation Pathways** [2026]  
+Tatsuki Hori, Yoshitaka Moriwaki, and Ryuichiro Ishitani.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00199) | [code](https://github.com/cddlab/boltz_restr)  
+
+* **Conditional diffusion with locality-aware modal alignment for generating diverse protein conformational ensembles** [2026]  
+Wang, B., Wang, C., Chen, J. et al.  
+[Nat Mach Intell (2026)](https://doi.org/10.1038/s42256-026-01198-9) | [code](https://github.com/Paulie-ai/Mac-Diff) | [Zenodo](https://doi.org/10.5281/zenodo.17936479)  
+
+* **Enhanced sampling of protein conformations in AlphaFold3 with repulsive bias in the diffusion generative model** [2025]  
+Jun Ohnuki, Kei-ichi Okazaki.  
+[bioRxiv. (2025)](https://doi.org/10.64898/2025.12.17.693105) | [code](https://github.com/OkazakiLab/af3_mmm) | [Zenodo](https://doi.org/10.5281/zenodo.17811671)  
+
+* **Efficient Generation of Protein and Protein–Protein Complex Dynamics via SE(3)-Parameterized Diffusion Models** [2025]  
+Kai Xu, Jianmin Wang, Mingquan Liu, Kewei Zhou, Shaolong Lin, Weihong Li, Lin Shi, Peng Zhou, Huanxiang Liu, and Xiaojun Yao.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01971) | [code](https://github.com/lfs119/PTraj-Diff)  
+
+* **Generative Modeling of Full-Atom Protein Conformations using Latent Diffusion on Graph Embeddings** [2025]  
+Aditya Sengar, Ali Hariri, Daniel Probst, Patrick Barth, Pierre Vandergheynst.  
+[arXiv:2506.17064 (2025)](https://www.arxiv.org/abs/2506.17064) | [code](https://github.com/adityasengar/LD-FPG)  
+
+* **Simultaneous Modeling of Protein Conformation and Dynamics via Autoregression** [2025]   
+Yuning Shen, Lihao Wang, Huizhuo Yuan, Yan Wang, Bangji Yang, Quanquan Gu.  
+[arXiv:2505.17478 (2025)](https://doi.org/10.48550/arXiv.2505.17478)  
+
+* **Protein Conformation Generation via Force-Guided SE(3) Diffusion Models** [2024]  
+Yan Wang, Lihao Wang, Yuning Shen, Yiqun Wang, Huizhuo Yuan, Yue Wu, Quanquan Gu.   
+[ICML 2024 (2024)](https://arxiv.org/abs/2403.14088) | [code](https://github.com/bytedance/ConfDiff)  
+
+* **Generative modeling of protein ensembles guided by crystallographic electron densities** [2024]  
+Sai Advaith Maddipatla, Nadav Bojan Sellam, Sanketh Vedula, Ailie Marx, Alex Bronstein.   
+[arXiv:2412.13223(2024)](https://arxiv.org/abs/2412.13223)  
+
+* **Deep learning of protein energy landscape and conformational dynamics from experimental structures in PDB** [2024]  
+Yike Tang, Mendi Yu, Ganggang Bai, Xinjun Li, Yanyan Xu, Buyong Ma.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.06.27.600251)  
+
+* **4D Diffusion for Dynamic Protein Structure Prediction with Reference Guided Motion Alignment** [2024]  
+Cheng, Kaihui, Ce Liu, Qingkun Su, Jun Wang, Liwei Zhang, Yining Tang, Yao Yao, Siyu Zhu, and Yuan Qi.   
+[arXiv:2408.12419 (2024)](https://arxiv.org/abs/2408.12419)  
+
+* **Generating Multi-state Conformations of P-type ATPases with a Diffusion Model** [2024]  
+Jingtian Xu, Yong Wang.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.08.07.607107) | [code](https://github.com/yongwangCPH/papers/tree/main/2024/PtypeATPaseGeneration)  
+
+* **Transferable deep generative modeling of intrinsically disordered protein conformations** [2024]  
+Abdin, O., Kim, P.M.   
+[PLOS Computational Biology 20.5 (2024)](https://doi.org/10.1371/journal.pcbi.1012144) | [code](https://github.com/giacomo-janson/idpsam)  
+
+* **Direct conformational sampling from peptide energy landscapes through hypernetwork-conditioned diffusion** [2024]  
+Janson, Giacomo, and Michael Feig.   
+[Nat Mach Intell 6, 775–786 (2024)](https://doi.org/10.1038/s42256-024-00860-4) | [code](https://gitlab.com/oabdin/pepflow)
+
+* **Accurate Conformation Sampling via Protein Structural Diffusion** [2024]  
+Fan, Jiahao, Ziyao Li, Eric Alcaide, Guolin Ke, Huaqing Huang, and Weinan E.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c00928) | [bioRxiv (2024)](https://doi.org/10.1101/2024.05.20.594916) | [code](https://github.com/PKUfjh/Uni-Fold/tree/ufconf)    
+
+* **Accurate and Efficient Structural Ensemble Generation of Macrocyclic Peptides using Internal Coordinate Diffusion** [2023]  
+Grambow, Colin A., Hayley Weir, Nathaniel Diamant, Alex Tseng, Tommaso Biancalani, Gabriele Scalia and Kangway V Chuang.   
+[	arXiv:2305.19800 (2023)](https://arxiv.org/abs/2305.19800) | [code](https://github.com/genentech/ringer)  
+
+
+
+
+
+
+
+
+
+### Score-based
+
+
+
+
+
+
+* **Learning Implicit Bias in Generative Spaces for Accelerating Protein Dynamics Emulation** [2026]  
+Kaihui Cheng, Zhiqiang Cai, Wenkai Xiang, Zhihang Hu, Siyu Zhu, Tzuhsiung Yang, Yuan Qi.   
+[arXiv:2606.01833 (2026)](https://doi.org/10.48550/arXiv.2606.01833)  
+
+* **Str2str: A score-based framework for zero-shot protein conformation sampling** [2024]  
+Lu, Jiarui, Bozitao Zhong, Zuobai Zhang, and Jian Tang.   
+[ICLR (2024)](https://openreview.net/forum?id=C4BikKsgmK) | [code](https://github.com/lujiarui/Str2Str)  
+
+* **Score-based enhanced sampling for protein molecular dynamics** [2023]  
+Lu, Jiarui, Bozitao Zhong, and Jian Tang.   
+[arXiv:2306.03117 (2023)](https://arxiv.org/abs/2306.03117) | [code](https://github.com/lujiarui/Str2Str)
+
+
+
+
+
+
+
+
+### Energy-based
+
+
+
+
+
+
+* **Aligning Protein Conformation Ensemble Generation with Physical Feedback** [2025]  
+Du, Yilun, Joshua Meier, Jerry Ma, Rob Fergus, and Alexander Rives.   
+[ICML 2025 (2025)](https://openreview.net/forum?id=Asr955jcuZ) | [arXiv:2505.24203 (2025)](https://doi.org/10.48550/arXiv.2505.24203) | [code](https://github.com/lujiarui/eba)  
+
+* **Energy-based models for atomic-resolution protein conformations** [2020]  
+Du, Yilun, Joshua Meier, Jerry Ma, Rob Fergus, and Alexander Rives.   
+[ICLR (2020)](https://openreview.net/forum?id=S1e_9xrFvS) | [code](https://github.com/facebookresearch/protein-ebm)  
+
+
+
+
+
+
+
+
+
+
+
+
+### Bayesian-based
+
+
+
+
+
+
+
+
+* **BaNDyT: Bayesian Network Modeling of Molecular Dynamics Trajectories** [2025]  
+Mukhaleva, Elizaveta, Babgen Manookian, Hanyu Chen, Indira R. Sivaraj, Ning Ma, Wenyuan Wei, Konstancja Urbaniak et al.   
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.4c01981) | [code](https://github.com/bandyt-group/bandyt)  
+
+* **Enabling Population Protein Dynamics Through Bayesian Modeling** [2024]  
+Sylvain Lehmann, Jérôme Vialaret, Audrey Gabelle, Luc Bauchet, Jean-Philippe Villemin, Christophe Hirtz, Jacques Colinge.   
+[Bioinformatics (2024)](https://doi.org/10.1093/bioinformatics/btae484)  
+
+* **Deep Boosted Molecular Dynamics (DBMD): Accelerating molecular simulations with Gaussian boost potentials generated using probabilistic Bayesian deep neural network** [2023]  
+Do, Hung N., and Yinglong Miao.   
+[bioRxiv(2023)](https://doi.org/10.1101/2023.03.25.534210) | [code](https://github.com/MiaoLab20/DBMD/)  
+
+* **Deep Generative Models of Protein Structure Uncover Distant Relationships Across a Continuous Fold Space** [2023]  
+Draizen, Eli J., Stella Veretnik, Cameron Mura, and Philip E. Bourne.   
+[bioRxiv(2023)](https://doi.org/10.1101/2022.07.29.501943) | [code](https://github.com/bouralab/DeepUrfold)  
+
+
+
+
+
+
+### Active Learning-based
+
+
+
+* **Active Learning of the Conformational Ensemble of Proteins Using Maximum Entropy VAMPNets** [2023]  
+Kleiman, Diego E., and Diwakar Shukla.   
+[J. Chem. Theory Comput. (2023)](https://doi.org/10.1021/acs.jctc.3c00040) | [code](https://github.com/ShuklaGroup/MaxEntVAMPNet)  
+
+
+
+
+
+
+
+### GNN-based
+
+
+
+
+
+
+* **Graph Learning on Ensembles of Cyclic Peptides: An Investigation of Molecular Ensemble Modeling** [2026]  
+Aaron Feller, Kris Deibler, Maxim Secor.  
+[arXiv:2607.21561 (2026)](https://doi.org/10.48550/arXiv.2607.21561) | [code](https://github.com/AaronFeller/EnsembleEGNN)  
+
+* **Spatiotemporal graph neural networks reveal conformational binding signature in protein dynamics** [2026]   
+ Stefano Motta, Gianluca Santini, Samman Mansoor, Ferdoos Hossein Nezhad, Massimiliano Meli, Alessandro Pandini.  
+  [bioRxiv (2026)](https://doi.org/10.64898/2026.05.19.726195) | [code](https://github.com/MottaStefano/GISTnet-MD)  
+
+* **Graph neural networks for molecular dynamics simulations** [2026]  
+Ahsan, Mohd, Chinmai Pindi, Souvik Sinha, Amun C. Patel, and Giulia Palermo.  
+[Current Opinion in Structural Biology (2026)](https://doi.org/10.1016/j.sbi.2026.103238)  
+
+* **A graph neural network-state predictive information bottleneck (GNN-SPIB) approach for learning molecular thermodynamics and kinetics** [2024]   
+ Zou, Ziyue, Dedi Wang, and Pratyush Tiwary.  
+  [Digital Discovery (2024)](https://doi.org/10.1039/D4DD00315B) | [code](https://github.com/connorzzou/PLUMED-NEST)  
+
+* **Graph theory approaches for molecular dynamics simulations** [2024]   
+ Patel AC, Sinha S, Palermo G.  
+  [Quarterly Reviews of Biophysics. (2024)](https://doi.org/10.1017/S0033583524000143)  
+
+* **EquiJump: Protein Dynamics Simulation via SO(3)-Equivariant Stochastic Interpolants** [2024]  
+Allan dos Santos Costa, Ilan Mitnikov, Franco Pellegrini, Ameya Daigavane, Mario Geiger, Zhonglin Cao, Karsten Kreis, Tess Smidt, Emine Kucukbenli, Joseph Jacobson.   
+[	arXiv:2410.09667 (2024)](https://arxiv.org/abs/2410.09667)  
+
+* **AbFlex: Predicting the conformational flexibility of antibody CDRs** [2024]  
+Spoendlin, Fabian C., Wing Ki Wong, Guy Georges, Alexander Bujotzek, and Charlotte Deane.   
+[ICML'24 Workshop ML for Life and Material Science: From Theory to Industry Applications (2024)](https://openreview.net/forum?id=or4tArwd5a) | [code](https://openreview.net/forum?id=or4tArwd5a)
+
+* **RevGraphVAMP: A protein molecular simulation analysis model combining graph convolutional neural networks and physical constraints** [2024]  
+Huang, Ying, Huiling Zhang, Zhenli Lin, Yanjie Wei, and Wenhui Xi.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.03.11.584426) | [code](https://github.com/DS00HY/RevGraphVamp)  
+
+
+
+
+### LLM-MD
+
+
+
+* **MDAgent2: Large Language Model for Code Generation and Knowledge Q&A in Molecular Dynamics** [2026]  
+Zhuofan Shi, Hubao A, Yufei Shao, Mengyan Dai, Yadong Yu, Pan Xiang, Dongliang Huang, Hongxu An, Chunxiao Xin, Haiyang Shen, Zhenyu Wang, Yunshan Na, Gang Huang, Xiang Jing.  
+[arXiv:2601.02075 (2026)](https://doi.org/10.48550/arXiv.2601.02075) | [code](https://github.com/FredericVAN/PKU_MDAgent2)  
+
+* **MD-LLM-1: A Large Language Model for Molecular Dynamics** [2025]  
+Mhd Hussein Murtada, Z. Faidon Brotzakis, Michele Vendruscolo.   
+[arXiv:2508.03709 (2025)](https://doi.org/10.48550/arXiv.2508.03709)  
+
+* **Structure Language Models for Protein Conformation Generation** [2024]  
+Jiarui Lu, Xiaoyin Chen, Stephen Zhewen Lu, Chence Shi, Hongyu Guo, Yoshua Bengio, Jian Tang.   
+[arXiv:2410.18403 (2024)](https://arxiv.org/abs/2410.18403) | [code](https://github.com/lujiarui/esmdiff)  
+
+* **SeaMoon: Prediction of molecular motions based on language models** [2024]  
+Valentin Lombard, Dan Timsit, Sergei Grudinin, Elodie Laine.   
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.09.23.614585) | [code](https://github.com/PhyloSofS-Team//seamoon)  
+
+* **Molecular simulation with an LLM-agent** [2024]  
+MD-Agent is a LLM-agent based toolset for Molecular Dynamics.  
+[code](https://github.com/ur-whitelab/md-agent)
+
+
+
+
+
+
+### Agent-based-MD
+
+
+
+
+
+
+
+* **El Agente Potente: High-Throughput Agentic Atomistic Simulations** [2026]  
+Tsz Wai Ko, Jiaru Bai, Thomas Swanick, Yeonghun Kang, Changhyeok Choi, Angelina Qihong Jiang, Aiwei Yin, Varinia Bernales, Alán Aspuru-Guzik.  
+[arXiv:2609.14840 (2026)](https://doi.org/10.48550/arXiv.2609.14840)  
+
+* **MDArena: Evaluating Coding Agents on Realistic Molecular Dynamics Workflows** [2026]  
+Nithishwer Mouroug Anand, Wei-Tse Hsu, Kyle Vaccaro, Eden James Gage, Jonathan David Colburn, Linda Xi Phan, Minjoon Seo, Kevin Guan, Philip C. Biggin.  
+[arXiv:2608.02642(2026)](https://doi.org/10.48550/arXiv.2608.02642) | [code](https://github.com/weitse-hsu/MDArena)  
+
+* **MDForge: Agentic Molecular Dynamics Pipeline Design under Sparse Simulator Feedback** [2026]  
+Zehong Wang, Yijun Ma, Connor R. Schmidt, Tianyi Ma, Weixiang Sun, Ziming Li, Xiaoguang Guo, Chuxu Zhang, Matthew J. Webber, Yanfang Ye.  
+[arXiv:2606.12916 (2026)](https://doi.org/10.48550/arXiv.2606.12916) | [code](https://github.com/Zehong-Wang/MDForge)  
+
+* **MDAgent2: Large Language Model for Code Generation and Knowledge Q&A in Molecular Dynamics** [2026]  
+Zhuofan Shi, Hubao A, Yufei Shao, Mengyan Dai, Yadong Yu, Pan Xiang, Dongliang Huang, Hongxu An, Chunxiao Xin, Haiyang Shen, Zhenyu Wang, Yunshan Na, Gang Huang, Xiang Jing.  
+[arXiv:2601.02075 (2026)](https://doi.org/10.48550/arXiv.2601.02075) | [code](https://github.com/FredericVAN/PKU_MDAgent2)  
+
+* **DynaMate: An Autonomous Agent for Protein-Ligand Molecular Dynamics Simulations** [2025]  
+Salomé Guilbert, Cassandra Masschelein, Jeremy Goumaz, Bohdan Naida, Philippe Schwaller.  
+[arXiv:2512.10034 (2025)](https://doi.org/10.48550/arXiv.2512.10034) |  [code](https://github.com/schwallergroup/DynaMate)  
+
+
+
+
+
+
+## Molecular conformational dynamics by methods
+
+
+
+
+
+### Small molecule conformational dynamics
+
+
+
+
+
+
+
+
+
+
+* **Conformer Generation Workflows for COSMO-RS Calculations: Are They All the Same?** [2026]  
+André M. M. Gomes, José F. O. Granjo, Paulo J. Costa.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c00606) |  [code](https://github.com/TUHH-TVT/openCOSMO-RS_conformer_pipeline)  
+
+* **Rapid Generation of Transition-State Conformer Ensembles via Constrained Distance Geometry** [2026]  
+Stefan P. Schmid, Henrik Seng, Thibault Kläy, Kjell Jorner.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.5c02794) |  [code](https://github.com/digital-chemistry-laboratory/racerts) |  [Zenodo](https://doi.org/10.5281/zenodo.17610186)  
+
+* **Scalable Low-Energy Molecular Conformer Generation with Quantum Mechanical Accuracy** [2025]  
+Filipp Nikitin, Dylan M. Anstine, Roman Zubatyuk, et alFilipp Nikitin, Dylan M. Anstine, Roman Zubatyuk, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-k4h7v/v2) |  [code](https://github.com/isayevlab/LoQI)  
+
+* **Artificial Intelligence for Predicting Small-Molecule Bioactive Conformations** [2026]  
+Yuanchen Liu, Suya Chen, Kejiang Lin, Shang Gao, and Xuanyi Li.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.5c03198)  
+
+* **SphereDiff-TS: Sphere Space Diffusion Modeling for Accurate 3D Transition State Geometry Prediction** [2026]  
+Chong Zhao, Pan Li, Shu Zhang, Chuanhao Li, Zhaopeng Li, Yixin Tang, Keyan Linghu, Lei Tang, and Yuanyong Yang.  
+[ACS Omega (2026)](https://doi.org/10.1021/acsomega.6c03301)  
+
+* **Sampling High-Dimensional Conformational Free Energy Landscapes of Active Pharmaceutical Ingredients** [2025]  
+Alexandre Ferreira, Rui Guo, Ivan Marziano, and Matteo Salvalaglio.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01247) |  [code](https://github.com/ucecvan/Twister)  
+
+* **Template-Guided 3D Molecular Pose Generation via Flow Matching and Differentiable Optimization** [2025]  
+Bergues, Noémie, Arthur Carré, Paul Join-Lambert, Brice Hoffmann, Arnaud Blondel, and Hamza Tajmouati.  
+[arXiv:2506.06305 (2025)](https://doi.org/10.48550/arXiv.2506.06305) |  [code](https://zenodo.org/records/15395813)  
+
+* **DihedralsDiff: A Diffusion Conformation Generation Model That Unifies Local and Global Molecular Structures** [2025]  
+Jianhui Xiao, Zheng Zheng, and Hao Liu.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c00367) |  [code](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/JNGTDF)  
+
+* **WGFormer: An SE(3)-Transformer Driven by Wasserstein Gradient Flows for Molecular Ground-State Conformation Prediction** [2025]  
+Fanmeng Wang, Minjie Cheng, Hongteng Xu.  
+[ICML (2025)](https://doi.org/10.48550/arXiv.2410.09795) |  [code](https://github.com/FanmengWang/WGFormer)  
+
+* **The pucke.rs toolkit to facilitate sampling the conformational space of biomolecular monomers** [2025]  
+Rihon, J., Reynders, S., Bernardes Pinheiro, V. et al.  
+[J Cheminform 17, 53 (2025)](https://doi.org/10.1186/s13321-025-00977-7) |  [code](https://github.com/jrihon/puckepy)  
+
+* **Challenges and opportunities for machine learning potentials in transition path sampling: alanine dipeptide and azobenzene studies** [2025]  
+Fedik, Nikita and Li, Wei and Lubbers, Nicholas and Nebgen, Benjamin and Tretiak, Sergei and Li, Ying Wai.  
+[Digital Discovery (2025)](https://doi.org/10.1039/D4DD00265B) |  [code](https://github.com/nikitafedik/ml_tps_si)  
+
+* **Diffusion-based generative AI for exploring transition states from 2D molecular graphs** [2024]   
+Kim, S., Woo, J. & Kim, W.Y.   
+[Nat Commun 15, 341 (2024)](https://doi.org/10.1038/s41467-023-44629-6) |  [code](https://github.com/seonghann/tsdiff)  
+
+* **Physics-informed generative model for drug-like molecule conformers** [2024]   
+David C. Williams, Neil Imana.   
+[arXiv:2403.07925. (2024)](https://arxiv.org/abs/2403.07925v1) |  [code](https://github.com/nobiastx/diffusion-conformer)   
+
+* **ET-Flow: Equivariant Flow-Matching for Molecular Conformer Generation** [2024]   
+Majdi Hassan, Nikhil Shenoy, Jungyoon Lee, Hannes Stark, Stephan Thaler, Dominique Beaini.   
+[NeurIPS 2024 (2024)](https://arxiv.org/abs/2410.22388) |  [code](https://github.com/shenoynikhil/ETFlow)  
+
+* **COSMIC: Molecular Conformation Space Modeling in Internal Coordinates with an Adversarial Framework** [2024]   
+Kuznetsov, Maksim, Fedor Ryabov, Roman Schutski, Rim Shayakhmetov, Yen-Chu Lin, Alex Aliper, and Daniil Polykovskiy.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.3c00989) |  [code](https://github.com/insilicomedicine/COSMIC)  
+
+* **Leveraging 2D Molecular Graph Pretraining for Improved 3D Conformer Generation with Graph Neural Networks** [2024]   
+Jiang, Runxuan, Tarun Gogineni, Joshua Kammeraad, Yifei He, Ambuj Tewari, and Paul M. Zimmerman.   
+[Computers & Chemical Engineering (2024)](https://doi.org/10.1016/j.compchemeng.2024.108622) |  [code](https://github.com/m1k2zoo/2D-3DConformerGNN) 
+
+* **DynamicsDiffusion: Generating and Rare Event Sampling of Molecular Dynamic Trajectories Using Diffusion Models** [2023]   
+Petersen, Magnus, Gemma Roig, and Roberto Covino.   
+[NeurIPS 2023 AI4Science  (2023)](https://openreview.net/forum?id=pwYCCq4xAf) 
+
+* **Generating Molecular Conformer Fields** [2023]   
+Yuyang Wang, Ahmed Elhag, Navdeep Jaitly, Joshua Susskind, Miguel Bautista.   
+[NeurIPS 2023 Generative AI and Biology (GenBio) Workshop (2023)]https://openreview.net/forum?id=Od1KtMeAYo) 
+
+* **On Accelerating Diffusion-based Molecular Conformation Generation in SE(3)-invariant Space** [2023]   
+Zhou, Z., Liu, R. and Yu, T.   
+[arXiv:2310.04915 (2023))](https://arxiv.org/abs/2310.04915) 
+
+* **Molecular Conformation Generation via Shifting Scores** [2023]   
+Zhou, Zihan, Ruiying Liu, Chaolong Ying, Ruimao Zhang, and Tianshu Yu.   
+[arXiv:2309.09985 (2023)](https://arxiv.org/abs/2309.09985) 
+
+* **EC-Conf: An Ultra-fast Diffusion Model for Molecular Conformation Generation with Equivariant Consistency** [2023]   
+Fan, Zhiguang, Yuedong Yang, Mingyuan Xu, and Hongming Chen.   
+[arXiv:2308.00237 (2023)](https://arxiv.org/abs/2308.00237) 
+
+* **Prediction of Molecular Conformation Using Deep Generative Neural Networks** [2023]   
+Xu, Congsheng, Yi Lu, Xiaomei Deng, and Peiyuan Yu.   
+[Chinese Journal of Chemistry(2023)](https://doi.org/10.1002/cjoc.202300269)
+
+* **Learning Over Molecular Conformer Ensembles: Datasets and Benchmarks** [2023]   
+Zhu, Yanqiao, Jeehyun Hwang, Keir Adams, Zhen Liu, Bozhao Nan, Brock Stenfors, Yuanqi Du et al.   
+[NeurIPS 2023 AI for Science Workshop. 2023 (2023)](https://openreview.net/forum?id=kFiMXnLH9x) |  [code](https://github.com/SXKDZ/MARCEL) 
+
+* **Deep-Learning-Assisted Enhanced Sampling for Exploring Molecular Conformational Changes** [2023]   
+Haohao Fu, Han Liu, Jingya Xing, Tong Zhao, Xueguang Shao, and Wensheng Cai.   
+[J. Phys. Chem. B (2023)](https://doi.org/10.1021/acs.jpcb.3c05284) 
+
+* **Torsional diffusion for molecular conformer generation** [2022]   
+Jing, Bowen, Gabriele Corso, Jeffrey Chang, Regina Barzilay, and Tommi Jaakkola.   
+[NeurIPS. (2022)](https://proceedings.neurips.cc/paper_files/paper/2022/hash/994545b2308bbbbc97e3e687ea9e464f-Abstract-Conference.html) |  [code](https://github.com/gcorso/torsional-diffusionf) 
+
+* **GeoDiff: A Geometric Diffusion Model for Molecular Conformation Generation** [2022]   
+Xu, Minkai, Lantao Yu, Yang Song, Chence Shi, Stefano Ermon, and Jian Tang.   
+[International Conference on Learning Representations. (2022)](https://openreview.net/forum?id=PzcvxEMzvQC) |  [code](https://github.com/MinkaiXu/GeoDiff) 
+
+* **Conformer-RL: A deep reinforcement learning library for conformer generation** [2022]   
+Jiang, Runxuan, Tarun Gogineni, Joshua Kammeraad, Yifei He, Ambuj Tewari, and Paul M. Zimmerman.   
+[Journal of Computational Chemistry 43.27 (2022)](https://doi.org/10.1002/jcc.26984) |  [code](https://github.com/ZimmermanGroup/conformer-rl) 
+
+* **Energy-inspired molecular conformation optimization** [2022]   
+Guan, Jiaqi, Wesley Wei Qian, Wei-Ying Ma, Jianzhu Ma, and Jian Peng.   
+[International Conference on Learning Representations. (2022)](https://openreview.net/forum?id=7QfLW-XZTl) |  [code](https://github.com/guanjq/confopt_officialf) 
+
+* **An End-to-End Framework for Molecular Conformation Generation via Bilevel Programming** [2021]   
+Xu, Minkai, Wujie Wang, Shitong Luo, Chence Shi, Yoshua Bengio, Rafael Gomez-Bombarelli, and Jian Tang.   
+[International Conference on Machine Learning. PMLR (2021)](http://proceedings.mlr.press/v139/xu21f.html) |  [code](https://github.com/MinkaiXu/ConfVAE-ICML21)  
+
+
+
+
+
+
+
+
+### RNA conformational dynamics
+
+
+
+
+
+
+* **Topology, Energy Landscapes and Folding Kinetics of RNA Hairpins** [2026]  
+Anjali Verma, Pratyush Tiwary, Yunrui Qiu.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.09.21.753325) | [Code](https://github.com/tiwarylab/)  
+
+* **Enhanced-Sampling Molecular Dynamics Recovers Rare Functional RNA Conformations Across Diverse Structural Contexts** [2026]  
+Leonardo Medrano Sandonas, Macarena Tolmos Nehme, Luis Fernando Cofas-Vargas, Gustavo E. Olivos-Ramirez, Gianaurelio Cuniberti, Simón Poblete, Adolfo B. Poma.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.22.746453) | [Code](https://github.com/Ken-Lab-ScrippsResearch/Li-Ken-RNA-ESMD)  
+
+* **Exploring Conformational Transitions of Adenine RNA Dimer via Machine Learning Potentials** [2026]  
+Leonardo Medrano Sandonas, Macarena Tolmos Nehme, Luis Fernando Cofas-Vargas, Gustavo E. Olivos-Ramirez, Gianaurelio Cuniberti, Simón Poblete, Adolfo B. Poma.  
+[J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c01213) | [Zenodo](https://doi.org/10.5281/zenodo.20838383)  
+
+* **PlanarFold: a coarse-grained molecular dynamics model of RNA in two-dimensional space** [2026]  
+Xiang, L., Xue, Y.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-74729-y) | [code](https://github.com/Lanxiang-thu/PlanarFold) | [Zenodo](https://zenodo.org/records/19397229)  
+
+* **DynaRNA: Dynamic RNA Conformation Ensemble Generation with Diffusion Model** [2025]  
+Zhengxin Li, Junjie Zhu, Xiaokun Hong, Zhuoqi Zheng, Taeyoung Cui, Yutong Sun, Ting Wei, Haifeng Chen.   
+[bioRxiv. (2025)](https://doi.org/10.1101/2025.05.22.655453)  
+
+* **Determining structures of RNA conformers using AFM and deep neural networks** [2025]  
+Boccalini, Matteo, Yelyzaveta Berezovska, Giovanni Bussi, Matteo Paloni, and Alessandro Barducci.  
+[Proceedings of the National Academy of Sciences 122.15 (2025)](https://doi.org/10.1073/pnas.2425261122) | [code](https://doi.org/10.5281/zenodo.14203857)  
+
+* **Determining structures of RNA conformers using AFM and deep neural networks** [2024]  
+Degenhardt, M.F.S., Degenhardt, H.F., Bhandari, Y.R. et al.   
+[Nature (2024)](https://doi.org/10.1038/s41586-024-07559-x) | [code](https://zenodo.org/records/10637777)  
+
+* **On the Power and Challenges of Atomistic Molecular Dynamics to Investigate RNA Molecules** [2024]  
+Muscat, Stefano, Gianfranco Martino, Jacopo Manigrasso, Marco Marcia, and Marco De Vivo.   
+[J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00773)  
+
+* **Conformational ensembles of RNA oligonucleotides from integrating NMR and molecular simulations** [2018]  
+Bottaro, S., Bussi, G., Kennedy, S.D., Turner, D.H. and Lindorff-Larsen, K.   
+[Science advances 4.5 (2018)](https://doi.org/10.1038/s41597-024-03698-y) | [code](https://github.com/sbottaro/rr) | [data](https://github.com/sbottaro/tetranucleotides_data)  
+
+
+
+
+
+
+
+### Peptide conformational dynamics
+
+
+
+
+
+
+
+
+
+* **Graph Learning on Ensembles of Cyclic Peptides: An Investigation of Molecular Ensemble Modeling** [2026]  
+Aaron Feller, Kris Deibler, Maxim Secor.  
+[arXiv:2607.21561 (2026)](https://doi.org/10.48550/arXiv.2607.21561) | [code](https://github.com/AaronFeller/EnsembleEGNN)  
+
+* **Extending AIMNet2 to Macrocyclic Peptides Through Data-Efficient Continual Training** [2026]  
+Runtian Gao, Roman Zubatyuk, Olexandr Isayev.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15002334/v1)  
+
+* **Memory kernel minimization-based neural networks for discovering slow collective variables of biomolecular dynamics** [2025]  
+Liu, B., Cao, S., Boysen, J.G. et al.  
+[Nat Comput Sci (2025)](https://doi.org/10.1038/s43588-025-00815-8) | [code](https://github.com/markovmodel/mdshare)  
+
+* **Scoring Conformational Metastability of Macrocyclic Peptides with Binding Pose Metadynamics** [2025]  
+Ryan Dykstra and Dan Sindhikara.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.4c01408)  
+
+* **CREMP: Conformer-rotamer ensembles of macrocyclic peptides for machine learning** [2024]  
+Grambow, C.A., Weir, H., Cunningham, C.N. et al.   
+[Sci Data 11, 859 (2024)](https://doi.org/10.1038/s41597-024-03698-y) | [code](https://github.com/Genentech/cremp)  
+
+* **Direct conformational sampling from peptide energy landscapes through hypernetwork-conditioned diffusion** [2024]  
+Abdin, O., Kim, P.M.   
+[Nat Mach Intell 6, 775–786 (2024)](https://doi.org/10.1038/s42256-024-00860-4) | [code](https://gitlab.com/oabdin/pepflow)  
+
+* **Accurate and Efficient Structural Ensemble Generation of Macrocyclic Peptides using Internal Coordinate Diffusion** [2023]  
+Grambow, Colin A., Hayley Weir, Nathaniel Diamant, Alex Tseng, Tommaso Biancalani, Gabriele Scalia and Kangway V Chuang.   
+[	arXiv:2305.19800 (2023)](https://arxiv.org/abs/2305.19800) | [code](https://github.com/genentech/ringer)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Protein conformational dynamics
+
+
+
+
+
+
+* **Computational design of protein conformational landscapes for metamorphic behavior** [2026]  
+Alisa Khramushin, Maddalena Elia, Christian Schellhaas, Alberto Borsatto, Joseph Schmidt, Mohamad Yazan Chabaan, Roberta Pierattelli, Kelvin Lau, Francesco Luigi Gervasio, Luciano Andres Abriata, Bruno Emanuel Correia.  
+[bioRxiv.(2026)](https://doi.org/10.64898/2026.10.13.758820)  
+
+* **trFlow: ultrafast all-atom protein conformational ensemble generation via conditional flow matching** [2026]  
+Chenxiao Xiang, Kailong Zhao, Zhenling Peng, Wenkai Wang, Jianyi Yang.  
+[bioRxiv.(2026)](https://doi.org/10.64898/2026.10.03.756422) | [code](https://github.com/YangLab-SDU/trFlow)  
+
+* **Generating Structural Ensembles of Disordered Proteins with Diffusion Models** [2026]  
+Olivier Trottier, Jack H. Gwozdecky, Sarah Rauscher.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.10.02.756250) | [code](https://github.com/rauscher-lab/zephyr)  
+
+* **Targeted finetuning enables co-folding models to learn ligand-induced protein conformational states** [2026]  
+Rohan Gorantla, Christian Schleberger, Fabian Sesterhenn.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.09.21.752570)  
+
+* **Phyfold: environment aware mathematical modeling for protein folding dynamics integrated with physics informed neural network** [2026]  
+Ul Rahman, J., Noureen, I., Mannan, A. et al.  
+[J Cheminform (2026)](https://doi.org/10.1186/s13321-026-01271-w) | [code](https://github.com/jamshaidwarraich/PhyFold)  
+
+* **Breaking timescales with generative sampling of conformational transitions** [2026]  
+Tang, C., Pandey, M.P., Chen, C.G. et al.  
+[Nature (2026)](https://doi.org/10.1038/s41586-026-11025-1) | [code](https://github.com/Tangcyu/Gen-COMPAS)  
+
+* **A curated benchmark for cofolding models on kinase conformational states** [2026]  
+Sun, K., Head-Gordon, T.  
+[npj Drug Discov. 3, 33 (2026)](https://doi.org/10.1038/s44386-026-00068-z) | [code](https://github.com/THGLab/KinConfBench)  
+
+* **Carbonara: a SAXS-guided seeding framework for exploring protein solution-state dynamics** [2026]  
+Josh McKeown, Cameron Brown, Arron Bale, Hayden Fisher, Robert P. Rambo, Jonathan W. Essex, Matteo T. Degiacomi, Christopher Prior.  
+[bioRxiv. (2026)](https://doi.org/10.64898/2026.07.25.740665)  
+
+* **Ensemble tests mask missing dynamics in protein conformational generators** [2026]  
+Kaining Liu, Qiuting Qian, Ying Chi.  
+[bioRxiv. (2026)](https://doi.org/10.64898/2026.09.02.748111) | [code](https://github.com/kkkniengLiu/dynbench)  
+
+* **Accurate and efficient prediction of protein conformations with ProtMonomer** [2026]  
+Yunda Si, Suqi Zhang, Luonan Chen.  
+[bioRxiv. (2026)](https://doi.org/10.64898/2026.08.28.747824) | [code](https://github.com/yunda-si/ProtMonomer)  
+
+* **GNMCADS: Sampling For Protein Conformation Diversity With Gaussian Network Model Guided Condition Annealed Diffusion Sampler** [2026]  
+Ahmed Selim Uzum, Turkan Haliloglu.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.28.747885) | [code](https://github.com/ahmedselim2017/af3_gnmcads)  
+
+* **AFM-Fold: Rapid reconstruction of protein conformations from AFM images** [2026]  
+Kawai, Tsuyoshi, and Yasuhiro Matsunaga.  
+[Biophysical Journal 125.15 (2026)](https://doi.org/10.1016/j.bpj.2026.06.022) | [code](https://github.com/matsunagalab/afmfold)  
+
+* **Enhanced Sampling of Protein Conformations in AlphaFold3 with Repulsive Bias in the Diffusion Generative Model** [2026]  
+Jun Ohnuki, Kei-ichi Okazaki.  
+[JACS Au(2026)](https://doi.org/10.1021/jacsau.6c00596) | [code](https://github.com/OkazakiLab/af3_red)  
+
+* **Pi-Ensemble: Sequence-guided generation of interpolated protein conformational ensembles** [2026]  
+Hassan Nadeem, Diego E Kleiman, Yuming Zhou, Andrew Leakey, Diwakar Shukla.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.12.744498)  
+
+* **SF-Cluster: Frustration-Guided MSA Subsampling for Alternative Protein Conformation Recovery** [2026]  
+Hanqun Cao, Zijun Gao, Chunbin Gu, Ge Liu, Pheng Ann Heng, Pranam Chatterjee.  
+[arXiv:2607.00180(2026)](https://doi.org/10.48550/arXiv.2607.00180)  
+
+* **Recovering Conformational Heterogeneity from the Protein Data Bank at Scale** [2026]  
+Wankowicz, Stephanie A.  
+[Radial (2026)](https://thestacks.org/publications/qfit-at-scale/v1) | [code](https://github.com/ExcitedStates/qfit-3.0)  
+
+* **Ab initio side-chain sampling with PUD+ enables high-fidelity protein dynamics across AI-driven and classical simulations** [2026]  
+Dianwei Wu, Tong Wang.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.08.10.743906)  
+
+* **Learning millisecond protein dynamics from what is missing in NMR spectra** [2026]  
+Wayment-Steele, H.K., El Nesr, G., Hettiarachchi, R. et al.  
+[Nature (2026)](https://doi.org/10.1038/s41586-026-10989-4) | [code](https://github.com/WaymentSteeleLab/Dyna-1)  
+
+* **SPINDLE: Unlocking protein dynamics from single-field NMR relaxation data using a deep learning ensemble** [2026]  
+Olivia E Krise, Michael P Latham.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.07.31.742133) | [code](https://github.com/michaellatham77/SPINDLE)  
+
+* **Spectral Diffusion for Protein Dynamics** [2026]  
+Hew Phipps, Matteo Cagiada, Santiago D. Villalba, Charlotte M. Deane.  
+[arXiv:2607.04134(2026)](https://doi.org/10.48550/arXiv.2607.04134) | [code](https://github.com/HPuntu/DynaMode)  
+
+* **Accelerated Sampling of Protein Dynamics Using BioEmu-Augmented Molecular Simulation** [2026]  
+Soumendranath Bhakat and Eva-Maria Strauch.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c01000)  
+
+* **UniFlow: Unifying protein conformational ensemble generation and machine-learned force fields with a scalable normalizing Flow** [2026]  
+Yikai Liu, Ming Chen, Guang Lin.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.07.17.739266) | [code](https://github.com/Harrydirk41/UniFlow)  
+
+* **ProMiSE: Protein Multi-State Evaluation Benchmark in Biological Contexts** [2026]   
+ Bonjae Ku, Seeun Kim, Yubeen Kim, Hahnbeom Park, Chaok Seok.  
+  [bioRxiv. (2026)](https://doi.org/10.64898/2026.06.11.731790) | [code](https://github.com/seoklab/promise-bench)  
+
+* **Accelerated Sampling of Protein Dynamics Using BioEmu-Augmented Molecular Simulation** [2026]   
+ Soumendranath Bhakat and Eva-Maria Strauch.  
+  [J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c01000)  
+
+* **Targeting the intrinsically disordered AR-NTD through a machine learning-based enhanced sampling workflow** [2026]   
+ Zhu, K., Wang, H., Zhang, J. et al.  
+  [Nat Commun (2026)](https://doi.org/10.1038/s41467-026-73863-x) | [code](https://github.com/Kai-Zhu-2001/AR-NTD_MD) | [Zenodo](https://doi.org/10.5281/zenodo.19613110)  
+
+* **Learning Implicit Bias in Generative Spaces for Accelerating Protein Dynamics Emulation** [2026]  
+Kaihui Cheng, Zhiqiang Cai, Wenkai Xiang, Zhihang Hu, Siyu Zhu, Tzuhsiung Yang, Yuan Qi.   
+[arXiv:2606.01833 (2026)](https://doi.org/10.48550/arXiv.2606.01833)  
+
+* **Wavelet-Enhanced Data-Driven Collective Variables for Efficient Sampling of Protein Folding Landscapes** [2026]   
+ Zhiteng Zhang, Xueguang Shao, and Wensheng Cai.  
+  [J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c00310) | [code](https://github.com/deeptime-ml/deeptime)  
+
+* **Spatiotemporal graph neural networks reveal conformational binding signature in protein dynamics** [2026]   
+ Stefano Motta, Gianluca Santini, Samman Mansoor, Ferdoos Hossein Nezhad, Massimiliano Meli, Alessandro Pandini.  
+  [bioRxiv (2026)](https://doi.org/10.64898/2026.05.19.726195) | [code](https://github.com/MottaStefano/GISTnet-MD)  
+
+* **Learning protein representations with conformational dynamics** [2026]  
+Dan Kalifa, Eric Horvitz, Kira Radinsky.  
+[Bioinformatics (2026)](https://doi.org/10.1093/bioinformatics/btag254) | [code](https://github.com/kalifadan/DynamicsPLM) | [Zenodo](https://doi.org/10.5281/zenodo.17668302)  
+
+* **Generative Machine Learning of Conformational Ensembles of Intrinsically Disordered Proteins: Progress and Opportunities** [2026]  
+Irawati Roy and Jagannath Mondal.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00354)  
+
+* **Distance-Restraint-Guided Diffusion Models for Sampling Protein Conformational Changes and Ligand Dissociation Pathways** [2026]  
+Tatsuki Hori, Yoshitaka Moriwaki, and Ryuichiro Ishitani.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00199) | [code](https://github.com/cddlab/boltz_restr)  
+
+* **DeepPath: Overcoming data scarcity for protein transition pathway prediction using physics-based deep learning** [2026]  
+Yui Tik Pang, Katie M. Kuo, Lixinhao Yang, James C. Gumbart.   
+[Chem. Sci. (2026)](https://doi.org/10.1039/D5SC08253F) | [bioRxiv. (2025)](https://doi.org/10.1101/2025.02.27.640693) | [code](https://huggingface.co/andrewytp/deeppath)  
+
+* **DPLM: Dynamics-aware Protein Language Model via contrastive learning between sequence and molecular dynamics simulation trajectory** [2026]  
+Yuexu Jiang, Duolin Wang, Ibrahim A. Imam, Dong Xu, Qing Shao.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.04.29.721692) | [code](https://github.com/yuexujiang/DPLM_release)  
+
+* **Learning Structure, Energy, and Dynamics: A Survey of Artificial Intelligence for Protein Dynamics** [2026]  
+Haocheng Tang, Liang Shi, Ya-Shi Zhang, Xixian Liu, Jian Tang, Jiarui Lu.  
+[arXiv:2604.25244 (2026)](https://doi.org/10.48550/arXiv.2604.25244)  
+
+* **Hidden structural states of proteins revealed by conformer selection** [2026]  
+Huang, Y.J., Ramelot, T.A., Spaman, L.E. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-71997-6) | [code](https://github.com/MontelioneLab/AISAR)  
+
+* **ConforNets: Latents-Based Conformational Control in OpenFold3** [2026]  
+Minji Lee, Colin Kalicki, Minkyu Jeon, Aymen Qabel, Alisia Fadini, Mohammed AlQuraishi.  
+[arXiv:2604.18559 (2026)](https://doi.org/10.48550/arXiv.2604.18559)  
+
+* **Explainable Machine Learning Guided Enhanced Sampling of Protein Conformational Transition in HSP90** [2026]  
+Chatterjee, S. and Ray, D.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c00132)  
+
+* **Toward a unified framework for determining conformational ensembles of disordered proteins** [2026]  
+Ghafouri, H., Kadeřávek, P., Melo, A.M. et al.  
+[Nat Methods (2026)](https://doi.org/10.1038/s41592-026-03003-2)  
+
+* **Accurate predictions of disordered protein ensembles with STARLING** [2026]  
+Novak, B., Lotthammer, J.M., Emenecker, R.J. et al.  
+[Nature (2026)](https://doi.org/10.1038/s41586-026-10141-2) | [code](https://github.com/idptools/starling/) | [Zenodo](https://doi.org/10.5281/zenodo.17342150)  
+
+* **Conditional diffusion with locality-aware modal alignment for generating diverse protein conformational ensembles** [2026]  
+Wang, B., Wang, C., Chen, J. et al.  
+[Nat Mach Intell (2026)](https://doi.org/10.1038/s42256-026-01198-9) | [code](https://github.com/Paulie-ai/Mac-Diff) | [Zenodo](https://doi.org/10.5281/zenodo.17936479)  
+
+* **Reinforced molecular dynamics: Physics-infused generative machine learning model simulates protein motion** [2026]  
+István Kolossváry.  
+[PNAS Nexus (2026)](https://doi.org/10.1093/pnasnexus/pgaf408) | [Zenodo](https://doi.org/10.5281/zenodo.16459122)  
+
+* **ProteinConformers: Benchmark Dataset for Simulating Protein Conformational Landscape Diversity and Plausibility** [2025]  
+Zhou, Yihang, Chen Wei, Minghao Sun, Jin Song, Yang Li, Lin Wang, and Yang Zhang.  
+[NeurIPS 2025 Datasets and Benchmarks Track (2025)](https://openreview.net/forum?id=GClrNUTqly) | [code](https://github.com/auroua/ProteinConformers)  
+
+* **Repetitive proteins that undergo large conformational changes evade structural prediction algorithms** [2025]  
+Marina P. Chang, Tianyi Jin, Alana P. Gudinas, Daniel Fernandez, Alfredo Alexander-Katz, Tsutomu Matsui, Danielle J. Mai.  
+[J. Chem. Phys. 163, 224906 (2025)](https://doi.org/10.1063/5.0304777)  
+
+* **AlphaFold-RandomWalk and AlphaFold-Ensemble: Sampling Alternative Protein Conformations with Perturbed Versions of AlphaFold** [2025]  
+Ishan Taneja, Manuel A. Llanos, Monica L. Fernández-Quintero, Johannes R. Loeffler, Matthew Holcomb, Andrew B. Ward, and Stefano Forli.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c02004) | [code](https://github.com/forlilab/pafmd)  
+
+* **Enhanced sampling of protein conformations in AlphaFold3 with repulsive bias in the diffusion generative model** [2025]  
+Jun Ohnuki, Kei-ichi Okazaki.  
+[bioRxiv. (2025)](https://doi.org/10.64898/2025.12.17.693105) | [code](https://github.com/OkazakiLab/af3_mmm) | [Zenodo](https://doi.org/10.5281/zenodo.17811671)  
+
+* **Deep generative modeling of temperature-dependent structural ensembles of proteins** [2025]  
+Janson, G., Jussupow, A. & Feig, M.  
+[Commun Chem 8, 354 (2025)](https://doi.org/10.1038/s42004-025-01737-2) | [code](https://github.com/giacomo-janson/sam2)  
+
+* **Protein Diffusion Models as Statistical Potentials** [2025]  
+James Roney, Chenxi Ou, Sergey Ovchinnikov.  
+[bioRxiv. (2025)](https://doi.org/10.64898/2025.12.09.693073) | [data](https://github.com/jproney/ProteinEBM)  
+
+* **AFM-Fold: Rapid Reconstruction of Protein Conformations from AFM Images** [2025]  
+Tsuyoshi Kawai, Yasuhiro Matsunaga.  
+[bioRxiv. (2025)](https://doi.org/10.1101/2025.11.17.688836) | [code](http://github.com/matsunagalab/afmfold) | [Zenodo](https://zenodo.org/records/17714204)  
+
+* **An optimized contact map for GōMartini 3 enabling conformational changes in protein assemblies** [2025]  
+Gustavo E. Olivos-Ramirez, Luis F. Cofas-Vargas, Siewert J. Marrink, Adolfo B. Poma.  
+[bioRxiv. (2025)](https://doi.org/10.1101/2025.11.14.688437) | [data](https://github.com/GoMartini3-tools/ContactFreq)  
+
+* **PathGennie: Rapid Generation of Rare Event Pathways via Direction-Guided Adaptive Sampling Using Ultrashort Monitored Trajectories** [2025]  
+Dibyendu Maity, Shaheerah Shahid, and Suman Chakrabarty.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01244) | [code](https://github.com/TeamSuman/PathGennie)  
+
+* **EPO: Diverse and Realistic Protein Ensemble Generation via Energy Preference Optimization** [2025]  
+Yuancheng Sun, Yuxuan Ren, Zhaoming Chen, Xu Han, Kang Liu, Qiwei Ye.  
+[arXiv:2511.10165 (2025)](https://doi.org/10.48550/arXiv.2511.10165)  
+
+* **Efficient Generation of Protein and Protein–Protein Complex Dynamics via SE(3)-Parameterized Diffusion Models** [2025]  
+Kai Xu, Jianmin Wang, Mingquan Liu, Kewei Zhou, Shaolong Lin, Weihong Li, Lin Shi, Peng Zhou, Huanxiang Liu, and Xiaojun Yao.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01971) | [code](https://github.com/lfs119/PTraj-Diff)  
+
+* **MDZip: Neural Compression of Molecular Dynamics Trajectories for Scalable Storage and Ensemble Reconstruction** [2025]  
+Namindu De Silva and Alberto Perez.  
+[J. Phys. Chem. B (2025)](https://doi.org/10.1021/acs.jpcb.5c05348)  
+
+* **AI-based Methods for Simulating, Sampling, and Predicting Protein Ensembles** [2025]  
+Bowen Jing, Bonnie Berger, Tommi Jaakkola.  
+[arXiv:2509.17224 (2025)](https://doi.org/10.48550/arXiv.2509.17224)  
+
+* **Evaluation of machine learning-assisted directed evolution across diverse combinatorial landscapes** [2025]  
+Li, Francesca-Zhoufan, Jason Yang, Kadina E. Johnston, Emre Gürsoy, Yisong Yue, and Frances H. Arnold.  
+[Cell Systems (2025)](https://doi.org/10.1016/j.cels.2025.101387) | [code](https://github.com/fhalab/SSMuLA)  
+
+* **Generative AI techniques for conformational diversity and evolutionary adaptation of proteins** [2025]  
+Brownless, Alfie-Louise R., Dariia Yehorova, Colin L. Welsh, and Shina Caroline Lynn Kamerlin.  
+[Curr Opin Struct Biol. (2025)](https://doi.org/10.1016/j.sbi.2025.103135)  
+
+* **Impact of Protein Conformational Diversity on Structure-Based Prediction of Druggability** [2025]  
+Bekar-Cesaretli, Ayse A., Shray Vats, Adrian Whitty, Dima Kozakov, Diane Joseph-McCarthy, and Sandor Vajda.  
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01576) | [code](https://github.com/svats73/FTMove-Druggability)  
+
+* **Scalable emulation of protein equilibrium ensembles with generative deep learning** [2024]  
+Lewis, Sarah, Tim Hempel, José Jiménez-Luna, Michael Gastegger, Yu Xie, Andrew YK Foong, Victor García Satorras et al.   
+[Science (2025)](https://doi.org/10.1126/science.adv9817) | [bioRxiv. (2024)](https://doi.org/10.1101/2024.12.05.626885) | [code](https://github.com/microsoft/bioemu)  
+
+* **Generation of protein dynamics by machine learning** [2025]  
+Janson G, Feig M..  
+[Curr Opin Struct Biol. (2025)](https://doi.org/10.1016/j.sbi.2025.103115)  
+
+* **Applied causality to infer protein dynamics and kinetics** [2025]  
+Akashnathan Aranganathan, Eric R. Beyerle.  
+[arXiv:2508.12060 (2025)](https://doi.org/10.48550/arXiv.2508.12060)  
+
+* **af2rave: Protein Ensemble Generation with Physics-Based Sampling** [2025]  
+Teng D, Meraz VJ, Aranganathan A, Gu X, Tiwary P.  
+[Digital Discovery (2025)](https://doi.org/10.1039/D5DD00201J) | [ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-q3mwr) | [code](https://github.com/tiwarylab/af2rave)  
+
+* **Generative Modeling of Full-Atom Protein Conformations using Latent Diffusion on Graph Embeddings** [2025]  
+Aditya Sengar, Ali Hariri, Daniel Probst, Patrick Barth, Pierre Vandergheynst.  
+[arXiv:2506.17064 (2025)](https://www.arxiv.org/abs/2506.17064) | [code](https://github.com/adityasengar/LD-FPG)  
+
+* **Memory kernel minimization-based neural networks for discovering slow collective variables of biomolecular dynamics** [2025]  
+Liu, B., Cao, S., Boysen, J.G. et al.  
+[Nat Comput Sci (2025)](https://doi.org/10.1038/s43588-025-00815-8) | [code](https://github.com/markovmodel/mdshare)  
+
+* **Aligning Protein Conformation Ensemble Generation with Physical Feedback** [2025]  
+Du, Yilun, Joshua Meier, Jerry Ma, Rob Fergus, and Alexander Rives.   
+[ICML 2025 (2025)](https://openreview.net/forum?id=Asr955jcuZ) | [arXiv:2505.24203 (2025)](https://doi.org/10.48550/arXiv.2505.24203) | [code](https://github.com/lujiarui/eba)  
+
+* **Simultaneous Modeling of Protein Conformation and Dynamics via Autoregression** [2025]   
+Yuning Shen, Lihao Wang, Huizhuo Yuan, Yan Wang, Bangji Yang, Quanquan Gu.  
+[arXiv:2505.17478 (2025)](https://doi.org/10.48550/arXiv.2505.17478)  
+
+* **Caver Web 2.0: analysis of tunnels and ligand transport in dynamic ensembles of proteins** [2025]  
+Sérgio M Marques, Simeon Borko, Ondrej Vavra, Jan Dvorsky, Petr Kohout, Petr Kabourek, Lukas Hejtmanek, Jiri Damborsky, David Bednar.   
+[Nucleic Acids Research (2025)](https://doi.org/10.1093/nar/gkaf399) | [web](https://loschmidt.chemi.muni.cz/caverweb)  
+
+* **GōMartini 3: From large conformational changes in proteins to environmental bias corrections** [2025]  
+Souza, P.C.T., Borges-Araújo, L., Brasnett, C. et al.   
+[Nat Commun 16, 4051 (2025)](https://doi.org/10.1038/s41467-025-58719-0) | [code](https://github.com/marrink-lab/vermouth-martinize)  
+
+* **Learning Biophysical Dynamics with Protein Language Models** [2025]  
+Chao Hou, Haiqing Zhao, Yufeng Shen.  
+[bioRxiv. (2025)](https://doi.org/10.1101/2024.10.11.617911)  
+
+* **Emerging Frontiers in Conformational Exploration of Disordered Proteins: Integrating Autoencoder and Molecular Simulations** [2024]  
+Sanaa Mansoor, Minkyung Baek, Hahnbeom Park, Gyu Rie Lee, and David Baker.  
+[ACS Chem. Neurosci. (2024)](https://doi.org/10.1021/acschemneuro.4c00670)  
+
+* **Accurate Prediction of the Kinetic Sequence of Physicochemical States Using Generative Artificial Intelligence** [2025]  
+Bera, Palash and Mondal, Jagannath.   
+[Chem. Sci. (2025)](https://doi.org/10.1039/D5SC00108K) | [code](https://github.com/palash892/gpt_state_generation)  
+
+* **Towards a Unified Framework for Determining Conformational Ensembles of Disordered Proteins** [2025]  
+Hamidreza Ghafouri and Pavel Kadeřávek and Ana M Melo. et al.  
+[arXiv:2504.03590 (2025)](https://arxiv.org/abs/2504.03590)  
+
+* **Protein Conformation Generation via Force-Guided SE(3) Diffusion Models** [2024]  
+Yan Wang, Lihao Wang, Yuning Shen, Yiqun Wang, Huizhuo Yuan, Yue Wu, Quanquan Gu.   
+[ICML 2024 (2024)](https://arxiv.org/abs/2403.14088) | [code](https://github.com/bytedance/ConfDiff)  
+
+* **AlphaFold prediction of structural ensembles of disordered proteins** [2025]  
+Brotzakis, Z.F., Zhang, S., Murtada, M.H. et al.  
+[Nat Commun 16, 1632 (2025)](https://doi.org/10.1038/s41467-025-56572-9) | [code](https://github.com/vendruscolo-lab/AlphaFold-IDP)  
+
+* **Unsupervised Learning of Progress Coordinates during Weighted Ensemble Simulations: Application to NTL9 Protein Folding** [2025]  
+Jeremy M. G. Leung, Nicolas C. Frazee, Alexander Brace, Anthony T. Bogetti, Arvind Ramanathan, and Lillian T. Chong.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.4c01136) | [code](https://github.com/westpa/DL-enhancedWE)  
+
+* **Generalizable Protein Dynamics in Serine-Threonine Kinases: Physics is the key** [2025]  
+Soumendranath Bhakat, Shray Vats, Andreas Mardt, Alexei Degterev.  
+[bioRxiv (2025)](https://doi.org/10.1101/2025.03.06.641878) | [code](https://github.com/svats73/mdml)  
+
+* **Hidden Structural States of Proteins Revealed by Conformer Selection with AlphaFold-NMR** [2025]  
+Yuanpeng J. Huang, Theresa A. Ramelot, Laura E. Spaman, Naohiro Kobayashi, Gaetano T. Montelione.  
+[bioRxiv (2025)](https://doi.org/10.1101/2024.06.26.600902) | [code](https://github.rpi.edu/RPIBioinformatics/AlphaFold-NMR)  
+
+* **Insights into phosphorylation-induced influences on conformations and inhibitor binding of CDK6 through GaMD trajectory-based deep learning** [2025]  
+Zhao, Lu and Wang, Jian and Yang, Wanchun and Zhang, Canqing and Zhang, Weiwei and Chen, Jianzhong.   
+[Phys. Chem. Chem. Phys. (2025)](http://dx.doi.org/10.1039/D4CP04579C) | [code](https://github.com/Peach92/CDK6-pho-GaMD-trajectory-based-deep-learning)  
+
+* **Gradations in protein dynamics captured by experimental NMR are not well represented by AlphaFold2 models and other computational metrics** [2025]  
+Gavalda-Garcia, Jose, Bhawna Dixit, Adrián Díaz, An Ghysels, and Wim Vranken.   
+[Journal of Molecular Biology 437.2 (2025)](https://doi.org/10.1016/j.jmb.2024.168900) | [code](https://zenodo.org/records/14192555)  
+
+* **Generative modeling of protein ensembles guided by crystallographic electron densities** [2024]  
+Sai Advaith Maddipatla, Nadav Bojan Sellam, Sanketh Vedula, Ailie Marx, Alex Bronstein.   
+[arXiv:2412.13223(2024)](https://arxiv.org/abs/2412.13223)  
+
+* **P2DFlow: A Protein Ensemble Generative Model with SE(3) Flow Matching** [2024]  
+Yaowei Jin, Qi Huang, Ziyang Song, Mingyue Zheng, Dan Teng, Qian Shi.   
+[arXiv:2411.17196 (2024)](https://arxiv.org/abs/2411.17196) | [code](https://github.com/BLEACH366/P2DFlow)  
+
+* **Fast Sampling of Protein Conformational Dynamics** [2024]  
+Michael A. Sauer, Souvik Mondal, Brandon Neff, Sthitadhi Maiti, Matthias Heyden.   
+[	arXiv:2411.08154 (2024)](https://arxiv.org/abs/2411.08154)  
+
+* **Sampling Conformational Ensembles of Highly Dynamic Proteins via Generative Deep Learning** [2024]  
+Talant Ruzmetov, Ta I Hung, Saisri Padmaja Jonnalagedda, Si-han Chen, Parisa Fasihianifard, Zhefeng Guo, Bir Bhanu, Chia-en A. Chang.   
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.05.05.592587) | [data](https://github.com/chang-group/ICoN)  
+
+* **AlphaFold2's training set powers its predictions of fold-switched conformations** [2024]  
+Joseph W. Schafer, Lauren Porter.   
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.10.11.617857) | [data](https://github.com/porterll/CFold_AF2)  
+
+* **Exploring Protein Conformational Changes Using a Large-Scale Biophysical Sampling Augmented Deep Learning Strategy** [2024]  
+Hu, Yao, Hao Yang, Mingwei Li, Zhicheng Zhong, Yongqi Zhou, Fang Bai, and Qian Wang.   
+[Advanced Science (2024)](https://doi.org/10.1002/advs.202400884) | [code](https://github.com/qwang897/PATHpre)  
+
+* **AMARO: All Heavy-Atom Transferable Neural Network Potentials of Protein Thermodynamics** [2024]  
+Mirarchi, Antonio, Raul P. Pelaez, Guillem Simeon, and Gianni De Fabritiis.  
+[arXiv:2409.17852 (2024)](https://arxiv.org/abs/2409.17852) | [code](https://github.com/compsciencelab/amaro)  
+
+* **Conformations of KRAS4B Affected by Its Partner Binding and G12C Mutation: Insights from GaMD Trajectory-Image Transformation-Based Deep Learning** [2024]  
+Chen, Jianzhong, Jian Wang, Wanchun Yang, Lu Zhao, and Guodong Hu.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c01174) | [code](https://github.com/jianzhong70/Visualiztion-for-MD-trajectory-analysis)  
+
+* **Assessing AF2’s ability to predict structural ensembles of proteins** [2024]  
+Riccabona, Jakob R., Fabian C. Spoendlin, Anna-Lena M. Fischer, Johannes R. Loeffler, Patrick K. Quoika, Timothy P. Jenkins, James A. Ferguson et al.   
+[Structure (2024)](https://doi.org/10.1016/j.str.2024.09.001)  
+
+* **Identifying protein conformational states in the Protein Data Bank: Toward unlocking the potential of integrative dynamics studies** [2024]  
+Ellaway, J. I., Anyango, S., Nair, S., Zaki, H. A., Nadzirin, N., Powell, H. R., ... & Velankar, S.   
+[Structural Dynamics (2024)](https://doi.org/10.1063/4.0000251)   
+
+* **AlphaFold with conformational sampling reveals the structural landscape of homorepeats** [2024]  
+Bonet, David Fernandez et al.   
+[Structure (2024)](https://doi.org/10.1016/j.str.2024.08.016) | [code](	https://doi.org/10.5281/zenodo.13255318)  
+
+* **Structure prediction of alternative protein conformations** [2024]  
+Bryant, P., Noé, F.   
+[Nat Commun 15, 7328 (2024)](https://doi.org/10.1038/s41467-024-51507-2) | [code](https://github.com/patrickbryant1/Cfold)  
+
+* **Deep learning guided design of dynamic proteins** [2024]  
+Amy B. Guo, Deniz Akpinaroglu, Mark J.S. Kelly, Tanja Kortemme.   
+[bioRxiv. (2024)](https://doi.org/10.1101/2024.07.17.603962)  
+
+* **AlphaFold predictions of fold-switched conformations are driven by structure memorization** [2024]  
+Chakravarty, D., Schafer, J.W., Chen, E.A. et al.   
+[Nat Commun 15, 7296 (2024)](https://doi.org/10.1038/s41467-024-51801-z) | [code](https://github.com/ncbi/AF2_benchmark)  
+
+* **4D Diffusion for Dynamic Protein Structure Prediction with Reference Guided Motion Alignment** [2024]  
+Cheng, Kaihui, Ce Liu, Qingkun Su, Jun Wang, Liwei Zhang, Yining Tang, Yao Yao, Siyu Zhu, and Yuan Qi.   
+[arXiv:2408.12419 (2024)](https://arxiv.org/abs/2408.12419)  
+
+* **Predicting protein conformational motions using energetic frustration analysis and AlphaFold2** [2024]  
+Xingyue Guan  and Qian-Yuan Tang  and Weitong Ren  and Mingchen Chen  and Wei Wang  and Peter G. Wolynes  and Wenfei Li.   
+[Proceedings of the National Academy of Sciences (2024)](https://doi.org/10.1073/pnas.2410662121)  
+
+* **A resource for comparing AF-Cluster and other AlphaFold2 sampling methods** [2024]  
+Hannah K Wayment-Steele, Sergey Ovchinnikov, Lucy Colwell, Dorothee Kern.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.07.29.605333) 
+
+* **Integration of AlphaFold with Molecular Dynamics for Efficient Conformational Sampling of Transporter Protein NarK** [2024]  
+Ohnuki, Jun, and Kei-ichi Okazaki.   
+[The Journal of Physical Chemistry B (2024)](https://doi.org/10.1021/acs.jpcb.4c02726)  
+
+* **Transferable deep generative modeling of intrinsically disordered protein conformations** [2024]  
+Abdin, O., Kim, P.M.   
+[PLOS Computational Biology 20.5 (2024)](https://doi.org/10.1371/journal.pcbi.1012144) | [code](https://github.com/giacomo-janson/idpsam)  
+
+* **AFsample2: Predicting multiple conformations and ensembles with AlphaFold2** [2024]  
+Yogesh Kalakoti, Björn Wallner.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.05.28.596195) | [code](https://github.com/iamysk/AFsample2/)
+
+* **Prediction of Conformational Ensembles and Structural Effects of State-Switching Allosteric Mutants in the Protein Kinases Using Comparative Analysis of AlphaFold2 Adaptations with Sequence Masking and Shallow Subsampling** [2024]  
+Nishank Raisinghani, Mohammed Alshahrani, Grace Gupta, Hao Tian, Sian Xiao, Peng Tao, Gennady Verkhivker.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.05.17.594786) | [code](https://zenodo.org/records/11204773)
+
+* **Empowering AlphaFold2 for protein conformation selective drug discovery with AlphaFold2-RAVE** [2024]  
+Xinyu Gu, Akashnathan Aranganathan, Pratyush Tiwary.   
+[	arXiv:2404.07102 (2024)](https://arxiv.org/abs/2404.07102)  
+
+* **High-throughput prediction of protein conformational distributions with subsampled AlphaFold2** [2024]  
+Monteiro da Silva, G., Cui, J.Y., Dalgarno, D.C. et al.   
+[Nat Commun 15, 2464 (2024)](https://doi.org/10.1038/s41467-024-46715-9) | [code](https://github.com/GMdSilva/gms_natcomms_1705932980_data)
+
+* **AlphaFold Meets Flow Matching for Generating Protein Ensembles** [2024]  
+Jing, Bowen, Bonnie Berger, and Tommi Jaakkola.   
+[arXiv:2402.04845 (2024)](https://arxiv.org/abs/2402.04845) | [code](https://github.com/bjing2016/alphaflow)
+
+* **Predicting multiple conformations via sequence clustering and AlphaFold2** [2024]  
+Wayment-Steele, H.K., Ojoawo, A., Otten, R. et al.   
+[Nature 625, 832–839 (2024)](https://doi.org/10.1038/s41586-023-06832-9) | [code](https://github.com/HWaymentSteele/AF_Cluster)
+
+* **Data-Efficient Generation of Protein Conformational Ensembles with Backbone-to-Side-Chain Transformers** [2024]  
+Chennakesavalu, Shriram, and Grant M. Rotskoff.   
+[The Journal of Physical Chemistry B (2024)](https://pubs.acs.org/doi/full/10.1021/acs.jpcb.3c08195) | [code](https://github.com/rotskoff-group/transformer-backmapping)
+
+* **Frame-to-Frame Coarse-grained Molecular Dynamics with SE (3) Guided Flow Matching** [2024]  
+Li, Shaoning, Yusong Wang, Mingyu Li, Jian Zhang, Bin Shao, Nanning Zheng, and Jian Tang   
+[arXiv:2405.00751 (2024)](https://arxiv.org/abs/2405.00751)  
+
+* **AlphaFold Meets Flow Matching for Generating Protein Ensembles** [2024]  
+Jing, Bowen, Bonnie Berger, and Tommi Jaakkola.   
+[arXiv:2402.04845 (2024)](https://arxiv.org/abs/2402.04845) | [code](https://github.com/bjing2016/alphaflow)
+
+* **Machine learning of force fields towards molecular dynamics simulations of proteins at DFT accuracy** [2024]  
+Brunken, Christoph, Sebastien Boyer, Mustafa Omar, Bakary N'tji Diallo, Karim Beguir, Nicolas Lopez Carranza, and Oliver Bent.   
+[ICLR 2024 Workshop on Generative and Experimental Perspectives for Biomolecular Design (2024)](https://openreview.net/forum?id=hrvvIOx7EM) | [code](https://github.com/ACEsuit/mace-jax)  
+
+* **Deciphering the Coevolutionary Dynamics of L2 β-Lactamases via Deep Learning** [2024]  
+  Zhu, Yu, Jing Gu, Zhuoran Zhao, AW Edith Chan, Maria F. Mojica, Andrea M. Hujer, Robert A. Bonomo, and Shozeb Haider.  
+  [J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c00189) | [data](https://zenodo.org/records/10500539)
+
+* **Protein Ensemble Generation Through Variational Autoencoder Latent Space Sampling** [2024]  
+Sanaa Mansoor, Minkyung Baek, Hahnbeom Park, Gyu Rie Lee, and David Baker.   
+[J. Chem. Theory Comput. (2024)](https://pubs.acs.org/doi/10.1021/acs.jctc.3c01057)
+
+* **Phanto-IDP: compact model for precise intrinsically disordered protein backbone generation and enhanced sampling** [2024]  
+  Junjie Zhu, Zhengxin Li, Haowei Tong, Zhouyu Lu, Ningjie Zhang, Ting Wei and Hai-Feng Chen.  
+  [Briefings in Bioinformatics. (2024)](https://academic.oup.com/bib/article/25/1/bbad429/7453435) | [code](https://github.com/Junjie-Zhu/Phanto-IDP)
+
+* **Str2str: A score-based framework for zero-shot protein conformation sampling** [2024]  
+Lu, Jiarui, Bozitao Zhong, Zuobai Zhang, and Jian Tang.   
+[ICLR (2024)](https://openreview.net/forum?id=C4BikKsgmK) | [code](https://github.com/lujiarui/Str2Str)
+
+* **Enabling Population Protein Dynamics Through Bayesian Modeling** [2024]  
+Sylvain Lehmann, Jérôme Vialaret, Audrey Gabelle, Luc Bauchet, Jean-Philippe Villemin, Christophe Hirtz, Jacques Colinge.   
+[Bioinformatics (2024)](https://doi.org/10.1093/bioinformatics/btae484)
+
+* **Deep Boosted Molecular Dynamics (DBMD): Accelerating molecular simulations with Gaussian boost potentials generated using probabilistic Bayesian deep neural network** [2023]  
+Do, Hung N., and Yinglong Miao.   
+[bioRxiv(2023)](https://doi.org/10.1101/2023.03.25.534210) | [code](https://github.com/MiaoLab20/DBMD/)
+
+* **Deep Generative Models of Protein Structure Uncover Distant Relationships Across a Continuous Fold Space** [2023]  
+Draizen, Eli J., Stella Veretnik, Cameron Mura, and Philip E. Bourne.   
+[bioRxiv(2023)](https://doi.org/10.1101/2022.07.29.501943) | [code](https://github.com/bouralab/DeepUrfold)
+
+* **Score-based enhanced sampling for protein molecular dynamics** [2023]  
+Lu, Jiarui, Bozitao Zhong, and Jian Tang.   
+[arXiv:2306.03117 (2023)](https://arxiv.org/abs/2306.03117) | [code](https://github.com/lujiarui/Str2Str)
+
+* **AlphaFold2-RAVE: From Sequence to Boltzmann Ranking** [2023]  
+Bodhi P. Vani, Akashnathan Aranganathan, Dedi Wang, and Pratyush Tiwary.   
+[J. Chem. Theory Comput. (2023)](https://pubs.acs.org/doi/10.1021/acs.jctc.3c00290)) | [code](https://github.com/tiwarylab/alphafold2rave)
+
+* **Investigating the conformational landscape of AlphaFold2-predicted protein kinase structures** [2023]  
+Carmen Al-Masri, Francesco Trozzi, Shu-Hang Lin, Oanh Tran, Navriti Sahni, Marcel Patek, Anna Cichonska, Balaguru Ravikumar, Rayees Rahman.   
+[Bioinformatics Advances. (2023)](https://doi.org/10.1093/bioadv/vbad129)) | [code](https://github.com/Harmonic-Discovery/AF2-kinase-conformational-landscape)
+
+* **Exploring the Druggable Conformational Space of Protein Kinases Using AI-Generated Structures** [2023]  
+Herrington, Noah B., David Stein, Yan Chak Li, Gaurav Pandey, and Avner Schlessinger.   
+[bioRxiv (2023)](https://doi.org/10.1101/2023.08.31.555779) | [code](https://github.com/schlessinger-lab/af2_kinase_conformations/)
+
+* **Active Learning of the Conformational Ensemble of Proteins Using Maximum Entropy VAMPNets** [2023]  
+Kleiman, Diego E., and Diwakar Shukla.   
+[J. Chem. Theory Comput. (2023)](https://doi.org/10.1021/acs.jctc.3c00040) | [code](https://github.com/ShuklaGroup/MaxEntVAMPNet)
+
+* **Direct generation of protein conformational ensembles via machine learning** [2023]  
+Janson, G., Valdes-Garcia, G., Heo, L. et al.   
+[Nat Commun 14, 774 (2023)](https://doi.org/10.1038/s41467-023-36443-x) | [code](https://github.com/feiglab/idpgan)
+
+* **Enhancing Conformational Sampling for Intrinsically Disordered and Ordered Proteins by Variational Auotencoder** [2023]  
+  JunJie Zhu, NingJie Zhang, Ting Wei and Hai-Feng Chen.  
+  [International Journal of Molecular Sciences. (2023)](https://www.mdpi.com/1422-0067/24/8/6896) | [code](https://github.com/Junjie-Zhu/VAE)
+
+* **Molecular dynamics without molecules: searching the conformational space of proteins with generative neural networks** [2022]  
+Schwing, Gregory, Luigi L. Palese, Ariel Fernández, Loren Schwiebert, and Domenico L. Gatti.   
+[arXiv:2206.04683 (2022)](https://arxiv.org/abs/2206.04683) | [code](https://github.com/dgattiwsu/MD_without_molecules)
+
+* **Sampling alternative conformational states of transporters and receptors with AlphaFold2** [2022]  
+Del Alamo, Diego, Davide Sala, Hassane S. Mchaourab, and Jens Meiler.   
+[Elife 11 (2022)](https://elifesciences.org/articles/75751) | [code](https://github.com/delalamo/af2_conformations)  
+
+* **Artificial intelligence guided conformational mining of intrinsically disordered proteins** [2022]  
+Gupta, A., Dey, S., Hicks, A. et al.   
+[Commun Biol 5, 610 (2022)](https://doi.org/10.1038/s42003-022-03562-y) | [code](https://github.com/aaayushg/generative_IDPs)
+
+* **LAST: Latent Space-Assisted Adaptive Sampling for Protein Trajectories** [2022]  
+Tian, Hao, Xi Jiang, Sian Xiao, Hunter La Force, Eric C. Larson, and Peng Tao   
+[J. Chem. Inf. Model. (2022)](https://doi.org/10.1021/acs.jcim.2c01213) | [code](https://github.com/smu-tao-group/LAST)
+
+* **Molecular dynamics without molecules: searching the conformational space of proteins with generative neural networks** [2022]  
+Schwing, Gregory, Luigi L. Palese, Ariel Fernández, Loren Schwiebert, and Domenico L. Gatti.   
+[arXiv:2206.04683 (2022)](https://arxiv.org/abs/2206.04683) | [code](https://github.com/dgattiwsu/MD_without_molecules)
+
+* **ProGAE: A Geometric Autoencoder-based Generative Model for Disentangling Protein Conformational Space** [2021]  
+Tatro, Norman Joseph, Payel Das, Pin-Yu Chen, Vijil Chenthamarakshan, and Rongjie Lai.   
+[ICLR (2022)](https://openreview.net/forum?id=LxhlyKH6VP)
+
+* **Explore protein conformational space with variational autoencoder** [2021]  
+  Tian, Hao, Xi Jiang, Francesco Trozzi, Sian Xiao, Eric C. Larson, and Peng Tao.   
+  [Frontiers in molecular biosciences 8 (2021)](https://www.frontiersin.org/articles/10.3389/fmolb.2021.781635/full) | [code](https://github.com/smu-tao-group/protein-VAE)
+
+* **Energy-based models for atomic-resolution protein conformations** [2020]  
+Du, Yilun, Joshua Meier, Jerry Ma, Rob Fergus, and Alexander Rives.   
+[ICLR (2020)](https://openreview.net/forum?id=S1e_9xrFvS) | [code](https://github.com/facebookresearch/protein-ebm)
+
+
+
+
+
+
+
+
+
+
+### Enzymes conformational dynamics
+
+
+
+
+
+
+
+
+* **pdb2reaction: End-to-End Reaction-Path Elucidation from PDB Structures Using Machine-Learning Interatomic Potentials** [2026]  
+Takuto Ohmura, Hajime Sato, Tohru Terada.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15003538/v2) | [Code](https://github.com/t-0hmura/pdb2reaction)  
+
+* **Quantum-accurate atomistic modeling of enzyme catalysis using a machine learned potential** [2026]  
+Meng Gao, Armin Shayesteh Zadeh, Aniruddha Seal, Siva Dasetty, Siddarth K. Achar, Misko Dzamba, Benjamin K. Miller, Leif D. Jacobson, C. Lawrence Zitnick, Brandon M. Wood, Zachary W. Ulissi, Daniel S. Levine, Andrew L. Ferguson.  
+[arXiv:2609.09293(2026)](https://doi.org/10.48550/arXiv.2609.09293) | [Code](https://github.com/facebookresearch/fairchem)  
+
+* **Tweaking Enzymatic Electric Field Can Evolve CYP450-like Activity in Catalase and CYP-P411 Enzymes** [2026]  
+  Dinesh Singh, Kshatresh Dutta Dubey.  
+  [J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c01060)  
+
+* **Enerzyme: A Framework for Efficient Training of Reactive Neural Network Potentials for Enzyme Catalysis with Application to Methyltransferases** [2026]  
+  Weiliang Luo, Heather J. Kulik.  
+  [arXiv:2607.01362 (2026)](https://doi.org/10.48550/arXiv.2607.01362) | [code](https://github.com/Benzoin96485/Enerzyme)  
+
+* **MAPLE: a machine-learning force-field-native platform for automated reaction modeling and enzyme design** [2026]  
+  Wang, Xujian, Zeyu Sun, Yilu Zhang, Carlo Asam, Ruzhan Zhu, Wan-Lu Li, and Junmei Wang.  
+  [Chemical Science (2026)](https://doi.org/10.1039/D6SC01279E) | [code](https://github.com/ClickFF/MAPLE)  
+
+* **Generating Multi-state Conformations of P-type ATPases with a Diffusion Model** [2024]  
+Jingtian Xu, Yong Wang.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c01519) | [bioRxiv (2024)](https://doi.org/10.1101/2024.08.07.607107) | [code](https://github.com/yongwangCPH/papers/tree/main/2024/PtypeATPaseGeneration)  
+
+* **Deciphering the Coevolutionary Dynamics of L2 β-Lactamases via Deep Learning** [2024]  
+  Zhu, Yu, Jing Gu, Zhuoran Zhao, AW Edith Chan, Maria F. Mojica, Andrea M. Hujer, Robert A. Bonomo, and Shozeb Haider.  
+  [J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.4c00189) | [data](https://zenodo.org/records/10500539)  
+
+
+
+
+
+
+
+
+### Antibody conformational dynamics
+
+
+
+
+* **AbFlex: Predicting the conformational flexibility of antibody CDRs** [2024]  
+Spoendlin, Fabian C., Wing Ki Wong, Guy Georges, Alexander Bujotzek, and Charlotte Deane.   
+[ICML'24 Workshop ML for Life and Material Science: From Theory to Industry Applications (2024)](https://openreview.net/forum?id=or4tArwd5a) | [code](https://openreview.net/forum?id=or4tArwd5a)
+
+
+
+
+
+
+
+
+### Ligand-Protein conformational dynamics
+
+
+
+
+
+
+
+
+* **An OpenMM-Based ML/MM–MMGBSA Workflow for End-point Protein–Ligand Binding Energy Ranking** [2026]  
+Chenchen Wang, Shihang Wang, Silong Zhai, Li Qin, Kai Xu, Jianmin Wang, Huanxiang Liu, Xiaojun Yao.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c01539) | [code](https://github.com/ChenchenWang-AIDD/mlmm-gbsa)  
+
+* **seekrflow: Towards end-to-end automated simulation pipeline with machine-learned force fields for accelerated drug-target kinetic and thermodynamic predictions** [2026]  
+Anupam A. Ojha, Lane W. Votapka, Shiksha Dutta, Anson F. Noland, Sonya M. Hanson, Rommie E. Amaro.  
+[bioRxiv. (2026)](https://doi.org/10.1101/2025.08.13.669965) | [code](https://github.com/seekrcentral/seekrflow)  
+
+* **Integrating Machine Learning Interatomic Potentials with MMPBSA for Accurate Protein–Ligand Binding Free Energy Calculations** [2026]  
+Wei, Xue-Xin, Yuxinxin Chen, Yuedong Yang, Mingyuan Xu, Pavlo O. Dral, and Hongming Chen.  
+[J. Phys. Chem. B (2026)](https://doi.org/10.1021/acs.jpcb.6c00306) | [code](https://github.com/XueXinWei-AI4S/AIQM-PBSA)  
+
+* **Development and large-scale benchmarks of a protein-ligand absolute binding free energy toolkit** [2026]  
+Yu Liu, Ailun Wang, Yu Xia, Zhi Wang, Wen Yan.  
+[arXiv:2603.22274 (2026)](https://doi.org/10.48550/arXiv.2603.22274)  
+
+* **Optimizing Stability in Dynamic Small-Molecule Binding Proteins** [2025]  
+Marc Scherer, Mark Kriegel, Birte Höcker, and Sarel J. Fleishman.  
+[J. Am. Chem. Soc. (2025)](https://doi.org/10.1021/jacs.5c19571)  
+
+* **DynaMate: An Autonomous Agent for Protein-Ligand Molecular Dynamics Simulations** [2025]  
+Salomé Guilbert, Cassandra Masschelein, Jeremy Goumaz, Bohdan Naida, Philippe Schwaller.   
+[arXiv:2512.10034 (2025)](https://doi.org/10.48550/arXiv.2512.10034) | [code](https://github.com/schwallergroup/DynaMate)  
+
+* **Toward Automated Physics-Based Absolute Drug Residence Time Predictions** [2025]  
+Zachary Smith, Davide Branduardi, Dmitry Lupyan, Giulia D’Arrigo, Pratyush Tiwary, Lingle Wang, and Goran Krilov.   
+[J. Chem. Inf. Model. (2025)](https://doi.org/10.1021/acs.jcim.5c01832) | [code](https://github.com/schrodinger/unbinding-kinetics-data)  
+
+* **MOLECULE: Molecular-dynamics and Optimized deep Learning for Entropy-regularized Classification and Uncertainty-aware Ligand Evaluation** [2025]  
+Ivan Cucchi, Elena Frasnetti, Francesco Frigerio, Fabrizio Cinquini, Silvia Pavoni, Luca F. Pavarino, and Giorgio Colombo.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c01140)  
+
+* **Caver Web 2.0: analysis of tunnels and ligand transport in dynamic ensembles of proteins** [2025]  
+Sérgio M Marques, Simeon Borko, Ondrej Vavra, Jan Dvorsky, Petr Kohout, Petr Kabourek, Lukas Hejtmanek, Jiri Damborsky, David Bednar.   
+[Nucleic Acids Research (2025)](https://doi.org/10.1093/nar/gkaf399) | [web](https://loschmidt.chemi.muni.cz/caverweb)  
+
+* **Enhanced Sampling, Public Dataset and Generative Model for Drug-Protein Dissociation Dynamics** [2025]  
+Maodong Li, Jiying Zhang, Bin Feng, Wenqi Zeng, Dechin Chen, Zhijun Pan, Yu Li, Zijing Liu, Yi Isaac Yang.   
+[arXiv:2504.18367 (2025)](https://arxiv.org/abs/2504.18367) | [data](https://huggingface.co/SZBL-IDEA)  
+
+* **Molecular dynamics-powered hierarchical geometric deep learning framework for protein-ligand interaction** [2025]  
+Liu, Mingquan and Jin, Shuting and Lai, Houtim and Wang, Longyue and Wang, Jianmin and Cheng, Zhixiang and Zeng, Xiangxiang.  
+[IEEE Transactions on Computational Biology and Bioinformatics. (2025)](https://doi.org/10.1109/TCBBIO.2025.3558959) | [code](https://github.com/lmqfly/Dynamics-PLI)  
+
+* **Towards automated physics-based absolute drug residence time predictions** [2025]  
+Smith Z, Branduardi D, Lupyan D, D’Arrigo G, Tiwary P, Wang L, et al.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-wg75c)  
+
+* **Comparative Analysis of Quantum-Mechanical and standard Single-Structure Protein-Ligand Scoring Functions with MD-Based Free Energy Calculations** [2025]  
+SJalaie M, Fanfrlík J, Pecina A, Lepšík M, Řezáč J.  
+[ChemRxiv. (2025)](https://doi.org/10.26434/chemrxiv-2025-38lf5) | [code](https://github.com/Honza-R/Wang_dataset_SQM)  
+
+* **A Multi-Grained Symmetric Differential Equation Model for Learning Protein-Ligand Binding Dynamics** [2024]  
+Shengchao Liu, Weitao Du, Hannan Xu, Yanjing Li, Zhuoxinran Li, Vignesh Bhethanabotla, Divin Yan, Christian Borgs, Anima Anandkumar, Hongyu Guo, Jennifer Chayes.   
+[arXiv:2401.15122 (2024)](https://arxiv.org/abs/2401.15122) | [code](https://github.com/chao1224/NeuralMD)  
+
+* **Modeling protein-small molecule conformational ensembles with ChemNet** [2024]  
+Ivan Anishchenko, Yakov Kipnis, Indrek Kalvet, Guangfeng Zhou, Rohith Krishna, Samuel J. Pellock, Anna Lauko, Gyu Rie Lee, Linna An, Justas Dauparas, Frank DiMaio, David Baker.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.09.25.614868) | [code](https://github.com/baker-laboratory/PLACER)  
+
+* **MISATO: machine learning dataset of protein–ligand complexes for structure-based drug discovery** [2024]  
+Siebenmorgen, T., Menezes, F., Benassou, S. et al.   
+[Nat Comput Sci 4, 367–378 (2024)](https://doi.org/10.1038/s43588-024-00627-2) | [code](https://github.com/t7morgen/misato-dataset)  
+
+* **Enhancing Protein–Ligand Binding Affinity Predictions Using Neural Network Potentials** [2024]  
+Sabanés Zariquiey, F., Galvelis, R., Gallicchio, E., Chodera, J.D., Markland, T.E. and De Fabritiis, G.   
+[J. Chem. Inf. Model. (2024)](https://doi.org/10.1021/acs.jcim.3c02031) | [code](https://github.com/compsciencelab/ATM_benchmark/tree/main/ATM_With_NNPs)  
+
+* **Assessment of molecular dynamics time series descriptors in protein-ligand affinity prediction** [2024]  
+Poziemski, Jakub, Artur Yurkevych, and Pawel Siedlecki.   
+[chemrxiv-2024-dxv36 (2024)](https://doi.org/10.26434/chemrxiv-2024-dxv36) | [code](https://github.com/JPoziemski/md_for_affinity_prediction)  
+
+* **Pre-Training of Equivariant Graph Matching Networks with Conformation Flexibility for Drug Binding** [2022]  
+Wu, Fang, Shuting Jin, Yinghui Jiang, Xurui Jin, Bowen Tang, Zhangming Niu, Xiangrong Liu, Qiang Zhang, Xiangxiang Zeng, and Stan Z. Li.   
+[Advanced Science 9.33 (2022)](https://doi.org/10.1002/advs.202203796) | [code](https://github.com/smiles724/ProtMD)  
+
+
+
+
+
+
+### PPI conformational dynamics
+
+
+
+
+
+
+
+* **DynaPPI: A Large-scale Dynamic Protein Dataset for AI-driven Advances in Protein Interactomics** [2026]  
+Jiabao Wei, Zilong Geng, Yuze Wang, Jianjun Li, Ning Ding, Bowen Zhou, Bing Zhang, Zhiyuan Ma.  
+[arXiv:2608.10435(2026)](https://doi.org/10.48550/arXiv.2608.10435)  
+
+* **PP-MAPS: Dynamic Pharmacophore Signatures of Protein–Peptide Interfaces from Molecular Dynamics Trajectories** [2026]  
+Camille Depenveiller, Arezki Guerda, Emilia Rabia, Aziza Caidi, Yaqoub Ashhab, Fathia Mami-Chouaib, Matthieu Montes.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c00605) | [code](https://github.com/camilledepenveiller/PP-MAPS)  
+
+* **Learning chemically transferable protein-protein binding energetics from peptide potential of mean force building blocks** [2026]  
+Tariq Shereef, Emiel Kram, Alexander J. Pak.  
+[ChemRxiv. (2026)](https://doi.org/10.26434/chemrxiv.15004324/v1) | [code](https://gitlab.com/pak-group/pebble_m01)  
+
+* **Memory kernel minimization-based neural networks for discovering slow collective variables of biomolecular dynamics** [2025]  
+Liu, B., Cao, S., Boysen, J.G. et al.  
+[Nat Comput Sci (2025)](https://doi.org/10.1038/s43588-025-00815-8) | [code](https://github.com/markovmodel/mdshare)  
+
+* **Generalizable Protein Dynamics in Serine-Threonine Kinases: Physics is the key** [2025]  
+Soumendranath Bhakat, Shray Vats, Andreas Mardt, Alexei Degterev.  
+[bioRxiv (2025)](https://doi.org/10.1101/2025.03.06.641878) | [code](https://github.com/svats73/mdml)  
+
+* **Scalable emulation of protein equilibrium ensembles with generative deep learning** [2024]  
+Sarah Lewis, Tim Hempel, José Jiménez Luna, Michael Gastegger, Yu Xie, Andrew Y. K. Foong, Victor García Satorras, Osama Abdin, Bastiaan S. Veeling, Iryna Zaporozhets, Yaoyi Chen, Soojung Yang, Arne Schneuing, Jigyasa Nigam, Federico Barbero, Vincent Stimper, Andrew Campbell, Jason Yim, Marten Lienen, Yu Shi, Shuxin Zheng, Hannes Schulz, Usman Munir, Cecilia Clementi, Frank Noé.   
+[Science (2025)](https://doi.org/10.1126/science.adv9817) | [bioRxiv. (2024)](https://doi.org/10.1101/2024.12.05.626885) | [code](https://github.com/microsoft/bioemu)   
+
+* **Computational screening of the effects of mutations on protein-protein off-rates and dissociation mechanisms by τRAMD** [2024]  
+D’Arrigo, G., Kokh, D.B., Nunes-Alves, A. et al.   
+[Commun Biol 7, 1159 (2024)](https://doi.org/10.1038/s42003-024-06880-5) | [code](https://github.com/HITS-MCM/tauRAMD)  
+
+* **Quantifying conformational changes in the TCR:pMHC-I binding interface** [2024]  
+Benjamin McMaster, Christopher Thorpe, Jamie Rossjohn, Charlotte M. Deane, Hashem Koohy.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.08.13.607715) | [code](https://github.com/benjiemc/tcr-pmhc-interface-analysis)  
+
+* **Exploring the conformational ensembles of protein-protein complex with transformer-based generative model** [2024]  
+Wang, Jianmin, Xun Wang, Yanyi Chu, Chunyan Li, Xue Li, Xiangyu Meng, Yitian Fang, Kyoung Tai No, Jiashun Mao, and Xiangxiang Zeng.   
+[J. Chem. Theory Comput. (2024)](https://doi.org/10.1021/acs.jctc.4c00255) | [bioRxiv (2024)](https://doi.org/10.1101/2024.02.24.581708) | [code](https://github.com/AspirinCode/AlphaPPImd)
+
+* **Encoding the Space of Protein-protein Binding Interfaces by Artificial Intelligence** [2023]  
+  Su, Zhaoqian, Kalyani Dhusia, and Yinghao Wu.  
+  [bioRxiv (2023)](https://doi.org/10.1101/2023.09.08.556812)  
+
+* **Unsupervised and supervised AI on molecular dynamics simulations reveals complex characteristics of HLA-A2-peptide immunogenicity** [2024]  
+Jeffrey K Weber, Joseph A Morrone, Seung-gu Kang, Leili Zhang, Lijun Lang, Diego Chowell, Chirag Krishna, Tien Huynh, Prerana Parthasarathy, Binquan Luan, Tyler J Alban, Wendy D Cornell, Timothy A Chan.   
+[Briefings in Bioinformatics (2024)](https://doi.org/10.1093/bib/bbad504) | [code](https://github.com/BiomedSciAI)  
+
+
+
+
+
+
+
+
+
+
+### RNA-Peptide conformational dynamics
+
+
+
+
+
+
+* **Enhanced Sampling Simulations of RNA-peptide Binding using Deep Learning Collective Variables** [2024]  
+Nisha Kumari, Sonam Dhull, Tarak Karmakar.   
+[bioRxiv (2024)](https://doi.org/10.1101/2024.08.01.606277)  
+
+
+
+
+
+
+
+### Antibody-Protein conformational dynamics
+
+
+
+* **Computational Mapping of Conformational Dynamics and Interaction Hotspots of Human VISTA with pH-Selective Antibodies** [2025]  
+Norman Ly, Shubham Devesh Ramgoolam, and Aravindhan Ganesan.  
+[Biochemistry (2025)](https://doi.org/10.1021/acs.biochem.4c00863)  
+
+* **Using Short Molecular Dynamics Simulations to Determine the Important Features of Interactions in Antibody–Protein Complexes** [2024]  
+A. Clay Richard, Robert J. Pantazes.   
+[Proteins. (2024)](https://doi.org/10.1002/prot.26773)  
+
+
+
+
+
+
+
+
+### Nucleic acid-Protein conformational dynamics
+
+
+
+
+
+
+
+
+
+
+
+* **RPDynaFlow: Generating RNA–protein Conformation Ensembles by Atomic Conditional Flow Matching** [2026]  
+Yuntao Li, Kexin Lu.  
+[bioRxiv.(2026)](https://doi.org/10.64898/2026.08.28.747734) | [code](https://github.com/YuntaoOvO/RPDynaFlow)  
+
+* **Estimation of Absolute Protein–DNA Binding Free Energy Using Streamlined Geometric Formalism** [2026]  
+Shreya Mukherjee, Diship Srivastava, and Niladri Patra.  
+[J. Phys. Chem. Lett. (2026)](https://doi.org/10.1021/acs.jpclett.6c01789)  
+
+* **Communication pathway analysis within protein-nucleic acid complexes** [2025]  
+Sneha Bheemireddy, Roy González-Alemán, Emmanuelle Bignon, Yasaman Karami.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00445) | [bioRxiv. (2025)](https://doi.org/10.1101/2025.02.14.638259) | [code](https://github.com/yasamankarami/compass)  
+
+
+
+
+
+
+
+
+
+### Nucleic acid-Ligand conformational dynamics
+
+
+
+
+
+
+
+* **Structuring Disorder via Supervised Molecular Dynamics: Uncovering Arginine-Glycine-Glycine-Mediated Ribonucleic Acid-Intrinsically Disordered Region Recognition Mechanisms** [2026]  
+Gianluca Novello, Andrea Dodaro, Chiara Cavastracci Strascia, Silvia Menin, Mattia Sturlese, Veronica Salmaso, and Stefano Moro.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.5c03135) | [code](https://github.com/molecularmodelingsection/SuMD-analyzer)  
+
+* **Assessing Molecular Dynamics in Predicting Aptamer–Ligand Binding Thermodynamics: Insights from the OTA Binding Aptamers** [2026]  
+Alessio Olivieri, Federica Borzelli, Mauro Giustini, and Marco D’Abramo.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.5c02643) | [Zenodo](https://zenodo.org/records/18199595)  
+
+* **Machine learning-augmented molecular dynamics simulations (MD) reveal insights into the disconnect between affinity and activation of ZTP riboswitch ligands** [2025]  
+Christopher Fullenkamp, Shams Mehdi, Christopher Jones, Logan Tenney, Patricio Pichling, Peri R. Prestwood, Adrian R. Ferré-D'Amaré, Pratyush Tiwary, John Schneekloth.  
+[ Angew. Chem. Int. Ed. (2025)](https://doi.org/10.1002/anie.202505971)  
+
+* **Investigating RNA–protein recognition mechanisms through supervised molecular dynamics (SuMD) simulations** [2022]  
+Matteo Pavan, Davide Bassani, Mattia Sturlese, Stefano Moro.  
+[NAR Genomics and Bioinformatics (2022)](https://doi.org/10.1093/nargab/lqac088) | [code](https://github.com/molecularmodelingsection/SuMD)  
+
+
+
+
+
+
+
+
+
+
+### Material dynamics
+
+
+
+
+
+
+
+
+
+* **Systematic fine-tuning of MACE interatomic potentials for catalysis** [2026]  
+Karimitari, N., Clary, J., Vigil-Fowler, D. et al.  
+[npj Comput Mater (2026)](https://doi.org/10.1038/s41524-026-02335-z) | [Zenodo](https://doi.org/10.5281/zenodo.21360661)  
+
+* **Long-Range Machine Learning Interatomic Potentials for Defect Energetics in SrTiO3** [2026]  
+Yee Chit Wong, Marcel F. Langer, Reinhard J. Maurer, Nicholas D. M. Hine.  
+[arXiv:2610.00794(2026)](https://doi.org/10.48550/arXiv.2610.00794)  
+
+* **ElectrolyteMD-Bench: How Well Do AI Agents Conduct Molecular Dynamics Studies across Electrolyte Solvation Regimes?** [2026]  
+Shukai Wu, Shuo Niu, Zhaoming Xu, Yan Luo, Wentao Lin.  
+[arXiv:2609.31743 (2026)](https://doi.org/10.48550/arXiv.2609.31743)  
+
+* **Universal Thermodynamic Interatomic Potentials for Crystalline Materials** [2026]  
+Juno Nam, Bowen Deng, Xiaochen Du, Luis Barroso-Luque, Benjamin Kurt Miller, Rafael Gómez-Bombarelli.  
+[arXiv:2608.14502 (2026)](https://doi.org/10.48550/arXiv.2608.14502)  
+
+* **SALTED: a symmetry-adapted machine-learning program for predicting electron-densities in molecules and materials** [2026]  
+Zekun Lou, Alan M. Lewis, Théophane Bernhard, Lukas Seifert, Agustin Salcedo, Florian Kleemiss, Mariana Rossi, Andrea Grisafi.  
+[arXiv:2609.03576(2026)](https://doi.org/10.48550/arXiv.2609.03576)  
+
+* **Machine-learned potential for fission gas diffusion in uranium oxide nuclear fuels** [2026]  
+Miles, Audrey R., Bartomeu Monserrat, and Sarah C. Finkeldei.  
+[Physical Review B (2026)](https://doi.org/10.1103/d775-mmsy)  
+
+* **Universal Thermodynamic Interatomic Potentials for Crystalline Materials** [2026]  
+Juno Nam, Bowen Deng, Xiaochen Du, Luis Barroso-Luque, Benjamin Kurt Miller, Rafael Gómez-Bombarelli.  
+[arXiv:2608.14502 (2026)](https://doi.org/10.48550/arXiv.2608.14502)  
+
+* **Angular relational knowledge distillation of machine learning interatomic potentials for scalable catalyst exploration** [2026]  
+Lim, H., Choung, S., Moon, J. et al.  
+[npj Comput Mater 12, 193 (2026)](https://doi.org/10.1038/s41524-026-02062-5) | [code](https://github.com/hyukjunlim/ARK)  
+
+* **Navigating polymorph generation and distilled-potential development via entropy-symmetry landscapes for metal plasticity mechanisms** [2026]  
+Li, Z., Liu, T., Wan, X. et al.  
+[Nat Commun 17, 5070 (2026)](https://doi.org/10.1038/s41467-026-73188-9) | [code](https://github.com/LZYUCL/PolymorphGen)  
+
+* **Transferable Neural Network Potential for Elastic and Vibrational Properties of Carbon, Hydrogen, Oxygen, and Nitrogen-Based Two Dimensional Covalent Organic Frameworks** [2026]  
+Yunrui Yan, Somayeh Faraji, and Mingjie Liu.  
+[Chem. Mater. (2026)](https://doi.org/10.1021/acs.chemmater.6c00169)  
+
+* **Machine learning enabled molecular dynamics-Monte Carlo framework for nanoconfined fluid adsorption** [2026]  
+Liu, J., Chen, G., He, S. et al.  
+[Commun Chem (2026)](https://doi.org/10.1038/s42004-026-02053-z) | [Zenodo](https://zenodo.org/records/19488275)  
+
+* **Evaluating mechanical property prediction across material classes using molecular dynamics simulations with universal machine-learned interatomic potentials** [2026]  
+Stracke, K., Edwards, C.W. & Evans, J.D.  
+[Commun Chem (2026)](https://doi.org/10.1038/s42004-026-02057-9) | [Zenodo](https://zenodo.org/records/17730689)  
+
+* **Benchmarking Universal Machine-Learned Interatomic Potentials for High-Temperature Metal-Organic Framework Chemistry** [2026]  
+Connor W. Edwards, Jack D. Evans.  
+[arXiv:2604.25262 (2026)](https://doi.org/10.48550/arXiv.2604.25262) | [code](https://doi.org/10.25909/32061111)  
+
+* **MolCryst-MLIPs: A Machine-Learned Interatomic Potentials Database for Molecular Crystals** [2026]  
+Lahouari, Adam, Shen Ai, Jihye Han, Jillian Hoffstadt, Philipp Hoellmer, Charlotte Infante, Pulkita Jain et al.  
+[arXiv:2604.13897 (2026)](https://doi.org/10.48550/arXiv.2604.13897) | [code](https://github.com/adamlaho/MolCryst)  
+
+* **Machine Learning Molecular Dynamics Simulations of Coordination and Diffusion Behaviors in Lithiated Gallium Electrode** [2026]  
+Fu, Qiuyi and Yuan, Hao and Wang, Haitang and Liu, Wenbin and Zhou, Guobing and Yang, Zhen.  
+[Phys. Chem. Chem. Phys. (2026)](https://doi.org/10.1039/D5CP04250J)  
+
+* **A foundation model for atomistic materials chemistry** [2025]  
+Batatia, Ilyes, Philipp Benner, Yuan Chiang, Alin M. Elena, Dávid P. Kovács, Janosh Riebesell, Xavier R. Advincula et al.  
+[J. Chem. Phys. 163, 184110 (2025)](https://doi.org/10.1063/5.0297006) | [code](http://github.com/acesuit/mace-mp)  
+
+* **Accuracy of calculated elastic properties of inorganic materials: Density functional theory and machine-learned potentials** [2025]  
+Milman, Victor, Alexander Perlov, Neil Spenley, and Björn Winkler.  
+[Materialia (2025)](https://doi.org/10.1016/j.mtla.2025.102503)  
+
+* **DREAMS: Density Functional Theory Based Research Engine for Agentic Materials Simulation** [2025]  
+Ziqi Wang, Hongshuo Huang, Hancheng Zhao, Changwen Xu, Shang Zhu, Jan Janssen, Venkatasubramanian Viswanathan.  
+[arXiv:2507.14267 (2025)](https://doi.org/10.48550/arXiv.2507.14267) | [code](https://github.com/BattModels/material_agent)  
+
+* **Screening of Material Defects using Universal Machine-Learning Interatomic Potentials** [2025]  
+PBerger, Ethan, Mohammad Bagheri, and Hannu-Pekka Komsa.  
+[Small (2025)](https://doi.org/10.1002/smll.202503956) | [data](https://zenodo.org/records/15025795)  
+
+* **chemtrain-deploy: A parallel and scalable framework for machine learning potentials in million-atom MD simulations** [2025]  
+Paul Fuchs, Weilong Chen, Stephan Thaler, Julija Zavadlav.  
+[J. Chem. Theory Comput. (2025)](https://doi.org/10.1021/acs.jctc.5c00996) | [arXiv:2506.04055 (2025)](https://doi.org/10.48550/arXiv.2506.04055) | [data](https://github.com/tummfm/chemtrain)  
+
+* **Scalable Bayesian Optimization for High-Dimensional Coarse-Grained Model Parameterization** [2025]  
+Carlos A. Martins Junior, Daniela A. Damasceno, Keat Yung Hue, Caetano R. Miranda, Erich A. Müller, Rodrigo A. Vargas-Hernández.  
+[arXiv:2506.22533 (2025)](https://doi.org/10.48550/arXiv.2506.22533)  
+
+* **PolyConf: Unlocking Polymer Conformation Generation through Hierarchical Generative Models** [2025]  
+Fanmeng Wang, Wentao Guo, Qi Ou, Hongshuai Wang, Haitao Lin, Hongteng Xu, Zhifeng Gao.  
+[ICML (2025)](https://arxiv.org/abs/2504.08859) | [code](https://github.com/FanmengWang/PolyConf)  
+
+* **A predictive machine learning force-field framework for liquid electrolyte development** [2025]  
+Gong, S., Zhang, Y., Mu, Z. et al.  
+[Nat Mach Intell (2025)](https://doi.org/10.1038/s42256-025-01009-7) | [code](https://github.com/bytedance/bamboo)  
+
+* **Machine learning-driven molecular dynamics unveils a bulk phase transformation driving ammonia synthesis on barium hydride** [2025]  
+Tosello Gardini, A., Raucci, U. & Parrinello, M..  
+[Nat Commun 16, 2475 (2025)](https://doi.org/10.1038/s41467-025-57688-8) | [code](https://doi.org/10.5281/zenodo.14789082)  
+
+* **Advancing nonadiabatic molecular dynamics simulations in solids with E(3) equivariant deep neural hamiltonians** [2025]  
+Zhang, C., Zhong, Y., Tao, ZG. et al.  
+[Nat Commun 16, 2033 (2025)](https://doi.org/10.1038/s41467-025-57328-1) | [code](https://github.com/QuantumLab-ZY/HamGNN)  
+
+* **End-To-End Learning of Classical Interatomic Potentials for Benchmarking Anion Polarization Effects in Lithium Polymer Electrolytes** [2025]  
+Pablo A. Leon, Avni Singhal, Jurgis Ruza, Jeremiah A. Johnson, Yang Shao-Horn, and Rafael Gomez-Bombarelli.  
+[Chem. Mater. (2025)](https://doi.org/10.1021/acs.chemmater.4c02529) | [code](https://github.com/learningmatter-mit/AutoBADDIE)   
+
+* **General-purpose machine-learned potential for 16 elemental metals and their alloys** [2024]  
+Song, K., Zhao, R., Liu, J. et al.  
+[Nat Commun 15, 10208 (2024)](https://doi.org/10.1038/s41467-024-54554-x) | [code](https://github.com/brucefan1983/GPUMD)    
+
+* **Quantum-accurate machine learning potentials for metal-organic frameworks using temperature driven active learning** [2024]  
+Sharma, A., Sanvito, S.  
+[npj Comput Mater 10, 237 (2024)](https://doi.org/10.1038/s41524-024-01427-y) | [code](https://github.com/asharma-ms/MOF_MLP_2024)  
+
+* **Generative AI model trained by molecular dynamics for rapid mechanical design of architected graphene** [2024]  
+Milad Masrouri, Kamalendu Paul, Zhao Qin.   
+[Extreme Mechanics Letters (2024)](https://doi.org/10.1016/j.eml.2024.102230)  
+
+* **Neural-network-based molecular dynamics simulations reveal that proton transport in water is doubly gated by sequential hydrogen-bond exchange** [2024]  
+Gomez, A., Thompson, W.H. & Laage, D.   
+[Nat. Chem. (2024)](https://doi.org/10.1038/s41557-024-01593-y) | [data](https://zenodo.org/records/11965260)  
+
+* **Universal-neural-network-potential molecular dynamics for lithium metal and garnet-type solid electrolyte interface** [2024]  
+Iwasaki, R., Tanibata, N., Takeda, H. et al.   
+[Commun Mater 5, 148 (2024)](https://doi.org/10.1038/s43246-024-00595-0)  
+
+* **Prediction of potential energy profiles of molecular dynamic simulation by graph convolutional networks** [2023]  
+Noda, Kota, and Yasushi Shibuta.   
+[Computational Materials Science 229 (2023)](https://doi.org/10.1016/j.commatsci.2023.112448) | [code](https://github.com/nodematerial/MD-GNN)  
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,91 @@
+all_locations = [
+    'Actin filaments', 
+    'Aggresome', 
+    'Cell Junctions', 
+    'Centriolar satellite', 
+    'Centrosome', 
+    'Cleavage furrow', 
+    'Cytokinetic bridge', 
+    'Cytoplasmic bodies', 
+    'Cytosol', 
+    'Endoplasmic reticulum', 
+    'Endosomes', 
+    'Focal adhesion sites', 
+    'Golgi apparatus', 
+    'Intermediate filaments', 
+    'Kinetochore', 
+    'Lipid droplets', 
+    'Lysosomes', 
+    'Micronucleus', 
+    'Microtubule ends', 
+    'Microtubules', 
+    'Midbody', 
+    'Midbody ring', 
+    'Mitochondria', 
+    'Mitotic chromosome', 
+    'Mitotic spindle', 
+    'Nuclear bodies', 
+    'Nuclear membrane', 
+    'Nuclear speckles', 
+    'Nucleoli', 
+    'Nucleoli fibrillar center', 
+    'Nucleoli rim', 
+    'Nucleoplasm', 
+    'Peroxisomes', 
+    'Plasma membrane', 
+    'Rods & Rings', 
+    'Vesicles', 
+    'NA', 
+]
+
+
+def merge_location(location: str) -> str:
+    merged_location_map = {
+        'Nucleoplasm': 'Nucleus',
+        'Nucleoli': 'Nucleus',
+        'Nucleoli rim': 'Nucleus',
+        'Nucleoli fibrillar center': 'Nucleus',
+        'Nuclear membrane': 'Nucleus',
+        'Nuclear speckles': 'Nucleus',
+        'Nuclear bodies': 'Nucleus',
+        'Mitotic chromosome': 'Nucleus',
+        
+        'Mitotic spindle': 'Mitosis apparatus',
+        'Kinetochore': 'Mitosis apparatus',
+        'Cleavage furrow': 'Mitosis apparatus',
+        'Cytokinetic bridge': 'Mitosis apparatus',
+        'Midbody': 'Mitosis apparatus',
+        'Midbody ring': 'Mitosis apparatus',
+
+        'Actin filaments': 'Cytoskeleton',
+        'Microtubules': 'Cytoskeleton',
+        'Intermediate filaments': 'Cytoskeleton',
+        'Microtubule ends': 'Cytoskeleton',
+
+        'Endoplasmic reticulum': 'Endomembrane system',
+        'Golgi apparatus': 'Endomembrane system',
+        'Endosomes': 'Endomembrane system',
+        'Lysosomes': 'Endomembrane system',
+        'Peroxisomes': 'Endomembrane system',
+        'Vesicles': 'Endomembrane system',
+
+        'Mitochondria': 'Mitochondria',
+        'Lipid droplets': 'Lipid droplets',
+
+        'Cytosol': 'Cytoplasm',
+        'Cytoplasmic bodies': 'Cytoplasm',
+        'Aggresome': 'Cytoplasm',
+
+        'Plasma membrane': 'Plasma membrane',
+        'Focal adhesion sites': 'Plasma membrane',
+        'Cell Junctions': 'Plasma membrane',
+
+        'Centrosome': 'Centrosome',
+        'Centriolar satellite': 'Centrosome',
+
+        'Rods & Rings': 'Other',
+        'Micronucleus': 'Other',
+        'NA': 'NA',
+    }
+
+    return merged_location_map.get(location, 'Other')

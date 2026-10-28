@@ -1,0 +1,87 @@
+[project]
+name = "genome_annotation_quality_nextflow_pipeline"
+version = "0.0.1"
+description = "The configuration file for any python scripts used in Genome Annotation Quality Nextflow pipeline."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [ 
+  { name = "Shahram Mesdaghi", email = "Shahram.Mesdaghi2@liverpool.ac.uk"},
+  { name = "Luc Elliott", email = "luc1997@liverpool.ac.uk" }
+]
+dependencies = [
+  "reportlab",
+  "pillow",
+  "numpy",
+  "matplotlib",
+  "scipy",
+  "statsmodels",
+  "pandas",
+  "scikit-learn",
+  "adjustText",
+  "gemmi",
+  "lxml",
+]
+
+[dependency-groups]
+dev = [
+  "black",
+  "build",
+  "coverage",
+  "isort",
+  "mypy",
+  "pip-tools>=7",
+  "pydantic",
+  "pytest",
+  "pytest-cov",
+  "pytest-pretty",
+  "ruff",
+  "tombi",
+  "uv",
+]
+
+[build-system]
+requires = [
+  "pip<25",
+  "setuptools>=65.5.0",
+  "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.coverage.run]
+omit = [
+  "tests/*",
+  "noxfile.py",
+  # add other files or directories to omit from coverage here
+]
+  
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = false
+disallow_untyped_defs = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+strict_optional = true
+warn_return_any = true
+warn_unused_ignores = true
+exclude = [
+  ".nox",
+  "noxfile.py",
+  "tests/*",
+  
+]
+
+[tool.ruff]
+line-length = 120
+exclude = [
+  ".venv",
+  "README.md",
+  # add other files or directories to exclude from linting here
+]
+
+[tool.setuptools.packages.find]
+include = ["genome_annotation_quality_nextflow_pipeline*"]
+
+exclude = ["work*", "results*", ".nextflow*", "data*", "works/*"]
+

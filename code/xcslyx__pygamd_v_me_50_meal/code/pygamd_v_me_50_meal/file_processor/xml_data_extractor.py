@@ -1,0 +1,66 @@
+import numpy as np
+import xml.etree.ElementTree as ET
+
+class XMLDataExtractor:
+    def __init__(self, xml_file_path):
+        self.xml_file_path = xml_file_path
+        self.tree = ET.parse(self.xml_file_path)
+        self.root = self.tree.getroot()
+    
+
+    def get_box_size(self):
+        box_size: list[float] = [float(self.root.find('.//box').attrib[i]) for i in ['lx', 'ly', 'lz']]
+        print(f"Your box size: a = {box_size[0]}, b = {box_size[1]}, c = {box_size[2]}.")
+        return box_size
+    
+
+    def extract_position_data(self) -> np.ndarray:
+        position_elem = self.root.findall(f".//position")[0]
+        position_list = np.array([list(map(float, line.split())) for line in position_elem.text.splitlines()[1:]])
+        return position_list
+    
+    def extract_bond_data(self) -> tuple:
+        try:
+            bond_elem = self.root.findall(f".//bond")[0]
+        except:
+            print(f"No bond data found in the xml file {self.xml_file_path}.")
+            return [], {}
+        
+        bond_list = [[line.split()[0], list(map(int, line.split()[1:]))] for line in bond_elem.text.splitlines()[1:]]
+        bond_dict = {}
+        for bond in bond_list:
+            if bond[0] not in bond_dict:
+                bond_dict[bond[0]] = [bond[1]]
+            bond_dict[bond[0]].append(bond[1])
+        return bond_list, bond_dict
+
+    def extract_angle_data(self) -> tuple:
+        try:
+            angle_elem = self.root.findall(f".//angle")[0]
+        except:
+            print(f"No angle data found in the xml file {self.xml_file_path}.")
+            return [], {}
+        
+        angle_list = [[line.split()[0], list(map(int, line.split()[1:]))] for line in angle_elem.text.splitlines()[1:]]
+        angle_dict = {}
+        for angle in angle_list:
+            if angle[0] not in angle_dict:
+                angle_dict[angle[0]] = [angle[1]]
+            angle_dict[angle[0]].append(angle[1])
+        return angle_list, angle_dict
+    
+    def extract_dihedral_data(self) -> tuple:
+        try:
+            dihedral_elem = self.root.findall(f".//dihedral")[0]
+        except:
+            print(f"No dihedral data found in the xml file {self.xml_file_path}.")
+            return [], {}
+        
+        dihedral_list = [[line.split()[0], list(map(int, line.split()[1:]))] for line in dihedral_elem.text.splitlines()[1:]]
+        dihedral_dict = {}
+        for dihedral in dihedral_list:
+            if dihedral[0] not in dihedral_dict:
+                dihedral_dict[dihedral[0]] = [dihedral[1]]
+            dihedral_dict[dihedral[0]].append(dihedral[1])
+        return dihedral_list, dihedral_dict
+    

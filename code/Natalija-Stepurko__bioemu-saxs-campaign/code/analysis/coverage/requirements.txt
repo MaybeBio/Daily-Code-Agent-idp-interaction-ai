@@ -1,0 +1,11 @@
+# Extra requirements of the coverage analysis (versions used for the tracked results). The main
+# pipeline does not need them; the page and the `coverage` stage read only results/coverage/.
+biopython==1.88
+metapredict==3.1.1
+matplotlib==3.11.2
+numpy==2.4.6
+pandas==3.0.6
+requests==2.34.2
+scipy==1.17.1
+# metapredict needs PyTorch; the CPU build is enough (--index-url https://download.pytorch.org/whl/cpu)
+torch==2.14.1

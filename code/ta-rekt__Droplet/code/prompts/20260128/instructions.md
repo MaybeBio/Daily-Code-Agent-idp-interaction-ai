@@ -1,0 +1,5 @@
+I would like you to propose an experiment for me as specified in the context.
+
+the experiment should be in a lattice of size 40^3, where a long polymer (length 128) has two patterned regions (types 2 and 3) of length 8 each, separated by 56 beads. each pattern is at a distance of 28 beads from each end of the polymer. the base regions and patterned regions of the polymer have self-interaction 0.5. the experiment should run a sweep over 9 different values of the interaction strength between the two patterned regions, running from -2 to 0. it should run on a single CPU, for 1 minute. you can look at `spec/bulk_poly_phases.jl` and `test/test_hamiltonians.jl`for inspiration on how to set up heterogenous polymers interacting with a bulk species. Also be sure to read the context folder and follow the format for experiment proposals. also take a look at `prompts/20260123/proposal_prewet_enhancers.md` for an example of a good experiment proposal. don't hesitate to ask me questions if you need more details to match the level of detail required in that proposal.
+
+you can create the proposal document in the same directory as this file.

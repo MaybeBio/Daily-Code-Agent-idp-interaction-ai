@@ -1,0 +1,200 @@
+# Analysis tools
+
+export
+    displacements,
+    distances,
+    rmsd,
+    radius_gyration,
+    hydrodynamic_radius,
+    visualize,
+    rdf
+
+"""
+    displacements(coords, boundary)
+
+Calculate the pairwise vector displacements of a set of coordinates, accounting
+for the periodic boundary conditions.
+"""
+function displacements(coords, boundary)
+    n_atoms = length(coords)
+    coords_rep = repeat(reshape(coords, n_atoms, 1), 1, n_atoms)
+    vec_2_arg(c1, c2) = vector(c1, c2, boundary)
+    diffs = vec_2_arg.(coords_rep, permutedims(coords_rep, (2, 1)))
+    return diffs
+end
+
+"""
+    distances(coords, boundary)
+
+Calculate the pairwise distances of a set of coordinates, accounting for the
+periodic boundary conditions.
+"""
+distances(coords, boundary) = norm.(displacements(coords, boundary))
+
+# Rotation matrix that superimposes the first set of coordinates onto the second using
+#   the Kabsch algorithm, after both sets have been translated to the origin
+# Marked as non-differentiable for Enzyme, which cannot differentiate the singular value
+#   decomposition. This does not approximate the gradient of the RMSD: since the rotation
+#   is chosen to minimise the deviation, the term involving the derivative of the rotation
+#   vanishes and holding the rotation constant gives the exact gradient
+function kabsch_rotation_nograd(coords_1::AbstractArray{SVector{3, T}},
+                                coords_2::AbstractArray{SVector{3, T}}) where T
+    n_atoms = length(coords_1)
+    trans_1 = mean(coords_1)
+    trans_2 = mean(coords_2)
+
+    p = from_device(reshape(reinterpret(T, coords_1), 3, n_atoms)) .-
+                                repeat(reinterpret(T, trans_1), 1, n_atoms)
+    q = from_device(reshape(reinterpret(T, coords_2), 3, n_atoms)) .-
+                                repeat(reinterpret(T, trans_2), 1, n_atoms)
+
+    cov = p * transpose(q)
+    svd_res = svd(ustrip.(cov))
+    Ut = transpose(svd_res.U)
+    d = sign(det(svd_res.V * Ut))
+    TS = typeof(ustrip(zero(T)))
+    dmat = SMatrix{3, 3, TS}(1, 0, 0, 0, 1, 0, 0, 0, d)
+    return SMatrix{3, 3, TS}(svd_res.V * dmat * Ut)
+end
+
+# Deviations between two sets of coordinates after superimposition by the Kabsch algorithm
+# Assumes the coordinates do not cross the bounding box, i.e. all
+#   coordinates in each set correspond to the same periodic image
+function kabsch_deviations(coords_1, coords_2)
+    rot = kabsch_rotation_nograd(coords_1, coords_2)
+    return (rot,) .* (coords_1 .- (mean(coords_1),)) .- (coords_2 .- (mean(coords_2),))
+end
+
+sum_abs2(x) = sum(abs2, x)
+
+@doc raw"""
+    rmsd(coords_1, coords_2)
+
+Calculate the root-mean-square deviation (RMSD) of two sets of
+coordinates after superimposition by the Kabsch algorithm.
+
+```math
+\mathrm{RMSD} = \sqrt{\frac{1}{N} \sum_{i=1}^{N} |\mathbf{r}_i - \mathbf{R} \mathbf{r}'_i|^2}
+```
+where both sets are centered on their centroids and ``\mathbf{R}`` is the rotation that
+minimizes the RMSD.
+See [Kabsch 1976](https://doi.org/10.1107/S0567739476001873).
+
+Assumes the coordinates do not cross the bounding box, i.e. all
+coordinates in each set correspond to the same periodic image.
+Only compatible with 3D systems.
+
+Can be differentiated with respect to either set of coordinates.
+"""
+function rmsd(coords_1::AbstractArray{SVector{3, T}},
+              coords_2::AbstractArray{SVector{3, T}}) where T
+    return sqrt(mean(sum_abs2.(kabsch_deviations(coords_1, coords_2))))
+end
+
+@doc raw"""
+    radius_gyration(coords, atoms)
+
+Calculate the radius of gyration of a set of coordinates.
+
+The radius of gyration is mass-weighted:
+```math
+R_g = \sqrt{\frac{\sum_i m_i |\mathbf{r}_i - \mathbf{r}_{\mathrm{CM}}|^2}{\sum_i m_i}}
+```
+where ``\mathbf{r}_{\mathrm{CM}}`` is the center of mass.
+
+Assumes the coordinates do not cross the bounding box, i.e. all
+coordinates correspond to the same periodic image.
+"""
+function radius_gyration(coords, atoms)
+    atom_masses = mass.(atoms)
+    center = sum(coords .* atom_masses) / sum(atom_masses) # Center of mass
+    I = sum(sum_abs2.(coords .- (center,)) .* atom_masses)
+    return sqrt(I / sum(atom_masses))
+end
+
+@doc raw"""
+    hydrodynamic_radius(coords, boundary)
+
+Calculate the hydrodynamic radius of a set of coordinates.
+
+``R_{hyd}`` is defined by
+```math
+\frac{1}{R_{hyd}} = \frac{1}{2N^2}\sum_{i \neq j} \frac{1}{r_{ij}}
+```
+"""
+function hydrodynamic_radius(coords::AbstractArray{SVector{D, T}}, boundary) where {D, T}
+    n_atoms = length(coords)
+    diag  = array_type(coords)(Diagonal(ones(T, n_atoms)))
+    dists = distances(coords, boundary) .+ diag
+    sum_inv_dists = sum(inv.(dists)) - sum(inv(diag))
+    inv_R_hyd = sum_inv_dists / (2 * n_atoms^2)
+    return inv(inv_R_hyd)
+end
+
+function hydrodynamic_radius(coords::Array{SVector{D, T}}, boundary) where {D, T}
+    n_atoms = length(coords)
+    sum_inv_dists = zero(inv(oneunit(T)))
+    for j in 2:n_atoms
+        for i in 1:(j - 1)
+            sum_inv_dists += inv(norm(vector(coords[i], coords[j], boundary)))
+        end
+    end
+    inv_R_hyd = 2 * sum_inv_dists / (2 * n_atoms^2)
+    return inv(inv_R_hyd)
+end
+
+function axis_limits(boundary_conv, coord_logger, dim)
+    lim = boundary_conv[dim]
+    if isinf(lim)
+        # Find coordinate limits in given dimension
+        low  = ustrip(minimum(cs -> minimum(c -> c[dim], cs), values(coord_logger)))
+        high = ustrip(maximum(cs -> maximum(c -> c[dim], cs), values(coord_logger)))
+        return low, high
+    else
+        return 0.0, lim
+    end
+end
+
+"""
+    visualize(coord_logger, boundary, out_filepath; <keyword arguments>)
+
+Visualize a simulation as an animation.
+
+This function is only available when GLMakie is imported.
+It can take a while to run, depending on the length of the simulation and the
+number of atoms.
+
+# Arguments
+- `connections=Tuple{Int, Int}[]`: pairs of atom indices to link with bonds.
+- `connection_frames`: the frames in which bonds are shown. Should be a list of
+    the same length as the number of frames, where each item is a list of
+    `Bool`s of the same length as `connections`. Defaults to always `true`.
+- `trails::Integer=0`: the number of preceding frames to show as transparent
+    trails.
+- `framerate::Integer=30`: the frame rate of the animation.
+- `color=:purple`: the color of the atoms. Can be a single color or a list of
+    colors of the same length as the number of atoms.
+- `connection_color=:orange`: the color of the bonds. Can be a single color or a
+    list of colors of the same length as `connections`.
+- `markersize=0.05`: the size of the atom markers, in the units of the data.
+- `linewidth=2.0`: the width of the bond lines.
+- `transparency=true`: whether transparency is active on the plot.
+- `show_boundary::Bool=true`: whether to show the bounding box as lines.
+- `boundary_linewidth=2.0`: the width of the boundary lines.
+- `boundary_color=:black`: the color of the boundary lines.
+- `kwargs...`: other keyword arguments are passed to the point plotting
+    function.
+"""
+function visualize end
+
+"""
+    rdf(coords, boundary; npoints=200)
+
+Calculate the radial distribution function of a set of coordinates.
+
+This function is only available when KernelDensity is imported.
+This describes how density varies as a function of distance from each atom.
+Returns a list of distance bin centers and a list of the corresponding values
+of ``g(r)``, which tends to 1 at large distances for a uniform system.
+"""
+function rdf end

@@ -1,0 +1,149 @@
+export RBTorsion
+
+@public RBTorsionλ
+
+@doc raw"""
+    RBTorsion(; c0, c1, c2, c3, c4, c5)
+
+A Ryckaert-Bellemans torsion angle between four atoms.
+
+See [Ryckaert and Bellemans 1975](https://doi.org/10.1016/0009-2614(75)85513-8).
+The potential energy is defined as
+```math
+V(\phi) = \sum_{n=0}^{5} C_n \cos^n(\psi)
+```
+where ``\psi = \phi - 180^{\circ}`` and ``\phi`` is the angle between the planes
+defined by atoms (i, j, k) and (j, k, l).
+Coefficients using the other sign convention, i.e. powers of ``\cos(\phi)``
+rather than ``\cos(\psi)``, can be converted by multiplying ``C_n`` by
+``(-1)^n``.
+
+Only compatible with 3D systems.
+"""
+struct RBTorsion{T}
+    c0::T
+    c1::T
+    c2::T
+    c3::T
+    c4::T
+    c5::T
+end
+
+RBTorsion(; c0, c1, c2, c3, c4, c5) = RBTorsion{typeof(c0)}(c0, c1, c2, c3, c4, c5)
+
+function Base.zero(::Type{RBTorsion{T}}) where T
+    z = zero(T)
+    return RBTorsion(z, z, z, z, z, z)
+end
+
+Base.zero(t::RBTorsion) = zero(typeof(t))
+
+function Base.:+(t1::RBTorsion, t2::RBTorsion)
+    return RBTorsion(t1.c0 + t2.c0, t1.c1 + t2.c1, t1.c2 + t2.c2, t1.c3 + t2.c3,
+                     t1.c4 + t2.c4, t1.c5 + t2.c5)
+end
+
+parameter_prefix(::RBTorsion, inter_type) = "inter_RB_$(inter_type)_"
+parameter_fields(::Type{<:RBTorsion}) =
+    ((:c0, "c0"), (:c1, "c1"), (:c2, "c2"), (:c3, "c3"), (:c4, "c4"), (:c5, "c5"))
+
+@inline function force(d::RBTorsion, coords_i, coords_j, coords_k, coords_l, boundary, args...)
+    ab, bc, cd, cross_ab_bc, cross_bc_cd, bc_norm, θ = torsion_vectors(
+                                    coords_i, coords_j, coords_k, coords_l, boundary)
+    # ψ = θ - π, so cos(ψ) = -cos(θ) and sin(ψ) = -sin(θ)
+    cos_ψ = -cos(θ)
+    # dV/dθ = dV/dψ = -sin(ψ) * dV/dcos(ψ)
+    dEdθ = sin(θ) * (d.c1 + cos_ψ * (2 * d.c2 + cos_ψ * (3 * d.c3 +
+                        cos_ψ * (4 * d.c4 + cos_ψ * 5 * d.c5))))
+    fi =  dEdθ * bc_norm * cross_ab_bc / dot(cross_ab_bc, cross_ab_bc)
+    fl = -dEdθ * bc_norm * cross_bc_cd / dot(cross_bc_cd, cross_bc_cd)
+    v = (dot(-ab, bc) / bc_norm^2) * fi - (dot(-cd, bc) / bc_norm^2) * fl
+    fj =  v - fi
+    fk = -v - fl
+    return SpecificForce4Atoms(fi, fj, fk, fl)
+end
+
+@inline function potential_energy(d::RBTorsion, coords_i, coords_j, coords_k,
+                                  coords_l, boundary, args...)
+    θ = torsion_angle(coords_i, coords_j, coords_k, coords_l, boundary)
+    cos_ψ = -cos(θ)
+    return d.c0 + cos_ψ * (d.c1 + cos_ψ * (d.c2 + cos_ψ * (d.c3 +
+                               cos_ψ * (d.c4 + cos_ψ * d.c5))))
+end
+
+@doc raw"""
+    RBTorsionλ(; c0, c1, c2, c3, c4, c5, λ_mixing=MinimumMixing(),
+               scheduler=Molly.DefaultLambdaScheduler())
+
+A Ryckaert-Bellemans torsion angle between four atoms in an alchemical system, the λ version
+of [`RBTorsion`](@ref).
+
+[`AbsoluteFESystem`](@ref) and [`RelativeFESystem`](@ref) convert each [`RBTorsion`](@ref)
+to this type.
+The potential energy is defined as
+```math
+V(\phi) = w \sum_{n=0}^{5} C_n \cos^n(\psi)
+```
+where ``\psi`` and the sign convention of the coefficients are as for [`RBTorsion`](@ref),
+and the weight ``w`` depends on the alchemical roles of the atoms and on ``\lambda``, the `λ`
+of the atoms mixed with `λ_mixing`.
+``w = 1 - \lambda`` if the torsion involves a core atom with the parameters of state A,
+``w = \lambda`` if it involves a core atom with the parameters of state B and ``w = 1`` if it
+involves only unique and environment atoms.
+
+`scheduler` is a [`Molly.LambdaScheduler`](@ref), which has to use dual topology.
+Single topology is not supported for this interaction, so [`RelativeFESystem`](@ref) throws
+an error if the scheduler has `dual=false`.
+
+Only compatible with 3D systems.
+"""
+@kwdef struct RBTorsionλ{T, LM, SCH} <: AlchemicalBondedInteraction
+    c0::T
+    c1::T
+    c2::T
+    c3::T
+    c4::T
+    c5::T
+    λ_mixing::LM = MinimumMixing()
+    scheduler::SCH = DefaultLambdaScheduler()
+end
+
+function Base.zero(t::RBTorsionλ)
+    return RBTorsionλ(c0=zero.(t.c0), c1=zero.(t.c1), c2=zero.(t.c2), c3=zero.(t.c3),
+                      c4=zero.(t.c4), c5=zero.(t.c5), λ_mixing=t.λ_mixing, scheduler=t.scheduler)
+end
+
+function Base.:+(t1::RBTorsionλ, t2::RBTorsionλ)
+    return RBTorsionλ(c0=(t1.c0 .+ t2.c0), c1=(t1.c1 .+ t2.c1), c2=(t1.c2 .+ t2.c2),
+                      c3=(t1.c3 .+ t2.c3), c4=(t1.c4 .+ t2.c4), c5=(t1.c5 .+ t2.c5),
+                      λ_mixing=t1.λ_mixing, scheduler=t1.scheduler)
+end
+
+function to_lambda_function(inter::RBTorsion; λ_mixing=MinimumMixing(),
+                            scheduler=DefaultLambdaScheduler())
+    return RBTorsionλ(c0=inter.c0, c1=inter.c1, c2=inter.c2, c3=inter.c3, c4=inter.c4,
+                      c5=inter.c5, λ_mixing=λ_mixing, scheduler=scheduler)
+end
+
+is_torsion(::RBTorsionλ) = true
+
+# Interpolates like the other λ types, a no-op in dual topology where the parameters are scalars.
+#   Single topology is refused for this type (`no_single_topology`) until the convention is settled
+plain_interaction(d::RBTorsionλ, λ_params) = RBTorsion(params_mixing(λ_params, d.c0),
+        params_mixing(λ_params, d.c1), params_mixing(λ_params, d.c2), params_mixing(λ_params, d.c3),
+        params_mixing(λ_params, d.c4), params_mixing(λ_params, d.c5))
+
+
+@inline function force(d::RBTorsionλ, coords_i, coords_j, coords_k, coords_l, boundary,
+                       atom_i, atom_j, atom_k, atom_l, args...)
+    λ, λ_params = bonded_lambda(d, (atom_i, atom_j, atom_k, atom_l))
+    return λ * force(plain_interaction(d, λ_params), coords_i, coords_j, coords_k, coords_l,
+                     boundary)
+end
+
+@inline function potential_energy(d::RBTorsionλ, coords_i, coords_j, coords_k,
+                                  coords_l, boundary, atom_i, atom_j, atom_k, atom_l, args...)
+    λ, λ_params = bonded_lambda(d, (atom_i, atom_j, atom_k, atom_l))
+    return λ * potential_energy(plain_interaction(d, λ_params), coords_i, coords_j, coords_k,
+                                coords_l, boundary)
+end

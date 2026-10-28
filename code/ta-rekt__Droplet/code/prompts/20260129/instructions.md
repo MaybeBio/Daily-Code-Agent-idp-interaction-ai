@@ -1,0 +1,4 @@
+Hi, I realized when running simulations that patterns will diffuse along a polymer, and will significantly differ from the original sequence set in customPattern after a few thousand moves. Could you suggest a detailed implementation plan, inspired by the format and style of the attached file, to address this issue? Here's how I would like you to implement the fix: 
+- keep the lower bounds of the original customPattern in the Polymer data structure
+- in the move! dispatch for Polymer, reject a move if a pattern's tail index goes above or below k beads away from the original lower bound of that patter, where k is 8 if the polymer length is greater than 64, 4 if between 32 and 64, and 2 if between 8 and 32, and disable that rule for polymers (don't reject) for polymers smaller than 8, so that we don't wreck all the tests.
+you can ask me questions if you think something needs clarification, and please put the implementation plan in the same dir as this file

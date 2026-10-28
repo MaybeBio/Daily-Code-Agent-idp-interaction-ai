@@ -1,0 +1,9 @@
+# The conversion environment (Python 3.11, CPU only; versions used for the tracked results). Only
+# 02_convert.py runs here; the other scripts run in the main environment. Install torch from the CPU index:
+#   uv pip install --python /path/to/venv-bioemu --index-url https://download.pytorch.org/whl/cpu torch
+bioemu==1.4.1
+torch==2.14.1
+mdtraj==1.11.1.post2
+numpy==2.4.6
+pandas==3.0.6
+scipy==1.17.1

@@ -1,0 +1,119 @@
+"""
+Main module for Molly.jl - molecular simulation in Julia.
+
+See https://juliamolsim.github.io/Molly.jl/stable for documentation.
+"""
+module Molly
+
+using Reexport
+@reexport using StaticArrays
+@reexport using Unitful
+
+using AcceleratedKernels
+using Atomix
+import AtomsBase
+import AtomsCalculators
+import BioStructures
+import CellListMap
+import Chemfiles
+using Combinatorics
+using DataStructures
+using Distances
+using Distributions
+using Distributed
+using EzXML
+using FFTW
+using FillArrays: Fill
+using GPUArrays
+using Graphs
+using KernelAbstractions
+using NearestNeighbors
+import PeriodicTable
+using PhiloxRNG: randn_f64, randn_f32, philox4x32_10
+using ProgressMeter
+using SimpleCrystals
+using SpecialFunctions
+using Unitful
+using UnitfulAtomic
+using StructArrays
+
+using LinearAlgebra
+using Random
+using SparseArrays
+using Statistics
+using StatsBase
+
+# Replace with public keyword when support for Julia 1.10 is dropped
+macro public(ex)
+    if VERSION >= v"1.11.0-DEV.469"
+        args = (ex isa Symbol ? (ex,) : (Base.isexpr(ex, :tuple) ? ex.args : error("@public failed to parse")))
+        esc(Expr(:public, args...))
+    else
+        nothing
+    end
+end
+
+include("types.jl")
+include("sparse_pairs.jl")
+include("parameters.jl")
+include("conversion.jl")
+include("units.jl")
+include("cuda_config.jl")
+include("spatial.jl")
+include("cutoffs.jl")
+include("mixing.jl")
+include("virtual.jl")
+include("kernels.jl")
+include("force.jl")
+include("energy.jl")
+include("free_energy/alchemy.jl")
+include("interactions/lennard_jones.jl")
+include("interactions/soft_sphere.jl")
+include("interactions/mie.jl")
+include("interactions/buckingham.jl")
+include("interactions/double_exponential.jl")
+include("interactions/coulomb.jl")
+include("interactions/gravity.jl")
+include("interactions/harmonic_position_restraint.jl")
+include("interactions/harmonic_bond.jl")
+include("interactions/morse_bond.jl")
+include("interactions/fene_bond.jl")
+include("interactions/harmonic_angle.jl")
+include("interactions/cosine_angle.jl")
+include("interactions/urey_bradley.jl")
+include("interactions/periodic_torsion.jl")
+include("interactions/rb_torsion.jl")
+include("interactions/harmonic_torsion.jl")
+include("interactions/cmap_torsion.jl")
+include("interactions/ewald.jl")
+include("interactions/implicit_solvent.jl")
+include("interactions/muller_brown.jl")
+include("interactions/dpd.jl")
+include("interactions/ml_potentials.jl")
+include("constraints/constraints.jl")
+include("constraints/shake.jl")
+include("constraints/lincs.jl")
+include("simulators.jl")
+include("coupling.jl")
+include("neighbors.jl")
+include("loggers.jl")
+include("analysis.jl")
+include("residues.jl")
+include("force_field.jl")
+include("setup.jl")
+include("trajectory.jl")
+include("free_energy/thermo.jl")
+include("free_energy/extended_ensemble.jl")
+include("free_energy/stats.jl")
+include("free_energy/mbar.jl")
+include("free_energy/reweighting.jl")
+include("free_energy/pmf_deconvolution.jl")
+include("free_energy/AWH.jl")
+include("free_energy/alchemical_system.jl")
+include("free_energy/scale_single.jl")
+include("free_energy/scale_dual.jl")
+include("free_energy/TSS.jl")
+include("bias/bias.jl")
+include("bias/cv.jl")
+
+end
