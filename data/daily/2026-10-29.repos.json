@@ -1,0 +1,224 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "IshaqHMK",
+      "Jorjon",
+      "jenbt3",
+      "wyattgill9"
+    ],
+    "event": "star",
+    "stars": 15948,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "sunrong90"
+    ],
+    "event": "star",
+    "stars": 8695,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "parthnaik92"
+    ],
+    "event": "star",
+    "stars": 4278,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_playground",
+    "who": [
+      "parthnaik92"
+    ],
+    "event": "star",
+    "stars": 2265,
+    "language": "Python",
+    "description": "An open-source library for sim and real robot demos on top of MuJoCo.",
+    "url": "https://github.com/google-deepmind/mujoco_playground"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_mpc",
+    "who": [
+      "parthnaik92"
+    ],
+    "event": "star",
+    "stars": 1755,
+    "language": "C++",
+    "description": "Real-time behaviour synthesis with MuJoCo, using Predictive Control",
+    "url": "https://github.com/google-deepmind/mujoco_mpc"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "Nas01010101",
+      "fl0fischer",
+      "parthnaik92",
+      "thowell",
+      "willipwk"
+    ],
+    "event": "mixed",
+    "stars": 1592,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "SnirBroshi"
+    ],
+    "event": "other",
+    "stars": 1338,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/meltingpot",
+    "who": [
+      "msquared812"
+    ],
+    "event": "star",
+    "stars": 902,
+    "language": "Python",
+    "description": "A suite of test scenarios for multi-agent reinforcement learning.",
+    "url": "https://github.com/google-deepmind/meltingpot"
+  },
+  {
+    "full_name": "harbor-framework/terminal-bench-science",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 778,
+    "language": "Python",
+    "description": "Terminal-Bench-Science: Evaluating AI agents on research workflows across scientific domains",
+    "url": "https://github.com/harbor-framework/terminal-bench-science"
+  },
+  {
+    "full_name": "google-deepmind/physics-IQ-benchmark",
+    "who": [
+      "xdeng7"
+    ],
+    "event": "star",
+    "stars": 386,
+    "language": "Python",
+    "description": "Benchmarking physical understanding in generative video models",
+    "url": "https://github.com/google-deepmind/physics-IQ-benchmark"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "HuahuaLai",
+      "honggyukim",
+      "stephenchuhk01"
+    ],
+    "event": "star",
+    "stars": 209,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "molence/Mol-1",
+    "who": [
+      "Immortals-33",
+      "Zuricho",
+      "meneshail"
+    ],
+    "event": "star",
+    "stars": 158,
+    "language": "Python",
+    "description": "Open Frontier Biomolecular Intelligence",
+    "url": "https://github.com/molence/Mol-1"
+  },
+  {
+    "full_name": "KULL-Centre/CALVADOS",
+    "who": [
+      "LucasDooms",
+      "Sailor-sisyphus",
+      "sobuelow"
+    ],
+    "event": "mixed",
+    "stars": 103,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/CALVADOS"
+  },
+  {
+    "full_name": "google-deepmind/amplio",
+    "who": [
+      "Da-Huang"
+    ],
+    "event": "other",
+    "stars": 98,
+    "language": "Go",
+    "description": "Amplio: A Lightweight Agent Harness for Robust and Long-Horizon Runs",
+    "url": "https://github.com/google-deepmind/amplio"
+  },
+  {
+    "full_name": "magnusross/pgd-hallucination",
+    "who": [
+      "Immortals-33"
+    ],
+    "event": "star",
+    "stars": 9,
+    "language": "Python",
+    "description": "Code for the paper \"Projected Gradient Descent for Hallucination-Based Protein Binder Design\"",
+    "url": "https://github.com/magnusross/pgd-hallucination"
+  },
+  {
+    "full_name": "lu-yizhou/ClusterSeg",
+    "who": [
+      "Junchao-Zhu"
+    ],
+    "event": "star",
+    "stars": 7,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/lu-yizhou/ClusterSeg"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "examples/slab_IDR",
+    "who": [
+      "sobuelow"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "",
+    "description": "",
+    "url": ""
+  }
+]
