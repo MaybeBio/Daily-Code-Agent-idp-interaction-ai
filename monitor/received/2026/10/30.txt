@@ -1,0 +1,49 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-10-30 08:26:18 | 💬 thowell created issue 'Update discrete integrator and passive flex collision to match MuJoCo C' in google-deepmind/mujoco_warp
+2026-10-30 08:23:24 | 🔀 bviggiano reopened PR in evo-design/proto-tools
+2026-10-30 08:22:57 | 🔹 Cloudhabil performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-30 08:22:56 | 🔹 Cloudhabil performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-10-30 08:22:55 | 🔹 Cloudhabil performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-30 08:22:54 | 🔹 Cloudhabil performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-10-30 08:22:53 | 🔹 Cloudhabil performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-30 08:22:52 | 🔹 Cloudhabil performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-10-30 08:22:51 | 🔹 Cloudhabil performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-10-30 08:12:45 | 🐛 EitanNahmias opened issue in google-deepmind/formal-conjectures: 'W_3_21_eq (Green's Problem 14): w(2;3,21) = 416 is settled; Lean 4 proof deposited'
+2026-10-30 08:10:20 | 🔀 Linxiushen opened PR in google-deepmind/distrax
+2026-10-30 08:08:59 | 🔀 copybara-service merged PR in google-deepmind/torax
+2026-10-30 08:07:01 | 🔀 shi-eric opened PR in google-deepmind/mujoco_warp
+2026-10-30 08:01:39 | ⭐️ subaohuang starred google-deepmind/weathernext
+2026-10-30 07:58:19 | 🍴 nayehyeon61-glitch forked google-deepmind/weathernext
+2026-10-30 07:56:20 | 🔀 copybara-service merged PR in google-deepmind/torax
+2026-10-30 07:54:24 | ⭐️ Sousa-Erick starred google-deepmind/detectorscope
+2026-10-30 07:42:38 | 🔀 veljjanoski merged PR in google-deepmind/formal-conjectures
+2026-10-30 07:35:44 | 🔀 veljjanoski merged PR in google-deepmind/formal-conjectures
+2026-10-30 07:31:52 | 🔀 veljjanoski merged PR in google-deepmind/formal-conjectures
+2026-10-30 07:29:24 | 💬 Cloudhabil created issue 'feat(millennium): formalise 4D Yang-Mills Existence and Mass Gap conjecture' in google-deepmind/formal-conjectures
+2026-10-30 07:28:22 | ⭐️ daybreaker95 starred google-deepmind/detectorscope
+2026-10-30 07:28:16 | 🔀 shi-eric merged PR in google-deepmind/mujoco_warp
+2026-10-30 07:28:02 | 🔹 thowell performed PullRequestReviewEvent on google-deepmind/mujoco_warp
+2026-10-30 07:26:38 | 💬 eclare created issue 'Add AGENTS.md guide for AI coding agents' in google-deepmind/mujoco_menagerie
+2026-10-30 04:03:41 | 💬 kennethreitz created issue 'Fix Gemini send_conversation crash on unexpected `tools` argument' in kennethreitz/simplemind
+2026-10-30 04:03:36 | 🐛 kennethreitz closed issue in kennethreitz/simplemind: 'TypeError when using send_conversation with gemini'
+2026-10-30 03:52:37 | 💬 thowell created issue 'Add DOF friction rows to the sparse Hessian diagonal' in google-deepmind/mujoco_warp
+2026-10-30 03:44:53 | 💬 thowell created issue 'support opt.disableactuator (actuatorgroupdisable)' in google-deepmind/mujoco_warp
+2026-10-30 01:33:09 | 💬 RhudeJJJJ created issue 'feat: formalize restricted Bound 44 variants' in google-deepmind/formal-conjectures
+2026-10-30 01:17:45 | 💬 kennethreitz created issue 'Add MiniMax provider support' in kennethreitz/simplemind
+2026-10-29 21:18:03 | 🔹 bocowgill performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-10-29 06:37:36 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [04d9824] (expanded) Deploy tag 20ee50d
+2026-10-29 06:36:47 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [20ee50d] (expanded) Other projects: replace family index with GitHub profile
+2026-10-29 06:31:36 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [9a8488e] (expanded) About: add Other projects by Kenneth
+2026-10-29 05:40:11 | 🚀 Ninjani pushed to plinder-org/plinder
+    - [26ec038] (expanded) Constrain DuckDB below 2 and keep end-to-end test offline
+2026-10-29 04:27:25 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [bf8eec8] (expanded) About: move family history and genome data below writing, talks and reading; add community links to nav and footer
+2026-10-29 03:40:55 | 🚀 Junchao-Zhu pushed to hrlblab/computer_vision_spatial_omics
+    - [ac8073c] (expanded) Update README.md
+2026-10-29 03:40:13 | 🚀 Junchao-Zhu pushed to hrlblab/computer_vision_spatial_omics
+    - [c341fda] (expanded) Merge pull request #7 from Luosanj/add-voice
+2026-10-29 01:45:13 | 🆕 hadley created branch 'deprecate-formulas' at tidyverse/purrr

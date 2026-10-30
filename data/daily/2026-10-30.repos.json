@@ -1,0 +1,273 @@
+[
+  {
+    "full_name": "google-deepmind/weathernext",
+    "who": [
+      "nayehyeon61-glitch",
+      "subaohuang"
+    ],
+    "event": "mixed",
+    "stars": 7725,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/weathernext"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "eclare"
+    ],
+    "event": "issue",
+    "stars": 4287,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "shi-eric",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1594,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "tidyverse/purrr",
+    "who": [
+      "hadley"
+    ],
+    "event": "branch",
+    "stars": 1411,
+    "language": "R",
+    "description": "A functional programming toolkit for R",
+    "url": "https://github.com/tidyverse/purrr"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Cloudhabil",
+      "EitanNahmias",
+      "RhudeJJJJ",
+      "bocowgill",
+      "veljjanoski"
+    ],
+    "event": "mixed",
+    "stars": 1339,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "harbor-framework/terminal-bench-science",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 784,
+    "language": "Python",
+    "description": "Terminal-Bench-Science: Evaluating AI agents on research workflows across scientific domains",
+    "url": "https://github.com/harbor-framework/terminal-bench-science"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "copybara-service"
+    ],
+    "event": "pr",
+    "stars": 746,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "google-deepmind/distrax",
+    "who": [
+      "Linxiushen"
+    ],
+    "event": "pr",
+    "stars": 658,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/distrax"
+  },
+  {
+    "full_name": "kennethreitz/simplemind",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "issue",
+    "stars": 537,
+    "language": "Python",
+    "description": "Python API client for AI providers that intends to replace LangChain and LangGraph for most common use cases.",
+    "url": "https://github.com/kennethreitz/simplemind"
+  },
+  {
+    "full_name": "plinder-org/plinder",
+    "who": [
+      "Ninjani"
+    ],
+    "event": "push",
+    "stars": 316,
+    "language": "Python",
+    "description": "Protein Ligand INteraction Dataset and Evaluation Resource",
+    "url": "https://github.com/plinder-org/plinder"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "Sousa-Erick",
+      "daybreaker95"
+    ],
+    "event": "star",
+    "stars": 257,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "evo-design/proto-tools",
+    "who": [
+      "bviggiano"
+    ],
+    "event": "pr",
+    "stars": 141,
+    "language": "Python",
+    "description": "A universal infrastructure layer for generative biology",
+    "url": "https://github.com/evo-design/proto-tools"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "maria-zahid"
+    ],
+    "event": "star",
+    "stars": 80,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "THGLab/LP-PDBBind",
+    "who": [
+      "MTVarman"
+    ],
+    "event": "issue",
+    "stars": 75,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/THGLab/LP-PDBBind"
+  },
+  {
+    "full_name": "hrlblab/computer_vision_spatial_omics",
+    "who": [
+      "Junchao-Zhu"
+    ],
+    "event": "push",
+    "stars": 35,
+    "language": "",
+    "description": "Awesome generative spatial omics tools",
+    "url": "https://github.com/hrlblab/computer_vision_spatial_omics"
+  },
+  {
+    "full_name": "THGLab/CSpred",
+    "who": [
+      "npfernandes"
+    ],
+    "event": "star",
+    "stars": 30,
+    "language": "Python",
+    "description": "UCBShift is a program for predicting chemical shifts for backbone atoms and β-carbon of a protein in solution. It utilizes a machine learning module that makes predictions from features extracted from the 3D structures of the proteins.",
+    "url": "https://github.com/THGLab/CSpred"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "NikolaySimankov"
+    ],
+    "event": "star",
+    "stars": 22,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "holehouse-lab/soursop",
+    "who": [
+      "npfernandes"
+    ],
+    "event": "star",
+    "stars": 13,
+    "language": "Jupyter Notebook",
+    "description": "SOURSOP is an analysis suite for molecular simulations of intrinsically disordered proteins",
+    "url": "https://github.com/holehouse-lab/soursop"
+  },
+  {
+    "full_name": "THGLab/BioEdaDatabase",
+    "who": [
+      "zhuoy-qc"
+    ],
+    "event": "issue",
+    "stars": 4,
+    "language": "",
+    "description": "EDA database for protein-ligand complexes",
+    "url": "https://github.com/THGLab/BioEdaDatabase"
+  },
+  {
+    "full_name": "matteo-cagiada/mmcif-tools",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 2,
+    "language": "Python",
+    "description": "mmcif-tools is a package that allows you to quickly read, parse, edit and write biomolecular structures in the MMcif format.",
+    "url": "https://github.com/matteo-cagiada/mmcif-tools"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 1,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "idptools/tadatorch",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "Python",
+    "description": "tadatorch is a PyTorch implementation of the TADA activation domain predictor that uses sparrow for parameter predictions. ",
+    "url": "https://github.com/idptools/tadatorch"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  }
+]
