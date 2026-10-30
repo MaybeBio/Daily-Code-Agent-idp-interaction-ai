@@ -13,12 +13,31 @@
         <a href="{{ repo.url }}">GitHub</a>
         {% for s in WIKI_SOURCES %}
           <a href="{{ wiki_url(s, repo.full_name) }}">{{ s }}</a>
-          {% set snap = wiki_snapshot_url(s, repo.full_name, repo.wiki_dates.get(s, "")) %}
-          {% if snap %}<a href="{{ snap }}">{{ s }} 快照</a>{% endif %}
         {% endfor %}
       </div>
     </div>
   </div>
+  {% set snaps = [] %}
+  {% for s in WIKI_SOURCES %}
+    {% if wiki_snapshot_url(s, repo.full_name, repo.wiki_dates.get(s, "")) %}
+      {% set _ = snaps.append(s) %}
+    {% endif %}
+  {% endfor %}
+  {% if snaps %}
+  <section>
+    <details>
+      <summary>Wiki 快照</summary>
+      <ul class="wiki-snaps">
+        {% for s in snaps %}
+        <li>
+          <a href="{{ wiki_snapshot_url(s, repo.full_name, repo.wiki_dates.get(s, "")) }}">{{ s }}</a>
+          <span class="muted">({{ repo.wiki_dates.get(s, "") }})</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+  </section>
+  {% endif %}
   {% if repo.card %}
   <section>
     <h2>Code Card</h2>

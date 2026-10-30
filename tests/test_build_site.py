@@ -219,10 +219,20 @@ def test_wiki_dates_upto(tmp_path):
 def test_wiki_dates_upto_missing(tmp_path):
     assert build_site.wiki_dates_upto(str(tmp_path), "a/b", "") == {}
 
+def test_wiki_dates_upto_codewiki_uses_google_code_wiki_dir(tmp_path):
+    # archive.py 把 codewiki 落盘在 google_code_wiki/;站点查找须映射到同一目录。
+    _write_wiki(tmp_path, "a/b", "google_code_wiki", "2026-10-05")
+    assert build_site.wiki_dates_upto(str(tmp_path), "a/b", "") == {
+        "codewiki": "2026-10-05"}
+
 def test_wiki_snapshot_url():
     assert build_site.wiki_snapshot_url(
         "deepwiki", "a/b", "2026-10-12", "MaybeBio/Daily-Code-Agent-Template", "main") == \
-        "https://github.com/MaybeBio/Daily-Code-Agent-Template/blob/main/code/a__b/wikis/2026-10-12/deepwiki/llms.txt"
+        "https://github.com/MaybeBio/Daily-Code-Agent-Template/blob/main/code/a__b/wikis/2026-10-12/deepwiki/README.md"
+    # codewiki 的磁盘目录是 google_code_wiki/,快照 URL 必须指向它而非 codewiki/
+    assert build_site.wiki_snapshot_url(
+        "codewiki", "a/b", "2026-10-12", "MaybeBio/Daily-Code-Agent-Template", "main") == \
+        "https://github.com/MaybeBio/Daily-Code-Agent-Template/blob/main/code/a__b/wikis/2026-10-12/google_code_wiki/README.md"
     assert build_site.wiki_snapshot_url("deepwiki", "a/b", "2026-10-12", "") == ""
 
 def test_build_site_wiki_snapshot_link(tmp_path):
@@ -236,8 +246,9 @@ def test_build_site_wiki_snapshot_link(tmp_path):
                                           "github_repo": "MaybeBio/Daily-Code-Agent-Template",
                                           "github_branch": "main"})
     detail = open(str(tmp_path / "site" / "repos" / "a__b" / "index.html"), encoding="utf-8").read()
-    assert "MaybeBio/Daily-Code-Agent-Template/blob/main/code/a__b/wikis/2026-10-05/deepwiki/llms.txt" in detail
-    assert "deepwiki 快照" in detail
+    assert "MaybeBio/Daily-Code-Agent-Template/blob/main/code/a__b/wikis/2026-10-05/deepwiki/README.md" in detail
+    assert "Wiki 快照" in detail
+    assert "(2026-10-05)" in detail
 
 def test_build_site_no_wiki_snapshot_link_without_github_repo(tmp_path):
     _write_cards(tmp_path, [{"full_name": "a/b", "url": "u", "language": "Py", "stars": 1,
@@ -266,8 +277,8 @@ def test_build_site_week_detail_links_frozen_wiki(tmp_path):
     week_b = open(str(tmp_path / "site" / "weeks" / "2026-10-11" / "repos" / "a__b" / "index.html"), encoding="utf-8").read()
     latest = open(str(tmp_path / "site" / "repos" / "a__b" / "index.html"), encoding="utf-8").read()
     # 周归档页链到「当周冻结」的快照,而非最新那份
-    assert "wikis/2026-09-30/deepwiki/llms.txt" in week_a
-    assert "wikis/2026-10-06/deepwiki/llms.txt" not in week_a
-    assert "wikis/2026-10-06/deepwiki/llms.txt" in week_b
-    assert "wikis/2026-09-30/deepwiki/llms.txt" not in week_b
-    assert "wikis/2026-10-06/deepwiki/llms.txt" in latest
+    assert "wikis/2026-09-30/deepwiki/README.md" in week_a
+    assert "wikis/2026-10-06/deepwiki/README.md" not in week_a
+    assert "wikis/2026-10-06/deepwiki/README.md" in week_b
+    assert "wikis/2026-09-30/deepwiki/README.md" not in week_b
+    assert "wikis/2026-10-06/deepwiki/README.md" in latest

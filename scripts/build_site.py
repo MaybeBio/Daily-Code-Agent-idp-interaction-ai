@@ -71,8 +71,15 @@ def wiki_url(source, full_name):
 def repo_dir_name(full_name):
     return full_name.replace("/", "__")
 
+def wiki_dir(source):
+    """磁盘上的 wiki 目录名:codewiki 落盘为 google_code_wiki,其余同名。
+
+    与 archive.py 的 `_wiki_dir` 保持一致,否则站点到该源上找快照会落空。
+    """
+    return "google_code_wiki" if source == "codewiki" else source
+
 def wiki_dates_upto(out_dir, full_name, upto_date):
-    """各 wiki 源在 upto_date(含)之前最近一次快照日期(code/{repo}/wikis/{date}/{source}/llms.txt)。
+    """各 wiki 源在 upto_date(含)之前最近一次快照日期(code/{repo}/wikis/{date}/{dir}/llms.txt)。
 
     以卡片自身的运行日期(upto_date=record["date"])为上限,确保周归档页链到「当周冻结」的快照,
     而不是最新的那份。
@@ -84,7 +91,7 @@ def wiki_dates_upto(out_dir, full_name, upto_date):
     for source in WIKI_SOURCES:
         dates = [d for d in os.listdir(wikis_root)
                  if (not upto_date or d <= upto_date)
-                 and os.path.isfile(os.path.join(wikis_root, d, source, "llms.txt"))]
+                 and os.path.isfile(os.path.join(wikis_root, d, wiki_dir(source), "llms.txt"))]
         if dates:
             result[source] = max(dates)
     return result
@@ -92,8 +99,10 @@ def wiki_dates_upto(out_dir, full_name, upto_date):
 def wiki_snapshot_url(source, full_name, date, github_repo="", github_branch="main"):
     if not github_repo or not date:
         return ""
+    # 快照目录里 README.md 与 llms.txt 同内容并存;用 README.md 让 GitHub 渲染成
+    # 可点击的索引页(wiki_dates_upto 仍以 llms.txt 作「快照存在」标记)。
     return (f"https://github.com/{github_repo}/blob/{github_branch}/"
-            f"code/{repo_dir_name(full_name)}/wikis/{date}/{source}/llms.txt")
+            f"code/{repo_dir_name(full_name)}/wikis/{date}/{wiki_dir(source)}/README.md")
 
 def load_cards(out_dir):
     cards_root = os.path.join(out_dir, "data", "cards")
