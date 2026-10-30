@@ -37,4 +37,4 @@
 
 > 由自研代码+Agent推送模板 [Daily-Code-Agent-Template](https://github.com/MaybeBio/Daily-Code-Agent-Template) 生成
 
-追踪 无序蛋白 (IDP/IDR) × 分子互作 × AI / 物理模拟方法 的计算GitHub项目
+追踪 无序蛋白 (IDP/IDR) × 分子互作 × AI / 物理模拟方法 方向的计算GitHub项目
