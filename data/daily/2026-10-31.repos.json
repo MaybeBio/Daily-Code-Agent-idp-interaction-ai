@@ -1,0 +1,225 @@
+[
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "dependabot"
+    ],
+    "event": "pr",
+    "stars": 8701,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "google-deepmind/gemma",
+    "who": [
+      "Rananocka"
+    ],
+    "event": "star",
+    "stars": 5822,
+    "language": "Python",
+    "description": "Gemma open-weight LLM library, from Google DeepMind",
+    "url": "https://github.com/google-deepmind/gemma"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "btaba",
+      "eclare"
+    ],
+    "event": "mixed",
+    "stars": 4292,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "obsidianmd/pele",
+    "who": [
+      "kepano"
+    ],
+    "event": "issue",
+    "stars": 3944,
+    "language": "TypeScript",
+    "description": "Renders Mermaid diagrams faster than you'd run from a volcano! 🌋 ",
+    "url": "https://github.com/obsidianmd/pele"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "cola1917",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1594,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Paul-Lez",
+      "google-cla"
+    ],
+    "event": "issue",
+    "stars": 1340,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/synthid-text",
+    "who": [
+      "scorpion76snow-star"
+    ],
+    "event": "star",
+    "stars": 1219,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/synthid-text"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "copybara-service"
+    ],
+    "event": "pr",
+    "stars": 746,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "PDB-REDO/dssp",
+    "who": [
+      "npfernandes"
+    ],
+    "event": "star",
+    "stars": 279,
+    "language": "C++",
+    "description": "Application to assign secondary structure to proteins",
+    "url": "https://github.com/PDB-REDO/dssp"
+  },
+  {
+    "full_name": "google-deepmind/mishax",
+    "who": [
+      "sylvesterkaczmarek"
+    ],
+    "event": "issue",
+    "stars": 158,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/mishax"
+  },
+  {
+    "full_name": "evo-design/proto-tools",
+    "who": [
+      "bviggiano"
+    ],
+    "event": "pr",
+    "stars": 141,
+    "language": "Python",
+    "description": "A universal infrastructure layer for generative biology",
+    "url": "https://github.com/evo-design/proto-tools"
+  },
+  {
+    "full_name": "KULL-Centre/CALVADOS",
+    "who": [
+      "MaybeBio"
+    ],
+    "event": "star",
+    "stars": 104,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/CALVADOS"
+  },
+  {
+    "full_name": "THGLab/LP-PDBBind",
+    "who": [
+      "MTVarman"
+    ],
+    "event": "issue",
+    "stars": 75,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/THGLab/LP-PDBBind"
+  },
+  {
+    "full_name": "google-deepmind/cryptids",
+    "who": [
+      "Meganeuridae"
+    ],
+    "event": "issue",
+    "stars": 70,
+    "language": "Lean",
+    "description": "Some Cryptids and Lean proofs",
+    "url": "https://github.com/google-deepmind/cryptids"
+  },
+  {
+    "full_name": "google-deepmind/multiscope",
+    "who": [
+      "dependabot"
+    ],
+    "event": "pr",
+    "stars": 37,
+    "language": "Go",
+    "description": "Real-time visualisation",
+    "url": "https://github.com/google-deepmind/multiscope"
+  },
+  {
+    "full_name": "google-deepmind/synthidbio",
+    "who": [
+      "scorpion76snow-star"
+    ],
+    "event": "star",
+    "stars": 27,
+    "language": "",
+    "description": "SynthID Bio is a family of methods developed by Google DeepMind for embedding highly detectable yet function-preserving watermarks directly into AI-generated biological sequences and structures.",
+    "url": "https://github.com/google-deepmind/synthidbio"
+  },
+  {
+    "full_name": "magnusross/pgd-hallucination",
+    "who": [
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 10,
+    "language": "Python",
+    "description": "Code for the paper \"Projected Gradient Descent for Hallucination-Based Protein Binder Design\"",
+    "url": "https://github.com/magnusross/pgd-hallucination"
+  },
+  {
+    "full_name": "THGLab/KinConfBench",
+    "who": [
+      "mseok"
+    ],
+    "event": "star",
+    "stars": 7,
+    "language": "Python",
+    "description": "Official Repo for KinConfBench",
+    "url": "https://github.com/THGLab/KinConfBench"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 1,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "idptools/tadatorch",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "Python",
+    "description": "tadatorch is a PyTorch implementation of the TADA activation domain predictor that uses sparrow for parameter predictions. ",
+    "url": "https://github.com/idptools/tadatorch"
+  }
+]

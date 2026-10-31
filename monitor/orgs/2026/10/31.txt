@@ -1,0 +1,6 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-10-30 08:35:39 | ⭐️ mseok starred THGLab/KinConfBench
+2026-10-30 02:15:24 | 🐛 ryanemenecker opened issue in idptools/tadatorch: 'Cannot import vectorized from sparrow.patterning'
+2026-10-30 00:57:33 | 💬 MTVarman created issue 'Identical ligand on the same protein labelled both covalent=True and covalent=False (11 entries)' in THGLab/LP-PDBBind
+2026-10-30 00:45:07 | 💬 MTVarman created issue 'Identical ligand on the same protein labelled both covalent=True and covalent=False (11 entries)' in THGLab/LP-PDBBind

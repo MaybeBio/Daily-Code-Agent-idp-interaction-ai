@@ -1,0 +1,37 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-10-31 08:18:34 | 🔀 copybara-service merged PR in google-deepmind/torax
+2026-10-31 08:15:03 | 🐛 thowell closed issue in google-deepmind/mujoco_warp: 'Contact sensor sorting can reverse reported normals'
+2026-10-31 08:14:59 | 🐛 thowell closed issue in google-deepmind/mujoco_warp: 'subtree_com is zero for massless subtrees'
+2026-10-31 08:14:26 | 🐛 thowell closed issue in google-deepmind/mujoco_warp: 'ellipsoid fluid drag produces positive passive power'
+2026-10-31 08:14:25 | 💬 thowell created issue 'ellipsoid fluid drag produces positive passive power' in google-deepmind/mujoco_warp
+2026-10-31 08:13:53 | 🔀 thowell merged PR in google-deepmind/mujoco_warp
+2026-10-31 08:10:34 | 🔀 bviggiano merged PR in evo-design/proto-tools
+2026-10-31 08:08:42 | 🐛 btaba closed issue in google-deepmind/mujoco_menagerie: '[New model] FANUC CRX-5iA collaborative arm (Apache-2.0, from FANUC's official fanuc_description)'
+2026-10-31 08:08:39 | 🔀 eclare merged PR in google-deepmind/mujoco_menagerie
+2026-10-31 08:07:04 | 💬 Paul-Lez created issue 'feat(ErdosProblems/919): add Erdős Problem 919' in google-deepmind/formal-conjectures
+2026-10-31 08:06:30 | 💬 kepano created issue 'Subgraph Direction ignored / inverted?' in obsidianmd/pele
+2026-10-31 08:06:30 | 🐛 kepano closed issue in obsidianmd/pele: 'Subgraph Direction ignored / inverted?'
+2026-10-31 08:06:24 | ⭐️ Rananocka starred google-deepmind/gemma
+2026-10-31 07:35:55 | 💬 cola1917 created issue 'Direct MyoSuite CPU/CUDA muscle rollouts drift at the wrist with contacts disabled' in google-deepmind/mujoco_warp
+2026-10-31 07:34:32 | 🔀 bviggiano opened PR in evo-design/proto-tools
+2026-10-31 07:28:26 | 🔀 dependabot labeled PR in google-deepmind/alphafold3
+2026-10-31 07:28:26 | 🔀 dependabot labeled PR in google-deepmind/alphafold3
+2026-10-31 07:28:26 | 🔀 dependabot opened PR in google-deepmind/alphafold3
+2026-10-31 07:23:59 | 🔀 copybara-service opened PR in google-deepmind/torax
+2026-10-31 07:22:53 | 🔀 dependabot labeled PR in google-deepmind/multiscope
+2026-10-31 07:22:53 | 🔀 dependabot labeled PR in google-deepmind/multiscope
+2026-10-31 07:22:53 | 🔀 dependabot opened PR in google-deepmind/multiscope
+2026-10-31 07:21:31 | ⭐️ scorpion76snow-star starred google-deepmind/synthid-text
+2026-10-31 07:21:16 | ⭐️ scorpion76snow-star starred google-deepmind/synthidbio
+2026-10-31 07:19:29 | 🔹 btaba performed PullRequestReviewEvent on google-deepmind/mujoco_menagerie
+2026-10-31 07:17:43 | 🔀 bviggiano merged PR in evo-design/proto-tools
+2026-10-31 07:09:03 | 💬 eclare created issue 'Add FANUC CRX-5iA model' in google-deepmind/mujoco_menagerie
+2026-10-31 07:04:35 | 💬 Meganeuridae created issue 'Prove a six-state A6 machine nonhalting from blank tape' in google-deepmind/cryptids
+2026-10-31 06:38:56 | 💬 sylvesterkaczmarek created issue 'Roll back local context state when entry fails' in google-deepmind/mishax
+2026-10-31 04:55:46 | 💬 google-cla created issue 'GreensOpenProblems/14: W_3_21_eq marked research solved, with [Na26] and [Ku10]' in google-deepmind/formal-conjectures
+2026-10-31 00:37:11 | ⭐️ MaybeBio starred KULL-Centre/CALVADOS
+2026-10-31 00:35:23 | ⭐️ npfernandes starred PDB-REDO/dssp
+2026-10-30 21:44:55 | ⭐️ sirius777coder starred magnusross/pgd-hallucination
+2026-10-30 00:35:01 | 🚀 kennethreitz pushed to kennethreitz/requeststoken.org
+    - [99b6251] (expanded) Deploy tag f843dec
