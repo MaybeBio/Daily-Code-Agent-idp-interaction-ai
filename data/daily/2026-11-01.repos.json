@@ -1,0 +1,68 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "kevinzakka"
+    ],
+    "event": "pr",
+    "stars": 16002,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "med-000"
+    ],
+    "event": "star",
+    "stars": 4298,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "google-deepmind/amplio",
+    "who": [
+      "dependabot"
+    ],
+    "event": "pr",
+    "stars": 99,
+    "language": "Go",
+    "description": "Amplio: A Lightweight Agent Harness for Robust and Long-Horizon Runs",
+    "url": "https://github.com/google-deepmind/amplio"
+  },
+  {
+    "full_name": "google-deepmind/cryptids",
+    "who": [
+      "mo271"
+    ],
+    "event": "pr",
+    "stars": 70,
+    "language": "Lean",
+    "description": "Some Cryptids and Lean proofs",
+    "url": "https://github.com/google-deepmind/cryptids"
+  },
+  {
+    "full_name": "google-deepmind/asyncdiloco",
+    "who": [
+      "thealidev"
+    ],
+    "event": "star",
+    "stars": 52,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/asyncdiloco"
+  },
+  {
+    "full_name": "THGLab/IDPForge",
+    "who": [
+      "philipptrepte"
+    ],
+    "event": "star",
+    "stars": 18,
+    "language": "Python",
+    "description": "Disordered protein ensemble prediction",
+    "url": "https://github.com/THGLab/IDPForge"
+  }
+]
