@@ -1,0 +1,364 @@
+##     _____  ____  _    _ _____   _____  ____  _____
+##   / ____|/ __ \| |  | |  __ \ / ____|/ __ \|  __ \
+##  | (___ | |  | | |  | | |__) | (___ | |  | | |__) |
+##   \___ \| |  | | |  | |  _  / \___ \| |  | |  ___/
+##   ____) | |__| | |__| | | \ \ ____) | |__| | |
+##  |_____/ \____/ \____/|_|  \_\_____/ \____/|_|
+
+## Alex Holehouse (Pappu Lab and Holehouse Lab) and Jared Lalmansingh (Pappu lab)
+## Simulation analysis package
+## Copyright 2014 - 2026
+##
+
+"""
+sstools - miscellaneous numerical helper functions used across SOURSOP.
+
+This module collects small, dependency-light utility routines (list
+chunking, residue-name normalisation, nearest-value search, the polymer
+power-law model, minimum-image distances and trajectory-file discovery)
+that are shared by the higher-level analysis modules. None of these
+functions hold state; they operate purely on their arguments.
+"""
+
+import numpy as np
+from soursop.ssexceptions import SSException
+from soursop import ssutils
+from typing import Union, List
+import os
+import re
+from natsort import natsorted
+import pathlib
+
+
+# ........................................................................
+#
+def chunks(lst, n):
+    """Yield successive ``n``-sized chunks from a list.
+
+    Splits ``lst`` into consecutive, non-overlapping sublists of length
+    ``n``. If ``len(lst)`` is not an exact multiple of ``n`` the trailing
+    remainder (fewer than ``n`` elements) is discarded, so every yielded
+    chunk is guaranteed to contain exactly ``n`` elements. The list is
+    consumed lazily as the generator is iterated.
+
+    Parameters
+    ----------
+    lst : list
+        The list to be divided into chunks.
+
+    n : int
+        The size of each chunk. Must be a positive integer.
+
+    Yields
+    ------
+    list
+        Successive length-``n`` sublists of ``lst``, in order.
+
+    Example
+    -------
+    >>> list(chunks([1, 2, 3, 4, 5], 2))
+    [[1, 2], [3, 4]]
+    """
+
+    maxval = int(round(len(lst) - len(lst) % n))
+
+    for i in range(0, maxval, int(n)):
+        yield lst[i : i + n]
+
+
+# ........................................................................
+#
+def fix_histadine_name(name):
+    """Normalise protonation-specific histidine names to ``'HIS'``.
+
+    Molecular dynamics force fields commonly encode the protonation state
+    of histidine in the residue name (``HIE``, ``HID`` or ``HIP``). For
+    sequence- and identity-based analysis these should all be treated as a
+    single residue type. This function maps any of those three variants
+    onto the canonical ``'HIS'`` and returns every other residue name
+    unchanged.
+
+    Parameters
+    ----------
+    name : str
+        A three-letter residue name. May be a histidine protonation
+        variant (``'HIE'``, ``'HID'``, ``'HIP'``) or any other code.
+
+    Returns
+    -------
+    str
+        ``'HIS'`` if ``name`` is a histidine protonation variant,
+        otherwise ``name`` returned unmodified.
+
+    Example
+    -------
+    >>> fix_histadine_name('HIE')
+    'HIS'
+    >>> fix_histadine_name('ALA')
+    'ALA'
+    """
+
+    if name == "HIE" or name == "HID" or name == "HIP":
+        return "HIS"
+    else:
+        return name
+
+
+# ........................................................................
+#
+def find_nearest(array, target):
+    """Find the array element closest in value to a target.
+
+    Performs a brute-force search for the element of ``array`` whose
+    absolute difference from ``target`` is smallest, returning both the
+    index of that element and the element itself. If several elements are
+    equidistant from ``target`` the first (lowest-index) match is
+    returned.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        Numeric array to be searched. Must support element-wise
+        subtraction with ``target``.
+
+    target : scalar
+        The value to locate. Should share a comparable dtype with
+        ``array``.
+
+    Returns
+    -------
+    tuple of (int, scalar)
+        A 2-tuple ``(index, value)`` where ``index`` is the position of
+        the nearest element within ``array`` and ``value`` is that
+        element.
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> find_nearest(np.array([0.0, 1.0, 2.0, 3.0]), 2.2)
+    (2, 2.0)
+    """
+    idx = (np.abs(array - target)).argmin()
+    return (idx, array[idx])
+
+
+# ........................................................................
+#
+def powermodel(X, nu, R0):
+    """Evaluate the polymer-scaling power law ``R0 * X**nu``.
+
+    Implements the standard polymer-physics scaling relationship used
+    throughout SOURSOP - for example relating an inter-residue distance to
+    sequence separation via ``R = R0 * |i - j|**nu``. This is a thin
+    wrapper around ``numpy.power`` and broadcasts over array input.
+
+    Parameters
+    ----------
+    X : np.ndarray or float
+        Independent variable(s), typically a sequence separation. May be a
+        scalar or any array-like accepted by ``numpy.power``.
+
+    nu : int or float
+        The scaling exponent (e.g. the apparent Flory scaling exponent).
+
+    R0 : int or float
+        The scaling prefactor.
+
+    Returns
+    -------
+    np.ndarray or float
+        ``R0 * X**nu``, with the same shape as ``X``.
+
+    Example
+    -------
+    >>> powermodel(4, 0.5, 5.5)
+    11.0
+    """
+    return R0 * np.power(X, nu)
+
+
+# ------------------------------------------------------------------
+#
+def get_distance_periodic(distance1, distance2, box_size, box_shape="cube"):
+    """Pairwise point distances under the minimum-image convention.
+
+    Computes, for two equal-length arrays of 3D coordinates, the distance
+    between each corresponding pair of points using the minimum-image
+    convention for a rectangular (orthorhombic) periodic box. This corrects
+    distances for particles that are nearest across a periodic boundary.
+    Each displacement component is wrapped as ``d - L * round(d / L)``, so
+    the result is correct however many box lengths apart the two points are
+    (prior to 2.0.6 only separations of up to 1.5 box lengths were handled,
+    which broke for chains made whole with ``-pbc nojump`` that had drifted
+    out of the primary cell). For a non-periodic system (all separations
+    below half a box length) the result is identical to the naive Euclidean
+    distance.
+
+    Parameters
+    ----------
+    distance1 : np.ndarray
+        Array of length ``n`` in which each element is the x/y/z position
+        of a particle / atom / bead.
+
+    distance2 : np.ndarray
+        Array of length ``n`` in which each element is the x/y/z position
+        of a particle / atom / bead. Must be the same length as
+        ``distance1``.
+
+    box_size : float or array_like
+        Box edge length(s), in the same units as the coordinates. Either a
+        single number (a cubic box), three numbers ``(Lx, Ly, Lz)`` (a
+        rectangular box), or an ``(n, 3)`` array giving the box for each
+        pair (e.g. per-frame boxes from an NPT simulation). Every length
+        must be positive.
+
+    box_shape : {'cube'}, optional
+        Kept for backwards compatibility. Only ``'cube'`` is accepted, and
+        it covers every rectangular box described by ``box_size``.
+        Triclinic boxes are not supported. Default ``'cube'``.
+
+    Returns
+    -------
+    list of float
+        Inter-position distances (length ``n``) under the minimum-image
+        convention.
+
+    Raises
+    ------
+    soursop.ssexceptions.SSException
+        If ``distance1`` and ``distance2`` differ in length, if an
+        unsupported ``box_shape`` is passed, or if ``box_size`` has the
+        wrong shape or a non-positive length.
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> a = np.array([[0.1, 0.1, 0.1]])
+    >>> b = np.array([[9.9, 9.9, 9.9]])
+    >>> [round(d, 6) for d in get_distance_periodic(a, b, 10.0)]  # across the boundary
+    [0.34641]
+    """
+
+    if len(distance1) != len(distance2):
+        raise SSException(
+            "The two distance vectors in get_distance_periodic() must be the same length"
+        )
+
+    ssutils.validate_keyword_option(box_shape, ["cube"], "box_shape")
+
+    p1 = np.asarray(distance1, dtype=np.float64).reshape(-1, 3)
+    p2 = np.asarray(distance2, dtype=np.float64).reshape(-1, 3)
+
+    box = np.asarray(box_size, dtype=np.float64)
+    if box.ndim == 0:
+        box = np.full(3, float(box))
+    if box.shape not in ((3,), (len(p1), 3)):
+        raise SSException(
+            f"box_size must be a single length, three lengths, or one (Lx, Ly, Lz) row per position; received an array of shape {box.shape}"
+        )
+    if np.any(box <= 0) or not np.all(np.isfinite(box)):
+        raise SSException(
+            "Every box length passed to get_distance_periodic() must be positive and finite"
+        )
+
+    # wrap each displacement component into [-L/2, L/2]
+    delta = p1 - p2
+    delta = delta - box * np.round(delta / box)
+
+    return [float(x) for x in np.linalg.norm(delta, axis=1)]
+
+
+# ------------------------------------------------------------------
+#
+def find_trajectory_files(
+    root_dir: Union[str, pathlib.Path],
+    num_replicates: int,
+    exclude_dirs: Union[None, List] = ["eq", "FULL"],
+    traj_name: str = "__traj.xtc",
+    top_name: str = "__START.pdb",
+):
+    """Discover matching trajectory/topology file pairs in a directory tree.
+
+    Walks ``root_dir`` recursively and collects paired trajectory and
+    topology files for a set of replicate simulations. A directory is
+    treated as a replicate when its name ends in a digit in the range
+    ``[0, num_replicates]`` and it contains both a ``traj_name`` and a
+    ``top_name`` file. Results are grouped by parent-directory name and
+    returned in natural-sorted order so replicate ordering is stable and
+    human-intuitive (e.g. ``rep2`` before ``rep10``).
+
+    Parameters
+    ----------
+    root_dir : str or pathlib.Path
+        Root of the directory tree to search.
+
+    num_replicates : int
+        Highest replicate index to gather; child directories whose name
+        ends in a digit in ``[0, num_replicates]`` are considered.
+
+    exclude_dirs : list or None, optional
+        Directory names to prune from the walk. Pass ``None`` to search
+        everything (including ``"eq"`` and ``"FULL"``). Default
+        ``["eq", "FULL"]``.
+
+    traj_name : str, optional
+        Trajectory filename to look for in each replicate directory.
+        Default ``"__traj.xtc"``.
+
+    top_name : str, optional
+        Topology filename to look for in each replicate directory.
+        Default ``"__START.pdb"``.
+
+    Returns
+    -------
+    tuple of (list of str, list of str)
+        A 2-tuple ``(traj_files, start_files)`` of equal length, where
+        ``traj_files[i]`` and ``start_files[i]`` are the absolute paths to
+        a matched trajectory and its topology, ordered by natural-sorted
+        parent-directory name then natural-sorted file path.
+
+    Example
+    -------
+    >>> trajs, tops = find_trajectory_files('/data/sim_set', num_replicates=5)
+    >>> len(trajs) == len(tops)
+    True
+    """
+    if exclude_dirs is None:
+        exclude_dirs = []
+
+    traj_files = []
+    start_files = []
+    dir_dict = {}
+
+    for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir)):
+        if any(d in exclude_dirs for d in dirnames):
+            # exclude directories in exclude_dirs
+            dirnames[:] = [d for d in dirnames if d not in exclude_dirs]
+
+        # A replicate directory is one whose name ends in an integer replicate
+        # index in [0, num_replicates]. We parse the trailing integer and
+        # range-check it, rather than testing whether the path *ends with* one
+        # of the digit strings - the latter (str.endswith over a tuple of
+        # digit strings) wrongly matched e.g. 'rep15' for num_replicates=5
+        # (ends in '5') while dropping 'rep7', silently gathering the wrong
+        # set of replicates.
+        _trailing = re.search(r"(\d+)$", os.path.basename(dirpath))
+        if _trailing is not None and 0 <= int(_trailing.group(1)) <= num_replicates:
+            # extract the parent directory name
+            parent_dirname = os.path.basename(os.path.dirname(dirpath))
+            traj_file = os.path.join(dirpath, f"{traj_name}")
+            start_file = os.path.join(dirpath, f"{top_name}")
+
+            if os.path.isfile(traj_file) and os.path.isfile(start_file):
+                if parent_dirname not in dir_dict:
+                    # create a new list for the current parent directory name
+                    dir_dict[parent_dirname] = []
+                dir_dict[parent_dirname].append((traj_file, start_file))
+
+    for parent_dirname in natsorted(dir_dict.keys()):
+        # sort the list of files for the current parent directory name
+        sorted_files = natsorted(dir_dict[parent_dirname])
+        for traj_file, start_file in sorted_files:
+            traj_files.append(traj_file)
+            start_files.append(start_file)
+    return traj_files, start_files

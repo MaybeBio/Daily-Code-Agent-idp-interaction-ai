@@ -1,0 +1,130 @@
+[build-system]
+requires = ["setuptools>=77.0",
+            "versioningit~=2.0",]
+
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "idptools-starling"
+description = "Construction of intrinsically disordered proteins ensembles through multiscale generative models"
+dynamic = ["version"]
+readme = "README.md"
+authors = [
+    { name = "Borna Novak", email = "bnovak@wustl.edu" },
+	{ name = "Jeff Lotthammer", email = "j.lotthammer@wustl.edu" },
+	{ name = "Alex Holehouse", email = "alex.holehouse@wustl.edu" },
+]
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.10"
+dependencies = [
+	'numpy>=1.26',
+	'torch',
+	'scipy',
+	'cython>=3.0.0',
+	'matplotlib',
+	'pytorch-lightning',
+	'einops',
+	'tqdm',
+	'PyYAML',
+	'h5py',
+	'pandas',
+	'protfasta',
+	'soursop',
+	'hdf5plugin',
+	'mdtraj>=1.9.7',
+	'metapredict>=3.0',
+	'faiss-cpu>=1.7.4',
+	'zstandard>=0.22',
+    ]
+
+[project.urls]
+Source = "https://github.com/idptools/starling"
+Documentation = "https://idptools-starling.readthedocs.io"
+
+[project.scripts]
+starling-vae-train = "starling.training.vae_train:train_vae"
+starling-ddpm-train = "starling.training.diffusion_train:train_model"
+
+starling = "starling.scripts.starling_main_cli:main"
+starling-benchmark = "starling.scripts.starling_main_cli:starling_benchmark"
+
+starling2xtc = "starling.scripts.starling_converter:starling2xtc"
+starling2pdb = "starling.scripts.starling_converter:starling2pdb"
+starling2numpy = "starling.scripts.starling_converter:starling2numpy"
+starling2info = "starling.scripts.starling_converter:starling2info"
+starling2sequence = "starling.scripts.starling_converter:starling2sequence"
+starling2starling = "starling.scripts.starling_converter:starling2starling"
+numpy2starling = "starling.scripts.starling_converter:numpy2starling"
+xtc2starling = "starling.scripts.starling_converter:xtc2starling"
+starling-search = "starling.scripts.starling_search:main"
+starling-pretokenize = "starling.scripts.starling_pretokenize:main"
+
+[project.optional-dependencies]
+search-gpu = [
+  "faiss-gpu>=1.7.4"
+]
+test = [
+  "pytest>=6.1.2",
+  "tomli>=2; python_version < '3.11'",
+]
+# Dependencies for the model-training entry points (starling-vae-train,
+# starling-ddpm-train). These are not needed to generate ensembles, so they are
+# kept out of the default install: pip install "idptools-starling[train]"
+train = [
+  "hydra-core>=1.3",
+  "omegaconf>=2.3",
+  "wandb",
+  "webdataset",
+]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = false
+
+[tool.setuptools.packages.find]
+namespaces = false
+where = ["."]
+
+[tool.setuptools.package-data]
+starling = [
+    "py.typed",
+	"configs/**",
+	"minimizer/data/*.tsv"
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests that are slow to run",
+    "requires_weights: requires locally available encoder and diffusion checkpoints",
+    "integration: marks integration tests that require external resources",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:torch",
+]
+
+[tool.versioningit]
+default-version = "1+unknown"
+
+[tool.versioningit.format]
+distance = "{base_version}+{distance}.{vcs}{rev}"
+dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[tool.versioningit.vcs]
+method = "git"
+match = ["*"]
+default-tag = "1.0.0"
+
+[tool.versioningit.write]
+file = "starling/_version.py"
+
+[tool.ruff]
+line-length = 119
+
+[tool.ty.src]
+include = ["starling", "devtools", "hubconf.py"]
+exclude = ["**/*.ipynb"]

@@ -1,0 +1,490 @@
+\documentclass[11pt]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\input{numbers}
+
+\newcommand{\Rg}{R_g}
+\newcommand{\mRg}{\langle R_g\rangle}
+\newcommand{\lam}{\langle\lambda\rangle}
+\newcommand{\pct}[1]{\val{#1}\%}
+
+\title{Summary of the released model\\ \large \texttt{idprg} 1.0: the radius-of-gyration distribution of disordered
+proteins from sequence}
+\date{31 October 2026}
+\author{}
+
+\begin{document}
+\maketitle
+
+\noindent This document describes the model end to end, as a basis for writing the paper. It covers what the model
+predicts, the data and the split, the model and its closed form, how they were trained, their scores, and where they
+fail.
+
+Every number is a macro from \texttt{numbers.tex}. The script \texttt{make\_numbers.py} writes that file from the
+directories \texttt{results/}, \texttt{model/} and \texttt{data/}. The companion files are:
+\begin{itemize}
+\item \texttt{formulas.tex}: every formula and constant;
+\item \texttt{closed\_form.tex}: the closed form on its own;
+\item \texttt{captions.tex}: the figures.
+\end{itemize}
+
+\tableofcontents
+
+%==========================================================================================================
+\section{What the model does}
+An intrinsically disordered protein has no single structure. Its size is a distribution of the radius of gyration
+$\Rg$ over the ensemble, and getting that distribution normally takes a molecular dynamics simulation. The model maps
+the amino-acid sequence directly to the full equilibrium density $p(\Rg)$ that an HPS1 coarse-grained simulation at
+298~K and 150~mM salt would produce. Mean, width, skewness and tails are all included.
+
+\begin{itemize}
+\item \textbf{A distribution with physical meaning.} The output is the two-exponent form of Victor and Lhuillier. It
+  has three parameters: the most probable radius $S_m$, a width $A$, and an exponent $\nu$ that sets the asymmetry.
+  It is fitted to individual MD frames by maximum likelihood.
+\item \textbf{Two predictors.} The network is an MLP on nine sequence descriptors. The closed form has
+  \val{cf.n_parameters} parameters and is linear in four descriptors and $\ln N$. Both are fitted to the same frames.
+\item \textbf{A surrogate for HPS1, not a model of experiment.} The model reproduces the simulations. Against SAXS its
+  error is that of the force field (Section~\ref{sec:bench}).
+\end{itemize}
+
+On the \val{data.n_val} validation proteins the network predicts $\mRg$ with a mean absolute error of
+\pct{net.val.mean_err_pct} and the standard deviation $\sigma$ with \pct{net.val.std_err_pct}. The median
+Wasserstein-1 distance between its distribution and the MD frames is \pct{net.val.w1_pct_median} of $\mRg$. On the
+\val{data.n_test} test proteins, scored once, the errors are \pct{net.test.mean_err_pct}, \pct{net.test.std_err_pct}
+and \pct{net.test.w1_pct_median}. The closed form is somewhat less accurate (Table~\ref{tab:scores}), most of all
+on compact chains.
+
+%==========================================================================================================
+\section{Data}\label{sec:data}
+\paragraph{Simulations.} Every protein was simulated with HPS1 (Dignon et al.\ 2018): one bead per residue,
+Ashbaugh--Hatch short-range interactions with the residue hydropathies $\lambda$, and screened Coulomb interactions.
+All runs use 298~K and 150~mM (Debye $\kappa=1.274$~nm$^{-1}$). 4{,}743 sequences were run for about $0.5N^{2.2}$
+frames each. Per protein the data keep the moments of $\Rg$ over the full trajectory and a random subsample of
+30{,}000 frames.
+
+\paragraph{Cleaning.} A trajectory is kept if three conditions hold:
+\begin{itemize}
+\item the coefficient of variation of $\Rg$ is at most 0.5, which removes the 89 blow-ups;
+\item the relative standard error of $\mRg$ is at most 3\%;
+\item $N\ge20$.
+\end{itemize}
+One protein with corrupt stored frames is dropped, which leaves \val{data.n_proteins} proteins
+(\texttt{data/README.md}).
+
+\paragraph{Split.} MMseqs2 clusters at 30\% identity and 80\% coverage give \val{data.n_clusters} clusters. Whole
+clusters go to one split:
+\begin{itemize}
+\item \val{data.n_train} training, \val{data.n_val} validation and \val{data.n_test} test proteins;
+\item stratified by length tercile and the majority sign of the SCD;
+\item every cluster holding more than 1\% of the proteins goes to training.
+\end{itemize}
+No validation or test protein shares a cluster with a training protein.
+
+\paragraph{How each split was used.}
+\begin{itemize}
+\item All fitting used the training split only.
+\item Model choices were made by cross-validation inside the training split, and on two extrapolation splits carved
+  out of it (Section~\ref{sec:extrap}).
+\item The validation split was used to compare final candidates.
+\item The test split was scored once for the network, on 2026-10-27, and once for the closed form, on 2026-10-31, each
+  after that model was fixed. It had also been opened for earlier versions, so it is not entirely unseen; the closed form
+  was revised after the test score of its earlier 24-parameter version was known. It was never used to fit the released
+  models (\texttt{data/README.md}, test-split log).
+\end{itemize}
+
+\paragraph{Experimental benchmark.} The benchmark has \val{data.n_benchmark} unique sequences ($N=\val{data.benchmark.N_min}$--\val{data.benchmark.N_max})
+with a SAXS $\Rg$ and an HPS1 trajectory, in \val{data.n_benchmark_families} sequence families. It was not used for
+any fitting or selection.
+
+%==========================================================================================================
+\section{The model}\label{sec:model}
+\paragraph{Output.} With $s=\Rg/S_m$,
+\begin{equation}
+p(\Rg)\propto\exp\!\Big[-A\Big(\frac{s^{\delta}}{\delta}+\frac{s^{-g}}{g}\Big)\Big],\qquad
+\delta=\frac1{1-\nu},\quad g=\frac3{3\nu-1},\quad \nu=\tfrac13+\tfrac23\operatorname{expit}(u).
+\end{equation}
+\begin{itemize}
+\item $S_m$ is the mode of the distribution.
+\item The exponent $\nu\in(1/3,1)$ sets both tails: $s^{-g}$ on the compressed side and $s^{\delta}$ on the stretched
+  side.
+\item $A$ sets the width.
+\end{itemize}
+The normaliser and the moments are computed by quadrature (\texttt{formulas.tex}, Section~1).
+
+\paragraph{Inputs.} There are nine sequence descriptors, computed from the HPS1 residue charges and hydropathies:
+\begin{itemize}
+\item $\ln N$;
+\item the two branches $s_\pm$ of the asinh-transformed sequence charge decoration;
+\item the sequence hydropathy decoration SHD;
+\item a loop-entropy-weighted contact energy CE of residue windows;
+\item the fraction of charged residues;
+\item the fractions of adjacent residue pairs that are both negative or both neutral;
+\item the fraction of sticky residues.
+\end{itemize}
+The mean hydropathy $\lam$ enters only the amplitude law and the closed form. Definitions are in
+\texttt{formulas.tex}, Section~2.
+
+\paragraph{Network.}
+\begin{equation}
+\ln S_m=b_S+\nu_F\ln N+o_1,\qquad u=u_0+o_2,\qquad \ln A=\boldsymbol\kappa\cdot[1,\nu,\nu^2,1/N,\lam,s_+].
+\end{equation}
+\begin{itemize}
+\item $\mathbf o$ is an MLP ($9\to\val{net.width}\to\val{net.width}\to2$, GELU) on the standardized inputs. Its last
+  layer starts at zero, so training starts from the population average.
+\item $\nu_F=\val{data.nu_F}$ is the Flory exponent of the training proteins' $\mRg$. $b_S$ and $u_0$ are fixed
+  offsets.
+\item The six amplitude-law coefficients $\boldsymbol\kappa$ are global and trained with the MLP.
+\item In all there are \val{net.n_parameters} trained parameters.
+\end{itemize}
+
+\paragraph{Training.} The loss is the mean negative log-likelihood of the MD frames: 1{,}024 frames per protein,
+redrawn every batch, and no other terms. The optimiser is AdamW (learning rate $10^{-3}$ with cosine decay, weight
+decay $10^{-4}$, clip 1), with batch 64 and \val{net.epochs} epochs in float64. The seed is \val{net.seed}, and the
+last epoch is kept. Retraining reproduces \texttt{model/network.eqx} bit for
+bit (SHA-256 \texttt{\val{net.sha256}\dots}).
+
+\paragraph{Closed form.} The same output distribution, with
+\begin{itemize}
+\item $\ln S_m$ linear in $s_+$, $s_-$, $\lam$, $h$ and $\ln N$, plus $s_-\ln N$, $\lam\ln N$ and $(\ln N)^2$.
+\item $u$ linear in $s_+$, $s_+/N$, $s_-$, $\lam$ and $h$.
+\item $\ln A$ on the law $[1,\nu,1/N,\lam]$.
+\item $h=\max(\mathrm{CE}-c(N),0)$, the excess of the contact energy over the threshold
+  $c(N)=\val{cf.c0}+\val{cf.c1}\ln N$.
+\end{itemize}
+These are \val{cf.n_coefficients} coefficients and two threshold constants. The closed form was fitted by maximum
+likelihood on all frames of the training proteins, with a weak ridge penalty on the slopes. The slope $c_1$ was chosen
+by three-fold cross-validation (Section~\ref{sec:choices}).
+
+%==========================================================================================================
+\section{Choices made on the training split}\label{sec:choices}
+\paragraph{The CE-threshold slope.} The rule was fixed before the comparison. The best $c_1$ replaces the constant
+threshold ($c_1=0$) only if two conditions hold:
+\begin{itemize}
+\item its pooled out-of-fold NLL is lower by more than two cluster-paired standard errors;
+\item it does not raise the extrapolation NLLs by more than $10^{-3}$.
+\end{itemize}
+
+\begin{center}
+\small
+\begin{tabular}{@{}l r r r r r r@{}}
+\toprule
+$c_1$ & $-0.5$ & 0 & 0.25 & 0.5 & 0.75 & 1\\
+\midrule
+CV NLL & \val{cethr.c1_m0p5.cv_nll} & \val{cethr.c1_0.cv_nll} & \textbf{\val{cethr.c1_0p25.cv_nll}} &
+\val{cethr.c1_0p5.cv_nll} & \val{cethr.c1_0p75.cv_nll} & \val{cethr.c1_1.cv_nll}\\
+CV $\mRg$ error (\%) & \val{cethr.c1_m0p5.cv_mean_err_pct} & \val{cethr.c1_0.cv_mean_err_pct} &
+\val{cethr.c1_0p25.cv_mean_err_pct} & \val{cethr.c1_0p5.cv_mean_err_pct} & \val{cethr.c1_0p75.cv_mean_err_pct} &
+\val{cethr.c1_1.cv_mean_err_pct}\\
+\bottomrule
+\end{tabular}
+\end{center}
+At $c_1=0.25$ the cross-validation NLL is lower by \val{cethr.c1_0p25.cv_nll_gain} (standard error
+\val{cethr.c1_0p25.se}). Compared with $c_1=0$, the length extrapolation NLL is \val{cethr.c1_0p25.length_nll}
+against \val{cethr.c1_0.length_nll}, and the sticky one \val{cethr.c1_0p25.sticky_nll} against
+\val{cethr.c1_0.sticky_nll}.
+
+\paragraph{The inputs and the architecture.} The ablations (Section~\ref{sec:abl}) show what each input contributes.
+
+%==========================================================================================================
+\section{Results}\label{sec:results}
+\paragraph{Metrics} (\texttt{formulas.tex}, Section~7). Each metric is computed per protein against its MD ensemble
+and then averaged over proteins.
+\begin{itemize}
+\item NLL: per frame over all 30{,}000 stored frames, with the density in nm$^{-1}$. It grows with $N$, so it compares
+  models only on the same proteins.
+\item $\mRg$ and $\sigma$ errors: mean absolute relative errors against the full-trajectory moments. The bias is the
+  signed mean.
+\item Skewness error: the mean absolute difference.
+\item $W_1$: the Wasserstein-1 distance to the stored frames, in \% of $\mRg$. The median is given, with the 90th
+  percentile in brackets.
+\item Compact chains: $\mRg_{\mathrm{MD}}<0.8\times$ the Flory baseline.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Scores of the released network and closed form. Compact: the number of compact chains in the set and their
+mean $\mRg$ error.}\label{tab:scores}
+\footnotesize
+\begin{tabular}{@{}l l r r r r r r l@{}}
+\toprule
+set & model & NLL & $\mRg$ err. & bias & $\sigma$ err. & skew err. & $W_1$ med.\ [p90] & compact\\
+\midrule
+validation (\val{net.val.n}) & network & \val{net.val.nll} & \pct{net.val.mean_err_pct} & \pct{net.val.bias_pct} &
+\pct{net.val.std_err_pct} & \val{net.val.skew_mae} & \pct{net.val.w1_pct_median} [\val{net.val.w1_pct_p90}] &
+\val{net.val.n_compact}: \pct{net.val.compact_mean_err_pct}\\
+& closed form & \val{cf.val.nll} & \pct{cf.val.mean_err_pct} & \pct{cf.val.bias_pct} & \pct{cf.val.std_err_pct} &
+\val{cf.val.skew_mae} & \pct{cf.val.w1_pct_median} [\val{cf.val.w1_pct_p90}] & \val{cf.val.n_compact}:
+\pct{cf.val.compact_mean_err_pct}\\
+\addlinespace
+test (\val{net.test.n}) & network & \val{net.test.nll} & \pct{net.test.mean_err_pct} & \pct{net.test.bias_pct} &
+\pct{net.test.std_err_pct} & \val{net.test.skew_mae} & \pct{net.test.w1_pct_median} [\val{net.test.w1_pct_p90}] &
+\val{net.test.n_compact}: \pct{net.test.compact_mean_err_pct}\\
+& closed form & \val{cf.test.nll} & \pct{cf.test.mean_err_pct} & \pct{cf.test.bias_pct} & \pct{cf.test.std_err_pct} &
+\val{cf.test.skew_mae} & \pct{cf.test.w1_pct_median} [\val{cf.test.w1_pct_p90}] & \val{cf.test.n_compact}:
+\pct{cf.test.compact_mean_err_pct}\\
+\addlinespace
+length (\val{net.length.n}) & network & \val{net.length.nll} & \pct{net.length.mean_err_pct} &
+\pct{net.length.bias_pct} & \pct{net.length.std_err_pct} & \val{net.length.skew_mae} &
+\pct{net.length.w1_pct_median} [\val{net.length.w1_pct_p90}] & \val{net.length.n_compact}:
+\pct{net.length.compact_mean_err_pct}\\
+& closed form & \val{cf.length.nll} & \pct{cf.length.mean_err_pct} & \pct{cf.length.bias_pct} &
+\pct{cf.length.std_err_pct} & \val{cf.length.skew_mae} & \pct{cf.length.w1_pct_median} [\val{cf.length.w1_pct_p90}]
+& \val{cf.length.n_compact}: \pct{cf.length.compact_mean_err_pct}\\
+\addlinespace
+sticky (\val{net.sticky.n}) & network & \val{net.sticky.nll} & \pct{net.sticky.mean_err_pct} &
+\pct{net.sticky.bias_pct} & \pct{net.sticky.std_err_pct} & \val{net.sticky.skew_mae} &
+\pct{net.sticky.w1_pct_median} [\val{net.sticky.w1_pct_p90}] & \val{net.sticky.n_compact}:
+\pct{net.sticky.compact_mean_err_pct}\\
+& closed form & \val{cf.sticky.nll} & \pct{cf.sticky.mean_err_pct} & \pct{cf.sticky.bias_pct} &
+\pct{cf.sticky.std_err_pct} & \val{cf.sticky.skew_mae} & \pct{cf.sticky.w1_pct_median} [\val{cf.sticky.w1_pct_p90}]
+& \val{cf.sticky.n_compact}: \pct{cf.sticky.compact_mean_err_pct}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Validation and test}
+\paragraph{Validation.} The network's median $\mRg$ error is \pct{net.val.mean_err_pct_median}, with the 90th
+percentile at \pct{net.val.mean_err_pct_p90} and the maximum at \pct{net.val.mean_err_pct_max}.
+\pct{net.val.within5_pct} of the proteins are within 5\%. The median $\sigma$ error is \pct{net.val.std_err_pct_median}.
+Pearson correlations with MD are $r=\val{net.val.r_mean}$ for $\mRg$ (MD range
+\val{net.val.md_mean_min}--\val{net.val.md_mean_max}~nm), \val{net.val.r_std} for $\sigma$ and \val{net.val.r_skew}
+for the skewness. The predicted $\nu$ spans \val{net.val.nu_min}--\val{net.val.nu_max}, with median
+\val{net.val.nu_median}.
+
+\paragraph{Test.} The test scores are close to validation (Table~\ref{tab:scores}). The network's median $\mRg$ error
+is \pct{net.test.mean_err_pct_median}, and \pct{net.test.within5_pct} of the proteins are within 5\%. The test split
+has \val{net.test.n_compact} compact chains, against \val{net.val.n_compact} in validation.
+
+\begin{table}[h]
+\centering
+\caption{$\mRg$ error / $\sigma$ error (\%) by chain length and by contact energy. CE quantiles are those of the
+training split ($q_{75}=\val{data.ce_q75}$, $q_{90}=\val{data.ce_q90}$).}\label{tab:by}
+\small
+\begin{tabular}{@{}l l c c c c c@{}}
+\toprule
+& & $N\le50$ & 51--100 & 101--200 & 201--300 & $>300$\\
+\midrule
+validation & $n$ & \val{net.val.by.N_le50.n} & \val{net.val.by.N_51_100.n} & \val{net.val.by.N_101_200.n} &
+\val{net.val.by.N_201_300.n} & \val{net.val.by.N_gt300.n}\\
+& network & \val{net.val.by.N_le50.mean_err_pct} / \val{net.val.by.N_le50.std_err_pct} &
+\val{net.val.by.N_51_100.mean_err_pct} / \val{net.val.by.N_51_100.std_err_pct} &
+\val{net.val.by.N_101_200.mean_err_pct} / \val{net.val.by.N_101_200.std_err_pct} &
+\val{net.val.by.N_201_300.mean_err_pct} / \val{net.val.by.N_201_300.std_err_pct} &
+\val{net.val.by.N_gt300.mean_err_pct} / \val{net.val.by.N_gt300.std_err_pct}\\
+& closed form & \val{cf.val.by.N_le50.mean_err_pct} / \val{cf.val.by.N_le50.std_err_pct} &
+\val{cf.val.by.N_51_100.mean_err_pct} / \val{cf.val.by.N_51_100.std_err_pct} &
+\val{cf.val.by.N_101_200.mean_err_pct} / \val{cf.val.by.N_101_200.std_err_pct} &
+\val{cf.val.by.N_201_300.mean_err_pct} / \val{cf.val.by.N_201_300.std_err_pct} &
+\val{cf.val.by.N_gt300.mean_err_pct} / \val{cf.val.by.N_gt300.std_err_pct}\\
+\addlinespace
+test & $n$ & \val{net.test.by.N_le50.n} & \val{net.test.by.N_51_100.n} & \val{net.test.by.N_101_200.n} &
+\val{net.test.by.N_201_300.n} & \val{net.test.by.N_gt300.n}\\
+& network & \val{net.test.by.N_le50.mean_err_pct} / \val{net.test.by.N_le50.std_err_pct} &
+\val{net.test.by.N_51_100.mean_err_pct} / \val{net.test.by.N_51_100.std_err_pct} &
+\val{net.test.by.N_101_200.mean_err_pct} / \val{net.test.by.N_101_200.std_err_pct} &
+\val{net.test.by.N_201_300.mean_err_pct} / \val{net.test.by.N_201_300.std_err_pct} &
+\val{net.test.by.N_gt300.mean_err_pct} / \val{net.test.by.N_gt300.std_err_pct}\\
+& closed form & \val{cf.test.by.N_le50.mean_err_pct} / \val{cf.test.by.N_le50.std_err_pct} &
+\val{cf.test.by.N_51_100.mean_err_pct} / \val{cf.test.by.N_51_100.std_err_pct} &
+\val{cf.test.by.N_101_200.mean_err_pct} / \val{cf.test.by.N_101_200.std_err_pct} &
+\val{cf.test.by.N_201_300.mean_err_pct} / \val{cf.test.by.N_201_300.std_err_pct} &
+\val{cf.test.by.N_gt300.mean_err_pct} / \val{cf.test.by.N_gt300.std_err_pct}\\
+\midrule
+& & $\mathrm{CE}\le q_{75}$ & $q_{75}$--$q_{90}$ & $\mathrm{CE}\ge q_{90}$ & compact & not compact\\
+\midrule
+validation & $n$ & \val{net.val.by.CE_le_q75.n} & \val{net.val.by.CE_q75_q90.n} & \val{net.val.by.CE_ge_q90.n} &
+\val{net.val.by.compact.n} & \val{net.val.by.not_compact.n}\\
+& network & \val{net.val.by.CE_le_q75.mean_err_pct} / \val{net.val.by.CE_le_q75.std_err_pct} &
+\val{net.val.by.CE_q75_q90.mean_err_pct} / \val{net.val.by.CE_q75_q90.std_err_pct} &
+\val{net.val.by.CE_ge_q90.mean_err_pct} / \val{net.val.by.CE_ge_q90.std_err_pct} &
+\val{net.val.by.compact.mean_err_pct} / \val{net.val.by.compact.std_err_pct} &
+\val{net.val.by.not_compact.mean_err_pct} / \val{net.val.by.not_compact.std_err_pct}\\
+& closed form & \val{cf.val.by.CE_le_q75.mean_err_pct} / \val{cf.val.by.CE_le_q75.std_err_pct} &
+\val{cf.val.by.CE_q75_q90.mean_err_pct} / \val{cf.val.by.CE_q75_q90.std_err_pct} &
+\val{cf.val.by.CE_ge_q90.mean_err_pct} / \val{cf.val.by.CE_ge_q90.std_err_pct} &
+\val{cf.val.by.compact.mean_err_pct} / \val{cf.val.by.compact.std_err_pct} &
+\val{cf.val.by.not_compact.mean_err_pct} / \val{cf.val.by.not_compact.std_err_pct}\\
+\addlinespace
+test & $n$ & \val{net.test.by.CE_le_q75.n} & \val{net.test.by.CE_q75_q90.n} & \val{net.test.by.CE_ge_q90.n} &
+\val{net.test.by.compact.n} & \val{net.test.by.not_compact.n}\\
+& network & \val{net.test.by.CE_le_q75.mean_err_pct} / \val{net.test.by.CE_le_q75.std_err_pct} &
+\val{net.test.by.CE_q75_q90.mean_err_pct} / \val{net.test.by.CE_q75_q90.std_err_pct} &
+\val{net.test.by.CE_ge_q90.mean_err_pct} / \val{net.test.by.CE_ge_q90.std_err_pct} &
+\val{net.test.by.compact.mean_err_pct} / \val{net.test.by.compact.std_err_pct} &
+\val{net.test.by.not_compact.mean_err_pct} / \val{net.test.by.not_compact.std_err_pct}\\
+& closed form & \val{cf.test.by.CE_le_q75.mean_err_pct} / \val{cf.test.by.CE_le_q75.std_err_pct} &
+\val{cf.test.by.CE_q75_q90.mean_err_pct} / \val{cf.test.by.CE_q75_q90.std_err_pct} &
+\val{cf.test.by.CE_ge_q90.mean_err_pct} / \val{cf.test.by.CE_ge_q90.std_err_pct} &
+\val{cf.test.by.compact.mean_err_pct} / \val{cf.test.by.compact.std_err_pct} &
+\val{cf.test.by.not_compact.mean_err_pct} / \val{cf.test.by.not_compact.std_err_pct}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Extrapolation}\label{sec:extrap}
+Each model was retrained, or refitted, on part of the training split and scored on training proteins outside it.
+Cluster mates of the scored proteins were removed from the fit set.
+\begin{itemize}
+\item \textbf{Length:} fit on $N\le200$ (\val{data.length.n_fit} proteins) and scored on $N\ge300$
+  (\val{data.length.n_eval}). The scored chains are up to \val{data.length.max_ratio}$\times$ longer than any fitted
+  chain.
+\item \textbf{Sticky:} fit on $\mathrm{CE}\le q_{75}$ (\val{data.sticky.n_fit}) and scored on $\mathrm{CE}\ge q_{90}$
+  (\val{data.sticky.n_eval}).
+\end{itemize}
+The scores are in Table~\ref{tab:scores}.
+\begin{itemize}
+\item Length extrapolation costs the network little: \pct{net.length.mean_err_pct} $\mRg$ error, against
+  \pct{net.val.by.N_gt300.mean_err_pct} for in-distribution validation chains with $N>300$.
+\item Sticky chains are the weak regime. Even in distribution ($\mathrm{CE}\ge q_{90}$, Table~\ref{tab:by}) the
+  network's $\sigma$ error is \pct{net.val.by.CE_ge_q90.std_err_pct}. Beyond the fitted range both models
+  over-predict $\mRg$ (network bias \pct{net.sticky.bias_pct}).
+\end{itemize}
+
+\subsection{Experimental benchmark}\label{sec:bench}
+\begin{center}
+\small
+\begin{tabular}{@{}l r r r r r@{}}
+\toprule
+& \multicolumn{2}{c}{against HPS1} & \multicolumn{3}{c}{against SAXS}\\
+\cmidrule(lr){2-3}\cmidrule(l){4-6}
+$\mRg$ & error & bias & error & bias & MAE (nm)\\
+\midrule
+network & \pct{net.benchmark.mean_err_vs_hps1_pct} & \pct{net.benchmark.bias_vs_hps1_pct} &
+\pct{net.benchmark.mean_err_vs_saxs_pct} & \pct{net.benchmark.bias_vs_saxs_pct} & \val{net.benchmark.mae_vs_saxs_nm}\\
+closed form & \pct{cf.benchmark.mean_err_vs_hps1_pct} & \pct{cf.benchmark.bias_vs_hps1_pct} &
+\pct{cf.benchmark.mean_err_vs_saxs_pct} & \pct{cf.benchmark.bias_vs_saxs_pct} & \val{cf.benchmark.mae_vs_saxs_nm}\\
+HPS1 simulation & -- & -- & \pct{data.benchmark.hps1_err_vs_saxs_pct} & \pct{data.benchmark.hps1_bias_vs_saxs_pct} &
+\val{net.benchmark.hps1_mae_vs_saxs_nm}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Against the HPS1 trajectories of the \val{data.n_benchmark} benchmark proteins, the network's $\mRg$ correlates with
+$r=\val{net.benchmark.r_vs_hps1}$. Its median $W_1$ is \pct{fig.fig4.rel_w1_pct.median} (\texttt{fig4}). Against
+SAXS it correlates with $r=\val{net.benchmark.r_vs_saxs}$, and HPS1 itself with $r=\val{data.benchmark.hps1_r_vs_saxs}$.
+The network is closer to SAXS than the simulation for \val{fig.fig13.network_closer_to_saxs} of the
+\val{data.n_benchmark} proteins. The model reproduces the force field, and its deviation from experiment is that of
+HPS1.
+
+\subsection{The closed form against the network}
+Over the validation proteins, the median of $\mathrm{KL}(p_{\mathrm{network}}\,\|\,p_{\mathrm{closed\,form}})$ is
+\val{fig.fig20.kl.percentiles.50}~nats, and its 95th percentile is \val{fig.fig20.kl.percentiles.95} (\texttt{fig20}).
+Against the exponents $\nu$ fitted to each protein's frames, $R^2=\val{fig.fig20.nu.r2_network_vs_fitted}$ for the
+network and \val{fig.fig20.nu.r2_closed_form_vs_fitted} for the closed form. The closed form's $\nu$ spans
+\val{fig.fig20.nu.closed_form.min}--\val{fig.fig20.nu.closed_form.max}, against
+\val{fig.fig20.nu.fitted.min}--\val{fig.fig20.nu.fitted.max} fitted and \val{fig.fig20.nu.network.min}--\val{fig.fig20.nu.network.max} for the network. Its largest losses are on compact chains, where
+the $\mRg$ error is \pct{cf.val.by.compact.mean_err_pct} against \pct{net.val.by.compact.mean_err_pct} for the network.
+
+%==========================================================================================================
+\section{Ablations}\label{sec:abl}
+Each row retrains the network, or refits the closed form, with one change from the released configuration
+(\texttt{idprg ablations}; \texttt{results/ablations.csv}). The grid has \val{abl.n_done} of its \val{abl.n_total}
+rows; rows not yet run show ``--''. Network rows use seed 42. Over seeds 42--46 the released configuration has
+validation NLL \val{abl.net.val.reference.seed_mean.nll}${}\pm{}$\val{abl.net.val.reference.seed_sd.nll} and $\mRg$
+error \pct{abl.net.val.reference.seed_mean.mean_err_pct}${}\pm{}$\val{abl.net.val.reference.seed_sd.mean_err_pct}
+(mean ${}\pm{}$ sd).
+
+\begin{table}[h]
+\centering
+\caption{Network ablations: validation NLL and $\mRg$ / $\sigma$ error (\%), and the $\mRg$ error (\%) on the two
+extrapolation splits.}\label{tab:abl}
+\small
+\begin{tabular}{@{}l r r r r r r@{}}
+\toprule
+& parameters & val NLL & val $\mRg$ & val $\sigma$ & length $\mRg$ & sticky $\mRg$\\
+\midrule
+reference & \val{abl.net.val.reference.n_parameters} & \val{abl.net.val.reference.nll} & \val{abl.net.val.reference.mean_err_pct} & \val{abl.net.val.reference.std_err_pct} & \val{abl.net.length.reference.mean_err_pct} & \val{abl.net.sticky.reference.mean_err_pct}\\
+$-s_+$ & \val{abl.net.val.no_scd_pos.n_parameters} & \val{abl.net.val.no_scd_pos.nll} & \val{abl.net.val.no_scd_pos.mean_err_pct} & \val{abl.net.val.no_scd_pos.std_err_pct} & \val{abl.net.length.no_scd_pos.mean_err_pct} & \val{abl.net.sticky.no_scd_pos.mean_err_pct}\\
+$-s_-$ & \val{abl.net.val.no_scd_neg.n_parameters} & \val{abl.net.val.no_scd_neg.nll} & \val{abl.net.val.no_scd_neg.mean_err_pct} & \val{abl.net.val.no_scd_neg.std_err_pct} & \val{abl.net.length.no_scd_neg.mean_err_pct} & \val{abl.net.sticky.no_scd_neg.mean_err_pct}\\
+$-$SHD & \val{abl.net.val.no_shd.n_parameters} & \val{abl.net.val.no_shd.nll} & \val{abl.net.val.no_shd.mean_err_pct} & \val{abl.net.val.no_shd.std_err_pct} & \val{abl.net.length.no_shd.mean_err_pct} & \val{abl.net.sticky.no_shd.mean_err_pct}\\
+$-$CE & \val{abl.net.val.no_contact_energy.n_parameters} & \val{abl.net.val.no_contact_energy.nll} & \val{abl.net.val.no_contact_energy.mean_err_pct} & \val{abl.net.val.no_contact_energy.std_err_pct} & \val{abl.net.length.no_contact_energy.mean_err_pct} & \val{abl.net.sticky.no_contact_energy.mean_err_pct}\\
+$-$FCR & \val{abl.net.val.no_fcr.n_parameters} & \val{abl.net.val.no_fcr.nll} & \val{abl.net.val.no_fcr.mean_err_pct} & \val{abl.net.val.no_fcr.std_err_pct} & \val{abl.net.length.no_fcr.mean_err_pct} & \val{abl.net.sticky.no_fcr.mean_err_pct}\\
+$-\mathrm{patch}_-$ & \val{abl.net.val.no_patch_neg.n_parameters} & \val{abl.net.val.no_patch_neg.nll} & \val{abl.net.val.no_patch_neg.mean_err_pct} & \val{abl.net.val.no_patch_neg.std_err_pct} & \val{abl.net.length.no_patch_neg.mean_err_pct} & \val{abl.net.sticky.no_patch_neg.mean_err_pct}\\
+$-\mathrm{patch}_0$ & \val{abl.net.val.no_patch_neu.n_parameters} & \val{abl.net.val.no_patch_neu.nll} & \val{abl.net.val.no_patch_neu.mean_err_pct} & \val{abl.net.val.no_patch_neu.std_err_pct} & \val{abl.net.length.no_patch_neu.mean_err_pct} & \val{abl.net.sticky.no_patch_neu.mean_err_pct}\\
+$-f_{\mathrm{sticky}}$ & \val{abl.net.val.no_frac_sticky.n_parameters} & \val{abl.net.val.no_frac_sticky.nll} & \val{abl.net.val.no_frac_sticky.mean_err_pct} & \val{abl.net.val.no_frac_sticky.std_err_pct} & \val{abl.net.length.no_frac_sticky.mean_err_pct} & \val{abl.net.sticky.no_frac_sticky.mean_err_pct}\\
+$\ln N$ only & \val{abl.net.val.ln_N_only.n_parameters} & \val{abl.net.val.ln_N_only.nll} & \val{abl.net.val.ln_N_only.mean_err_pct} & \val{abl.net.val.ln_N_only.std_err_pct} & \val{abl.net.length.ln_N_only.mean_err_pct} & \val{abl.net.sticky.ln_N_only.mean_err_pct}\\
+\addlinespace
+$128\times2$ & \val{abl.net.val.w128x2.n_parameters} & \val{abl.net.val.w128x2.nll} & \val{abl.net.val.w128x2.mean_err_pct} & \val{abl.net.val.w128x2.std_err_pct} & & \\
+$1024\times2$ & \val{abl.net.val.w1024x2.n_parameters} & \val{abl.net.val.w1024x2.nll} & \val{abl.net.val.w1024x2.mean_err_pct} & \val{abl.net.val.w1024x2.std_err_pct} & & \\
+$512\times1$ & \val{abl.net.val.w512x1.n_parameters} & \val{abl.net.val.w512x1.nll} & \val{abl.net.val.w512x1.mean_err_pct} & \val{abl.net.val.w512x1.std_err_pct} & & \\
+$512\times3$ & \val{abl.net.val.w512x3.n_parameters} & \val{abl.net.val.w512x3.nll} & \val{abl.net.val.w512x3.mean_err_pct} & \val{abl.net.val.w512x3.std_err_pct} & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Closed-form ablations, scored on validation. Each descriptor is removed everywhere it enters.}\label{tab:abl_cf}
+\small
+\begin{tabular}{@{}l r r r r r@{}}
+\toprule
+& parameters & NLL & $\mRg$ err.\ (\%) & $\sigma$ err.\ (\%) & $W_1$ median (\%)\\
+\midrule
+reference & \val{abl.cf.val.reference.n_parameters} & \val{abl.cf.val.reference.nll} & \val{abl.cf.val.reference.mean_err_pct} & \val{abl.cf.val.reference.std_err_pct} & \val{abl.cf.val.reference.w1_pct_median}\\
+$-s_+$ & \val{abl.cf.val.no_scd_pos.n_parameters} & \val{abl.cf.val.no_scd_pos.nll} & \val{abl.cf.val.no_scd_pos.mean_err_pct} & \val{abl.cf.val.no_scd_pos.std_err_pct} & \val{abl.cf.val.no_scd_pos.w1_pct_median}\\
+$-s_-$ & \val{abl.cf.val.no_scd_neg.n_parameters} & \val{abl.cf.val.no_scd_neg.nll} & \val{abl.cf.val.no_scd_neg.mean_err_pct} & \val{abl.cf.val.no_scd_neg.std_err_pct} & \val{abl.cf.val.no_scd_neg.w1_pct_median}\\
+$-\lam$ & \val{abl.cf.val.no_mean_hydro.n_parameters} & \val{abl.cf.val.no_mean_hydro.nll} & \val{abl.cf.val.no_mean_hydro.mean_err_pct} & \val{abl.cf.val.no_mean_hydro.std_err_pct} & \val{abl.cf.val.no_mean_hydro.w1_pct_median}\\
+$-h$ & \val{abl.cf.val.no_h.n_parameters} & \val{abl.cf.val.no_h.nll} & \val{abl.cf.val.no_h.mean_err_pct} & \val{abl.cf.val.no_h.std_err_pct} & \val{abl.cf.val.no_h.w1_pct_median}\\
+no $\ln N$ interactions & \val{abl.cf.val.no_ln_N_interactions.n_parameters} & \val{abl.cf.val.no_ln_N_interactions.nll} & \val{abl.cf.val.no_ln_N_interactions.mean_err_pct} & \val{abl.cf.val.no_ln_N_interactions.std_err_pct} & \val{abl.cf.val.no_ln_N_interactions.w1_pct_median}\\
+constant CE threshold & \val{abl.cf.val.constant_CE_threshold.n_parameters} & \val{abl.cf.val.constant_CE_threshold.nll} & \val{abl.cf.val.constant_CE_threshold.mean_err_pct} & \val{abl.cf.val.constant_CE_threshold.std_err_pct} & \val{abl.cf.val.constant_CE_threshold.w1_pct_median}\\
+free $\ln A$ & \val{abl.cf.val.free_ln_A.n_parameters} & \val{abl.cf.val.free_ln_A.nll} & \val{abl.cf.val.free_ln_A.mean_err_pct} & \val{abl.cf.val.free_ln_A.std_err_pct} & \val{abl.cf.val.free_ln_A.w1_pct_median}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{What the network ablations show.}
+\begin{itemize}
+\item \textbf{Charge decoration $s_+$} matters most. Without it the validation $\mRg$ error rises from
+  \pct{abl.net.val.reference.mean_err_pct} to \pct{abl.net.val.no_scd_pos.mean_err_pct}, and the length extrapolation
+  error from \pct{abl.net.length.reference.mean_err_pct} to \pct{abl.net.length.no_scd_pos.mean_err_pct}.
+\item \textbf{The contact energy} carries the sticky regime. Without it the sticky extrapolation error goes from
+  \pct{abl.net.sticky.reference.mean_err_pct} to \pct{abl.net.sticky.no_contact_energy.mean_err_pct}.
+\item \textbf{$s_-$, SHD and $\mathrm{patch}_-$}: leaving out any one of them raises the validation NLL and $\mRg$
+  error, by less than for $s_+$ or CE but by several times the spread between seeds.
+\item \textbf{FCR, $\mathrm{patch}_0$ and $f_{\mathrm{sticky}}$}: leaving out any one of them changes the scores by
+  about the spread between seeds.
+\item \textbf{Length alone} ($\ln N$ only) gives \pct{abl.net.val.ln_N_only.mean_err_pct}, so the sequence descriptors
+  carry most of the accuracy.
+\item \textbf{Architecture:} a wider or deeper network changes little; a narrower or shallower one is slightly worse.
+\end{itemize}
+
+%==========================================================================================================
+\section{Domain of validity}
+\begin{itemize}
+\item \textbf{Conditions.} HPS1 at 298~K and 150~mM only. Nothing in the model depends on temperature or salt.
+\item \textbf{Training ranges} (1st--99th percentile in brackets):
+  \begin{itemize}
+  \item $N=\val{data.range.N.min}$--\val{data.range.N.max} (\val{data.range.N.p01}--\val{data.range.N.p99});
+  \item $s_+\le\val{data.range.scd_pos.max}$ ($\le\val{data.range.scd_pos.p99}$);
+  \item $s_-\ge\val{data.range.scd_neg.min}$ ($\ge\val{data.range.scd_neg.p01}$);
+  \item CE from \val{data.range.contact_energy.min} to \val{data.range.contact_energy.max}
+    (\val{data.range.contact_energy.p01}--\val{data.range.contact_energy.p99});
+  \item $\lam=\val{data.range.mean_hydro.min}$--\val{data.range.mean_hydro.max}
+    (\val{data.range.mean_hydro.p01}--\val{data.range.mean_hydro.p99}).
+  \end{itemize}
+  \texttt{MODEL.md} lists all nine inputs.
+\item \textbf{Confident:} chains inside these ranges, with $\mathrm{CE}<q_{90}$ and not compact. There the network's
+  errors are at validation level.
+\item \textbf{Long chains.} Moderate length extrapolation is supported (Section~\ref{sec:extrap}). Nothing beyond
+  $N\approx500$ was tested.
+\item \textbf{Sticky chains} ($\mathrm{CE}\ge q_{90}$) are the weak regime, and more so beyond the fitted range.
+\item \textbf{Compact chains} ($\mRg_{\mathrm{MD}}<0.8\times$ Flory, about 5\%) are the least reliable. In validation
+  their $\mRg$ bias is \pct{net.val.by.compact.bias_pct} for the network and \pct{cf.val.by.compact.bias_pct} for the
+  closed form.
+\end{itemize}
+
+%==========================================================================================================
+\section{Reproducing and open items}
+\begin{itemize}
+\item \texttt{python tests/test\_reproduce.py} checks the released files against the stored results. It needs no MD
+  frames.
+\item \texttt{idprg evaluate}, \texttt{train}, \texttt{fit-closed-form}, \texttt{fit-md} and \texttt{ablations}
+  regenerate \texttt{results/}, given the frame store (\texttt{README.md}). After any of them, run
+  \texttt{python paper/make\_numbers.py} to update \texttt{numbers.tex} and the tables in \texttt{MODEL.md} and
+  \texttt{README.md}.
+\item \textbf{Open:} the ablation grid (\val{abl.n_done} of \val{abl.n_total} rows); literature citations (HPS1, SCD,
+  SHD, Victor--Lhuillier, MMseqs2, the SAXS sources).
+\end{itemize}
+
+\end{document}

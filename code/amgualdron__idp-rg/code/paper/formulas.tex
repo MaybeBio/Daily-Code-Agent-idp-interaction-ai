@@ -1,0 +1,251 @@
+\documentclass[11pt]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\input{numbers}
+
+\newcommand{\Rg}{R_g}
+\newcommand{\mRg}{\langle R_g\rangle}
+\newcommand{\lam}{\langle\lambda\rangle}
+\newcommand{\expit}{\operatorname{expit}}
+
+\title{Formulas and constants of the released model\\ \large \texttt{idprg} 1.0: the two-exponent network and its closed form}
+\date{27 October 2026}
+\author{}
+
+\begin{document}
+\maketitle
+
+\noindent Every formula the model uses, with every constant, in the order a prediction computes them. The reference
+implementation is the package \texttt{idprg}; each section names its module. Numbers are macros from
+\texttt{numbers.tex}, written by \texttt{make\_numbers.py} from \texttt{model/}, \texttt{data/} and \texttt{results/}.
+\texttt{summary.tex} describes the model and its results; \texttt{closed\_form.tex} is a standalone account of the closed
+form.
+
+\tableofcontents
+
+%==========================================================================================================
+\section{The output distribution}\label{sec:dist}
+\texttt{idprg/distribution.py}. With $s=\Rg/S_m$ (Victor and Lhuillier, J.\ Chem.\ Phys.\ 92, 1362 (1990), $d=3$):
+\begin{equation}\label{eq:p}
+p(\Rg)=\frac{1}{Z(A,\nu)\,S_m}\exp\!\Big[-A\Big(\frac{s^{\delta}}{\delta}+\frac{s^{-g}}{g}\Big)\Big],\qquad
+\delta=\frac{1}{1-\nu},\quad g=\frac{3}{3\nu-1},\quad \nu=\frac13+\frac23\expit(u),
+\end{equation}
+with $Z(A,\nu)=\int_0^\infty\exp[-A(s^\delta/\delta+s^{-g}/g)]\,ds$ and $\expit(u)=1/(1+e^{-u})$. The three parameters
+are $\ln A$, $\ln S_m$ and $u$.
+\begin{itemize}
+\item $S_m$ is the mode: $\partial_s\ln p=-A(s^{\delta-1}-s^{-g-1})=0$ at $s=1$.
+\item $\nu\in(1/3,1)$ sets the asymmetry: $\ln p\sim-s^{-g}$ on the compressed side, $\ln p\sim-s^{\delta}$ on the
+  stretched side. At $\nu=0.588$, $g=3.93$ and $\delta=2.43$.
+\item $A>0$ sets the width.
+\end{itemize}
+
+\paragraph{Quadrature.} $Z$, the moments, the CDF and the quantiles are trapezoidal sums in $t=\ln s$ on $[-3,2]$ with
+4{,}001 points, where the integrand is $e^{t}\exp[-A(e^{\delta t}/\delta+e^{-gt}/g)]$:
+\begin{equation}
+\langle\Rg^k\rangle=S_m^k\,\frac{\int e^{(k+1)t}\exp[-A(e^{\delta t}/\delta+e^{-gt}/g)]\,dt}
+{\int e^{t}\exp[-A(e^{\delta t}/\delta+e^{-gt}/g)]\,dt}.
+\end{equation}
+Arguments of the exponentials are capped at 700. Scored on an independent 10{,}001-point grid
+(Section~\ref{sec:metrics}), the density of every validation protein integrates to 1 within
+\val{net.val.max_mass_dev}.
+
+%==========================================================================================================
+\section{Sequence descriptors}\label{sec:desc}
+\texttt{idprg/descriptors.py}. Residue $i=1,\dots,N$ carries the HPS1 charge $q_i$ and hydropathy $\lambda_i$ (Dignon
+et al., PLoS Comput.\ Biol.\ 14, e1005941 (2018)):
+
+\begin{center}
+\small
+\begin{tabular}{@{}l *{10}{c}@{}}
+\toprule
+residue & A & R & N & D & C & Q & E & G & H & I\\
+$q$ & 0 & $+1$ & 0 & $-1$ & 0 & 0 & $-1$ & 0 & $+0.5$ & 0\\
+$\lambda$ & 0.730 & 0.000 & 0.432 & 0.378 & 0.595 & 0.514 & 0.459 & 0.649 & 0.514 & 0.973\\
+\midrule
+residue & L & K & M & F & P & S & T & W & Y & V\\
+$q$ & 0 & $+1$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+$\lambda$ & 0.973 & 0.514 & 0.838 & 1.000 & 1.000 & 0.595 & 0.676 & 0.946 & 0.865 & 0.892\\
+\bottomrule
+\end{tabular}
+\end{center}
+Only the 20 standard residues are accepted. Every descriptor except $\ln N$ is computed in double precision and then
+rounded to single precision, as in training.
+
+\begin{description}
+\item[Length.] $L=\ln N$.
+\item[Charge decoration.] $\mathrm{SCD}=\frac1N\sum_{i<j}q_iq_j\,(j-i)^{1/2}$ (Sawle and Ghosh, 2015);
+  $s=\operatorname{asinh}(5\,\mathrm{SCD}/N)$; $s_+=\max(s,0)$, $s_-=\min(s,0)$. Like charges dominating give $s_+>0$;
+  opposite charges segregated into blocks give $s_-<0$.
+\item[Hydropathy decoration.] $\mathrm{SHD}=\frac1N\sum_{i<j}(\lambda_i+\lambda_j)\,(j-i)^{-1}$ (Zheng et al., 2020).
+\item[Charge composition.] $\mathrm{FCR}$ is the fraction of residues with $q\neq0$. $\mathrm{patch}_-$ and
+  $\mathrm{patch}_0$ are the fractions of the $N-1$ adjacent pairs whose residues both have $q=-1$, or both $q=0$.
+\item[Sticky fraction.] $f_{\mathrm{sticky}}$ is the fraction of residues with $\lambda\ge0.85$ (I, L, F, P, W, Y, V).
+\item[Mean hydropathy.] $\lam=\frac1N\sum_i\lambda_i$. It enters the amplitude law and the closed form, not the
+  network's MLP.
+\item[Contact energy CE.] For each window width $w\in\{5,9,15,w_N\}$, $w_N=\max(3,\operatorname{round}(N/8))$, with
+  $2w\le N$:
+  \begin{enumerate}
+  \item window means $\bar q_a$, $\bar\lambda_a$ over residues $a,\dots,a+w-1$, for $a=0,\dots,N-w$;
+  \item for every pair $b-a\ge w$, the energy $E_{ab}=w\,[e_0+\alpha\bar q_a\bar q_b+\beta(\bar\lambda_a+\bar\lambda_b)/2]$
+    with $e_0=-0.0187838$, $\alpha=0.453248$, $\beta=-0.176328$;
+  \item the Gaussian-chain contact weight, with $x=(a+w/2)/N$, $y=(b+w/2)/N$, $\ell=y-x$:
+    $K_{ab}=1-6\,[\ell^3/12+(1-\ell)^3/6+\ell\,(x^2+(1-y)^2)/2+(1-\ell)\,\ell^2/6]$, floored at $10^{-12}$;
+  \item $S_w=\ln\sum_{b-a\ge w}(b-a)^{-3/2}K_{ab}\,e^{-E_{ab}/\tau}$ with $\tau=0.06$;
+  \item $z_w=(S_w-\mu_w)/\sigma_w$. For $w=5$, 9, 15 and $w_N$: $\mu_w=18.3490$, 26.1023, 37.9729, 55.8291 and
+    $\sigma_w=5.97878$, 7.61787, 10.1666, 31.5359.
+  \end{enumerate}
+  $\mathrm{CE}$ is the mean of the $z_w$ over the widths used, and 0 if there are none. $e_0,\alpha,\beta$ are the
+  least-squares fit of $B_{ij}/B^{\mathrm{rep}}_{ij}-1\approx e_0+\alpha q_iq_j+\beta(\lambda_i+\lambda_j)/2$ over the 210 residue pairs ($R^2=0.979$). Here $B_{ij}$ is the
+  second virial coefficient of the HPS1 pair potential at 298~K and 150~mM, and $B^{\mathrm{rep}}_{ij}$ that of its
+  repulsive part. $(\mu_w,\sigma_w)$ are the mean and sample standard deviation of $S_w$ over the training proteins
+  that use width $w$. All of these constants are frozen, so CE is a function of the sequence alone.
+\end{description}
+
+%==========================================================================================================
+\section{The network}\label{sec:net}
+\texttt{idprg/network.py}; weights in \texttt{model/network.eqx}, constants in \texttt{model/network.json}.
+\begin{align}
+\ln S_m&=b_S+\nu_F\,L+o_1(\mathbf z), \qquad u=u_0+o_2(\mathbf z),\label{eq:net}\\
+\ln A&=\kappa_0+\kappa_\nu\,\nu+\kappa_{\nu\nu}\,\nu^2+\frac{\kappa_N}{N}+\kappa_\lambda\lam+\kappa_+\,s_+ .\label{eq:law}
+\end{align}
+\begin{itemize}
+\item $\mathbf o=\mathrm{MLP}(\mathbf z)$: $9\to\val{net.width}\to\val{net.width}\to2$, GELU activations. With the six
+  law coefficients the network has \val{net.n_parameters} trained parameters. The last layer is initialised at zero, so training starts from the
+  population-average distribution.
+\item $\mathbf z$: the nine inputs $(L,s_+,s_-,\mathrm{SHD},\mathrm{CE},\mathrm{FCR},\mathrm{patch}_-,\mathrm{patch}_0,
+  f_{\mathrm{sticky}})$ standardized as $z_k=(x_k-m_k)/d_k$. $m_k$ and $d_k$ are the mean and population standard
+  deviation over the training proteins (Table~\ref{tab:z}).
+\item $\nu_F=\val{data.nu_F}$ is the exponent of the power law $\mRg=e^{\val{data.ln_a_F}}N^{\nu_F}$~nm fitted to the
+  training proteins.
+\item $b_S=\val{net.off.b_S}$ and $u_0=\val{net.off.u_0}$ are fixed. They are the means over the training proteins of
+  $\ln S_m-\nu_F L$ and of $u$ in the per-protein fits with $\ln A$ on the law (Section~\ref{sec:mdfit}).
+\item The six coefficients of the amplitude law \eqref{eq:law} are learned with the MLP:
+  $\kappa_0=\val{net.law.1}$, $\kappa_\nu=\val{net.law.nu}$, $\kappa_{\nu\nu}=\val{net.law.nu2}$,
+  $\kappa_N=\val{net.law.1_over_N}$, $\kappa_\lambda=\val{net.law.mean_hydro}$, $\kappa_+=\val{net.law.scd_pos}$. They start from least squares of the per-protein
+  free fits' $\ln A$ on the same covariates.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Standardization of the network inputs (training split).}\label{tab:z}
+\small
+\begin{tabular}{@{}l r r@{}}
+\toprule
+input & mean $m_k$ & sd $d_k$\\
+\midrule
+$L=\ln N$ & \val{net.input.log_seq_length.mean} & \val{net.input.log_seq_length.sd}\\
+$s_+$ & \val{net.input.scd_pos.mean} & \val{net.input.scd_pos.sd}\\
+$s_-$ & \val{net.input.scd_neg.mean} & \val{net.input.scd_neg.sd}\\
+SHD & \val{net.input.shd.mean} & \val{net.input.shd.sd}\\
+CE & \val{net.input.contact_energy.mean} & \val{net.input.contact_energy.sd}\\
+FCR & \val{net.input.fcr.mean} & \val{net.input.fcr.sd}\\
+$\mathrm{patch}_-$ & \val{net.input.patch_neg.mean} & \val{net.input.patch_neg.sd}\\
+$\mathrm{patch}_0$ & \val{net.input.patch_neu.mean} & \val{net.input.patch_neu.sd}\\
+$f_{\mathrm{sticky}}$ & \val{net.input.frac_sticky.mean} & \val{net.input.frac_sticky.sd}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Training} (\texttt{idprg train}). The loss is
+\begin{equation}
+\mathcal L=-\frac{1}{|B|\,K}\sum_{p\in B}\sum_{k=1}^{K}\ln p\big(\Rg^{(p,f_{pk})}\big),\qquad K=1{,}024,
+\end{equation}
+with the frames $f_{pk}$ drawn uniformly, with replacement, from the protein's 30{,}000 stored frames. The draw is
+repeated for every batch. There are no other terms.
+\begin{itemize}
+\item AdamW with learning rate $10^{-3}$ and cosine decay to 0 over all steps, weight decay $10^{-4}$, and global
+  gradient-norm clipping at 1.
+\item Batches of 64 proteins, \val{net.epochs} epochs over the \val{net.n_fit} training proteins, float64, seed
+  \val{net.seed} for initialisation, shuffling and frame draws.
+\item The last epoch is kept.
+\end{itemize}
+
+%==========================================================================================================
+\section{The closed form}\label{sec:cf}
+Implementation: \texttt{idprg/closed\_form.py}. Coefficients: \texttt{model/closed\_form.json}. Derivation and fit:
+\texttt{closed\_form.tex}. It keeps the distribution \eqref{eq:p} and replaces the network by
+\begin{align}
+\ln S_m &= b_0+b_L L+b_{LL}L^2+\beta_+s_++\beta_hh+\sum_{x\in\{s_-,\lam\}}(\beta_x+\beta_{xL}L)\,x,\\
+u &= \gamma_0+\gamma_+s_++\gamma_{+N}s_+/N+\gamma_-s_-+\gamma_\lambda\lam+\gamma_h h,\\
+\ln A &= a_0+a_\nu\nu+a_N/N+a_\lambda\lam,\\
+h &= \max\big(\mathrm{CE}-c(N),0\big),\qquad c(N)=\val{cf.c0}+\val{cf.c1}\,L .
+\end{align}
+It has \val{cf.n_coefficients} coefficients plus the two constants of $c(N)$, \val{cf.n_parameters} parameters in all:
+
+\begin{center}
+\small
+\begin{tabular}{@{}l r @{\hspace{1.2cm}} l r @{\hspace{1.2cm}} l r@{}}
+\toprule
+\multicolumn{2}{@{}l}{$\ln S_m$} & \multicolumn{2}{l}{$u$} & \multicolumn{2}{l@{}}{$\ln A$}\\
+\midrule
+$b_0$ & \val{cf.coef.ln_Sm.1} & $\gamma_0$ & \val{cf.coef.u.1} & $a_0$ & \val{cf.coef.ln_A.1}\\
+$b_L$ & \val{cf.coef.ln_Sm.log_seq_length} & $\gamma_{+N}$ & \val{cf.coef.u.scd_pos_over_N} & $a_\nu$ & \val{cf.coef.ln_A.nu}\\
+$b_{LL}$ & \val{cf.coef.ln_Sm.log_seq_length2} & $\gamma_+$ & \val{cf.coef.u.scd_pos} & $a_N$ & \val{cf.coef.ln_A.1_over_N}\\
+$\beta_{+}$ & \val{cf.coef.ln_Sm.scd_pos} & $\gamma_-$ & \val{cf.coef.u.scd_neg} & $a_\lambda$ & \val{cf.coef.ln_A.mean_hydro}\\
+$\beta_{-}$ & \val{cf.coef.ln_Sm.scd_neg} & $\gamma_\lambda$ & \val{cf.coef.u.mean_hydro} & & \\
+$\beta_{\lambda}$ & \val{cf.coef.ln_Sm.mean_hydro} & $\gamma_h$ & \val{cf.coef.u.h} & & \\
+$\beta_{h}$ & \val{cf.coef.ln_Sm.h} & & & & \\
+$\beta_{-L}$ & \val{cf.coef.ln_Sm.scd_neg.log_seq_length} & & & & \\
+$\beta_{\lambda L}$ & \val{cf.coef.ln_Sm.mean_hydro.log_seq_length} & & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Fit} (\texttt{idprg fit-closed-form}). The objective is the mean over the training proteins of the NLL per
+frame on all 30{,}000 stored frames. To it is added $(1/n)\,\|\boldsymbol\theta\|^2$ over the slopes of $\ln S_m$ and $u$
+on regressors z-scored over the fit proteins. The intercepts and the $\ln A$ coefficients are not penalised. The
+optimiser is L-BFGS-B in float64.
+\begin{itemize}
+\item \textbf{Start:} ridge regressions (penalty 1) of the per-protein free fits on the regressors, and least squares
+  for the $\ln A$ law.
+\item \textbf{CE threshold:} $c_0$ is the median of $\mathrm{CE}-c_1L$ over the fit proteins. $c_1=\val{cf.c1}$ was
+  chosen by three-fold cross-validation (\texttt{results/ce\_threshold\_cv.csv}).
+\item \textbf{End:} the objective converges to $\val{cf.objective_end}$.
+\end{itemize}
+
+%==========================================================================================================
+\section{Per-protein fits of the MD frames}\label{sec:mdfit}
+\texttt{idprg/mdfit.py}; \texttt{data/md\_fits.csv}. These fits only provide starting points and fixed offsets.
+\begin{itemize}
+\item \textbf{Free fit.} Maximum likelihood of \eqref{eq:p} on a protein's stored frames, over $(\ln A,\ln S_m,u)$ with
+  $\ln A\in[-5,12]$ and $u\in[-8,8]$. There are two starts, from a log-normal matched to the moments of $\ln\Rg$ (with
+  $\nu=0.588$ and $\nu=0.5$). Each start runs L-BFGS-B, then Nelder--Mead, and the best result is kept.
+\item \textbf{Law-constrained fit.} $\ln A$ is fixed to the law \eqref{eq:law}, with coefficients from least squares
+  on the free fits of a split's fit proteins, and $(\ln S_m,u)$ are fitted, starting from the free fit. There is one
+  such fit per split (columns \texttt{lnSm\_standard} and \texttt{u\_standard}, and likewise for \texttt{length} and \texttt{sticky}).
+\end{itemize}
+
+%==========================================================================================================
+\section{Splits}\label{sec:splits}
+\texttt{idprg/data.py}; \texttt{data/README.md}. MMseqs2 clusters at 30\% identity (80\% coverage), whole clusters to
+one split: \val{data.n_train} training, \val{data.n_val} validation, \val{data.n_test} test proteins
+(\val{data.n_clusters} clusters). Inside the training split:
+\begin{itemize}
+\item \textbf{Cross-validation:} three folds of whole clusters (the cluster order is permuted with seed 0).
+\item \textbf{Length:} fit on $N\le200$ (\val{data.length.n_fit} proteins), score on $N\ge300$
+  (\val{data.length.n_eval}).
+\item \textbf{Sticky:} fit on $\mathrm{CE}\le q_{75}=\val{data.ce_q75}$ (\val{data.sticky.n_fit}), score on
+  $\mathrm{CE}\ge q_{90}=\val{data.ce_q90}$ (\val{data.sticky.n_eval}). The quantiles are those of the training
+  split.
+\end{itemize}
+For length and sticky, fit proteins that share a cluster with a scored protein are removed.
+
+%==========================================================================================================
+\section{Metrics}\label{sec:metrics}
+\texttt{idprg/metrics.py}. Per protein, against its MD ensemble; then averaged over proteins.
+\begin{itemize}
+\item \textbf{NLL:} $-\frac{1}{F}\sum_{f}\ln p(\Rg^{(f)})$ over all $F=30{,}000$ stored frames, with $p$ in nm$^{-1}$.
+\item \textbf{Moments} of the prediction by the trapezoidal rule in $x=\ln(\Rg/\mRg_{\mathrm{MD}})$, on
+  $[-3,2]$ with 10{,}001 points. They are compared with the moments of the full MD trajectory. The $\mRg$ error is
+  $|\mRg_{\mathrm{pred}}/\mRg_{\mathrm{MD}}-1|$; the bias is the same without the absolute value, the $\sigma$ error is
+  the same for the standard deviation; the skewness error is
+  $|\gamma_{\mathrm{pred}}-\gamma_{\mathrm{MD}}|$.
+\item \textbf{$W_1$:} $\int|F_{\mathrm{pred}}(r)-\hat F_{\mathrm{MD}}(r)|\,dr$ on the same grid, where $\hat F_{\mathrm{MD}}$
+  is the empirical CDF of the stored frames. It is given in \% of $\mRg_{\mathrm{MD}}$, as the median and 90th
+  percentile over proteins.
+\item \textbf{Compact chain:} $\mRg_{\mathrm{MD}}<0.8\,e^{\val{data.ln_a_F}}N^{\val{data.nu_F}}$~nm.
+\end{itemize}
+
+\end{document}

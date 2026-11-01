@@ -1,8 +1,8 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/KULL-Centre/CALVADOS
-- 快照日期: 2026-10-28
-- 快照 commit: [`866321930af4`](https://github.com/KULL-Centre/CALVADOS/commit/866321930af416dedaeee2e3ec20ebcb5bd3b473)
+- 快照日期: 2026-11-01
+- 快照 commit: [`df7d12a3428a`](https://github.com/KULL-Centre/CALVADOS/commit/df7d12a3428a0151a9c4683e1300e086d67d8fa5)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
 ## 保留 (81 个文件, 336.2 KB)

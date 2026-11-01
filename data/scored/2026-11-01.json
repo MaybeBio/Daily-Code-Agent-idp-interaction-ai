@@ -1,0 +1,3090 @@
+[
+  {
+    "full_name": "deepseek-ai/DeepInfer",
+    "who": [
+      "Junchao-Zhu"
+    ],
+    "event": "star",
+    "stars": 24675,
+    "language": "Python",
+    "description": "DeepInfer: High-performance, large-scale inference framework for DeepSeek models",
+    "url": "https://github.com/deepseek-ai/DeepInfer",
+    "source": "watchlist",
+    "pushed_at": "2026-10-26T05:30:52Z",
+    "score": 0,
+    "one_liner": "DeepInfer 是 DeepSeek 大模型的高性能推理框架，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "7udwig",
+      "destari"
+    ],
+    "event": "star",
+    "stars": 16004,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco",
+    "source": "watchlist",
+    "pushed_at": "2026-11-01T00:31:54Z",
+    "score": 0,
+    "one_liner": "MuJoCo 是通用机器人/刚体动力学物理引擎，与 IDP/IDR 分子互作建模无关，无可迁移的分子互作机制建模思路。"
+  },
+  {
+    "full_name": "google-deepmind/alphafold",
+    "who": [
+      "sahirshahryar"
+    ],
+    "event": "star",
+    "stars": 14919,
+    "language": "Python",
+    "description": "Open source code for AlphaFold 2.",
+    "url": "https://github.com/google-deepmind/alphafold",
+    "source": "watchlist",
+    "pushed_at": "2026-04-22T17:58:21Z",
+    "score": 5,
+    "one_liner": "AlphaFold v2 官方实现，提供蛋白结构及 AlphaFold-Multimer 复合物预测，可作为无序蛋白互作建模的通用结构预测基础工具，但本身不专门面向 IDP/IDR。"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "ndesplaines"
+    ],
+    "event": "star",
+    "stars": 8708,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T23:28:25Z",
+    "score": 7,
+    "one_liner": "AlphaFold 3 是面向生物分子互作结构预测的深度学习工具，虽非专门针对 IDP/IDR，但其互作建模方法可迁移用于无序蛋白互作研究。"
+  },
+  {
+    "full_name": "google-deepmind/weathernext",
+    "who": [
+      "nayehyeon61-glitch",
+      "subaohuang"
+    ],
+    "event": "mixed",
+    "stars": 7726,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/weathernext",
+    "source": "watchlist",
+    "pushed_at": "2026-09-04T09:49:34Z",
+    "score": 0,
+    "one_liner": "WeatherNext 是 Google DeepMind 的全球天气与气旋预报模型（含 GraphCast/GenCast），与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/gemma",
+    "who": [
+      "Rananocka"
+    ],
+    "event": "star",
+    "stars": 5823,
+    "language": "Python",
+    "description": "Gemma open-weight LLM library, from Google DeepMind",
+    "url": "https://github.com/google-deepmind/gemma",
+    "source": "watchlist",
+    "pushed_at": "2026-10-28T02:38:40Z",
+    "score": 0,
+    "one_liner": "Google DeepMind 的 Gemma 大语言模型 JAX 实现库，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/open_spiel",
+    "who": [
+      "mahimn01",
+      "salim-assellalou"
+    ],
+    "event": "mixed",
+    "stars": 5567,
+    "language": "Python",
+    "description": "OpenSpiel is a collection of environments and algorithms for research in general reinforcement learning and search/planning in games.",
+    "url": "https://github.com/google-deepmind/open_spiel",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T21:52:08Z",
+    "score": 0,
+    "one_liner": "OpenSpiel 是 DeepMind 的强化学习博弈框架，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "parthnaik92"
+    ],
+    "event": "star",
+    "stars": 4298,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T11:03:05Z",
+    "score": 0,
+    "one_liner": "该仓库是 MuJoCo 物理引擎的机器人模型集合，与 IDP/IDR 分子互作建模完全无关。"
+  },
+  {
+    "full_name": "obsidianmd/pele",
+    "who": [
+      "kepano"
+    ],
+    "event": "push",
+    "stars": 3977,
+    "language": "TypeScript",
+    "description": "Renders Mermaid diagrams faster than you'd run from a volcano! 🌋 ",
+    "url": "https://github.com/obsidianmd/pele",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T00:21:43Z",
+    "score": 0,
+    "one_liner": "Pele 是一个将 Mermaid 图表渲染为 SVG 的 JavaScript 库，与无序蛋白/分子互作/AI 模拟方向完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "zaebee"
+    ],
+    "event": "star",
+    "stars": 3373,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills",
+    "source": "watchlist",
+    "pushed_at": "2026-10-23T13:14:09Z",
+    "score": 1,
+    "one_liner": "这是一个面向科学研究的AI代理技能集合，涵盖基因组学、结构生物学等，但未涉及IDP/IDR分子互作或相关建模方法，与课题无关。"
+  },
+  {
+    "full_name": "google-deepmind/optax",
+    "who": [
+      "Sonica-B"
+    ],
+    "event": "pr",
+    "stars": 2360,
+    "language": "Python",
+    "description": "Optax is a gradient processing and optimization library for JAX.",
+    "url": "https://github.com/google-deepmind/optax",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T17:57:06Z",
+    "score": 0,
+    "one_liner": "Optax 是 JAX 的梯度处理与优化器库，与无序蛋白/分子互作建模无关。"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_playground",
+    "who": [
+      "toekneema"
+    ],
+    "event": "fork",
+    "stars": 2268,
+    "language": "Python",
+    "description": "An open-source library for sim and real robot demos on top of MuJoCo.",
+    "url": "https://github.com/google-deepmind/mujoco_playground",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T12:30:12Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "google-deepmind/alphagenome",
+    "who": [
+      "albertlieyingadrian"
+    ],
+    "event": "star",
+    "stars": 2203,
+    "language": "Python",
+    "description": "This API provides programmatic access to the AlphaGenome model developed by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/alphagenome",
+    "source": "watchlist",
+    "pushed_at": "2026-10-15T13:23:12Z",
+    "score": 0,
+    "one_liner": "AlphaGenome是DNA调控编码预测模型，不涉及IDP/IDR或无序蛋白分子互作，与课题无关。"
+  },
+  {
+    "full_name": "ai4s-research/awesome-ai-for-science",
+    "url": "https://github.com/ai4s-research/awesome-ai-for-science",
+    "language": "",
+    "stars": 2064,
+    "description": "A curated list of awesome AI tools, libraries, papers, datasets, and frameworks that accelerate scientific discovery — from physics and chemistry to biology, materials, and beyond.",
+    "pushed_at": "2026-10-29T08:42:19Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是一个AI for Science的通用资源汇总仓库，涵盖文献管理、图表生成等工具，与IDP/IDR分子互作建模方向无关。"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_mpc",
+    "who": [
+      "parthnaik92"
+    ],
+    "event": "star",
+    "stars": 1758,
+    "language": "C++",
+    "description": "Real-time behaviour synthesis with MuJoCo, using Predictive Control",
+    "url": "https://github.com/google-deepmind/mujoco_mpc",
+    "source": "watchlist",
+    "pushed_at": "2026-10-29T19:42:58Z",
+    "score": 0,
+    "one_liner": "这是Google DeepMind的机器人实时预测控制框架，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "btaba",
+      "google-cla",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1594,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T00:13:52Z",
+    "score": 0,
+    "one_liner": "这是一个面向机器人学的GPU加速物理仿真器，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "tidyverse/rvest",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 1526,
+    "language": "R",
+    "description": "Simple web scraping for R",
+    "url": "https://github.com/tidyverse/rvest",
+    "source": "watchlist",
+    "pushed_at": "2026-10-27T20:54:41Z",
+    "score": 0,
+    "one_liner": "rvest 是 R 语言的网页抓取工具包，与无序蛋白/分子互作/AI 模拟方向完全无关。"
+  },
+  {
+    "full_name": "Vincentqyw/cv-arxiv-daily",
+    "url": "https://github.com/Vincentqyw/cv-arxiv-daily",
+    "language": "Python",
+    "stars": 1512,
+    "description": "🎓Automatically Update CV Papers Daily using Github Actions",
+    "pushed_at": "2026-10-31T04:10:04Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是计算机视觉与机器人领域（SLAM、SFM、NeRF等）的论文列表汇总，与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "jax-md/jax-md",
+    "url": "https://github.com/jax-md/jax-md",
+    "language": "Jupyter Notebook",
+    "stars": 1470,
+    "description": "Differentiable, Hardware Accelerated, Molecular Dynamics",
+    "pushed_at": "2026-10-26T02:58:15Z",
+    "source": "search",
+    "score": 4,
+    "one_liner": "JAX MD 是一个可微分、硬件加速的通用分子动力学库，可用于物理模拟，但本身不面向 IDP/IDR 或无序分子互作建模，仅作为底层 MD 工具具备间接迁移价值。"
+  },
+  {
+    "full_name": "tidyverse/purrr",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 1411,
+    "language": "R",
+    "description": "A functional programming toolkit for R",
+    "url": "https://github.com/tidyverse/purrr",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T21:35:24Z",
+    "score": 0,
+    "one_liner": "purrr 是 R 语言的函数式编程工具包，与无序蛋白、分子互作及 AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "github-actions",
+      "linrock"
+    ],
+    "event": "pr",
+    "stars": 1341,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T17:50:54Z",
+    "score": 0,
+    "one_liner": "该仓库是 Lean 形式化数学猜想集合，用于自动定理证明基准，与无序蛋白/分子互作/AI 模拟方向完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/materials_discovery",
+    "who": [
+      "nicolehao34"
+    ],
+    "event": "star",
+    "stars": 1249,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/materials_discovery",
+    "source": "watchlist",
+    "pushed_at": "2026-06-23T21:05:43Z",
+    "score": 0,
+    "one_liner": "GNoME 是无机晶体材料发现的图神经网络项目，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/synthid-text",
+    "who": [
+      "scorpion76snow-star"
+    ],
+    "event": "star",
+    "stars": 1221,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/synthid-text",
+    "source": "watchlist",
+    "pushed_at": "2026-10-26T10:57:23Z",
+    "score": 0,
+    "one_liner": "该仓库是SynthID文本水印技术的参考实现，用于标记和检测AI生成文本，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/meltingpot",
+    "who": [
+      "msquared812"
+    ],
+    "event": "star",
+    "stars": 903,
+    "language": "Python",
+    "description": "A suite of test scenarios for multi-agent reinforcement learning.",
+    "url": "https://github.com/google-deepmind/meltingpot",
+    "source": "watchlist",
+    "pushed_at": "2026-10-13T14:53:50Z",
+    "score": 0,
+    "one_liner": "该仓库是DeepMind的多智能体强化学习测试场景套件，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "harbor-framework/terminal-bench-science",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 796,
+    "language": "Python",
+    "description": "Terminal-Bench-Science: Evaluating AI agents on research workflows across scientific domains",
+    "url": "https://github.com/harbor-framework/terminal-bench-science",
+    "source": "watchlist",
+    "pushed_at": "2026-11-01T02:33:34Z",
+    "score": 0,
+    "one_liner": "这是一个跨科学领域的AI智能体基准测试仓库，不涉及IDP/IDR分子互作或相关建模方法，与课题完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/disco_rl",
+    "who": [
+      "ZekaiJ"
+    ],
+    "event": "star",
+    "stars": 748,
+    "language": "Python",
+    "description": "Accompanying code for \"Discovering State-of-the-art Reinforcement Algorithms\" Nature publication",
+    "url": "https://github.com/google-deepmind/disco_rl",
+    "source": "watchlist",
+    "pushed_at": "2025-12-02T16:58:41Z",
+    "score": 0,
+    "one_liner": "该仓库是强化学习算法发现工具，与无序蛋白分子互作建模完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "copybara-service"
+    ],
+    "event": "pr",
+    "stars": 746,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T18:34:54Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "tidyverse/stringr",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 671,
+    "language": "R",
+    "description": "A fresh approach to string manipulation in R",
+    "url": "https://github.com/tidyverse/stringr",
+    "source": "watchlist",
+    "pushed_at": "2026-10-27T13:51:19Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "google-deepmind/distrax",
+    "who": [
+      "Linxiushen"
+    ],
+    "event": "pr",
+    "stars": 658,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/distrax",
+    "source": "watchlist",
+    "pushed_at": "2026-10-20T11:27:08Z",
+    "score": 0,
+    "one_liner": "Distrax 是 DeepMind 的 JAX 概率分布与双射器库，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "tidyverse/multidplyr",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 650,
+    "language": "R",
+    "description": "A dplyr backend that partitions a data frame over multiple processes",
+    "url": "https://github.com/tidyverse/multidplyr",
+    "source": "watchlist",
+    "pushed_at": "2026-10-27T15:40:16Z",
+    "score": 0,
+    "one_liner": "该仓库是R语言并行计算工具，用于数据框分区处理，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "feross/bitmidi.com",
+    "who": [
+      "feross"
+    ],
+    "event": "mixed",
+    "stars": 620,
+    "language": "JavaScript",
+    "description": "🎹 Listen to free MIDI songs, download the best MIDI files, and share the best MIDIs on the web",
+    "url": "https://github.com/feross/bitmidi.com",
+    "source": "watchlist",
+    "pushed_at": "2026-10-27T09:02:27Z",
+    "score": 0,
+    "one_liner": "BitMidi 是一个 MIDI 音乐文件分享网站，与无序蛋白/分子互作/AI 模拟方向完全无关。"
+  },
+  {
+    "full_name": "kennethreitz/simplemind",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "issue",
+    "stars": 537,
+    "language": "Python",
+    "description": "Python API client for AI providers that intends to replace LangChain and LangGraph for most common use cases.",
+    "url": "https://github.com/kennethreitz/simplemind",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T15:41:21Z",
+    "score": 0,
+    "one_liner": "Simplemind 是一个统一封装多家 LLM API 的通用 Python 库，与无序蛋白/分子互作建模完全无关。"
+  },
+  {
+    "full_name": "JuliaMolSim/Molly.jl",
+    "url": "https://github.com/JuliaMolSim/Molly.jl",
+    "language": "Julia",
+    "stars": 501,
+    "description": "Molecular simulation in Julia",
+    "pushed_at": "2026-10-28T12:26:41Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "Molly.jl 是纯 Julia 的通用分子动力学模拟包，支持可微分模拟与无序蛋白力场开发，可作为 IDP 互作物理模拟的底层 MD 引擎，但本身不直接面向无序分子互作机制建模。"
+  },
+  {
+    "full_name": "Beliavsky/Fortran-code-on-GitHub",
+    "url": "https://github.com/Beliavsky/Fortran-code-on-GitHub",
+    "language": "",
+    "stars": 389,
+    "description": "Directory of Fortran codes on GitHub, arranged by topic",
+    "pushed_at": "2026-10-28T10:43:40Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个Fortran语言代码仓库索引，涵盖天文、音乐、化学等多个领域，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/physics-IQ-benchmark",
+    "who": [
+      "xdeng7"
+    ],
+    "event": "star",
+    "stars": 387,
+    "language": "Python",
+    "description": "Benchmarking physical understanding in generative video models",
+    "url": "https://github.com/google-deepmind/physics-IQ-benchmark",
+    "source": "watchlist",
+    "pushed_at": "2026-10-20T14:11:58Z",
+    "score": 0,
+    "one_liner": "Physics-IQ 是评估生成式视频模型物理理解能力的基准数据集，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "plinder-org/plinder",
+    "who": [
+      "Ninjani"
+    ],
+    "event": "push",
+    "stars": 316,
+    "language": "Python",
+    "description": "Protein Ligand INteraction Dataset and Evaluation Resource",
+    "url": "https://github.com/plinder-org/plinder",
+    "source": "watchlist",
+    "pushed_at": "2026-10-28T21:40:10Z",
+    "score": 4,
+    "one_liner": "PLINDER是蛋白-配体/蛋白-蛋白相互作用的结构数据集与评估资源，面向折叠蛋白和小分子，不涉及IDP/IDR，但互作建模思路可部分迁移。"
+  },
+  {
+    "full_name": "AspirinCode/awesome-AI4MolConformation-MD",
+    "url": "https://github.com/AspirinCode/awesome-AI4MolConformation-MD",
+    "language": "",
+    "stars": 306,
+    "description": "List of molecules (small molecules, RNA, peptide, protein, enzymes, antibody,  and PPIs)  conformations and molecular dynamics (force fields) using generative artificial intelligence and deep learning",
+    "pushed_at": "2026-10-31T11:59:27Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "这是一个AI4分子构象与分子动力学方法的资源列表仓库，涵盖IDP构象系综与分子互作相关综述，但缺乏实质算法实现，作为工具价值有限。"
+  },
+  {
+    "full_name": "PDB-REDO/dssp",
+    "who": [
+      "npfernandes"
+    ],
+    "event": "star",
+    "stars": 279,
+    "language": "C++",
+    "description": "Application to assign secondary structure to proteins",
+    "url": "https://github.com/PDB-REDO/dssp",
+    "source": "watchlist",
+    "pushed_at": "2026-08-12T12:38:16Z",
+    "score": 1,
+    "one_liner": "DSSP是蛋白质二级结构指认工具，不涉及IDP/IDR分子互作、AI或物理模拟建模，与课题方向基本无关。"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "ShearmanChua"
+    ],
+    "event": "star",
+    "stars": 276,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope",
+    "source": "watchlist",
+    "pushed_at": "2026-10-24T13:43:09Z",
+    "score": 0,
+    "one_liner": "DetectorScope 是用于可解释 AI 文本检测的稀疏自编码器工具，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "molence/Mol-1",
+    "who": [
+      "Immortals-33",
+      "Zuricho",
+      "meneshail"
+    ],
+    "event": "star",
+    "stars": 233,
+    "language": "Python",
+    "description": "Open Frontier Biomolecular Intelligence",
+    "url": "https://github.com/molence/Mol-1",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T14:06:33Z",
+    "score": 3,
+    "one_liner": "Mol-1 是一个通用的生物分子结构预测模型，支持蛋白、DNA、RNA 和配体复合物，但未明确面向 IDP/IDR 或无序分子互作机制建模，相关性较弱。"
+  },
+  {
+    "full_name": "AI-in-Transportation-Lab/awesome-mechanistic-interpretability",
+    "url": "https://github.com/AI-in-Transportation-Lab/awesome-mechanistic-interpretability",
+    "language": "JavaScript",
+    "stars": 170,
+    "description": "A carefully curated collection of high-quality libraries, projects, tutorials, research papers, and other essential resources focused on Mechanistic Interpretability, a growing subfield in machine learning interpretability research that aims to reverse-engineer neural networks into understandable computational components.",
+    "pushed_at": "2026-10-31T03:43:51Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是机器学习可解释性（Mechanistic Interpretability）的论文与资源汇总，与无序蛋白/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "google-deepmind/mishax",
+    "who": [
+      "sylvesterkaczmarek"
+    ],
+    "event": "issue",
+    "stars": 158,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/mishax",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T20:08:33Z",
+    "score": 0,
+    "one_liner": "Mishax 是用于大语言模型机制可解释性研究的 JAX 工具库，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "evo-design/proto-tools",
+    "who": [
+      "bviggiano"
+    ],
+    "event": "pr",
+    "stars": 142,
+    "language": "Python",
+    "description": "A universal infrastructure layer for generative biology",
+    "url": "https://github.com/evo-design/proto-tools",
+    "source": "watchlist",
+    "pushed_at": "2026-11-01T01:31:12Z",
+    "score": 3,
+    "one_liner": "Proto Tools 是一个综合性的计算生物学工具包，涵盖多种生物信息学和AI工具，但未专门针对IDP/IDR分子互作，仅部分工具（如binder_design）可能间接相关。"
+  },
+  {
+    "full_name": "katopz/katgpt-rs",
+    "url": "https://github.com/katopz/katgpt-rs",
+    "language": "Rust",
+    "stars": 140,
+    "description": "A neuro-symbolic micro-Transformer with speculative decoding, constraint pruning, recurrent attention, and adaptive test-time scaling — built in Rust.",
+    "pushed_at": "2026-10-31T23:45:32Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是一个通用神经符号微Transformer的Rust实现，专注于LLM推理加速与游戏AI，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "tyang816/Awesome-TCM-LLM",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 133,
+    "language": "Python",
+    "description": "开源中医大模型、数据、新闻、专利合集 (Open-source Traditional Chinese Medical Large Language Models, Datasets, News and Patents hub.)",
+    "url": "https://github.com/tyang816/Awesome-TCM-LLM",
+    "source": "watchlist",
+    "pushed_at": "2026-10-29T08:25:20Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "PDB-REDO/alphafill",
+    "who": [
+      "dependabot"
+    ],
+    "event": "pr",
+    "stars": 126,
+    "language": "C++",
+    "description": "AlphaFill is an algorithm based on sequence and structure similarity that “transplants” missing compounds to the AlphaFold models. By adding the molecular context to the protein structures, the models can be more easily appreciated in terms of function and structure integrity.",
+    "url": "https://github.com/PDB-REDO/alphafill",
+    "source": "watchlist",
+    "pushed_at": "2026-10-26T10:07:57Z",
+    "score": 2,
+    "one_liner": "AlphaFill 通过序列/结构相似性把缺失的配体/化合物移植到 AlphaFold 折叠蛋白模型上，属于折叠蛋白-小分子配体补全工具，与 IDP/IDR 介导的分子互作机制建模无关。"
+  },
+  {
+    "full_name": "KULL-Centre/CALVADOS",
+    "who": [
+      "gitesei",
+      "sobuelow"
+    ],
+    "event": "mixed",
+    "stars": 104,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/CALVADOS",
+    "source": "watchlist",
+    "pushed_at": "2026-10-28T14:24:14Z",
+    "score": 8,
+    "one_liner": "CALVADOS 是基于 OpenMM 的粗粒化隐溶剂模拟工具，专门用于固有无序蛋白（IDP）的构象与液-液相分离行为建模，直接服务于无序蛋白互作与凝聚体机制研究。"
+  },
+  {
+    "full_name": "google-deepmind/amplio",
+    "who": [
+      "Da-Huang"
+    ],
+    "event": "other",
+    "stars": 99,
+    "language": "Go",
+    "description": "Amplio: A Lightweight Agent Harness for Robust and Long-Horizon Runs",
+    "url": "https://github.com/google-deepmind/amplio",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T23:01:12Z",
+    "score": 0,
+    "one_liner": "Amplio 是一个通用的多智能体运行框架（agent harness），与无序蛋白/分子互作建模完全无关。"
+  },
+  {
+    "full_name": "feross/play.cash",
+    "who": [
+      "feross"
+    ],
+    "event": "mixed",
+    "stars": 91,
+    "language": "JavaScript",
+    "description": "🎶 Music lovers, rejoice.",
+    "url": "https://github.com/feross/play.cash",
+    "source": "watchlist",
+    "pushed_at": "2026-10-27T09:02:31Z",
+    "score": 0,
+    "one_liner": "这是一个音乐视频网站项目，与无序蛋白、分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "feross/feross.org",
+    "who": [
+      "feross"
+    ],
+    "event": "mixed",
+    "stars": 81,
+    "language": "HTML",
+    "description": "Pure concentrated awesome (a.k.a. my blog)",
+    "url": "https://github.com/feross/feross.org",
+    "source": "watchlist",
+    "pushed_at": "2026-10-27T09:02:59Z",
+    "score": 0,
+    "one_liner": "这是个人博客源码仓库，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "nucloid1"
+    ],
+    "event": "star",
+    "stars": 80,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling",
+    "source": "watchlist",
+    "pushed_at": "2026-10-29T16:04:00Z",
+    "score": 6,
+    "one_liner": "STARLING 是用扩散模型从序列预测固有无序区域（IDR）构象集合的工具，直接面向 IDP 对象且方法为 AI 生成模型，但聚焦单链构象系综生成，未涉及 IDP 介导的分子互作/结合界面建模。"
+  },
+  {
+    "full_name": "THGLab/LP-PDBBind",
+    "who": [
+      "MTVarman"
+    ],
+    "event": "issue",
+    "stars": 75,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/THGLab/LP-PDBBind",
+    "source": "watchlist",
+    "pushed_at": "2025-07-13T13:19:27Z",
+    "score": 2,
+    "one_liner": "该仓库聚焦PDBBind数据集清洗与打分函数重训练，面向折叠蛋白-小分子对接，与IDP/IDR分子互作机制建模无关。"
+  },
+  {
+    "full_name": "google-deepmind/cryptids",
+    "who": [
+      "Meganeuridae"
+    ],
+    "event": "issue",
+    "stars": 70,
+    "language": "Lean",
+    "description": "Some Cryptids and Lean proofs",
+    "url": "https://github.com/google-deepmind/cryptids",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T23:23:08Z",
+    "score": 0,
+    "one_liner": "该仓库是Lean 4形式化验证的图灵机与忙碌海狸项目，与无序蛋白分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "giacomo-janson/sam2",
+    "url": "https://github.com/giacomo-janson/sam2",
+    "language": "Python",
+    "stars": 41,
+    "description": "Deep generative modeling of protein structural ensembles",
+    "pushed_at": "2026-10-26T21:02:34Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "google-deepmind/multiscope",
+    "who": [
+      "dependabot"
+    ],
+    "event": "pr",
+    "stars": 37,
+    "language": "Go",
+    "description": "Real-time visualisation",
+    "url": "https://github.com/google-deepmind/multiscope",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T23:22:52Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "julie-forman-kay-lab/IDPConformerGenerator",
+    "url": "https://github.com/julie-forman-kay-lab/IDPConformerGenerator",
+    "language": "Python",
+    "stars": 36,
+    "description": "Build conformational representations of Intrinsically Disordered Proteins and Regions by a guided sampling of the protein torsion space",
+    "pushed_at": "2026-10-28T19:38:30Z",
+    "source": "search",
+    "score": 7,
+    "one_liner": "IDPConformerGenerator 是面向固有无序蛋白/无序区域构象系综生成的模块化平台，通过采样骨架二面角构建无序态构象池，为后续互作建模与实验数据匹配提供输入，但本身不直接实现分子互作预测。"
+  },
+  {
+    "full_name": "hrlblab/computer_vision_spatial_omics",
+    "who": [
+      "Junchao-Zhu"
+    ],
+    "event": "push",
+    "stars": 35,
+    "language": "",
+    "description": "Awesome generative spatial omics tools",
+    "url": "https://github.com/hrlblab/computer_vision_spatial_omics",
+    "source": "watchlist",
+    "pushed_at": "2026-10-28T19:40:54Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "YuzeHao2023/daily-arxiv-ai4chem",
+    "url": "https://github.com/YuzeHao2023/daily-arxiv-ai4chem",
+    "language": "Python",
+    "stars": 32,
+    "description": "🎓Automatically Update AI4Chem Papers Daily using Github Actions",
+    "pushed_at": "2026-10-26T14:52:34Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是一个泛化的分子表示与图神经网络论文汇总仓库，不涉及IDP/IDR或分子互作机制建模，与课题方向无关。"
+  },
+  {
+    "full_name": "THGLab/CSpred",
+    "who": [
+      "npfernandes"
+    ],
+    "event": "star",
+    "stars": 30,
+    "language": "Python",
+    "description": "UCBShift is a program for predicting chemical shifts for backbone atoms and β-carbon of a protein in solution. It utilizes a machine learning module that makes predictions from features extracted from the 3D structures of the proteins.",
+    "url": "https://github.com/THGLab/CSpred",
+    "source": "watchlist",
+    "pushed_at": "2026-08-13T05:25:42Z",
+    "score": 1,
+    "one_liner": "UCBShift 是预测蛋白质化学位移的工具，与无序蛋白分子互作建模无关。"
+  },
+  {
+    "full_name": "google-deepmind/synthidbio",
+    "who": [
+      "scorpion76snow-star"
+    ],
+    "event": "star",
+    "stars": 27,
+    "language": "",
+    "description": "SynthID Bio is a family of methods developed by Google DeepMind for embedding highly detectable yet function-preserving watermarks directly into AI-generated biological sequences and structures.",
+    "url": "https://github.com/google-deepmind/synthidbio",
+    "source": "watchlist",
+    "pushed_at": "2026-10-08T16:50:50Z",
+    "score": 1,
+    "one_liner": "该仓库是Google DeepMind的SynthID Bio，用于给AI生成的蛋白质序列和结构添加水印，与IDP/IDR分子互作建模无关。"
+  },
+  {
+    "full_name": "tfatykhov/awesome-agent-memory",
+    "url": "https://github.com/tfatykhov/awesome-agent-memory",
+    "language": "",
+    "stars": 24,
+    "description": "Curated research on memory systems for LLM agents",
+    "pushed_at": "2026-10-25T11:40:43Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是LLM智能体记忆系统的论文资源列表，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "push",
+    "stars": 22,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot",
+    "source": "watchlist",
+    "pushed_at": "2026-10-26T14:45:09Z",
+    "score": 7,
+    "one_liner": "PARROT 是一个基于双向循环神经网络的通用蛋白质序列-残基属性预测工具，可训练用于 IDP/IDR 相关无序属性预测，但非直接面向分子互作机制建模。"
+  },
+  {
+    "full_name": "zeleny-ondrej/STNN-Weekly-Arxiv",
+    "url": "https://github.com/zeleny-ondrej/STNN-Weekly-Arxiv",
+    "language": "Python",
+    "stars": 20,
+    "description": "Scraping repository of the most relevant topics with regards to Spatio-Temporal Neural Networks available in the arXiv archive. The repository and workflow is based on https://github.com/SpikingChen/SNN-Daily-Arxiv.",
+    "pushed_at": "2026-10-27T01:00:14Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是泛时空神经网络方向的arXiv论文列表，与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "YuzeHao2023/daily-arxiv-ai4bio",
+    "url": "https://github.com/YuzeHao2023/daily-arxiv-ai4bio",
+    "language": "Python",
+    "stars": 20,
+    "description": "🎓Automatically Update AI4Bio Papers Daily using Github Actions",
+    "pushed_at": "2026-10-26T14:57:58Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "这是一个泛化的生物信息学论文列表仓库，涵盖蛋白质结构、抗体、基因组学等多个领域，未聚焦IDP/IDR分子互作，也无实质算法或工具实现。"
+  },
+  {
+    "full_name": "AtharvaTilewale/boltz2-notebook",
+    "url": "https://github.com/AtharvaTilewale/boltz2-notebook",
+    "language": "Python",
+    "stars": 19,
+    "description": "Boltz2 Notebook – A streamlined Colab-based pipeline for protein structure prediction and binding affinity analysis using the Boltz2 deep learning model.",
+    "pushed_at": "2026-10-27T15:55:45Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "该仓库是 Boltz-2 的 Colab 封装工具，提供生物分子结构预测与结合亲和力预测，虽非专门针对 IDP/IDR，但可迁移用于无序蛋白参与的分子互作建模。"
+  },
+  {
+    "full_name": "leelige/article",
+    "url": "https://github.com/leelige/article",
+    "language": "JavaScript",
+    "stars": 18,
+    "description": "",
+    "pushed_at": "2026-10-31T13:57:49Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "rotemTsafrir/antenna_sim",
+    "url": "https://github.com/rotemTsafrir/antenna_sim",
+    "language": "JavaScript",
+    "stars": 18,
+    "description": "Interactive electromagnetic field and antenna simulator featuring dipoles, loops, phased arrays, passive PEC elements, and real-time field visualization.",
+    "pushed_at": "2026-10-31T09:57:02Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "delalamo/SAbR",
+    "who": [
+      "delalamo"
+    ],
+    "event": "mixed",
+    "stars": 17,
+    "language": "Python",
+    "description": "Structure-based antibody renumbering",
+    "url": "https://github.com/delalamo/SAbR",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T18:59:41Z",
+    "score": 1,
+    "one_liner": "该仓库是抗体残基编号工具，与IDP/IDR分子互作建模无关，无可迁移的互作机制建模思路。"
+  },
+  {
+    "full_name": "kennethreitz/kennethreitz.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 16,
+    "language": "Python",
+    "description": "The source code of kennethreitz.org.",
+    "url": "https://github.com/kennethreitz/kennethreitz.org",
+    "source": "watchlist",
+    "pushed_at": "2026-10-25T21:58:45Z",
+    "score": 0,
+    "one_liner": "这是一个个人网站/数字花园项目，与IDP/IDR分子互作、AI或物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "YuzeHao2023/daily-arxiv-ai4physics",
+    "url": "https://github.com/YuzeHao2023/daily-arxiv-ai4physics",
+    "language": "Python",
+    "stars": 16,
+    "description": "🎓Automatically Update AI4Physics Papers Daily using Github Actions",
+    "pushed_at": "2026-10-26T14:36:58Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是科学机器学习与PDE/物理系统方向的arXiv论文汇总，完全不涉及IDP/IDR、分子互作或相关AI/模拟方法。"
+  },
+  {
+    "full_name": "YuzeHao2023/daily-arxiv-ai4math",
+    "url": "https://github.com/YuzeHao2023/daily-arxiv-ai4math",
+    "language": "Python",
+    "stars": 15,
+    "description": "🎓Automatically Update AI4math Papers Daily using Github Actions",
+    "pushed_at": "2026-10-26T14:47:43Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是形式化方法与自动推理领域的 arXiv 论文汇总列表，与无序蛋白/分子互作/AI 模拟方向完全无关。"
+  },
+  {
+    "full_name": "YuzeHao2023/daily-arxiv-ai4cheme",
+    "url": "https://github.com/YuzeHao2023/daily-arxiv-ai4cheme",
+    "language": "Python",
+    "stars": 14,
+    "description": "🎓Automatically Update AI4Chemical-Engineering Papers Daily using Github Actions",
+    "pushed_at": "2026-10-26T15:00:32Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是化学工程领域的 arXiv 论文汇总列表，涉及过程建模、控制优化、反应工程等，与无序蛋白/IDR 分子互作及 AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "lovetaro/selectbench",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 13,
+    "language": "Python",
+    "description": "SelectBench: selectivity benchmark for structure-based generative models",
+    "url": "https://github.com/lovetaro/selectbench",
+    "source": "watchlist",
+    "pushed_at": "2026-10-20T03:05:13Z",
+    "score": 1,
+    "one_liner": "SelectBench 是面向基于结构的生成式药物设计的选择性评估基准，用分子对接评估小分子对靶点/脱靶的选择性，与 IDP/IDR 介导的分子互作机制建模无关。"
+  },
+  {
+    "full_name": "holehouse-lab/soursop",
+    "who": [
+      "npfernandes"
+    ],
+    "event": "star",
+    "stars": 13,
+    "language": "Jupyter Notebook",
+    "description": "SOURSOP is an analysis suite for molecular simulations of intrinsically disordered proteins",
+    "url": "https://github.com/holehouse-lab/soursop",
+    "source": "watchlist",
+    "pushed_at": "2026-10-01T15:57:55Z",
+    "score": 7,
+    "one_liner": "SOURSOP 是面向 IDP/IDR 模拟轨迹的构象分析工具，虽不直接预测分子互作，但提供无序蛋白构象与重加权方法，可支撑互作机制建模。"
+  },
+  {
+    "full_name": "evo-design/antiGen",
+    "who": [
+      "SamuelSchultz124"
+    ],
+    "event": "fork",
+    "stars": 10,
+    "language": "C++",
+    "description": "Codebase for: Forecasting viral evolution from phylogenetic trees (Specht et al., 2026)",
+    "url": "https://github.com/evo-design/antiGen",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T20:41:26Z",
+    "score": 1,
+    "one_liner": "antiGen 是预测病毒蛋白未来突变的进化模型，不涉及 IDP/IDR 或无序蛋白分子互作，与课题方向无关。"
+  },
+  {
+    "full_name": "magnusross/pgd-hallucination",
+    "who": [
+      "Immortals-33"
+    ],
+    "event": "star",
+    "stars": 10,
+    "language": "Python",
+    "description": "Code for the paper \"Projected Gradient Descent for Hallucination-Based Protein Binder Design\"",
+    "url": "https://github.com/magnusross/pgd-hallucination",
+    "source": "watchlist",
+    "pushed_at": "2026-10-15T14:19:47Z",
+    "score": 2,
+    "one_liner": "该仓库是面向折叠蛋白的蛋白结合剂序列优化工具，不涉及IDP/IDR或无序介导的分子互作机制建模，仅方法上部分可迁移。"
+  },
+  {
+    "full_name": "getwilds/wilds-docker-library",
+    "url": "https://github.com/getwilds/wilds-docker-library",
+    "language": "Dockerfile",
+    "stars": 9,
+    "description": "Collection of Docker images for use in WILDS bioinformatics workflows",
+    "pushed_at": "2026-10-30T19:48:12Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是一个生物信息学Docker镜像集合仓库，虽包含STARLING等无序蛋白预测工具，但本质是通用工具容器化，不面向IDP/IDR分子互作机制建模。"
+  },
+  {
+    "full_name": "google-deepmind/reaf-sim",
+    "who": [
+      "DillonZChen"
+    ],
+    "event": "star",
+    "stars": 8,
+    "language": "Python",
+    "description": "native MuJoCo environment authoring framework built for robotic workflows",
+    "url": "https://github.com/google-deepmind/reaf-sim",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T07:34:19Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "kennethreitz/acat",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 8,
+    "language": "Python",
+    "description": "cat prints files. acat plays them. Audio and video in your terminal, for humans.",
+    "url": "https://github.com/kennethreitz/acat",
+    "source": "watchlist",
+    "pushed_at": "2026-10-25T21:05:50Z",
+    "score": 0,
+    "one_liner": "这是一个在终端播放音频/视频的命令行工具，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "lu-yizhou/ClusterSeg",
+    "who": [
+      "Junchao-Zhu"
+    ],
+    "event": "star",
+    "stars": 7,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/lu-yizhou/ClusterSeg",
+    "source": "watchlist",
+    "pushed_at": "2022-11-10T02:05:56Z",
+    "score": 0,
+    "one_liner": "该仓库是细胞学、荧光和组织学图像分割的PyTorch实现，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "THGLab/KinConfBench",
+    "who": [
+      "mseok"
+    ],
+    "event": "star",
+    "stars": 7,
+    "language": "Python",
+    "description": "Official Repo for KinConfBench",
+    "url": "https://github.com/THGLab/KinConfBench",
+    "source": "watchlist",
+    "pushed_at": "2026-10-12T03:03:27Z",
+    "score": 2,
+    "one_liner": "该仓库是激酶构象状态的蛋白-配体共折叠基准测试工作流，聚焦折叠蛋白与小分子配体，不涉及IDP/IDR或无序分子互作，互作建模思路可迁移性有限。"
+  },
+  {
+    "full_name": "rauscher-lab/zephyr",
+    "url": "https://github.com/rauscher-lab/zephyr",
+    "language": "Python",
+    "stars": 6,
+    "description": "A generative diffusion model for sampling disordered protein structures trained on MD datasets.",
+    "pushed_at": "2026-10-29T03:10:33Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "Zephyr 是用扩散模型+GNN 从 MD 轨迹采样无序蛋白构象集合的生成工具，面向 IDP 结构建模但聚焦单链构象采样，未涉及无序分子互作/结合界面预测。"
+  },
+  {
+    "full_name": "huytran1120/vietnam-agentic-skills",
+    "url": "https://github.com/huytran1120/vietnam-agentic-skills",
+    "language": "Python",
+    "stars": 6,
+    "description": "Vietnam Agentic Skills (VAS) - 2,921+ agentic skills chuyên sâu cho Google Antigravity. Zero-NPX, chạy offline bằng Python 3.",
+    "pushed_at": "2026-10-29T00:51:54Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是面向 AI 编程代理的技能目录（越南语/英语），与无序蛋白、分子互作、AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "polyidoit/Arxiv-TQFT",
+    "url": "https://github.com/polyidoit/Arxiv-TQFT",
+    "language": "Python",
+    "stars": 6,
+    "description": "Arxiv prepring on TQFT, topological order and generalized symmetry. [The original version is modified from the source code by Vincentqyw]",
+    "pushed_at": "2026-10-31T03:31:37Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "feross/mad-science-bot",
+    "who": [
+      "feross"
+    ],
+    "event": "pr",
+    "stars": 5,
+    "language": "JavaScript",
+    "description": "Mad science bot for Discord",
+    "url": "https://github.com/feross/mad-science-bot",
+    "source": "watchlist",
+    "pushed_at": "2026-10-25T23:16:40Z",
+    "score": 0,
+    "one_liner": "这是一个Discord机器人项目，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "jwessen/BioFTS",
+    "url": "https://github.com/jwessen/BioFTS",
+    "language": "Python",
+    "stars": 5,
+    "description": "A Python package for field theoretic simulations of biomolecular phase-separation",
+    "pushed_at": "2026-10-30T15:23:56Z",
+    "source": "search",
+    "score": 8,
+    "one_liner": "BioFTS 是一个面向 IDP 液-液相分离的场论模拟 Python 包，通过 Complex-Langevin 采样实现无序蛋白互作的热力学建模，方法上属于物理模拟，与课题高度相关。"
+  },
+  {
+    "full_name": "YuzeHao2023/daily-arxiv-ai4polymer",
+    "url": "https://github.com/YuzeHao2023/daily-arxiv-ai4polymer",
+    "language": "Python",
+    "stars": 5,
+    "description": "🎓Automatically Update AI4Polymer Papers Daily using Github Actions",
+    "pushed_at": "2026-10-26T14:54:24Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是自监督学习论文的泛领域汇总列表，不涉及IDP/IDR、分子互作或相关建模方法，与课题完全无关。"
+  },
+  {
+    "full_name": "c0re-i5/3d-cellular-automata",
+    "url": "https://github.com/c0re-i5/3d-cellular-automata",
+    "language": "Python",
+    "stars": 5,
+    "description": "Experiments with voxels and cellular automata",
+    "pushed_at": "2026-10-28T23:35:52Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "THGLab/BioEdaDatabase",
+    "who": [
+      "zhuoy-qc"
+    ],
+    "event": "issue",
+    "stars": 4,
+    "language": "",
+    "description": "EDA database for protein-ligand complexes",
+    "url": "https://github.com/THGLab/BioEdaDatabase",
+    "source": "watchlist",
+    "pushed_at": "2026-06-11T17:50:08Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "smaniches/alphafold-sovereign-mcp",
+    "url": "https://github.com/smaniches/alphafold-sovereign-mcp",
+    "language": "Python",
+    "stars": 4,
+    "description": "BioMed MCP over AlphaFold DB + 8 public sources, with SQLite knowledge graph, offline mode, and explicit clinical-use limits.",
+    "pushed_at": "2026-10-30T23:01:23Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "这是一个封装AlphaFold DB等公共数据库的MCP服务器，用于结构生物学和变异查询，不涉及IDP/IDR分子互作建模，仅提供数据检索和简单特征计算，与课题方向基本无关。"
+  },
+  {
+    "full_name": "jkamantey/muc2-glycosylation-analysis",
+    "url": "https://github.com/jkamantey/muc2-glycosylation-analysis",
+    "language": "Jupyter Notebook",
+    "stars": 4,
+    "description": "Open-source MD analysis pipeline for MUC2 mucin long PTS domain — biophysical characterisation, glycosylation-driven conformational changes, polymer mechanics, and ligand interaction analysis.",
+    "pushed_at": "2026-10-29T22:03:50Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "MUC2 黏蛋白长 PTS 固有无序区的全原子 MD 分析流程，研究 O-糖基化如何重塑骨架力学与配体结合能力，属 IDR 物理模拟与互作相关子场景。"
+  },
+  {
+    "full_name": "shakespearemorton/IDRMixing",
+    "url": "https://github.com/shakespearemorton/IDRMixing",
+    "language": "Python",
+    "stars": 4,
+    "description": "",
+    "pushed_at": "2026-10-27T13:08:09Z",
+    "source": "search",
+    "score": 8,
+    "one_liner": "该仓库提供基于MD模拟的域分解方法和去混指数，用于量化无序蛋白在凝聚体中的相分离与混合行为，直接面向IDR参与的分子互作机制建模。"
+  },
+  {
+    "full_name": "ELELAB/MAVISp_automatization",
+    "url": "https://github.com/ELELAB/MAVISp_automatization",
+    "language": "PostScript",
+    "stars": 4,
+    "description": "Repository for the main MAVISp data processing pipeline",
+    "pushed_at": "2026-10-29T09:17:56Z",
+    "source": "search",
+    "score": 4,
+    "one_liner": "MAVISp 自动化流程用于癌症突变的结构与互作组分析，含 IDP 目标规则但核心是突变效应预测而非无序互作机制建模。"
+  },
+  {
+    "full_name": "grisuno/strass_strassen",
+    "url": "https://github.com/grisuno/strass_strassen",
+    "language": "HTML",
+    "stars": 4,
+    "description": "Engineering Algorithmic Structure in Neural Networks: From a Materials Science Perspective to Algorithmic Thermodynamics of Deep Learning",
+    "pushed_at": "2026-10-30T21:00:19Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库研究神经网络中的算法结构涌现与统计热力学，与无序蛋白分子互作建模完全无关。"
+  },
+  {
+    "full_name": "tyang816/tyang816.github.io",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 3,
+    "language": "HTML",
+    "description": "Homepage",
+    "url": "https://github.com/tyang816/tyang816.github.io",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T14:51:55Z",
+    "score": 0,
+    "one_liner": "这是一个个人学术主页模板，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "xcflab/Astrolabe",
+    "who": [
+      "sirius777coder"
+    ],
+    "event": "star",
+    "stars": 3,
+    "language": "Python",
+    "description": "Astrolabe: Programmable all-atom biomolecular design through cross-context coordination and structural intervention.",
+    "url": "https://github.com/xcflab/Astrolabe",
+    "source": "watchlist",
+    "pushed_at": "2026-10-14T11:36:35Z",
+    "score": 7,
+    "one_liner": "Astrolabe 是一个可编程的全原子生物分子设计框架，通过跨上下文协调和结构干预实现蛋白、核酸等分子的序列设计与结构预测，其中包含 IDR 结合子设计任务，与无序蛋白互作建模相关但非核心聚焦。"
+  },
+  {
+    "full_name": "matteo-cagiada/mmcif-tools",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 3,
+    "language": "Python",
+    "description": "mmcif-tools is a package that allows you to quickly read, parse, edit and write biomolecular structures in the MMcif format.",
+    "url": "https://github.com/matteo-cagiada/mmcif-tools",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T10:33:48Z",
+    "score": 2,
+    "one_liner": "mmCIF 结构文件命令行处理工具集，用于结构清洗与格式转换，不涉及 IDP/IDR 或分子互作机制建模。"
+  },
+  {
+    "full_name": "allmwh/IFF",
+    "url": "https://github.com/allmwh/IFF",
+    "language": "Jupyter Notebook",
+    "stars": 3,
+    "description": "IFF: Identifying key residues in intrinsically disordered regions of proteins using machine learning",
+    "pushed_at": "2026-10-31T15:52:59Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "该仓库用机器学习识别无序蛋白区域中的关键残基，虽聚焦IDR但未直接建模分子互作机制，方法可迁移。"
+  },
+  {
+    "full_name": "exopoiesis/arxiv-radar-chemistry",
+    "url": "https://github.com/exopoiesis/arxiv-radar-chemistry",
+    "language": "Python",
+    "stars": 3,
+    "description": "Daily-curated chemistry-relevant papers from arXiv with abstracts, canonical tags, and generated Pages views.",
+    "pushed_at": "2026-10-31T04:35:18Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是一个泛化学/材料领域的arXiv论文汇总仓库，涵盖分子表示、生成设计、量子化学等，完全不涉及IDP/IDR或无序蛋白分子互作，与课题无关。"
+  },
+  {
+    "full_name": "CobanAkdemirlab/NMDescapediseasegene_paper",
+    "url": "https://github.com/CobanAkdemirlab/NMDescapediseasegene_paper",
+    "language": "HTML",
+    "stars": 3,
+    "description": "",
+    "pushed_at": "2026-10-26T16:51:30Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "hyperpolymath/boinc-boinc",
+    "url": "https://github.com/hyperpolymath/boinc-boinc",
+    "language": "Rust",
+    "stars": 3,
+    "description": "Oblibeny BOINC Platform for distributed computing projects",
+    "pushed_at": "2026-10-31T22:14:20Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是一个名为Oblibeny的编程语言项目，利用BOINC进行分布式形式化验证，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "iopwsy/arXiv_cond-mat",
+    "url": "https://github.com/iopwsy/arXiv_cond-mat",
+    "language": "Python",
+    "stars": 3,
+    "description": "利用GitHub Action 与LLM自动更新arXiv凝聚态物理相关论文",
+    "pushed_at": "2026-10-30T03:35:07Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是自动抓取arXiv凝聚态物理论文的每日导读汇总，内容与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "KULL-Centre/_2026_streit_opes",
+    "who": [
+      "invemichele-peptone"
+    ],
+    "event": "mixed",
+    "stars": 2,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/_2026_streit_opes",
+    "source": "watchlist",
+    "pushed_at": "2026-10-26T14:36:11Z",
+    "score": 8,
+    "one_liner": "该仓库提供OPES多温度增强采样模拟的代码与数据分析，用于揭示固有无序蛋白ACTR的瞬态三级结构，核心面向IDP构象机制建模，方法为物理模拟，与课题高度相关。"
+  },
+  {
+    "full_name": "dina-lab3D/RaCoon",
+    "url": "https://github.com/dina-lab3D/RaCoon",
+    "language": "Python",
+    "stars": 2,
+    "description": "",
+    "pushed_at": "2026-10-26T17:15:51Z",
+    "source": "search",
+    "score": 5,
+    "one_liner": "RaCoon 是一个基于 ESM1b 的错义变异致病性校准框架，利用无序区域等残基属性进行条件分布校准，虽涉及 IDR 但核心是变异致病性预测而非无序分子互作机制建模。"
+  },
+  {
+    "full_name": "guozhihuan01-hash/embodied-nav-papers",
+    "url": "https://github.com/guozhihuan01-hash/embodied-nav-papers",
+    "language": "Python",
+    "stars": 2,
+    "description": "Auto-updated list of embodied navigation papers from arXiv (2024–Now)",
+    "pushed_at": "2026-10-31T10:14:11Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是具身导航（Vision-Language Navigation）论文列表，与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "nicetone9/OpenPhase",
+    "url": "https://github.com/nicetone9/OpenPhase",
+    "language": "HTML",
+    "stars": 2,
+    "description": "Accelerate the knowledge discovery in protein phase separation ",
+    "pushed_at": "2026-10-31T03:22:24Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "OpenPhase 是一个面向液-液相分离（LLPS）的条件感知数据集与建模平台，包含蛋白/RNA/DNA序列及环境条件数据，并实现离散模型和潜在扩散模型等生成方法，但核心聚焦相分离而非广义IDP/IDR分子互作机制建模。"
+  },
+  {
+    "full_name": "fermga/TNFR-Python-Engine",
+    "url": "https://github.com/fermga/TNFR-Python-Engine",
+    "language": "Python",
+    "stars": 2,
+    "description": "Python research framework for coherent patterns on graph-coupled networks: nodal dynamics, structural operators, diagnostics and scoped mathematical studies.",
+    "pushed_at": "2026-10-30T09:41:45Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库提出一种抽象的数学对象和节点动力学理论（TNFR），与IDP/IDR分子互作、AI或物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "grymmjack/soundmon",
+    "url": "https://github.com/grymmjack/soundmon",
+    "language": "Python",
+    "stars": 2,
+    "description": "Sound-effect, music-loop, and narration generator on AMD ROCm, NVIDIA CUDA, Mac MPS — ComfyUI + Stable Audio Open, driven by a one-command CLI. Sibling to pixelmon.",
+    "pushed_at": "2026-10-29T23:29:47Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个文本生成音频的工具，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "tersignhq/evidence-record-conformance",
+    "url": "https://github.com/tersignhq/evidence-record-conformance",
+    "language": "Python",
+    "stars": 2,
+    "description": "Two-sided conformance vectors for the evidence-record layer: independence, completeness, anchored existence, phase separation, offer, decision and boundary binding. Stdlib verifier and a second TypeScript implementation (same authors); counter-signature profile over live ledger records; Bitcoin-anchored vectors; outside reproductions on record.",
+    "pushed_at": "2026-10-28T10:12:30Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是 agent commerce 证据记录层的合规性测试向量集，与无序蛋白/分子互作/AI模拟完全无关。"
+  },
+  {
+    "full_name": "tymworld/DROPPS",
+    "url": "https://github.com/tymworld/DROPPS",
+    "language": "Python",
+    "stars": 2,
+    "description": "",
+    "pushed_at": "2026-10-28T06:27:33Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "DROPPS 是一个面向相分离模拟的粗粒化分子动力学工作流工具，虽聚焦相分离场景，但提供可迁移的IDP/IDR互作模拟与分析方法。"
+  },
+  {
+    "full_name": "axiomgrid/snowflake-chione-2026",
+    "url": "https://github.com/axiomgrid/snowflake-chione-2026",
+    "language": "HTML",
+    "stars": 2,
+    "description": "",
+    "pushed_at": "2026-10-26T23:22:13Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是雪花晶体生长的元胞自动机物理模拟，与IDP/IDR分子互作及无序蛋白建模完全无关。"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 1,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org",
+    "source": "watchlist",
+    "pushed_at": "2026-10-30T16:13:13Z",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "CultureBotAI/proteintraitsmech",
+    "url": "https://github.com/CultureBotAI/proteintraitsmech",
+    "language": "Python",
+    "stars": 1,
+    "description": "ProteinTraits",
+    "pushed_at": "2026-10-31T22:18:08Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "chunqing403/protein-design-radar",
+    "url": "https://github.com/chunqing403/protein-design-radar",
+    "language": "HTML",
+    "stars": 1,
+    "description": "",
+    "pushed_at": "2026-10-31T05:55:21Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "这是一个每日蛋白质设计/工程论文聚合雷达仓库，仅以列表形式收录文献，其中偶有IDP相关论文条目，但本身不实现任何互作建模或模拟方法。"
+  },
+  {
+    "full_name": "M-YP/Mutational-Landscape-of-Neuroblastoma",
+    "url": "https://github.com/M-YP/Mutational-Landscape-of-Neuroblastoma",
+    "language": "Jupyter Notebook",
+    "stars": 1,
+    "description": "A standardized pipeline for neuroblastoma mutation analysis to uncover overlooked, clinically relevant variants and candidate immunotherapy biomarkers, including intrinsically disordered regions (IDRs), differentially methylated regions (DMRs), and neoantigens.",
+    "pushed_at": "2026-10-25T17:46:23Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "神经母细胞瘤WGS变异分析流程，仅将IDR作为新抗原筛选的附带注释，不涉及无序蛋白互作机制建模或AI/模拟方法。"
+  },
+  {
+    "full_name": "genmnz/jean-by-melad-labs",
+    "url": "https://github.com/genmnz/jean-by-melad-labs",
+    "language": "Python",
+    "stars": 1,
+    "description": "Jean by Melad Labs: the bioinformatics & biotech suite as a remote MCP server. 279 tools to design, simulate, analyze and verify experiments from any AI assistant: cloning, primers, CRISPR, sequencing, qPCR, genomics, phylogenetics, proteomics, chemistry.",
+    "pushed_at": "2026-10-28T13:01:33Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是一个面向通用生物信息学与生物技术实验设计的MCP工具套件，不涉及IDP/IDR、分子互作机制建模或相关AI/模拟方法，与课题方向基本无关。"
+  },
+  {
+    "full_name": "djabbat/moss-sas6-alphafold-public",
+    "url": "https://github.com/djabbat/moss-sas6-alphafold-public",
+    "language": "TeX",
+    "stars": 1,
+    "description": "Physcomitrella Patens SAS 6 3D Structure",
+    "pushed_at": "2026-10-28T20:50:44Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "该仓库是单个蛋白（苔藓SAS-6）的AlphaFold2结构预测结果存档，虽涉及无序区域但无分子互作建模或可复用工具，与课题核心方向关联极弱。"
+  },
+  {
+    "full_name": "exopoiesis/arxiv-radar-electrochemistry",
+    "url": "https://github.com/exopoiesis/arxiv-radar-electrochemistry",
+    "language": "Python",
+    "stars": 1,
+    "description": "Daily-curated electrochemistry-relevant papers from arXiv with abstracts, canonical tags, and generated Pages views. ",
+    "pushed_at": "2026-10-31T06:45:09Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是电化学、CO2还原、矿物表面与地球化学等主题的arXiv论文汇总列表，与无序蛋白/IDR分子互作及AI/物理模拟建模方向完全无关。"
+  },
+  {
+    "full_name": "deepikagupta8050/deepikagupta8050",
+    "url": "https://github.com/deepikagupta8050/deepikagupta8050",
+    "language": "",
+    "stars": 1,
+    "description": "",
+    "pushed_at": "2026-10-31T03:56:10Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个个人简历/作品集仓库，展示全栈开发技能和AI/ML项目，与IDP/IDR分子互作建模方向无关。"
+  },
+  {
+    "full_name": "Geckos-Ink/trech",
+    "url": "https://github.com/Geckos-Ink/trech",
+    "language": "Python",
+    "stars": 1,
+    "description": "Physical and chemical simulation engine through statistical prediction starting from GEANT4",
+    "pushed_at": "2026-10-31T10:08:41Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是C++/Geant4粒子物理模拟与学习工具包，面向多尺度物理推断，不涉及IDP/IDR或分子互作建模，与课题无关。"
+  },
+  {
+    "full_name": "SihoonSung/Daily-Paper-Summary",
+    "url": "https://github.com/SihoonSung/Daily-Paper-Summary",
+    "language": "Python",
+    "stars": 1,
+    "description": "Daily AI & Computer Science Paper Summaries by Friday Assistant",
+    "pushed_at": "2026-10-31T08:39:35Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个跨学科的每日论文摘要归档仓库，内容涵盖核物理、材料、机器人等，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "conscious-collective/school-for-agents",
+    "url": "https://github.com/conscious-collective/school-for-agents",
+    "language": "",
+    "stars": 1,
+    "description": " Open training platform for ethical AI agents. OpenSkills-compatible skill manifests with built-in guardrails, when an agent learns a skill, it inherits the constraints.",
+    "pushed_at": "2026-10-31T07:14:09Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是AI智能体伦理训练平台，与无序蛋白分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "astitwasi-11/biodiesel-process-quality-analyzer",
+    "url": "https://github.com/astitwasi-11/biodiesel-process-quality-analyzer",
+    "language": "HTML",
+    "stars": 1,
+    "description": "",
+    "pushed_at": "2026-10-30T11:36:58Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是废弃食用油制生物柴油的化工过程模拟与质量分析项目，与无序蛋白/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "Risho11/NIPS-pipeline",
+    "url": "https://github.com/Risho11/NIPS-pipeline",
+    "language": "HTML",
+    "stars": 1,
+    "description": "The central holder of all updates to the pipeline.",
+    "pushed_at": "2026-10-29T22:33:48Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是聚合物膜自动化制备与表征系统（NIPS 膜、Opentrons 机器人、LLM 主动学习），与无序蛋白/无序区域及其分子互作建模完全无关。"
+  },
+  {
+    "full_name": "tsuntungngaing-jtn/comsol-automatic",
+    "url": "https://github.com/tsuntungngaing-jtn/comsol-automatic",
+    "language": "Python",
+    "stars": 1,
+    "description": "MCP-only COMSOL automation skill (adapted from Comsol-Automatic-wwj)",
+    "pushed_at": "2026-10-29T04:24:46Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "yoonalimsuwan/REAL-FOLD-ONE",
+    "url": "https://github.com/yoonalimsuwan/REAL-FOLD-ONE",
+    "language": "Python",
+    "stars": 1,
+    "description": "SUPPORT FOR PROTEIN (Multimer) , DNA , DNA Origami , RNA  , LIGANDS AND HTS (and their complexes) / All Elements (Inorganic materials) , (Alloys) , (Crystals) / Full-atom With Langevin MD , CH 3D With ThinFilm 3D , PFC 3D  : 6th-Order & Higher Operators / to EDA , QEDA Application Together STANDARD ONE for Qubit Architectures",
+    "pushed_at": "2026-10-29T03:49:39Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "tersignhq/tersign-js",
+    "url": "https://github.com/tersignhq/tersign-js",
+    "language": "TypeScript",
+    "stars": 1,
+    "description": "TypeScript SDK + MCP server for Tersign, the record layer for the machine age — counter-signed EIP-712 receipts, hash-chained action and disclosure records, refunds, disputes, venue-formatted evidence envelopes. npm: tersign",
+    "pushed_at": "2026-10-27T10:56:04Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "zwicker-group/emulsim",
+    "url": "https://github.com/zwicker-group/emulsim",
+    "language": "Python",
+    "stars": 1,
+    "description": "Python framework for simulating physical systems consisting of multiple, interacting droplets.",
+    "pushed_at": "2026-10-29T16:05:45Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "这是一个模拟多液滴物理系统的通用框架，与IDP/IDR分子互作及AI/物理模拟方法无关。"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking",
+    "source": "watchlist",
+    "pushed_at": "2026-11-01T02:40:05Z",
+    "score": 0,
+    "one_liner": "该仓库是 DOME 生态五个网站的运行状态与代码活跃度监控工具，与无序蛋白/分子互作/AI模拟方向完全无关。"
+  },
+  {
+    "full_name": "boscoh/anki-tools",
+    "who": [
+      "boscoh"
+    ],
+    "event": "mixed",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/anki-tools",
+    "source": "watchlist",
+    "pushed_at": "2026-10-31T22:53:19Z",
+    "score": 0,
+    "one_liner": "该仓库是Anki闪卡工具，用于构建语言学习卡片，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "BioComputingUP/OSAI_ecosystem",
+    "who": [
+      "gavinf97"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "HTML",
+    "description": "A community-curated list of Open and Sustainable AI (OSAI) ecosystem components mapped to practical recommendations to guide their use for research. ",
+    "url": "https://github.com/BioComputingUP/OSAI_ecosystem",
+    "source": "watchlist",
+    "pushed_at": "2026-10-25T22:40:21Z",
+    "score": 0,
+    "one_liner": "该仓库是开放可持续AI生态组件清单，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "KULL-Centre/_2026_xia_pepDockQ",
+    "who": [
+      "YYingXia"
+    ],
+    "event": "other",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/_2026_xia_pepDockQ",
+    "source": "watchlist",
+    "pushed_at": "2026-10-26T15:17:51Z",
+    "score": 6,
+    "one_liner": "pepDockQ 是一个基于图神经网络预测肽-蛋白复合物对接质量的工具，虽不直接面向 IDP/IDR，但其分子互作界面质量评估的建模思路可迁移至无序蛋白互作场景。"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor",
+    "source": "watchlist",
+    "pushed_at": "2026-11-01T02:33:31Z",
+    "score": 0,
+    "one_liner": "该仓库是 BioComputing UP 资源的网站/API 可用性监控工具，与 IDP/IDR 分子互作建模完全无关。"
+  },
+  {
+    "full_name": "examples/slab_IDR",
+    "who": [
+      "sobuelow"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "",
+    "description": "",
+    "url": "",
+    "source": "watchlist",
+    "pushed_at": "",
+    "score": 0,
+    "one_liner": "无 README/描述/目录树,跳过"
+  },
+  {
+    "full_name": "idptools/tadatorch",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "Python",
+    "description": "tadatorch is a PyTorch implementation of the TADA activation domain predictor that uses sparrow for parameter predictions. ",
+    "url": "https://github.com/idptools/tadatorch",
+    "source": "watchlist",
+    "pushed_at": "2026-10-03T00:29:04Z",
+    "score": 3,
+    "one_liner": "tadatorch 是预测转录激活结构域（AD）的 PyTorch 工具，面向折叠/无序序列的转录激活打分，不涉及 IDP/IDR 介导的分子互作机制建模，仅方法上可迁移。"
+  },
+  {
+    "full_name": "ArsikProgrammer/Darkcancer",
+    "url": "https://github.com/ArsikProgrammer/Darkcancer",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T22:11:36Z",
+    "source": "search",
+    "score": 4,
+    "one_liner": "该仓库研究吸烟突变在无序蛋白区域中的分布，使用AlphaFold pLDDT作为无序性代理，但核心是突变分布统计而非分子互作机制建模，与课题方向关联较弱。"
+  },
+  {
+    "full_name": "amgualdron/idp-rg",
+    "url": "https://github.com/amgualdron/idp-rg",
+    "language": "Python",
+    "stars": 0,
+    "description": "compute probability distribution of rg for an idp from sequence alone",
+    "pushed_at": "2026-10-31T21:27:59Z",
+    "source": "search",
+    "score": 8,
+    "one_liner": "该仓库从序列预测无序蛋白的回转半径分布，基于粗粒化MD模拟训练MLP网络，虽不直接预测分子互作，但为IDP构象系综建模提供可迁移的AI方法，与无序蛋白互作机制建模高度相关。"
+  },
+  {
+    "full_name": "mattyb4/Cluster-Scout",
+    "url": "https://github.com/mattyb4/Cluster-Scout",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T18:36:33Z",
+    "source": "search",
+    "score": 3,
+    "one_liner": "该仓库是癌症突变与PTM位点3D邻近分析工具，不涉及IDP/IDR或无序分子互作机制建模，仅部分使用AlphaFold结构，与课题方向关联微弱。"
+  },
+  {
+    "full_name": "sambhajithakar/idp-small-molecule-evidence",
+    "url": "https://github.com/sambhajithakar/idp-small-molecule-evidence",
+    "language": "Python",
+    "stars": 0,
+    "description": "Evidence-graded curation of small-molecule engagement of intrinsically disordered regions, plus the PWTP persistence-weighted pocket score — data and code for Thakar & Ghorpade (submitted).",
+    "pushed_at": "2026-10-31T18:08:42Z",
+    "source": "search",
+    "score": 4,
+    "one_liner": "该仓库提供无序蛋白小分子结合的证据分级数据与PWTP口袋持续性评分代码，但PWTP仅评估apo构象集合中口袋的持续性，不预测结合或互作机制，与IDP分子互作机制建模方向关联较弱。"
+  },
+  {
+    "full_name": "api-evangelist/peptone",
+    "url": "https://github.com/api-evangelist/peptone",
+    "language": "",
+    "stars": 0,
+    "description": "Peptone — independent third-party profile of a public API surface, by API Evangelist. Peptone is a computational drug-discovery biotech building a Product Engine that targets intrinsically disordered proteins (IDPs). It couples experimental measurement of disordered proteins in solution with enhanced-sampling simulation and generative machine-learn",
+    "pushed_at": "2026-10-31T14:22:14Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是 API Evangelist 对生物技术公司 Peptone 的第三方 API 档案页，本身不含任何代码或方法，仅提及该公司从事 IDP 靶向药物发现，与课题无实质工具或建模价值。"
+  },
+  {
+    "full_name": "marshomics/prometheus_manuscript",
+    "url": "https://github.com/marshomics/prometheus_manuscript",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T13:38:34Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库是微生物基因组分析流程，聚焦Prometheus蛋白检测与验证，虽含无序蛋白模块但仅作辅助，与IDP/IDR分子互作机制建模无关。"
+  },
+  {
+    "full_name": "zhangxincode/Steering-Activation-Paper-Arxiv",
+    "url": "https://github.com/zhangxincode/Steering-Activation-Paper-Arxiv",
+    "language": "Python",
+    "stars": 0,
+    "description": "A daily arXiv collector for papers about steering activations and internal representations in LLMs, VLMs, diffusion language models, multimodal foundation models, and related language-model systems.",
+    "pushed_at": "2026-10-31T09:00:06Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是LLM激活引导与内部表征控制的论文汇总列表，与无序蛋白/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "enhansome/ultimate-enhansome",
+    "url": "https://github.com/enhansome/ultimate-enhansome",
+    "language": "",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T07:54:01Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个自动生成的 awesome list 汇总仓库，与无序蛋白/分子互作/AI模拟方向完全无关。"
+  },
+  {
+    "full_name": "enhansome/enhansome-ai-for-science",
+    "url": "https://github.com/enhansome/enhansome-ai-for-science",
+    "language": "",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T05:19:24Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个AI for Science的通用资源列表，涵盖文献管理、数据分析和演示生成等工具，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "spacenship/newDailyArxiv",
+    "url": "https://github.com/spacenship/newDailyArxiv",
+    "language": "Python",
+    "stars": 0,
+    "description": "daily paper from Arxiv",
+    "pushed_at": "2026-10-30T20:59:09Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库仅为按关键词自动抓取 arXiv 论文的每日列表（含药物设计、DTA 预测等），无任何 IDP/IDR 或无序分子互作相关代码与算法，属泛论文汇总，与课题无关。"
+  },
+  {
+    "full_name": "miritiede/Tardigrade-Dsup",
+    "url": "https://github.com/miritiede/Tardigrade-Dsup",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "hobby project on the tardigrade Dsup protein",
+    "pushed_at": "2026-10-30T18:40:52Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "MaybeBio/Daily-ArXiv-AI4Bio",
+    "url": "https://github.com/MaybeBio/Daily-ArXiv-AI4Bio",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-30T17:01:23Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "这是一个自动抓取arXiv计算生物学论文的文献汇总仓库，虽含IDR等主题但无任何算法或工具实现，仅作资源列表，与课题核心的互作机制建模无关。"
+  },
+  {
+    "full_name": "gavinf97/papers-agent",
+    "url": "https://github.com/gavinf97/papers-agent",
+    "language": "Python",
+    "stars": 0,
+    "description": "Weekly literature-monitoring agent for AI/ML best practices in the life sciences",
+    "pushed_at": "2026-10-30T14:04:53Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是一个文献监测工具，用于追踪AI/ML在生命科学中的最佳实践，与IDP/IDR分子互作建模无直接关系，仅提及PNAS的IDP标准，但无实质算法或工具。"
+  },
+  {
+    "full_name": "Floboysky/dvpILC",
+    "url": "https://github.com/Floboysky/dvpILC",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "These scripts help to characterize functional residues, analyze the structure-function relationship, and identify potential protein partners of the NFIL3 transcription factor in the development of murine ILC cells.",
+    "pushed_at": "2026-10-30T13:38:38Z",
+    "source": "search",
+    "score": 5,
+    "one_liner": "NFIL3转录因子研究脚本集，含AlphaFold3复合物界面打分(LIS/cLIS)与无序/保守性分析，可迁移至IDP互作建模但非专门面向IDP。"
+  },
+  {
+    "full_name": "MaybeBio/PDB-MD-Suite",
+    "url": "https://github.com/MaybeBio/PDB-MD-Suite",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-30T12:01:05Z",
+    "source": "search",
+    "score": 3,
+    "one_liner": "该仓库是面向DNA-锌指复合物的GROMACS MD流程和PDB预处理工具，不涉及IDP/IDR或无序分子互作，仅MD方法可部分迁移。"
+  },
+  {
+    "full_name": "BoHuangLab/CELL-FM",
+    "url": "https://github.com/BoHuangLab/CELL-FM",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-30T03:27:14Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "lancetdenes/idr-design",
+    "url": "https://github.com/lancetdenes/idr-design",
+    "language": "Python",
+    "stars": 0,
+    "description": "Design intrinsically disordered protein sequences whose predicted conformational ensemble matches a target",
+    "pushed_at": "2026-10-29T22:14:15Z",
+    "source": "search",
+    "score": 8,
+    "one_liner": "该仓库通过GOOSE优化和FINCHES力场计算，设计无序蛋白序列以匹配目标残基间互作图，直接面向IDR的分子互作机制建模，方法上结合了物理模拟与序列优化，但未涉及AI或MD模拟，故评8分。"
+  },
+  {
+    "full_name": "RoshaniPawar16/alphamissense-cftr",
+    "url": "https://github.com/RoshaniPawar16/alphamissense-cftr",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "CFTR variant pathogenicity annotation using CFTR2 and AlphaMissense. AUC 0.946 on 292 labelled variants. 7 unclassified variants predicted pathogenic with population frequency support.",
+    "pushed_at": "2026-10-29T21:57:40Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库用 AlphaMissense 对 CFTR 错义变异做致病性注释与临床分类验证，属于折叠蛋白的变异致病性预测，与 IDP/IDR 分子互作机制建模无关。"
+  },
+  {
+    "full_name": "YiHeLab/Glutton",
+    "url": "https://github.com/YiHeLab/Glutton",
+    "language": "Python",
+    "stars": 0,
+    "description": "Glutton (A tool for Protein Chemical Shift - Structure Analysis)",
+    "pushed_at": "2026-10-29T15:29:13Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "Glutton 是基于 NMR 化学位移为固有无序蛋白生成构象系综的工具与数据库，面向 IDP 结构异质性建模，但未直接涉及无序分子互作或结合界面预测。"
+  },
+  {
+    "full_name": "malikahmedhassanawan/Legumin-Vicilin-Dimer-Thermal-MD",
+    "url": "https://github.com/malikahmedhassanawan/Legumin-Vicilin-Dimer-Thermal-MD",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "\"Comparative molecular dynamics study of pea legumin and vicilin dimers, structural stability under thermal stress for plant-based meat texturization research\"",
+    "pushed_at": "2026-10-29T12:34:32Z",
+    "source": "search",
+    "score": 3,
+    "one_liner": "豌豆储藏蛋白legumin/vicilin同源二聚体的短时GROMACS分子动力学热稳定性比较，虽涉及一段固有无序区(RMSF分析)但核心是折叠球状蛋白的热响应，非IDP/IDR介导的分子互作机制建模。"
+  },
+  {
+    "full_name": "flycat200267/SSG-Kla",
+    "url": "https://github.com/flycat200267/SSG-Kla",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T15:41:03Z",
+    "source": "search",
+    "score": 4,
+    "one_liner": "SSG-Kla 是预测赖氨酸乳酰化位点的多模态深度学习框架，虽涉及 IDR 富集区域但核心是翻译后修饰位点预测而非无序分子互作机制建模，仅方法可部分迁移。"
+  },
+  {
+    "full_name": "zlipel/al_active_dev",
+    "url": "https://github.com/zlipel/al_active_dev",
+    "language": "Python",
+    "stars": 0,
+    "description": "Closed-loop active-learning pipeline for    disordered protein design — multi-objective BO, GP/MoE surrogate",
+    "pushed_at": "2026-10-28T03:04:00Z",
+    "source": "search",
+    "score": 8,
+    "one_liner": "主动学习流水线结合LAMMPS分子动力学模拟，用于发现相分离的固有无序蛋白序列，直接面向IDP相分离/凝聚体这一无序分子互作子场景，并包含AI代理模型与物理模拟代码。"
+  },
+  {
+    "full_name": "suhaanthayyil/idrfeat",
+    "url": "https://github.com/suhaanthayyil/idrfeat",
+    "language": "",
+    "stars": 0,
+    "description": "Feature extraction for intrinsically disordered regions",
+    "pushed_at": "2026-10-27T21:12:33Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "该仓库为IDR区域计算特征向量，服务于变异扰动IDR功能的研究，虽面向IDP但未直接建模分子互作机制，方法上以特征提取为主，缺乏AI/物理模拟互作建模。"
+  },
+  {
+    "full_name": "jakob-steuer/splisoforms",
+    "url": "https://github.com/jakob-steuer/splisoforms",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-27T16:16:23Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "SPLISOFORMS 是一个基于AlphaFold 3预测的剪接异构体结构知识库，包含无序预测和互作界面分析，但核心对象是剪接异构体而非IDP/IDR，互作机制建模深度有限。"
+  },
+  {
+    "full_name": "mesdaghi/genome_annotation_quality_nextflow_pipeline",
+    "url": "https://github.com/mesdaghi/genome_annotation_quality_nextflow_pipeline",
+    "language": "Python",
+    "stars": 0,
+    "description": "Nextflow pipeline for large-scale protein structure prediction using Protenix, with automated chunking, model processing, and pLDDT distribution analysis against reference organism datasets. Also Metapredict and PSAURON analysis",
+    "pushed_at": "2026-10-27T10:49:48Z",
+    "source": "search",
+    "score": 4,
+    "one_liner": "GAQA 是一个基因组注释质量评估的 Nextflow 流水线，集成 Metapredict 做无序预测，但核心目标是注释质量而非 IDP/IDR 分子互作机制建模，互作与方法深度不足。"
+  },
+  {
+    "full_name": "api-evangelist/topos-bio",
+    "url": "https://github.com/api-evangelist/topos-bio",
+    "language": "",
+    "stars": 0,
+    "description": "Topos Bio — independent third-party profile of a public API surface, by API Evangelist. Topos Bio is an AI-native drug discovery company building all-atom foundation models for intrinsically disordered proteins (IDPs) — dynamic, flexible proteins implicated in diseases such as Alzheimer's and prostate cancer.",
+    "pushed_at": "2026-10-26T06:06:41Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是第三方对 Topos Bio 公司公开 API 表面的简介占位页，无任何 IDP/IDR、分子互作或 AI/模拟代码内容，与课题完全无关。"
+  },
+  {
+    "full_name": "SanabriaLab/Entin-et-al.-2026",
+    "url": "https://github.com/SanabriaLab/Entin-et-al.-2026",
+    "language": "",
+    "stars": 0,
+    "description": "Expression of tardigrade intrinsically disordered proteins in C. elegans reveals variable effects on aging and stress",
+    "pushed_at": "2026-10-26T04:17:38Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "该仓库是研究缓步动物无序蛋白在秀丽隐杆线虫中表达对衰老和应激影响的论文配套数据，不涉及分子互作建模或AI/模拟方法。"
+  },
+  {
+    "full_name": "lgonzalezpaz/microLLPS",
+    "url": "https://github.com/lgonzalezpaz/microLLPS",
+    "language": "Shell",
+    "stars": 0,
+    "description": "Arginine-rich neuronal microexons act as phase-separation switches across the human proteome",
+    "pushed_at": "2026-10-26T02:16:40Z",
+    "source": "search",
+    "score": 7,
+    "one_liner": "该仓库提供分析神经元微外显子作为相分离开关的完整流程，通过重建ME+/ME-异构体并量化其对宿主IDR相分离倾向的影响，直接涉及IDR与相分离（LLPS）这一无序分子互作子场景，并整合了AlphaFold、CALVADOS等AI/物理模拟预测器，但核心是单序列相分离倾向计算而非分子互作界面建模。"
+  },
+  {
+    "full_name": "shimizuitsuki0316/DARUMA-binding",
+    "url": "https://github.com/shimizuitsuki0316/DARUMA-binding",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-25T12:43:26Z",
+    "source": "search",
+    "score": 9,
+    "one_liner": "DARUMA-binding 是面向 IDR 结合位点预测的深度学习工具，直接命中无序蛋白分子互作机制建模，并附带数据集与复现代码。"
+  },
+  {
+    "full_name": "xaviercallens/SocrateAI-Scientific-Genetic",
+    "url": "https://github.com/xaviercallens/SocrateAI-Scientific-Genetic",
+    "language": "TeX",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-26T08:05:44Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是面向基因组学、DNA复制/修复与染色质物理的神经符号形式化验证项目，不涉及固有无序蛋白/无序区域及其分子互作建模，与课题方向无关。"
+  },
+  {
+    "full_name": "hpink97/cafa6_go_prediction",
+    "url": "https://github.com/hpink97/cafa6_go_prediction",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-26T16:52:11Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "CAFA6 蛋白质功能（GO 术语）预测项目，用 ESM-2 与启动子 DNA 嵌入做多标签分类，不涉及 IDP/IDR 或无序分子互作机制建模。"
+  },
+  {
+    "full_name": "nalgirkarh-prog/RareDiseasePipeline",
+    "url": "https://github.com/nalgirkarh-prog/RareDiseasePipeline",
+    "language": "Python",
+    "stars": 0,
+    "description": "Automated disease-to-molecular dynamics system preparation pipeline for computational drug discovery.",
+    "pushed_at": "2026-10-25T10:21:17Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "该仓库是罕见病药物发现流水线，聚焦基因组变异注释与虚拟筛选，不涉及IDP/IDR或无序分子互作机制建模。"
+  },
+  {
+    "full_name": "hjhuiuaa/CLIPer",
+    "url": "https://github.com/hjhuiuaa/CLIPer",
+    "language": "Python",
+    "stars": 0,
+    "description": "**CLIPer** stands for **Contrastive Learning for Intrinsically disordered Protein linker classification**.",
+    "pushed_at": "2026-10-25T10:07:50Z",
+    "source": "search",
+    "score": 4,
+    "one_liner": "CLIPer 是用 ProstT5 等蛋白语言模型对固有无序蛋白 linker 区域做残基级分类的工具，属于 IDR 单序列属性预测，不涉及无序分子互作机制建模。"
+  },
+  {
+    "full_name": "sogire/bio-study-post-master",
+    "url": "https://github.com/sogire/bio-study-post-master",
+    "language": "Python",
+    "stars": 0,
+    "description": "Continue studying Biology",
+    "pushed_at": "2026-10-25T09:27:51Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "这是一个面向生物信息学硕士的13周学习课程仓库，涵盖结构生物学、基因组学、药物发现等广泛主题，仅提及IDR作为结构生物学的一个概念，未提供任何IDP/IDR分子互作建模工具或方法，与课题核心方向基本无关。"
+  },
+  {
+    "full_name": "symelaz/AmberSimulations",
+    "url": "https://github.com/symelaz/AmberSimulations",
+    "language": "Python",
+    "stars": 0,
+    "description": "Setting up Amber simulations for soluble proteins",
+    "pushed_at": "2026-10-31T16:06:28Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "该仓库提供基于Amber/OpenMM的蛋白质MD模拟自动化流程，支持a99SB-disp/TIP4P-D力场用于无序蛋白模拟，但未聚焦于分子互作机制建模，方法可迁移至IDP相关模拟。"
+  },
+  {
+    "full_name": "LeTanPhuc-01/LeTanPhuc-01",
+    "url": "https://github.com/LeTanPhuc-01/LeTanPhuc-01",
+    "language": "",
+    "stars": 0,
+    "description": "Config files for my GitHub profile.",
+    "pushed_at": "2026-10-31T03:45:13Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "个人GitHub主页，仅提及一个半无序蛋白预测项目，但无分子互作或机制建模内容，与课题方向基本无关。"
+  },
+  {
+    "full_name": "lauricella/openmm-lbm",
+    "url": "https://github.com/lauricella/openmm-lbm",
+    "language": "C++",
+    "stars": 0,
+    "description": "OpenMM plugin coupling molecular dynamics to a thread-safe lattice Boltzmann fluid (D3Q19, regularized collision, Guo forcing) for coarse-grained simulations with hydrodynamics. Particles exchange friction and thermal noise with the fluid. Native OpenMM plugin with Reference, CUDA, OpenCL and HIP platforms.",
+    "pushed_at": "2026-10-30T17:12:35Z",
+    "source": "search",
+    "score": 5,
+    "one_liner": "OpenMM的格子玻尔兹曼流体耦合插件，用于含流体动力学的粗粒化模拟，示例包含无序蛋白扩散，但非直接面向IDP/IDR分子互作机制建模。"
+  },
+  {
+    "full_name": "apzubarev/kinetic-metric-protein-landscapes",
+    "url": "https://github.com/apzubarev/kinetic-metric-protein-landscapes",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-30T15:39:07Z",
+    "source": "search",
+    "score": 3,
+    "one_liner": "该仓库用MD和马尔可夫状态模型分析折叠小蛋白Trp-cage的能量景观超度量性，不涉及IDP/IDR或无序分子互作，仅物理模拟方法有间接参考价值。"
+  },
+  {
+    "full_name": "evocellnet/hackathon-phase2-multicellularity",
+    "url": "https://github.com/evocellnet/hackathon-phase2-multicellularity",
+    "language": "HTML",
+    "stars": 0,
+    "description": "AI hackathon phase 2 project explorative analysis of multicellularity",
+    "pushed_at": "2026-10-30T12:16:21Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库是用 AI agent 研究多细胞性演化的系统发生学项目，仅顺带提及无序蛋白作为结构新颖性的混淆因素，不涉及 IDP/IDR 分子互作建模。"
+  },
+  {
+    "full_name": "Sabian98/BENDER",
+    "url": "https://github.com/Sabian98/BENDER",
+    "language": "Python",
+    "stars": 0,
+    "description": "Code and per-sequence data for BENDER, coarse-grained ensembles of 10,282 disordered proteins across the tree of life",
+    "pushed_at": "2026-10-28T01:51:16Z",
+    "source": "search",
+    "score": 7,
+    "one_liner": "BENDER 提供跨物种无序蛋白的粗粒化模拟轨迹与序列属性数据，聚焦 IDP 构象系综而非直接分子互作机制建模，但方法可迁移至 IDP 互作研究。"
+  },
+  {
+    "full_name": "bobthecooldad/Folding-At-Home-Claude",
+    "url": "https://github.com/bobthecooldad/Folding-At-Home-Claude",
+    "language": "Python",
+    "stars": 0,
+    "description": "Home Assistant Plug in to control F&H V8.5.X",
+    "pushed_at": "2026-10-25T20:44:23Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "srayanta24/CoFolding_SM",
+    "url": "https://github.com/srayanta24/CoFolding_SM",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T18:01:56Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "enhansome/enhansome-computational-biology",
+    "url": "https://github.com/enhansome/enhansome-computational-biology",
+    "language": "",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T13:39:04Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "jxvansne/synthlit",
+    "url": "https://github.com/jxvansne/synthlit",
+    "language": "Python",
+    "stars": 0,
+    "description": "A toy benchmark for AI-driven literature review",
+    "pushed_at": "2026-10-30T17:03:41Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "synthlit 生成虚构 fMRI 文献并评测 AI 的元分析推断能力，与 IDP/IDR 分子互作建模完全无关。"
+  },
+  {
+    "full_name": "Shechterlab/idr-explorer",
+    "url": "https://github.com/Shechterlab/idr-explorer",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-28T01:13:40Z",
+    "source": "search",
+    "score": 6,
+    "one_liner": "该仓库提供人类蛋白质组无序区域（IDR）及其侧翼序列的电荷特征、修饰位点和序列模式的数据浏览器与Python工具包，虽聚焦IDR序列特征而非直接建模分子互作，但其电荷模式分析（如SCD、局部电荷块）和修饰对电荷影响的工具可迁移至IDP互作机制研究。"
+  },
+  {
+    "full_name": "zainab-123-spec/variant-pathogenicity-explorer",
+    "url": "https://github.com/zainab-123-spec/variant-pathogenicity-explorer",
+    "language": "HTML",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-25T21:48:20Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "该项目用 AlphaFold 结构与序列特征预测错义变异的致病性，属于变异致病性分类而非无序蛋白分子互作建模，仅将无序区域作为特征之一，与课题方向基本无关。"
+  },
+  {
+    "full_name": "zachpwakefield/cancer-type-status-models",
+    "url": "https://github.com/zachpwakefield/cancer-type-status-models",
+    "language": "Python",
+    "stars": 0,
+    "description": "Models for predicting tumor status, type, and subtype. Findings cover splicing versus expression across TCGA, and a poly-T splicing code that detects mismatch-repair deficiency in 30 held-out cancers.",
+    "pushed_at": "2026-10-25T16:58:46Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库研究TCGA癌症RNA剪接与表达分类，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "hiteshwardev/Disordered-BIC-QFactor-Statistics",
+    "url": "https://github.com/hiteshwardev/Disordered-BIC-QFactor-Statistics",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-25T05:07:03Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库研究光子学中连续谱束缚态的辐射秩与无序统计，与IDP/IDR分子互作完全无关，无可迁移的互作建模方法。"
+  },
+  {
+    "full_name": "oliverW27/AF-domain-annotation",
+    "url": "https://github.com/oliverW27/AF-domain-annotation",
+    "language": "Python",
+    "stars": 0,
+    "description": "AlphaFold3 confidence plots annotated with InterProScan domains.",
+    "pushed_at": "2026-10-31T01:07:12Z",
+    "source": "search",
+    "score": 5,
+    "one_liner": "该仓库可视化AlphaFold3预测的PAE/pLDDT并叠加InterProScan结构域与无序区域注释，辅助评估无序区域在复合物中的置信度，但仅提供绘图工具，不涉及互作机制建模或AI/模拟方法实现。"
+  },
+  {
+    "full_name": "Aikon003/IsoAnalyzer",
+    "url": "https://github.com/Aikon003/IsoAnalyzer",
+    "language": "R",
+    "stars": 0,
+    "description": "Analysis pipeline for alternative splicing events using bulk RNA-seq data",
+    "pushed_at": "2026-10-29T14:14:38Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "该仓库是RNA-seq可变剪接分析流程，虽在功能后果分析中调用IUPred2A预测无序区域，但核心是剪接事件检测而非IDP/IDR分子互作建模，与课题方向关联微弱。"
+  },
+  {
+    "full_name": "enxolulo/Benchrecall",
+    "url": "https://github.com/enxolulo/Benchrecall",
+    "language": "HTML",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-28T18:07:42Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个生物化学课程记忆卡片应用，与无序蛋白分子互作建模完全无关。"
+  },
+  {
+    "full_name": "DennisGankin/physDDG",
+    "url": "https://github.com/DennisGankin/physDDG",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-28T12:05:25Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "PhysDDG 预测单氨基酸突变对蛋白折叠稳定性的 ΔΔG，属于折叠蛋白稳定性预测，不涉及 IDP/IDR 或无序介导的分子互作机制建模。"
+  },
+  {
+    "full_name": "VoltLabs-Research/structure-identification",
+    "url": "https://github.com/VoltLabs-Research/structure-identification",
+    "language": "C++",
+    "stars": 0,
+    "description": "Algorithms for crystal structure identification in atomistic simulations. Classifies atoms by local structural environment to detect BCC, FCC, HCP, diamond cubic, and other crystal structures. Distinguishes crystalline atoms from defects, surfaces, and disordered regions",
+    "pushed_at": "2026-10-28T06:50:55Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是材料科学中晶体结构识别与团簇图分析的内部共享库，与无序蛋白/分子互作/AI模拟方向完全无关。"
+  },
+  {
+    "full_name": "RobinaMirbahar/antigravity-science-plugin-cookbook",
+    "url": "https://github.com/RobinaMirbahar/antigravity-science-plugin-cookbook",
+    "language": "HTML",
+    "stars": 0,
+    "description": "Examples and guides for building Google Antigravity Plugins, PEP 723 Skills, Lifecycle Hooks, and 3D Mol* MCP Sidecars (modeled on Science Plugin v1.3.1, Gemini API & DeepMind AlphaFold/AlphaGenome).",
+    "pushed_at": "2026-10-28T02:48:59Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "这是一个 Google Antigravity 科学插件与 3D 生物分子可视化工具集，主要面向 AlphaFold 结构获取、变异评分和分子可视化，不涉及 IDP/IDR 或无序分子互作机制建模。"
+  },
+  {
+    "full_name": "exopoiesis/arxiv-radar-polymer",
+    "url": "https://github.com/exopoiesis/arxiv-radar-polymer",
+    "language": "Python",
+    "stars": 0,
+    "description": "Daily-curated polymer-relevant papers from arXiv with abstracts, canonical tags, and generated Pages views.",
+    "pushed_at": "2026-10-31T03:42:13Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库是聚合物（polymer）领域的 arXiv 论文汇总列表，聚焦聚合物性质预测、生成设计与材料信息学，与 IDP/IDR 分子互作机制建模无关。"
+  },
+  {
+    "full_name": "api-evangelist/dewpoint-therapeutics",
+    "url": "https://github.com/api-evangelist/dewpoint-therapeutics",
+    "language": "",
+    "stars": 0,
+    "description": "Dewpoint Therapeutics — independent third-party profile of a public API surface, by API Evangelist. Dewpoint Therapeutics is a biotechnology company applying the emerging science of biomolecular condensates to drug discovery. Founded in 2018 and headquartered in Boston, Massachusetts, with an additional research site in Dresden, Germany, Dewpoint h",
+    "pushed_at": "2026-10-29T20:26:13Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是 API Evangelist 对生物技术公司 Dewpoint Therapeutics 公开 API 表面的第三方档案仓库，不含任何 IDP/IDR 互作建模的代码、模型或数据，与课题无关。"
+  },
+  {
+    "full_name": "zhanxw/Literature",
+    "url": "https://github.com/zhanxw/Literature",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-27T14:17:52Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是文献摘要列表，涵盖微生物组、抗生素耐药性等广泛主题，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "elmeftouhi/ui-expense-wiki",
+    "url": "https://github.com/elmeftouhi/ui-expense-wiki",
+    "language": "TypeScript",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T23:23:38Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个多租户企业费用管理前端应用，与无序蛋白/分子互作/AI模拟方向完全无关。"
+  },
+  {
+    "full_name": "sourabhrustagi/Personal-ledger-android",
+    "url": "https://github.com/sourabhrustagi/Personal-ledger-android",
+    "language": "Kotlin",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T22:37:45Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个Android个人理财应用，与IDP/IDR分子互作、AI或物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "Jaspario1199/JasperWebsite",
+    "url": "https://github.com/Jaspario1199/JasperWebsite",
+    "language": "HTML",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T22:27:53Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个个人作品集网站仓库，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "xikass/qbd-doe-design-space",
+    "url": "https://github.com/xikass/qbd-doe-design-space",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "QbD / DoE / ANOVA / design-space case study — risk-based factor selection, 3x3 factorial with center points and decision-grade charts on synthetic data",
+    "pushed_at": "2026-10-31T21:46:06Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是药物制剂QbD设计空间与响应面优化案例，与无序蛋白/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "maximilianDeveloper/cephalo",
+    "url": "https://github.com/maximilianDeveloper/cephalo",
+    "language": "Python",
+    "stars": 0,
+    "description": "A multi-agent system for scientific writing. Enforces source fidelity, plagiarism-safe paraphrasing, and consistent formatting adapted to your institution's citation rules.",
+    "pushed_at": "2026-10-31T21:24:31Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "cephalo 是一个多智能体学术写作辅助系统，与无序蛋白/分子互作/AI 物理模拟方向完全无关。"
+  },
+  {
+    "full_name": "reifam-dev/daily-python-practice",
+    "url": "https://github.com/reifam-dev/daily-python-practice",
+    "language": "Python",
+    "stars": 0,
+    "description": "Daily Python coding practice (PyCharm) — quizzes, full apps, error fixing",
+    "pushed_at": "2026-10-31T20:14:00Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个日常Python编程练习仓库，内容为OOP基础和小型应用开发，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "SweetySiju/marine-biosurfactant-predictor",
+    "url": "https://github.com/SweetySiju/marine-biosurfactant-predictor",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T15:58:02Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是海洋微生物生物表面活性剂预测与优化的机器学习平台，与无序蛋白/无序区域及其分子互作建模完全无关。"
+  },
+  {
+    "full_name": "MetopRBr/metop-constellation",
+    "url": "https://github.com/MetopRBr/metop-constellation",
+    "language": "HTML",
+    "stars": 0,
+    "description": "Update Metop phases from EUMETSAT TLEs",
+    "pushed_at": "2026-10-31T15:36:50Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是气象卫星星座图自动更新工具，与无序蛋白分子互作课题完全无关。"
+  },
+  {
+    "full_name": "LawrieV/DubaiMate-Cahn-Hilliard",
+    "url": "https://github.com/LawrieV/DubaiMate-Cahn-Hilliard",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T15:16:12Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库实现 Cahn-Hilliard 相分离方程的数值求解与变体探索，属于通用物理相分离模型，未涉及 IDP/IDR 或无序分子互作机制建模。"
+  },
+  {
+    "full_name": "cpark247/diffuser-gas-accumulation",
+    "url": "https://github.com/cpark247/diffuser-gas-accumulation",
+    "language": "TeX",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T15:05:23Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "monzyst/v6",
+    "url": "https://github.com/monzyst/v6",
+    "language": "TypeScript",
+    "stars": 0,
+    "description": "V6-HF (High-Frequency Unrestricted) — production-grade flash-funded arbitrage system. Phase 1: Base/Morpho executor + Solana/Jupiter Lend lane. Phase 2: registry-gated position lifecycle, inert by default.",
+    "pushed_at": "2026-10-31T11:29:46Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是高频交易系统实现，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "alexzhangz/pprh-dca1-spatial-learning",
+    "url": "https://github.com/alexzhangz/pprh-dca1-spatial-learning",
+    "language": "Python",
+    "stars": 0,
+    "description": "Figure-8 and DNMP T-maze analysis code for posterior perirhinal input and dCA1 task-state representations during learning.",
+    "pushed_at": "2026-10-31T09:40:36Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是神经科学领域的小鼠海马/鼻周皮层空间学习电生理数据分析代码，与无序蛋白、分子互作及 AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "pfdsim/pfdsim",
+    "url": "https://github.com/pfdsim/pfdsim",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T05:21:11Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "PFDSim 是化工稳态流程模拟器，处理物流、热力学与分离设备，与无序蛋白/分子互作/AI模拟方向完全无关。"
+  },
+  {
+    "full_name": "exopoiesis/arxiv-radar-chem-eng",
+    "url": "https://github.com/exopoiesis/arxiv-radar-chem-eng",
+    "language": "Python",
+    "stars": 0,
+    "description": "Daily-curated chemical engineering-relevant papers from arXiv with abstracts, canonical tags, and generated Pages views.",
+    "pushed_at": "2026-10-31T04:04:20Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是化学工程过程建模与控制领域的arXiv论文汇总，与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "lyyi211/acoustic-levitator",
+    "url": "https://github.com/lyyi211/acoustic-levitator",
+    "language": "Python",
+    "stars": 0,
+    "description": "Concave 36+36 Arduino acoustic levitator: CAD, firmware, simulation and validation",
+    "pushed_at": "2026-10-31T02:50:35Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是声学悬浮器硬件设计项目，与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "nexusai-kevin/thermo-physics",
+    "url": "https://github.com/nexusai-kevin/thermo-physics",
+    "language": "TypeScript",
+    "stars": 0,
+    "description": "Reference implementations and reproducibility benchmark suite for thermodynamic computing (EBMs, Factor Graphs, Block Gibbs, and Denoising Thermodynamic Models)",
+    "pushed_at": "2026-10-31T00:49:32Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是热力学计算/能量基模型的参考实现与基准测试套件，面向Ising模型、自旋玻璃和组合优化，与无序蛋白/IDR分子互作方向完全无关。"
+  },
+  {
+    "full_name": "RoyDibs/portfolio",
+    "url": "https://github.com/RoyDibs/portfolio",
+    "language": "HTML",
+    "stars": 0,
+    "description": "Interactive scientific-ML portfolio — live PDE simulations, neural operators, control. https://roydibs.github.io/portfolio",
+    "pushed_at": "2026-10-30T20:15:50Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个个人作品集网站，包含几个通用物理模拟（如波动方程、Allen-Cahn相分离），与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "joepetrassem/mech-cpm",
+    "url": "https://github.com/joepetrassem/mech-cpm",
+    "language": "MATLAB",
+    "stars": 0,
+    "description": "Coupled chemo-mechanical phase-change model for ensemble of particles in an electrode",
+    "pushed_at": "2026-10-30T19:02:43Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是电化学电极颗粒相变模拟的MATLAB代码，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "Ayka11/reality_engine",
+    "url": "https://github.com/Ayka11/reality_engine",
+    "language": "TypeScript",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-30T12:59:41Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个交互式物理沙盒/元法则模拟游戏，与无序蛋白、分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "jekymin8232/vitalguardai-com",
+    "url": "https://github.com/jekymin8232/vitalguardai-com",
+    "language": "HTML",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-30T12:03:00Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是Web应用安全审计文档，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "Sudiphys/Phase-separation-by-polar-active-transport",
+    "url": "https://github.com/Sudiphys/Phase-separation-by-polar-active-transport",
+    "language": "Fortran",
+    "stars": 0,
+    "description": "Simulation codes for the study \"Phase separation by polar active transport,\" accepted for publication in Physical Review Letters. The codes describe active transport, motor-density dynamics, polarization, and phase separation in microtubule–motor systems.",
+    "pushed_at": "2026-10-30T08:48:02Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "RaneCCC/personal-website",
+    "url": "https://github.com/RaneCCC/personal-website",
+    "language": "HTML",
+    "stars": 0,
+    "description": "Jingkun Jiang — computational materials, adaptive scientific computing, and parallel solvers",
+    "pushed_at": "2026-10-30T07:36:10Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "SelfishKrus/K_CodexZoo",
+    "url": "https://github.com/SelfishKrus/K_CodexZoo",
+    "language": "Python",
+    "stars": 0,
+    "description": "Zoo",
+    "pushed_at": "2026-10-30T06:49:31Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个为 Codex 宠物系统设计的像素恐龙和猫的动画资源仓库，与 IDP/IDR 分子互作研究完全无关。"
+  },
+  {
+    "full_name": "brian-moon/intuitive-assessment-work-order-assistant",
+    "url": "https://github.com/brian-moon/intuitive-assessment-work-order-assistant",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-30T04:38:07Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是设备维护工单AI助手，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "sergiomtzlosa/dilution-cryofree-simulator",
+    "url": "https://github.com/sergiomtzlosa/dilution-cryofree-simulator",
+    "language": "Objective-C",
+    "stars": 0,
+    "description": "A native macOS application for exploring a modern cryogen-free dilution refrigerator",
+    "pushed_at": "2026-10-29T18:28:02Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是稀释制冷机模拟器，与无序蛋白分子互作课题完全无关。"
+  },
+  {
+    "full_name": "likithkumarmv/lira-web-quantum",
+    "url": "https://github.com/likithkumarmv/lira-web-quantum",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-29T16:56:58Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是物流货运异常处理与量子优化的企业系统，与无序蛋白分子互作课题完全无关。"
+  },
+  {
+    "full_name": "anttiluode/ChainNeuronsWithPhaseSpikeSol",
+    "url": "https://github.com/anttiluode/ChainNeuronsWithPhaseSpikeSol",
+    "language": "Python",
+    "stars": 0,
+    "description": "Sol 55",
+    "pushed_at": "2026-10-29T08:29:00Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库研究耦合振荡器链中的相位脉冲与信号传播，属于非线性动力学/物理模拟玩具模型，与IDP/IDR分子互作、结合机制建模完全无关。"
+  },
+  {
+    "full_name": "Liamir/autodiff-control",
+    "url": "https://github.com/Liamir/autodiff-control",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-29T06:39:10Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库实现基于自动微分学习稀疏多项式控制器的动力系统控制框架，与无序蛋白/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "david-hoffman/simrecon",
+    "url": "https://github.com/david-hoffman/simrecon",
+    "language": "Python",
+    "stars": 0,
+    "description": "SIM Reconstruction, LLM version",
+    "pushed_at": "2026-10-31T23:50:06Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是结构光照明显微镜（SIM）图像重建的 Python 库，与无序蛋白/分子互作/AI或物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "kentwils/mixing_temp_fit",
+    "url": "https://github.com/kentwils/mixing_temp_fit",
+    "language": "Python",
+    "stars": 0,
+    "description": "Simple python program to fit a sigmoidal curve to phase-separation data and output a mixing temperature with confidence intervals",
+    "pushed_at": "2026-10-28T16:47:48Z",
+    "source": "search",
+    "score": 3,
+    "one_liner": "拟合相分离数据求混合温度的简单Python脚本，仅涉及LLPS子场景的数据拟合，不涉及IDP/IDR互作机制建模或AI/模拟方法。"
+  },
+  {
+    "full_name": "BAMresearch/caco3-saxs-fast-flow",
+    "url": "https://github.com/BAMresearch/caco3-saxs-fast-flow",
+    "language": "HTML",
+    "stars": 0,
+    "description": "CaCO3 SAXS Analysis",
+    "pushed_at": "2026-10-28T14:53:51Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是碳酸钙沉淀的SAXS动力学分析，与IDP/IDR分子互作完全无关。"
+  },
+  {
+    "full_name": "kristianDKAndersen/advisor",
+    "url": "https://github.com/kristianDKAndersen/advisor",
+    "language": "JavaScript",
+    "stars": 0,
+    "description": "Advisor — strong-model orchestrator with worker-agent delegation",
+    "pushed_at": "2026-10-28T11:02:55Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个多智能体任务编排工具，与无序蛋白分子互作建模完全无关。"
+  },
+  {
+    "full_name": "techierizz/FuelGuard-E20",
+    "url": "https://github.com/techierizz/FuelGuard-E20",
+    "language": "CSS",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-28T09:40:54Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "FuelGuard E20 是一个燃油传感器云仪表盘项目（ESP32 固件 + React + Firebase），与无序蛋白/分子互作/AI 模拟完全无关。"
+  },
+  {
+    "full_name": "ASUS-UGen-AI-League-Team/Simpilot",
+    "url": "https://github.com/ASUS-UGen-AI-League-Team/Simpilot",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-28T06:57:11Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库提出用高斯过程与傅里叶神经算子预测两亲性聚合物共网络的相分离形貌，属于聚合物材料模拟领域，与IDP/IDR介导的分子互作机制建模无关。"
+  },
+  {
+    "full_name": "ourdao/ourdao-frontend",
+    "url": "https://github.com/ourdao/ourdao-frontend",
+    "language": "TypeScript",
+    "stars": 0,
+    "description": "OurDAO frontend — Next.js web app for the OurDAO lending DAO on Stellar Soroban.",
+    "pushed_at": "2026-10-28T02:31:22Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "OurDAO 是一个基于 Stellar Soroban 的借贷 DAO 前端 Web 应用，与无序蛋白/分子互作/AI 模拟完全无关。"
+  },
+  {
+    "full_name": "merrypranxter/fruitflyresearchlol",
+    "url": "https://github.com/merrypranxter/fruitflyresearchlol",
+    "language": "",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-27T22:48:19Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是果蝇连接组驱动的人工生命与生成艺术研究存档，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "ForestGeneticsLab/DNA_Extraction_Protocol",
+    "url": "https://github.com/ForestGeneticsLab/DNA_Extraction_Protocol",
+    "language": "",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-27T20:16:19Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是植物DNA提取实验方案指南，与无序蛋白分子互作建模完全无关。"
+  },
+  {
+    "full_name": "ireneghioni-glitch/AI-UV-Curing-Showcase",
+    "url": "https://github.com/ireneghioni-glitch/AI-UV-Curing-Showcase",
+    "language": "",
+    "stars": 0,
+    "description": "Showcase repository for an end-to-end Machine Learning & Cheminformatics platform that predicts UV-curing conversion and accelerates Photoinitiator discovery. Full source code available upon request.",
+    "pushed_at": "2026-10-27T15:27:47Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是UV固化预测与光引发剂发现的化学信息学项目，与无序蛋白/IDR分子互作方向完全无关。"
+  },
+  {
+    "full_name": "ssh0119/biesl-ml",
+    "url": "https://github.com/ssh0119/biesl-ml",
+    "language": "Python",
+    "stars": 0,
+    "description": "Machine-learning experiments for multimodal physiological signals",
+    "pushed_at": "2026-10-27T10:19:39Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是穿戴设备生理信号（心率、呼吸等）的5类压力状态分类机器学习项目，与IDP/IDR分子互作、相分离或相关AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "snezhanatuneska-maker/interface-lab",
+    "url": "https://github.com/snezhanatuneska-maker/interface-lab",
+    "language": "TypeScript",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-27T09:24:53Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是清洁能源过程界面工程的教学互动工具，与IDP/IDR分子互作建模完全无关。"
+  },
+  {
+    "full_name": "supersovaa/diagonal-progress-planning",
+    "url": "https://github.com/supersovaa/diagonal-progress-planning",
+    "language": "",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-27T07:24:16Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个关于分阶段进度规划与任务编排的通用技能仓库，与无序蛋白、分子互作及 AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "hyperorganism/active-matter",
+    "url": "https://github.com/hyperorganism/active-matter",
+    "language": "",
+    "stars": 0,
+    "description": "Active Matter: Hyperorganism research collection",
+    "pushed_at": "2026-10-26T21:52:11Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是活性物质（active matter）物理与集体运动的文献汇总，涉及粒子自驱动、化学运动等，与无序蛋白/IDR分子互作及AI/模拟建模方向完全无关。"
+  },
+  {
+    "full_name": "asrvsn/ovpsolver",
+    "url": "https://github.com/asrvsn/ovpsolver",
+    "language": "Python",
+    "stars": 0,
+    "description": "Discontinuous Galerkin finite-element solver for phase-field systems governed by an Onsager variational principle",
+    "pushed_at": "2026-10-26T21:04:15Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "Mahalanobis-Systems/aot-kit",
+    "url": "https://github.com/Mahalanobis-Systems/aot-kit",
+    "language": "Python",
+    "stars": 0,
+    "description": "AOT Kit: one Claude Code skill per researched agent optimization, and the library of evidence behind them",
+    "pushed_at": "2026-10-30T17:12:14Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "jeremycod/claude-powers",
+    "url": "https://github.com/jeremycod/claude-powers",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-26T18:47:31Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是面向 Claude Code 的软件开发工作流技能与多智能体评审模板集合，与无序蛋白/分子互作/AI 物理模拟方向完全无关。"
+  },
+  {
+    "full_name": "souzanha/PhaseField-molvol",
+    "url": "https://github.com/souzanha/PhaseField-molvol",
+    "language": "Python",
+    "stars": 0,
+    "description": "Uses FEniCS version 1.9 to model phase separation using either a fixed reference frame or one where variations in molar volume leads to local dilation/contraction.",
+    "pushed_at": "2026-10-26T15:05:51Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库用 FEniCS 模拟 LiFePO4 电池电极材料的相分离与弹性耦合，属于材料科学领域，与无序蛋白/无序区域介导的分子互作无关。"
+  },
+  {
+    "full_name": "CTL-PROJECTS/LaBoys",
+    "url": "https://github.com/CTL-PROJECTS/LaBoys",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-26T14:54:32Z",
+    "source": "search",
+    "score": 1,
+    "one_liner": "该仓库实现的是 Cahn-Hilliard 相分离数值模型的教学练习，与 IDP/IDR 分子互作建模无直接关系，仅相分离数学框架可作极远背景参考。"
+  },
+  {
+    "full_name": "2411415626/cv-arxiv-daily",
+    "url": "https://github.com/2411415626/cv-arxiv-daily",
+    "language": "Python",
+    "stars": 0,
+    "description": "CV Papers Daily & most popular ai",
+    "pushed_at": "2026-10-26T14:36:43Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是音视频/图像/语音编解码与压缩的 arXiv 论文汇总列表，与无序蛋白、分子互作、AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "GNicholas2003/DeadWeights-Cahn-Hilliard",
+    "url": "https://github.com/GNicholas2003/DeadWeights-Cahn-Hilliard",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-26T11:22:19Z",
+    "source": "search",
+    "score": 2,
+    "one_liner": "该仓库实现经典Cahn-Hilliard相分离模型，属于物理相分离模拟，但未涉及IDP/IDR、分子互作或AI/模拟方法用于无序蛋白互作建模，与课题核心方向无关。"
+  },
+  {
+    "full_name": "Trexzo/ghostc",
+    "url": "https://github.com/Trexzo/ghostc",
+    "language": "Java",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-31T17:56:19Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是 Minecraft 1.8.9 客户端模组，与 IDP/IDR 分子互作、AI 或物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "RTXNaveen/bia-fuelguard",
+    "url": "https://github.com/RTXNaveen/bia-fuelguard",
+    "language": "",
+    "stars": 0,
+    "description": "An edge-AI automotive safety system using optical-density sensor fusion to automatically detect, block, and drain wrong or contaminated fuel before it reaches the tank.",
+    "pushed_at": "2026-10-26T09:21:58Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是汽车防加错燃油的嵌入式硬件AI网关项目，与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "whatnotalot/negative-lines",
+    "url": "https://github.com/whatnotalot/negative-lines",
+    "language": "Python",
+    "stars": 0,
+    "description": "AI agents that build an open dataset of negative photoresist formulations and design compliant new ones (OSI Hackathon 2026)",
+    "pushed_at": "2026-10-26T08:06:29Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库面向负性光刻胶配方设计与合规优化，与IDP/IDR分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "Avivbryg/torah-beanan",
+    "url": "https://github.com/Avivbryg/torah-beanan",
+    "language": "HTML",
+    "stars": 0,
+    "description": "A living, shared Torah commentary platform – built with Claude Code",
+    "pushed_at": "2026-10-26T07:34:37Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个基于云端的犹太教 Torah 文本注释与社区讨论平台，与 IDP/IDR 分子互作建模完全无关。"
+  },
+  {
+    "full_name": "AstroWanni/7dt_etc",
+    "url": "https://github.com/AstroWanni/7dt_etc",
+    "language": "Python",
+    "stars": 0,
+    "description": "Empirical exposure time calculator for 7DT",
+    "pushed_at": "2026-10-26T04:19:15Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "7DT望远镜曝光时间计算器，属天文观测工具，与无序蛋白/分子互作/AI模拟方向完全无关。"
+  },
+  {
+    "full_name": "michaelrendier/BulletCluster",
+    "url": "https://github.com/michaelrendier/BulletCluster",
+    "language": "Python",
+    "stars": 0,
+    "description": "Interogation of every telescope worth of data that resolved the Bullet Cluster for Ptychography of the Shape of the Space, not a map of where 'stuff' is. Hypercomplex Turbulent Flow. Two Surface Ripples interacting.",
+    "pushed_at": "2026-10-26T02:33:55Z",
+    "source": "search",
+    "score": null,
+    "one_liner": "[llm failed]"
+  },
+  {
+    "full_name": "slopgobblercobbler/build-geometry-pro",
+    "url": "https://github.com/slopgobblercobbler/build-geometry-pro",
+    "language": "Java",
+    "stars": 0,
+    "description": "Mathematical 3D geometric structure generator, ghost-block hologram projector, and CAD building assistant for Fabric Minecraft.",
+    "pushed_at": "2026-10-25T23:13:27Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "这是一个用于Minecraft的数学几何CAD与全息投影模组，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "ayomide-100/phase_field_models",
+    "url": "https://github.com/ayomide-100/phase_field_models",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-25T22:48:06Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库比较 Cahn-Hilliard 相分离问题的显式与半隐式时间积分器，属于数值方法基准测试，与 IDP/IDR 分子互作建模无关。"
+  },
+  {
+    "full_name": "swayampandey099-max/Ethanol-det",
+    "url": "https://github.com/swayampandey099-max/Ethanol-det",
+    "language": "TypeScript",
+    "stars": 0,
+    "description": "web page that detect any vulnerabilities in the perticular ethanol level to the vehicle ",
+    "pushed_at": "2026-10-25T12:54:31Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是印度汽油车乙醇燃料兼容性分析系统，与无序蛋白分子互作及AI/物理模拟建模完全无关。"
+  },
+  {
+    "full_name": "PaulinaPaland/gamma-theta-coupling",
+    "url": "https://github.com/PaulinaPaland/gamma-theta-coupling",
+    "language": "Jupyter Notebook",
+    "stars": 0,
+    "description": "ICA-based pipeline separating CA3, entorhinal and local CA1 gamma sources from hippocampal LFP and testing whether each is locked to a different theta phase (Schomburg 2014, Sirota 2008)",
+    "pushed_at": "2026-10-25T12:21:17Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是海马CA1区LFP记录中gamma-theta耦合的分析流程，与IDP/IDR分子互作及AI/物理模拟方法完全无关。"
+  },
+  {
+    "full_name": "Ashutoshumar17/cloud-biometric-attendance",
+    "url": "https://github.com/Ashutoshumar17/cloud-biometric-attendance",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-25T11:21:55Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "基于FaceNet和MTCNN的云考勤人脸识别系统，与无序蛋白/分子互作方向完全无关。"
+  },
+  {
+    "full_name": "Naveen939282/qgrid",
+    "url": "https://github.com/Naveen939282/qgrid",
+    "language": "Python",
+    "stars": 0,
+    "description": "",
+    "pushed_at": "2026-10-25T06:37:39Z",
+    "source": "search",
+    "score": 0,
+    "one_liner": "该仓库是量子计算优化数据中心任务分配的模拟项目，与无序蛋白分子互作建模完全无关。"
+  }
+]

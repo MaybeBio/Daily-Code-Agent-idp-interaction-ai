@@ -1,0 +1,435 @@
+\documentclass[11pt]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\input{numbers}
+
+\newcommand{\Rg}{R_g}
+\newcommand{\lam}{\langle\lambda\rangle}
+\newcommand{\expit}{\operatorname{expit}}
+
+\title{A closed-form model for the radius-of-gyration distribution\\ of intrinsically disordered proteins (HPS1)}
+\date{31 October 2026}
+\author{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The formula below maps an amino-acid sequence to the full equilibrium distribution of the radius of gyration $\Rg$ of
+the chain in HPS1 coarse-grained molecular dynamics (298~K, 150~mM ionic strength). It uses the chain length $N$ and
+four sequence descriptors: two branches of the sequence charge decoration, the mean hydropathy and the excess of a
+contact-energy score over a length-dependent threshold. It has \val{cf.n_parameters} parameters (\val{cf.n_coefficients} coefficients and the two constants of the CE
+threshold). It was fitted by maximum likelihood to the stored MD frames of \val{data.n_train} training proteins. On
+\val{cf.val.n} held-out validation proteins it predicts $\langle\Rg\rangle$ with a mean absolute error of
+\val{cf.val.mean_err_pct}\% and the standard deviation with \val{cf.val.std_err_pct}\%. The median Wasserstein-1
+distance of the full distribution is \val{cf.val.w1_pct_median}\% of $\langle\Rg\rangle$. On the \val{cf.test.n} test
+proteins, scored once for this form, the three errors are \val{cf.test.mean_err_pct}\%, \val{cf.test.std_err_pct}\% and
+\val{cf.test.w1_pct_median}\%.
+\end{abstract}
+
+%==========================================================================================================
+\section{The distribution}
+With $s=\Rg/S_m$ the density is the two-exponent form of Victor and Lhuillier (J.\ Chem.\ Phys.\ 92, 1362 (1990),
+Eqs.~(1), (2), (7), in $d=3$):
+\begin{equation}\label{eq:p}
+p(\Rg)=\frac{1}{Z\,S_m}\exp\!\Big[-A\Big(\frac{s^{\delta}}{\delta}+\frac{s^{-g}}{g}\Big)\Big],\qquad
+\delta=\frac{1}{1-\nu},\qquad g=\frac{3}{3\nu-1},
+\end{equation}
+\begin{equation}\label{eq:Z}
+Z(A,\nu)=\int_0^\infty \exp\!\Big[-A\Big(\frac{s^{\delta}}{\delta}+\frac{s^{-g}}{g}\Big)\Big]\,ds .
+\end{equation}
+\begin{itemize}
+\item $S_m$ is the most probable $\Rg$: $\partial_s\ln p=-A\,(s^{\delta-1}-s^{-g-1})$ vanishes at $s=1$.
+\item $\nu\in(1/3,1)$ sets both tails. The compressed side falls as $\ln p\sim-s^{-g}$, the stretched side as
+  $\ln p\sim-s^{\delta}$. For a good-solvent chain ($\nu=0.588$) $g=3.93$ and $\delta=2.43$; as $\nu\to1/3$ the
+  compressed side becomes a vertical wall.
+\item $A>0$ sets the width: the larger $A$, the narrower the distribution.
+\end{itemize}
+Moments follow from
+\begin{equation}
+\langle\Rg^k\rangle=S_m^k\,\frac{1}{Z}\int_0^\infty s^k\exp\!\Big[-A\Big(\frac{s^{\delta}}{\delta}+\frac{s^{-g}}{g}\Big)\Big]\,ds .
+\end{equation}
+$Z$ and the moments have no closed form for general $(A,\nu)$. They are evaluated by the trapezoidal rule in
+$t=\ln s$ on $[-3,2]$ with 4{,}001 points (integrand $e^{t}\exp[-A(e^{\delta t}/\delta+e^{-gt}/g)]$). Normalised
+this way, the density of every validation protein integrates to 1 within \val{cf.val.max_mass_dev} on an independent
+grid.
+
+%==========================================================================================================
+\section{The parameters as functions of the sequence}
+With $L=\ln N$:
+\begin{align}
+\ln S_m &= b_0+b_L L+b_{LL}L^2+\beta_+s_++\beta_hh+\sum_{x\in\{s_-,\,\lam\}}\big(\beta_x+\beta_{xL}\,L\big)\,x, \label{eq:Sm}\\
+u &= \gamma_0+\gamma_+ s_+ +\gamma_{+N}\frac{s_+}{N}+\gamma_- s_- +\gamma_\lambda\lam+\gamma_h h,\qquad \nu=\frac13+\frac23\,\expit(u),\label{eq:nu}\\
+\ln A &= a_0+a_\nu\,\nu+\frac{a_N}{N}+a_\lambda\lam .\label{eq:A}
+\end{align}
+$\expit(u)=1/(1+e^{-u})$ keeps $\nu$ inside $(1/3,1)$. The amplitude depends on the sequence through $\nu$, through
+$1/N$ (the finite-length correction) and through $\lam$; it has no regression of its own. The term $s_+/N$ lets like-charge
+repulsion raise $\nu$ more in short chains than in long ones. The coefficients are in Table~\ref{tab:coef}. With them inserted:
+\begin{align*}
+\ln S_m ={}& -1.73956+0.672772\,L-0.0063239\,L^2+0.192433\,s_+\\
+ &+(-0.663359+0.243714\,L)\,s_- +(-0.00201655-0.0792066\,L)\,\lam-0.0871931\,h,\\[2pt]
+u ={}& -0.284599+0.128824\,s_+ +\frac{23.5874\,s_+}{N}+1.70886\,s_--0.134595\,\lam-0.234043\,h,\\[2pt]
+\ln A ={}& -0.09739+2.36289\,\nu+\frac{11.5194}{N}-0.323979\,\lam ,
+\end{align*}
+with $S_m$ in nm, and $h=\max(\mathrm{CE}+1.4318127-0.25\,L,\,0)$.
+
+\begin{table}[h]
+\centering
+\caption{Coefficients (six significant figures; full precision in \texttt{model/closed\_form.json}). $S_m$ in nm.}\label{tab:coef}
+\begin{tabular}{@{}l r@{}}
+\toprule
+\multicolumn{2}{@{}l}{$\ln S_m$, Eq.~\eqref{eq:Sm} (9)}\\
+\midrule
+$1$ & $-1.73956$ \\
+$s_+$ & $0.192433$ \\
+$s_-$ & $-0.663359$ \\
+$\lam$ & $-0.00201655$ \\
+$h$ & $-0.0871931$ \\
+$\ln N$ & $0.672772$ \\
+$s_-\ln N$ & $0.243714$ \\
+$\lam\ln N$ & $-0.0792066$ \\
+$(\ln N)^2$ & $-0.0063239$ \\
+\bottomrule
+\end{tabular}\hspace{1.5cm}
+\begin{tabular}{@{}l r@{}}
+\toprule
+\multicolumn{2}{@{}l}{$u$, Eq.~\eqref{eq:nu} (6)}\\
+\midrule
+$1$ & $-0.284599$ \\
+$s_+$ & $0.128824$ \\
+$s_+/N$ & $23.5874$ \\
+$s_-$ & $1.70886$ \\
+$\lam$ & $-0.134595$ \\
+$h$ & $-0.234043$ \\
+\midrule
+\multicolumn{2}{@{}l}{$\ln A$, Eq.~\eqref{eq:A} (4)}\\
+\midrule
+$1$ & $-0.09739$ \\
+$\nu$ & $2.36289$ \\
+$1/N$ & $11.5194$ \\
+$\lam$ & $-0.323979$ \\
+\midrule
+\multicolumn{2}{@{}l}{CE threshold $c(N)=c_0+c_1\ln N$ (2)}\\
+\midrule
+$c_0$ & $-1.43181$ \\
+$c_1$ & $0.25$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Parameter count.} $9+6+4=19$ coefficients plus the two constants of the CE threshold
+$c(N)=c_0+c_1\ln N$, both set from the training data: $c_1=0.25$ was chosen from $\{-0.5,0,0.25,0.5,0.75,1\}$ by
+three-fold cross-validation on the training proteins (Section~\ref{sec:threshold}), and $c_0$ is the median of
+$\mathrm{CE}-c_1\ln N$ over the 3{,}223 training proteins: 21 parameters. The constants inside the descriptors
+(Section~\ref{sec:desc}) were fixed before this fit and are not counted.
+
+\paragraph{How this form was reached.} An earlier 24-parameter form had $\ln N$ in $u$, no $s_+/N$, the products
+$s_+\ln N$ and $h\ln N$ in $\ln S_m$, and $s_+$ in $\ln A$; it capped $\nu$ for short, like-charged chains. The term
+$s_+/N$ was added and those four terms removed one at a time, each change judged by the out-of-fold NLL (a removal may not
+raise it by more than two standard errors, paired per protein with one sequence cluster as one unit; an addition must lower
+it by more than two) and by the NLL on the length and contact-energy sets (not higher than the earlier form by more
+than $10^{-3}$). The next removal, of $\gamma_+$, failed. Other shapes for the term ($s_+N^{-\Delta}$, saturation in $s_+$
+or in $N$) and terms in $h/N$ did not pass. The choice was made after seeing training residuals of the earlier form and its
+test score, so the gain over it is not a blind estimate.
+
+%==========================================================================================================
+\section{Descriptors}\label{sec:desc}
+Residue $i=1,\dots,N$ carries the HPS1 charge $q_i$ and hydropathy $\lambda_i$ (Table~\ref{tab:res}).
+
+\begin{table}[h]
+\centering
+\caption{HPS1 residue charges and hydropathies.}\label{tab:res}
+\begin{tabular}{@{}c r r@{\hspace{1.2cm}}c r r@{\hspace{1.2cm}}c r r@{\hspace{1.2cm}}c r r@{}}
+\toprule
+& $q$ & $\lambda$ & & $q$ & $\lambda$ & & $q$ & $\lambda$ & & $q$ & $\lambda$\\
+\midrule
+A & 0 & 0.730 & G & 0 & 0.649 & M & 0 & 0.838 & S & 0 & 0.595\\
+R & $+1$ & 0.000 & H & $+0.5$ & 0.514 & F & 0 & 1.000 & T & 0 & 0.676\\
+N & 0 & 0.432 & I & 0 & 0.973 & P & 0 & 1.000 & W & 0 & 0.946\\
+D & $-1$ & 0.378 & L & 0 & 0.973 & & & & Y & 0 & 0.865\\
+C & 0 & 0.595 & K & $+1$ & 0.514 & & & & V & 0 & 0.892\\
+Q & 0 & 0.514 & & & & & & & & & \\
+E & $-1$ & 0.459 & & & & & & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Charge decoration branches $s_\pm$.} With the sequence charge decoration
+$\mathrm{SCD}=\frac1N\sum_{i<j}q_iq_j\,(j-i)^{1/2}$,
+\begin{equation}
+s=\operatorname{asinh}\!\Big(\frac{5\,\mathrm{SCD}}{N}\Big),\qquad s_+=\max(s,0),\qquad s_-=\min(s,0).
+\end{equation}
+$s_+>0$ for a sequence whose like charges dominate (net-charge repulsion); $s_-<0$ for a sequence whose opposite
+charges are segregated into blocks. Well-mixed sequences have $s\approx0$. Of the training proteins, \val{data.frac_scd_pos_pct}\% have
+$s_+>0$ and \val{data.frac_scd_neg_pct}\% have $s_-<0$.
+
+\paragraph{Mean hydropathy.} $\lam=\frac1N\sum_i\lambda_i$.
+
+\paragraph{Contact energy CE and its excess $h$ over the CE threshold.} CE is a soft maximum (log-sum-exp) over pairs of chain segments of
+their attraction, weighted by the probability that the loop between them closes. For each segment width $w\in\{5,\,9,\,15,\,w_N\}$, with
+$w_N=\max(3,\operatorname{round}(N/8))$, and only if $2w\le N$:
+\begin{enumerate}
+\item Window averages over residues $a,\dots,a+w-1$ (0-based, $a=0,\dots,N-w$): $\bar q_a$, $\bar\lambda_a$.
+\item For every pair of non-overlapping windows, $b-a\ge w$, the pair energy
+  $E_{ab}=w\,\big(e_0+\alpha\,\bar q_a\bar q_b+\beta\,(\bar\lambda_a+\bar\lambda_b)/2\big)$.
+\item The Gaussian-chain weight of the contact: with window centres $x=(a+w/2)/N$, $y=(b+w/2)/N$, loop fraction
+  $\ell=y-x$ and $\tau_\ell=1-\ell$,
+  \[
+  K_{ab}=1-6\Big[\frac{\ell^3}{12}+\frac{\tau_\ell^3}{6}+\frac{\ell\,\big(x^2+(1-y)^2\big)}{2}+\frac{\tau_\ell\,\ell^2}{6}\Big],
+  \]
+  the fractional drop of the mean-square radius of gyration of a Gaussian chain when positions $x$ and $y$ are joined
+  (floored at $10^{-12}$).
+\item $S_w=\ln\sum_{b-a\ge w}(b-a)^{-3/2}\,K_{ab}\,\exp(-E_{ab}/\tau)$, with $(b-a)^{-3/2}$ the Gaussian
+  loop-closure factor.
+\item $z_w=(S_w-\mu_w)/\sigma_w$, where $\mu_w$ and $\sigma_w$ are the mean and the sample standard deviation of $S_w$
+  over the 3{,}223 training proteins that use width $w$ (all of them, except for $w=15$, which the 101 chains with
+  $N<30$ do not use). They are fixed constants (values below), so CE is a function of the sequence alone.
+\end{enumerate}
+$\mathrm{CE}$ is the mean of $z_w$ over the widths used ($\mathrm{CE}=0$ if none qualifies, which happens only for $N<6$).
+The formula uses only the part of CE above the CE threshold $c(N)$; below it, the contact energy has no effect:
+\begin{equation}
+h=\max\big(\mathrm{CE}-c(N),\;0\big),\qquad c(N)=c_0+c_1\ln N,\quad c_0=-1.4318127,\ c_1=0.25 .
+\end{equation}
+The CE threshold rises with chain length, from \val{cf.ce_threshold_at_20} at $N=20$ to \val{cf.ce_threshold_at_184}
+at $N=184$ and \val{cf.ce_threshold_at_490} at $N=490$. CE itself grows with $N$, with a least-squares slope of
+\val{data.ce_slope_lnN} per unit of $\ln N$ over the training proteins, and the threshold follows about 40\% of that
+trend.
+Constants: $e_0=-0.0187838$, $\alpha=0.453248$, $\beta=-0.176328$, the least-squares fit
+$u_{ij}\approx e_0+\alpha q_iq_j+\beta(\lambda_i+\lambda_j)/2$ over the 210 residue pairs ($R^2=0.979$) of
+$u_{ij}=B_{ij}/B^{\mathrm{rep}}_{ij}-1$, where $B_{ij}=-2\pi\int_0^\infty\big(e^{-V_{ij}(r)/k_BT}-1\big)\,dr$ for the HPS1
+pair potential $V_{ij}$ at this salt and temperature and $B^{\mathrm{rep}}_{ij}$ is the same integral for its purely
+repulsive part; $\tau=0.06$; and
+$(\mu_w,\sigma_w)=(18.3490,\,5.97878)$, $(26.1023,\,7.61787)$, $(37.9729,\,10.1666)$, $(55.8291,\,31.5359)$ for
+$w=5,\,9,\,15,\,w_N$. Full-precision values and the reference implementation are in \texttt{idprg/descriptors.py}.
+
+\paragraph{Worked example: $\alpha$-synuclein ($N=\val{ex.asyn.N}$).}
+\begin{itemize}
+\item Descriptors: $\mathrm{SCD}=\val{ex.asyn.scd}$, so $s_+=0$ and $s_-=\val{ex.asyn.scd_neg}$;
+  $\lam=\val{ex.asyn.mean_hydro}$; $\mathrm{CE}=\val{ex.asyn.ce}$ is below $c(140)=\val{ex.asyn.ce_threshold}$, so
+  $h=0$.
+\item Parameters: $\ln S_m=\val{ex.asyn.lnSm}$ ($S_m=\val{ex.asyn.Sm_nm}$~nm), $u=\val{ex.asyn.u}$,
+  $\nu=\val{ex.asyn.nu}$ ($\delta=\val{ex.asyn.delta}$, $g=\val{ex.asyn.g}$) and $\ln A=\val{ex.asyn.lnA}$.
+\item Distribution: $\langle\Rg\rangle=\val{ex.asyn.mean_nm}$~nm, standard deviation \val{ex.asyn.std_nm}~nm,
+  skewness \val{ex.asyn.skew}.
+\item The HPS1 simulation gives $\langle\Rg\rangle=\val{ex.asyn.hps1_mean_nm}$~nm.
+\end{itemize}
+
+%==========================================================================================================
+\section{Fit}
+\paragraph{Data.} HPS1 coarse-grained simulations of single chains at 298~K and 150~mM ionic strength (Debye screening
+$\kappa=1.2738$~nm$^{-1}$), with 30{,}000 stored frames per protein. The proteins are split by MMseqs2 sequence clusters
+(30\% minimum identity, 80\% coverage):
+\begin{itemize}
+\item \val{data.n_train} training proteins, used for the fit;
+\item \val{data.n_val} validation proteins, used only for the scores below (one validation protein with corrupt stored
+  frames is excluded);
+\item \val{data.n_test} test proteins, scored once for this form, after its coefficients were fixed
+  (earlier forms were scored on them too; \texttt{data/README.md}, test-split log).
+\end{itemize}
+
+\paragraph{Objective.} The mean over training proteins of the per-frame negative log-likelihood of all stored frames,
+plus a ridge penalty on the regression slopes:
+\begin{equation}
+\mathcal L=\frac1n\sum_{p=1}^{n}\Big[-\frac1{F}\sum_{f=1}^{F}\ln p\big(\Rg^{(p,f)}\big)\Big]
++\frac{\lambda_{\mathrm{r}}}{n}\,\big\|\boldsymbol\theta_{\text{slopes}}\big\|^2,\qquad n=3223,\ F=30{,}000,\ \lambda_{\mathrm r}=1 .
+\end{equation}
+The slopes of Eqs.~\eqref{eq:Sm} and \eqref{eq:nu} enter the penalty on z-scored regressors; the intercepts and the
+amplitude coefficients of Eq.~\eqref{eq:A} are not penalised. L-BFGS-B in double precision, started from a two-step
+fit: ridge regressions of per-protein maximum-likelihood fits of Eq.~\eqref{eq:p} on the regressors, and least squares
+for the amplitude law. It converges to $\mathcal L=\val{cf.objective_end}$.
+
+\paragraph{CE threshold.}\label{sec:threshold} $c_0$ is set before the optimisation, as the median of
+$\mathrm{CE}-c_1\ln N$ over the fit set. $c_1$ was chosen by the pooled out-of-fold NLL of the three-fold
+cross-validation (Section~\ref{sec:perf}), under a rule fixed before the comparison: the best $c_1$ replaces the constant
+threshold $c_1=0$ if its NLL is lower by more than two standard errors (paired per protein, with the proteins of one
+sequence cluster as one unit) and its NLL on the length and contact-energy extrapolation sets is not higher by more
+than $10^{-3}$.
+\begin{center}
+\small
+\begin{tabular}{@{}l r r r r r r@{}}
+\toprule
+$c_1$ & $-0.5$ & $0$ & $0.25$ & $0.5$ & $0.75$ & $1$\\
+\midrule
+cross-validation NLL & \val{cethr.c1_m0p5.cv_nll} & \val{cethr.c1_0.cv_nll} & \textbf{\val{cethr.c1_0p25.cv_nll}} &
+\val{cethr.c1_0p5.cv_nll} & \val{cethr.c1_0p75.cv_nll} & \val{cethr.c1_1.cv_nll}\\
+\bottomrule
+\end{tabular}
+\end{center}
+At $c_1=0.25$ the NLL is lower by \val{cethr.c1_0p25.cv_nll_gain} (standard error \val{cethr.c1_0p25.se}).
+On the extrapolation sets it is \val{cethr.c1_0p25.length_nll} against \val{cethr.c1_0.length_nll} (length) and
+\val{cethr.c1_0p25.sticky_nll} against \val{cethr.c1_0.sticky_nll} (contact energy).
+
+%==========================================================================================================
+\section{Performance}\label{sec:perf}
+\paragraph{Metrics.} Per protein, against its MD ensemble; MD moments are taken over the full trajectory.
+\begin{itemize}
+\item \textbf{NLL}: $-\frac1F\sum_f\ln p(\Rg^{(f)})$ over the 30{,}000 stored frames, $\Rg$ in nm (nats per frame),
+  averaged over proteins. It grows with chain length, because longer chains have broader distributions in nm, so it is
+  comparable only between models scored on the same proteins.
+\item \textbf{$\langle\Rg\rangle$ error}: $|\langle\Rg\rangle_{\mathrm{pred}}/\langle\Rg\rangle_{\mathrm{MD}}-1|$;
+  \textbf{bias}: the same without the absolute value. \textbf{$\sigma$ error}: the same for the standard deviation.
+  \textbf{Skewness error}: $|\gamma_{\mathrm{pred}}-\gamma_{\mathrm{MD}}|$. All are averaged over proteins.
+\item \textbf{$W_1$}: $\int|F_{\mathrm{pred}}(r)-F_{\mathrm{MD}}(r)|\,dr$, the Wasserstein-1 distance between the predicted
+  CDF and the empirical CDF of the stored frames, in \% of $\langle\Rg\rangle_{\mathrm{MD}}$; median over proteins.
+\item \textbf{Compact chains}: $\langle\Rg\rangle_{\mathrm{MD}}<0.8\,R_F(N)$, where
+  $R_F=e^{\val{data.ln_a_F}}N^{\val{data.nu_F}}$~nm is the power law fitted to the training proteins'
+  $\langle\Rg\rangle$.
+\end{itemize}
+
+\paragraph{Test sets.} \emph{Validation} and \emph{test}: the formula above, scored on the \val{data.n_val}
+validation and \val{data.n_test} test proteins.
+\emph{Cross-validation}: the training proteins split into three folds by sequence cluster; all parameters except $c_1$
+were refitted on two folds and scored on the third, and the out-of-fold scores were pooled (these are the scores from which
+$c_1$ was chosen). \emph{Length} and \emph{contact-energy extrapolation}: all parameters except $c_1$ were refitted on a
+restricted part of the training split and scored on training proteins outside it. Sequence-cluster mates of the scored proteins were removed from the fit set.
+\begin{itemize}
+\item Length: fit on $N\le200$ (\val{data.length.n_fit} proteins), scored on $N\ge300$ (\val{data.length.n_eval}).
+\item Contact energy: fit on $\mathrm{CE}\le\val{data.ce_q75}$ (the training 75th percentile; \val{data.sticky.n_fit}
+  proteins), scored on $\mathrm{CE}\ge\val{data.ce_q90}$ (the 90th percentile; \val{data.sticky.n_eval}).
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Scores. The $W_1$ 90th percentile is given in brackets. Compact: number of compact chains in the set and their
+mean $\langle\Rg\rangle$ error.}\label{tab:perf}
+\small
+\begin{tabular}{@{}l r r r r r r r r@{}}
+\toprule
+set & $n$ & NLL & $\langle\Rg\rangle$ err.\ & bias & $\sigma$ err.\ & skew err.\ & $W_1$ med.\ [p90] & compact \\
+\midrule
+validation & \val{cf.val.n} & \val{cf.val.nll} & \val{cf.val.mean_err_pct}\% & \val{cf.val.bias_pct}\% &
+\val{cf.val.std_err_pct}\% & \val{cf.val.skew_mae} & \val{cf.val.w1_pct_median}\% [\val{cf.val.w1_pct_p90}] &
+\val{cf.val.n_compact}: \val{cf.val.compact_mean_err_pct}\% \\
+test & \val{cf.test.n} & \val{cf.test.nll} & \val{cf.test.mean_err_pct}\% & \val{cf.test.bias_pct}\% &
+\val{cf.test.std_err_pct}\% & \val{cf.test.skew_mae} & \val{cf.test.w1_pct_median}\% [\val{cf.test.w1_pct_p90}] &
+\val{cf.test.n_compact}: \val{cf.test.compact_mean_err_pct}\% \\
+cross-validation & \val{cf.cv.n} & \val{cf.cv.nll} & \val{cf.cv.mean_err_pct}\% & \val{cf.cv.bias_pct}\% &
+\val{cf.cv.std_err_pct}\% & \val{cf.cv.skew_mae} & \val{cf.cv.w1_pct_median}\% [\val{cf.cv.w1_pct_p90}] &
+\val{cf.cv.n_compact}: \val{cf.cv.compact_mean_err_pct}\% \\
+length ($N\ge300$) & \val{cf.length.n} & \val{cf.length.nll} & \val{cf.length.mean_err_pct}\% & \val{cf.length.bias_pct}\% &
+\val{cf.length.std_err_pct}\% & \val{cf.length.skew_mae} & \val{cf.length.w1_pct_median}\% [\val{cf.length.w1_pct_p90}] &
+\val{cf.length.n_compact}: \val{cf.length.compact_mean_err_pct}\% \\
+CE ($\ge$ q90) & \val{cf.sticky.n} & \val{cf.sticky.nll} & \val{cf.sticky.mean_err_pct}\% & \val{cf.sticky.bias_pct}\% &
+\val{cf.sticky.std_err_pct}\% & \val{cf.sticky.skew_mae} & \val{cf.sticky.w1_pct_median}\% [\val{cf.sticky.w1_pct_p90}] &
+\val{cf.sticky.n_compact}: \val{cf.sticky.compact_mean_err_pct}\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Validation in detail.} The median $\langle\Rg\rangle$ error is \val{cf.val.mean_err_pct_median}\% (90th
+percentile \val{cf.val.mean_err_pct_p90}\%, maximum \val{cf.val.mean_err_pct_max}\%), and \val{cf.val.within5_pct}\%
+of the proteins are within 5\%. The median $\sigma$ error is \val{cf.val.std_err_pct_median}\% (90th percentile
+\val{cf.val.std_err_pct_p90}\%). Pearson correlations between predicted and MD values are $r=\val{cf.val.r_mean}$ for
+$\langle\Rg\rangle$ (MD range \val{cf.val.md_mean_min}--\val{cf.val.md_mean_max}~nm), \val{cf.val.r_std} for $\sigma$
+and \val{cf.val.r_skew} for the skewness. The predicted $\nu$ ranges over \val{cf.val.nu_min}--\val{cf.val.nu_max}
+(median \val{cf.val.nu_median}).
+
+\begin{table}[h]
+\centering
+\caption{Validation by chain length and by compactness.}\label{tab:val}
+\small
+\begin{tabular}{@{}l r r r r r r r@{}}
+\toprule
+& $n$ & NLL & $\langle\Rg\rangle$ err.\ & bias & $\sigma$ err.\ & skew err.\ & $W_1$ median\\
+\midrule
+$N\le50$ & \val{cf.val.by.N_le50.n} & \val{cf.val.by.N_le50.nll} & \val{cf.val.by.N_le50.mean_err_pct}\% & \val{cf.val.by.N_le50.bias_pct}\% & \val{cf.val.by.N_le50.std_err_pct}\% & \val{cf.val.by.N_le50.skew_mae} & \val{cf.val.by.N_le50.w1_pct_median}\% \\
+$50<N\le100$ & \val{cf.val.by.N_51_100.n} & \val{cf.val.by.N_51_100.nll} & \val{cf.val.by.N_51_100.mean_err_pct}\% & \val{cf.val.by.N_51_100.bias_pct}\% & \val{cf.val.by.N_51_100.std_err_pct}\% & \val{cf.val.by.N_51_100.skew_mae} & \val{cf.val.by.N_51_100.w1_pct_median}\% \\
+$100<N\le200$ & \val{cf.val.by.N_101_200.n} & \val{cf.val.by.N_101_200.nll} & \val{cf.val.by.N_101_200.mean_err_pct}\% & \val{cf.val.by.N_101_200.bias_pct}\% & \val{cf.val.by.N_101_200.std_err_pct}\% & \val{cf.val.by.N_101_200.skew_mae} & \val{cf.val.by.N_101_200.w1_pct_median}\% \\
+$200<N\le300$ & \val{cf.val.by.N_201_300.n} & \val{cf.val.by.N_201_300.nll} & \val{cf.val.by.N_201_300.mean_err_pct}\% & \val{cf.val.by.N_201_300.bias_pct}\% & \val{cf.val.by.N_201_300.std_err_pct}\% & \val{cf.val.by.N_201_300.skew_mae} & \val{cf.val.by.N_201_300.w1_pct_median}\% \\
+$N>300$ & \val{cf.val.by.N_gt300.n} & \val{cf.val.by.N_gt300.nll} & \val{cf.val.by.N_gt300.mean_err_pct}\% & \val{cf.val.by.N_gt300.bias_pct}\% & \val{cf.val.by.N_gt300.std_err_pct}\% & \val{cf.val.by.N_gt300.skew_mae} & \val{cf.val.by.N_gt300.w1_pct_median}\% \\
+\midrule
+non-compact & \val{cf.val.by.not_compact.n} & \val{cf.val.by.not_compact.nll} & \val{cf.val.by.not_compact.mean_err_pct}\% & \val{cf.val.by.not_compact.bias_pct}\% & \val{cf.val.by.not_compact.std_err_pct}\% & -- & \val{cf.val.by.not_compact.w1_pct_median}\% \\
+compact & \val{cf.val.by.compact.n} & \val{cf.val.by.compact.nll} & \val{cf.val.by.compact.mean_err_pct}\% & \val{cf.val.by.compact.bias_pct}\% & \val{cf.val.by.compact.std_err_pct}\% & -- & \val{cf.val.by.compact.w1_pct_median}\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Experimental benchmark.} \val{data.n_benchmark} proteins ($N=\val{data.benchmark.N_min}$--\val{data.benchmark.N_max})
+with a measured SAXS $\langle\Rg\rangle$ and an HPS1 trajectory, one entry per unique sequence. The benchmark was not
+used to fit or select the formula.
+\begin{itemize}
+\item Against the HPS1 simulations: the mean absolute error of $\langle\Rg\rangle$ is
+  \val{cf.benchmark.mean_err_vs_hps1_pct}\% (bias \val{cf.benchmark.bias_vs_hps1_pct}\%, median
+  \val{cf.benchmark.mean_err_vs_hps1_pct_median}\%, maximum \val{cf.benchmark.mean_err_vs_hps1_pct_max}\%), with
+  $r=\val{cf.benchmark.r_vs_hps1}$.
+\item Against SAXS: \val{cf.benchmark.mean_err_vs_saxs_pct}\% (bias \val{cf.benchmark.bias_vs_saxs_pct}\%), with
+  $r=\val{cf.benchmark.r_vs_saxs}$. For reference, the HPS1 simulations themselves differ from SAXS by
+  \val{data.benchmark.hps1_err_vs_saxs_pct}\% (bias \val{data.benchmark.hps1_bias_vs_saxs_pct}\%). The formula
+  reproduces the force field, and its error against experiment is almost entirely that of HPS1.
+\end{itemize}
+
+%==========================================================================================================
+\section{Domain of validity}
+\begin{itemize}
+\item \textbf{Conditions.} HPS1 at 298~K and 150~mM. The formula has no temperature or salt dependence.
+\item \textbf{Descriptor ranges of the training proteins} (1st--99th percentile in brackets):
+  \begin{itemize}
+  \item $N=\val{data.range.N.min}$--\val{data.range.N.max};
+  \item $s_+\in[0,\,\val{data.range.scd_pos.max}]$ ($\le\val{data.range.scd_pos.p99}$);
+  \item $s_-\in[\val{data.range.scd_neg.min},\,0]$ ($\ge\val{data.range.scd_neg.p01}$);
+  \item $\lam\in[\val{data.range.mean_hydro.min},\,\val{data.range.mean_hydro.max}]$
+    ([\val{data.range.mean_hydro.p01}, \val{data.range.mean_hydro.p99}]);
+  \item $\mathrm{CE}\in[\val{data.range.contact_energy.min},\,\val{data.range.contact_energy.max}]$
+    ([\val{data.range.contact_energy.p01}, \val{data.range.contact_energy.p99}]).
+  \end{itemize}
+  Outside these ranges the formula extrapolates.
+\item \textbf{Length.} Fitted on chains up to 200 residues, it predicts chains of 300--490 residues with a
+  \val{cf.length.mean_err_pct}\% $\langle\Rg\rangle$ error and a \val{cf.length.std_err_pct}\% $\sigma$ error
+  (Table~\ref{tab:perf}).
+\item \textbf{Sticky chains.} Fitted on chains with $\mathrm{CE}\le\val{data.ce_q75}$, it overestimates the size of
+  strongly sticky chains ($\mathrm{CE}\ge\val{data.ce_q90}$): $\langle\Rg\rangle$ error \val{cf.sticky.mean_err_pct}\%,
+  bias \val{cf.sticky.bias_pct}\%, $\sigma$ error \val{cf.sticky.std_err_pct}\%. Beyond the contact-energy range it was
+  fitted on, it should be expected to overestimate $\langle\Rg\rangle$.
+\item \textbf{Compact chains} ($\langle\Rg\rangle_{\mathrm{MD}}<0.8\,R_F$; \val{cf.val.by.compact.n} of the
+  \val{cf.val.n} validation proteins) are the least reliable regime. Their $\langle\Rg\rangle$ is overestimated by
+  \val{cf.val.by.compact.bias_pct}\% on average, and $\sigma$ is off by \val{cf.val.by.compact.std_err_pct}\%. For the
+  other validation proteins the errors are \val{cf.val.by.not_compact.mean_err_pct}\% ($\langle\Rg\rangle$, bias
+  \val{cf.val.by.not_compact.bias_pct}\%) and \val{cf.val.by.not_compact.std_err_pct}\% ($\sigma$).
+\end{itemize}
+
+%==========================================================================================================
+\section{Ablations}
+Each row refits the formula with one change and scores it on the validation proteins (\texttt{idprg ablations}). A
+removed descriptor is removed everywhere it enters. Rows marked ``--'' have not been run yet.
+\begin{table}[h]
+\centering
+\caption{Closed-form ablations (validation).}\label{tab:abl}
+\footnotesize
+\begin{tabular}{@{}l r r r r r@{}}
+\toprule
+& parameters & NLL & $\langle\Rg\rangle$ err.\ (\%) & $\sigma$ err.\ (\%) & $W_1$ median (\%)\\
+\midrule
+the formula above & \val{abl.cf.val.reference.n_parameters} & \val{abl.cf.val.reference.nll} & \val{abl.cf.val.reference.mean_err_pct} & \val{abl.cf.val.reference.std_err_pct} & \val{abl.cf.val.reference.w1_pct_median}\\
+without $s_+$ & \val{abl.cf.val.no_scd_pos.n_parameters} & \val{abl.cf.val.no_scd_pos.nll} & \val{abl.cf.val.no_scd_pos.mean_err_pct} & \val{abl.cf.val.no_scd_pos.std_err_pct} & \val{abl.cf.val.no_scd_pos.w1_pct_median}\\
+without $s_-$ & \val{abl.cf.val.no_scd_neg.n_parameters} & \val{abl.cf.val.no_scd_neg.nll} & \val{abl.cf.val.no_scd_neg.mean_err_pct} & \val{abl.cf.val.no_scd_neg.std_err_pct} & \val{abl.cf.val.no_scd_neg.w1_pct_median}\\
+without $\lam$ & \val{abl.cf.val.no_mean_hydro.n_parameters} & \val{abl.cf.val.no_mean_hydro.nll} & \val{abl.cf.val.no_mean_hydro.mean_err_pct} & \val{abl.cf.val.no_mean_hydro.std_err_pct} & \val{abl.cf.val.no_mean_hydro.w1_pct_median}\\
+without $h$ & \val{abl.cf.val.no_h.n_parameters} & \val{abl.cf.val.no_h.nll} & \val{abl.cf.val.no_h.mean_err_pct} & \val{abl.cf.val.no_h.std_err_pct} & \val{abl.cf.val.no_h.w1_pct_median}\\
+no $s_-\ln N$, $\lam\ln N$ in $\ln S_m$ & \val{abl.cf.val.no_ln_N_interactions.n_parameters} & \val{abl.cf.val.no_ln_N_interactions.nll} & \val{abl.cf.val.no_ln_N_interactions.mean_err_pct} & \val{abl.cf.val.no_ln_N_interactions.std_err_pct} & \val{abl.cf.val.no_ln_N_interactions.w1_pct_median}\\
+constant CE threshold ($c_1=0$) & \val{abl.cf.val.constant_CE_threshold.n_parameters} & \val{abl.cf.val.constant_CE_threshold.nll} & \val{abl.cf.val.constant_CE_threshold.mean_err_pct} & \val{abl.cf.val.constant_CE_threshold.std_err_pct} & \val{abl.cf.val.constant_CE_threshold.w1_pct_median}\\
+$\ln A$ linear in the descriptors & \val{abl.cf.val.free_ln_A.n_parameters} & \val{abl.cf.val.free_ln_A.nll} & \val{abl.cf.val.free_ln_A.mean_err_pct} & \val{abl.cf.val.free_ln_A.std_err_pct} & \val{abl.cf.val.free_ln_A.w1_pct_median}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==========================================================================================================
+\section{Files}
+In the \texttt{idprg} repository:
+\begin{itemize}
+\item \texttt{model/closed\_form.json}: every coefficient and constant at full precision.
+\item \texttt{idprg/closed\_form.py}: the formula (\texttt{parameters}) and its fit (\texttt{fit}).
+\item \texttt{idprg/descriptors.py}: the descriptors.
+\item \texttt{idprg/distribution.py}: the density, its moments and quantiles.
+\item \texttt{idprg predict --closed-form SEQUENCE} prints $\langle\Rg\rangle$, $\sigma$, skewness, $\nu$ and $S_m$.
+\item \texttt{idprg fit-closed-form} refits the formula; with \texttt{--fold 0}, 1 or 2 it gives the
+  cross-validation fits, whose pooled scores are \texttt{results/closed\_form\_cv.csv}.
+\item \texttt{idprg ablations} reruns Table~\ref{tab:abl}.
+\item \texttt{results/closed\_form\_*.csv}: per protein, the predicted parameters, moments and scores.
+\item \texttt{results/ce\_threshold\_cv.csv}: the choice of $c_1$. \texttt{results/ablations.csv}: the ablations.
+\item \texttt{paper/numbers.tex}: every score quoted here, written by \texttt{paper/make\_numbers.py}.
+\end{itemize}
+
+\end{document}

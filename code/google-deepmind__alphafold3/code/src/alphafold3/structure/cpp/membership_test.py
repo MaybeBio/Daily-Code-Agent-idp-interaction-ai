@@ -17,6 +17,7 @@
 # if received directly from Google. Use is subject to terms of use available at
 # https://github.com/google-deepmind/alphafold3/blob/main/WEIGHTS_TERMS_OF_USE.md
 
+from concurrent import futures
 import sys
 
 from absl.testing import absltest
@@ -185,12 +186,35 @@ class MembershipTest(parameterized.TestCase):
     )
     np.testing.assert_array_equal(result.tolist(), exp_results)
 
-  @parameterized.parameters(False, True)
-  def test_isin_string_array_null_string_na_object(self, invert):
+  @parameterized.product(
+      targets=({'None', 'A'}, {None, 'A'}),
+      invert=(False, True),
+  )
+  def test_isin_string_array_null_string_na_object(self, targets, invert):
     arr = np.array([None, 'A'], dtype=np.dtypes.StringDType(na_object=None))
-    result = membership.isin(arr, {'None', 'A'}, invert=invert)
-    expected = [invert, not invert]
-    self.assertSequenceEqual(result.tolist(), expected)
+    result = membership.isin(arr, targets, invert=invert)
+    expected = np.array([invert, not invert], dtype=bool)
+    np.testing.assert_array_equal(result, expected, strict=True)
+
+  @parameterized.product(
+      targets_and_expected=(
+          ({'N/A'}, [True, False]),
+          ({'A'}, [False, True]),
+          ({'N/A', 'A'}, [True, True]),
+          ({'B'}, [False, False]),
+      ),
+      invert=(False, True),
+  )
+  def test_isin_string_array_string_na_object(
+      self, targets_and_expected, invert
+  ):
+    targets, base_expected = targets_and_expected
+    arr = np.array(['N/A', 'A'], dtype=np.dtypes.StringDType(na_object='N/A'))
+    result = membership.isin(arr, targets, invert=invert)
+    expected = np.array(base_expected, dtype=bool)
+    if invert:
+      expected = ~expected
+    np.testing.assert_array_equal(result, expected, strict=True)
 
   @parameterized.parameters(object, str, np.dtype('T'))
   def test_isin_string_array_multi_dim(self, dtype):
@@ -204,10 +228,11 @@ class MembershipTest(parameterized.TestCase):
 
   @parameterized.named_parameters(
       dict(testcase_name='scalar', test_elements=1),
+      dict(testcase_name='numpy_scalar', test_elements=np.int64(1)),
       dict(testcase_name='list', test_elements=[1]),
-      dict(testcase_name='numpy_array', test_elements=np.array([1])),
+      dict(testcase_name='tuple', test_elements=(1,)),
   )
-  def test_isin_test_elements_not_set(self, test_elements):
+  def test_isin_test_elements_invalid_type(self, test_elements):
     with self.assertRaises(TypeError):
       membership.isin(np.array([1]), test_elements=test_elements)
 
@@ -336,6 +361,155 @@ class MembershipTest(parameterized.TestCase):
         [False, True, False],
         strict=True,
     )
+
+  def test_isin_object_array_mutated_during_eq(self):
+    arr = np.empty(2, dtype=object)
+
+    class MutatingKey:
+
+      def __hash__(self):
+        return 1
+
+      def __eq__(self, other):
+        arr[0] = None
+        return other == 1
+
+    arr[0] = MutatingKey()
+    arr[1] = 1
+    np.testing.assert_array_equal(
+        membership.isin(arr, {1}),
+        np.array([True, True], dtype=bool),
+        strict=True,
+    )
+
+  @parameterized.product(
+      case=(
+          ([], [1, 2]),
+          ([1, 2, 3], []),
+          ([], []),
+          ([0, 1, 2], [1]),
+          ([-1, 0, 1, 2, 3], [0, 0, 1, 2, 2]),
+          ([-1, 0, 50, 51, 998, 999], list(range(0, 1000, 2))),
+          ([10, 12, 15, 25], [25, 10, 15, 15]),
+          ([-(10**9), 0, 42, 10**9], [10**9, -(10**9), 42, 42]),
+          (
+              [np.iinfo(np.int64).min, -1, 0, 1, np.iinfo(np.int64).max],
+              [np.iinfo(np.int64).max, np.iinfo(np.int64).min],
+          ),
+      ),
+      invert=(False, True),
+  )
+  def test_isin_int_array_test_elements(self, case, invert):
+    arr = np.array(case[0], dtype=np.int64)
+    test_arr = np.array(case[1], dtype=np.int64)
+    np.testing.assert_array_equal(
+        membership.isin(arr, test_arr, invert=invert),
+        np.isin(arr, test_arr, invert=invert),
+        strict=True,
+    )
+
+  @parameterized.product(
+      array_dtype=(np.longlong, np.int64, np.int32, np.int8),
+      test_dtype=(np.longlong, np.int64, np.int32, np.int8),
+      strided=(False, True),
+      invert=(False, True),
+  )
+  def test_isin_int_array_cross_dtypes_and_layouts(
+      self, array_dtype, test_dtype, strided, invert
+  ):
+    vals = (
+        [-(2**40), -5, 0, 3, 7, 2**40]
+        if array_dtype in (np.int64, np.longlong)
+        else [-128, -5, 0, 3, 7, 127]
+    )
+    arr = np.array(vals, dtype=array_dtype).reshape(2, 3)
+    test_arr = np.array([-128, 3, 3, 127], dtype=test_dtype).reshape(2, 2)
+    if strided:
+      arr = arr[::-1, ::2]
+      test_arr = test_arr.T[:, ::-1]
+    np.testing.assert_array_equal(
+        membership.isin(arr, test_arr, invert=invert),
+        np.isin(arr, test_arr, invert=invert),
+        strict=True,
+    )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='int_array_str_test',
+          arr=np.array([1, 2]),
+          test_arr=np.array(['1']),
+      ),
+      dict(
+          testcase_name='int_array_empty_untyped_test',
+          arr=np.array([1, 2], dtype=np.int64),
+          test_arr=np.array([]),
+      ),
+      dict(
+          testcase_name='int_array_uint_test',
+          arr=np.array([1, 2], dtype=np.int64),
+          test_arr=np.array([1], dtype=np.uint64),
+      ),
+      dict(
+          testcase_name='int_array_float_test',
+          arr=np.array([1, 2], dtype=np.int64),
+          test_arr=np.array([1.0], dtype=np.float64),
+      ),
+      dict(
+          testcase_name='int_array_bool_test',
+          arr=np.array([0, 1]),
+          test_arr=np.array([True]),
+      ),
+      dict(
+          testcase_name='empty_int_array_str_test',
+          arr=np.array([], dtype=np.int64),
+          test_arr=np.array(['1']),
+      ),
+      dict(
+          testcase_name='string_dtype_array_test',
+          arr=np.array(['A'], dtype=np.dtype('T')),
+          test_arr=np.array(['A'], dtype=np.dtype('T')),
+      ),
+      dict(
+          testcase_name='string_dtype_empty_untyped_test',
+          arr=np.array(['A'], dtype=np.dtype('T')),
+          test_arr=np.array([]),
+      ),
+      dict(
+          testcase_name='object_array_test',
+          arr=np.array(['A'], dtype=object),
+          test_arr=np.array(['A'], dtype=object),
+      ),
+      dict(
+          testcase_name='float_array_int_test',
+          arr=np.array([1.0], dtype=np.float64),
+          test_arr=np.array([1], dtype=np.int64),
+      ),
+      dict(
+          testcase_name='list_array_int_test',
+          arr=[1, 2],
+          test_arr=np.array([1], dtype=np.int64),
+      ),
+  )
+  def test_isin_array_incompatible_dtypes(self, arr, test_arr):
+    with self.assertRaises(TypeError):
+      membership.isin(arr, test_arr)
+
+  @parameterized.parameters(np.int64, np.int32, object, np.dtype('T'))
+  def test_isin_concurrent_threads(self, dtype):
+    if dtype in (np.int64, np.int32):
+      arr = np.arange(300, dtype=dtype)
+      targets = {10, 50, 150, 299}
+      expected = np.isin(arr, np.array(sorted(targets), dtype=dtype))
+    else:
+      arr = np.array([f'A{i % 20}' for i in range(300)], dtype=dtype)
+      targets = {'A1', 'A7', 'A19'}
+      expected = np.isin(arr.astype(object), list(targets))
+    with futures.ThreadPoolExecutor(max_workers=8) as pool:
+      results = list(
+          pool.map(lambda _: membership.isin(arr, targets), range(32))
+      )
+    for result in results:
+      np.testing.assert_array_equal(result, expected, strict=True)
 
 
 if __name__ == '__main__':

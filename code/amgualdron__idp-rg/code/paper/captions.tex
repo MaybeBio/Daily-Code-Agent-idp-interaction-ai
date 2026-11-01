@@ -1,0 +1,149 @@
+% Captions of the figures in figures/, made by make_figures.py. Every number quoted here is in figure_metrics.json;
+% if a figure changes, update both. Notation as in closed_form.tex.
+% "Validation proteins": the 695 validation proteins of the cluster split (MMseqs2 clusters at 30% identity and 80%
+% coverage; no validation protein shares a cluster with a training protein). MD: HPS1 simulations throughout.
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig0_intro_example}
+\caption{\textbf{The network predicts the full distribution of the radius of gyration.}
+Predicted $P(R_g)$ of a validation protein ($N=95$); dashed line: its mean $\langle R_g\rangle=2.56$\,nm (MD: 2.53\,nm).}
+\label{fig:intro}
+\end{figure}
+
+% fig0b replaces fig0 in the paper
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig0b_intro_pair}
+\caption{\textbf{The network predicts the full distribution of the radius of gyration.}
+Predicted $P(R_g)$ of two validation proteins with the same mean, $\langle R_g\rangle=4.00$ and 4.03\,nm (MD: 3.97 and
+3.99\,nm; dotted line), but different exponents $\nu$: the longer chain ($N=189$, $\nu=0.59$) has a broader,
+more skewed distribution than the shorter one ($N=96$, $\nu=0.73$).}
+\label{fig:intro_pair}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig1_val_moments}
+\caption{\textbf{Moments of the predicted distributions against MD.}
+Mean $\langle R_g\rangle$ (\textbf{a}), standard deviation $\sigma_{R_g}$ (\textbf{b}), skewness (\textbf{c}) and excess
+kurtosis (\textbf{d}) of the network's $P(R_g)$ against those of the MD frames, for the 695 validation proteins. Dashed
+line: equality. $R^2$ and mean absolute error (MAE) are computed about the equality line.}
+\label{fig:val_moments}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig24_val_nu}
+\caption{\textbf{The exponent against MD.}
+The network's exponent $\nu$ against the one fitted by maximum likelihood to each protein's MD frames, for the 695
+validation proteins. Dashed line: equality. $R^2$ and mean absolute error (MAE) are computed about the equality line.}
+\label{fig:val_nu}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig2_val_distributions}
+\caption{\textbf{Predicted distributions against MD, from typical to worst.}
+\textbf{a},~Wasserstein-1 distance $W_1$ between the network's $P(R_g)$ and the distribution of the MD frames for the 695
+validation proteins, as a percentage of the MD $\langle R_g\rangle$ ($W_1$ is the area between the two cumulative
+distributions); median 1.5\%. Red lines: the proteins in \textbf{b}--\textbf{e}.
+\textbf{b}--\textbf{e},~MD frames (histogram) and the network's $P(R_g)$ of the proteins at the 25th (0.9\%), 50th
+(1.5\%) and 75th (2.5\%) percentiles of $W_1$, and of the protein with the largest $W_1$ (14.6\%, a compact chain).}
+\label{fig:val_distributions}
+\end{figure}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig4_real_proteins}
+\caption{\textbf{Predicted distributions of the benchmark proteins.}
+The benchmark: 122 proteins with a SAXS $R_g$ and an HPS1 trajectory, none used in training or model selection.
+\textbf{a},~$W_1$ between the network's $P(R_g)$ and the distribution of each protein's HPS1 trajectory, as a percentage of
+its MD $\langle R_g\rangle$ (median 1.6\%, 90th percentile 3.4\%, largest 7.9\%). Solid lines mark the proteins shown in
+\textbf{b--e}; dashed line: the median.
+\textbf{b--e},~Proteins at the 10th, 50th and 90th percentile and the largest $W_1$: histogram of the MD frames and the
+network's prediction.}
+\label{fig:benchmark}
+\end{figure*}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig13_experiment_parity}
+\caption{\textbf{Mean radius of gyration against experiment.}
+$\langle R_g\rangle$ of the 122 benchmark proteins from HPS1 simulations (circles) and from the network (triangles), against
+SAXS. Colours: the three largest sequence families (proteins linked by sequence similarity $\geq0.6$ or the same
+amino-acid composition); all other proteins in green. The network reproduces the simulations it was trained on (MAE 0.059\,nm against
+HPS1) and so inherits their deviation from experiment: MAE against SAXS 0.42\,nm for the network and 0.39\,nm for HPS1.
+Dashed line: equality.}
+\label{fig:saxs}
+\end{figure}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig15_surrogate_examples}
+\caption{\textbf{Closed form against the network, typical to worst.}
+Validation proteins at the median (\textbf{a}) and 95th percentile (\textbf{b}) of the Kullback--Leibler divergence
+$\mathrm{KL}(p_\mathrm{network}\,\|\,p_\mathrm{closed\,form})$ over the 695 validation proteins, and the protein with the
+largest divergence (\textbf{c}): MD frames (histogram), network (solid) and closed form (dashed). The largest divergence is
+a compact chain that both miss: MD $\langle R_g\rangle=3.05$\,nm, network 2.68\,nm, closed form 2.39\,nm.}
+\label{fig:cf_examples}
+\end{figure*}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig20_surrogate_summary}
+\caption{\textbf{How closely the closed form reproduces the network.}
+\textbf{a--c},~As Fig.~\ref{fig:cf_examples}.
+\textbf{d},~$\mathrm{KL}(p_\mathrm{network}\,\|\,p_\mathrm{closed\,form})$ over the 695 validation proteins: median 0.0019
+nats, 95th percentile 0.031, 99th percentile 0.12; the last bin collects the 31 proteins with $\mathrm{KL}\geq0.04$.
+\textbf{e},~The exponent $\nu$ of the two-exponent distribution: fitted by maximum likelihood to each protein's MD frames
+(filled), predicted by the network (solid) and by the closed form (dashed). Against the fitted values, $R^2=0.72$ for the
+network and 0.67 for the closed form. The closed form's $\nu$ spans 0.41--0.89, the same range as the fitted values and wider
+than the network's (0.41--0.82).
+Dashed vertical lines: $\theta$ chain ($\nu=1/2$) and good solvent ($\nu=0.588$).}
+\label{fig:cf_summary}
+\end{figure*}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig21_surrogate_response}
+\caption{\textbf{Response of the closed form to its inputs.}
+Each row varies one input of the closed form over the 1st--99th percentile range of the 3{,}223 training proteins,
+with the other inputs held at a reference chain (black circle): $N=184$ and $\langle\lambda\rangle=0.603$ (training
+medians), contact energy at the CE threshold $c(N)=c_0+0.25\ln N$ ($-0.128$ at $N=184$; along \textbf{a} the contact
+energy follows $c(N)$), so that $h=0$, and no charge decoration ($s_+=s_-=0$); its $\langle R_g\rangle=4.18$\,nm,
+$\nu=0.606$ and $A=3.33$. Left: change of the mean $\langle R_g\rangle$ (solid), the exponent $\nu$ (dashed) and the
+amplitude $A$ (dotted) of the predicted distribution relative to the reference chain; \textbf{b--e} share their vertical
+axis. Right: $P(R_g)$ at $N=184$ of the chain marked by the diamonds, with one input at the end of its training range
+(1st percentile for $s_-$, 99th for the others), and of the reference chain (grey outline), all on one density scale;
+short vertical line: the chain's mean; dashed line: the reference mean.
+\textbf{a},~Chain length, on a logarithmic axis: $\langle R_g\rangle$ rises from 1.27\,nm at $N=24$ to 6.68\,nm at
+$N=427$, while $\nu$ stays at 0.606, since at $s_+=0$ the exponent does not depend on $N$, and $A$ falls with the $1/N$ term of
+its law (5.05 to 3.21).
+\textbf{b},~$s_-=\min[\operatorname{asinh}(5\,\mathrm{SCD}/N),0]$, negative when opposite charges are segregated into
+blocks; at $s_-=-0.255$, $\langle R_g\rangle$ $-11\%$, $\nu=0.540$, $A=2.84$.
+\textbf{c},~$s_+=\max[\operatorname{asinh}(5\,\mathrm{SCD}/N),0]$, positive when like charges dominate; at $s_+=2.25$,
+$\langle R_g\rangle$ $+48\%$, $\nu=0.702$, $A=4.17$.
+\textbf{d},~Contact energy CE, which enters only above the CE threshold (dotted line, $c(184)$) through
+$h=\max[\mathrm{CE}-c(N),0]$; at $\mathrm{CE}=2.75$, $\langle R_g\rangle$ $-18\%$, $\nu=0.507$, $A=2.63$.
+\textbf{e},~Mean HPS hydropathy $\langle\lambda\rangle$; at
+$\langle\lambda\rangle=0.766$, $\langle R_g\rangle$ $-6\%$, $\nu=0.603$, $A=3.13$.}
+\label{fig:cf_response}
+\end{figure*}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig23_shape_from_sequence}
+\caption{\textbf{Proteins with the same mean radius of gyration can have different distributions, and the network
+predicts which.}
+Pairs of validation proteins whose MD $\langle R_g\rangle$ agree within 1\%, regardless of chain length (3{,}558 pairs).
+In 1{,}177 of these pairs the MD skewness differs by at least 0.2; the network orders the two skewnesses correctly in
+96\% of them (closed form: 96\%). Shown are the four of those pairs whose MD distributions differ most (Wasserstein-1
+distance 6.1--6.5\% of $\langle R_g\rangle$), with no protein used twice; the pairs were selected from the MD data alone.
+In each panel the less skewed protein is drawn upward (blue) and the other downward (orange, mirrored): histogram of its
+MD frames and the density the network predicts from its sequence. Dashed line: the mean of the two MD
+$\langle R_g\rangle$. Labels: chain length $N$, the network's exponent $\nu$, and the MD standard deviation $\sigma$ and
+skewness, with the network's values in parentheses. In every pair a short, expanded chain ($\nu=0.71$--$0.82$) is
+matched with a longer, more compact one ($\nu=0.44$--$0.60$).}
+\label{fig:shape_pairs}
+\end{figure*}

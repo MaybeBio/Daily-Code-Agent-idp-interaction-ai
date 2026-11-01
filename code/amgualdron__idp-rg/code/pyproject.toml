@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "idprg"
+version = "1.0.0"
+description = "Distribution of the radius of gyration of intrinsically disordered proteins from sequence (HPS1)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "pandas>=2.0", "jax>=0.4.30", "equinox>=0.11", "optax>=0.2"]
+
+[project.optional-dependencies]
+paper = ["matplotlib>=3.8"]
+test = ["pytest"]
+
+[project.scripts]
+idprg = "idprg.cli:main"
+
+[tool.setuptools]
+packages = ["idprg"]

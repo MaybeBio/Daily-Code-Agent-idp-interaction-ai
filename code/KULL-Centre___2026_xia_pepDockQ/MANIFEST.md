@@ -1,7 +1,7 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/KULL-Centre/_2026_xia_pepDockQ
-- 快照日期: 2026-10-28
+- 快照日期: 2026-11-01
 - 快照 commit: [`52dc87d978fa`](https://github.com/KULL-Centre/_2026_xia_pepDockQ/commit/52dc87d978faefb26327b33286843a4631c52fab)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 

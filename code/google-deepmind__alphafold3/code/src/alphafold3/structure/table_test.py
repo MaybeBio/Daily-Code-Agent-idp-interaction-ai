@@ -19,7 +19,7 @@
 
 from collections.abc import Collection, Mapping
 import dataclasses
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar, Final, Self
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -41,6 +41,9 @@ class TwoColTable(table.Table):
 @dataclasses.dataclass(frozen=True)
 class MultiDimColTable(table.Table):
   multi_data: np.ndarray
+
+
+_NAN: Final[float] = float('nan')
 
 
 class TableTest(parameterized.TestCase):
@@ -373,16 +376,69 @@ class TableTest(parameterized.TestCase):
         strict=True,
     )
 
-  def test_make_filter_mask_object_column_nan_singleton(self):
-    nan = float('nan')
+  @parameterized.named_parameters(
+      dict(testcase_name='object_int', dtype=object, predicate=1),
+      dict(testcase_name='object_bool', dtype=object, predicate=True),
+      dict(testcase_name='object_nan', dtype=object, predicate=_NAN),
+      dict(
+          testcase_name='object_nan_tuple',
+          dtype=object,
+          predicate=(_NAN, 'B'),
+      ),
+      dict(testcase_name='object_bytes', dtype=object, predicate=b'A'),
+      dict(
+          testcase_name='string_dtype_int',
+          dtype=np.dtypes.StringDType(),
+          predicate=(1, 2),
+      ),
+      dict(
+          testcase_name='string_dtype_nan',
+          dtype=np.dtypes.StringDType(),
+          predicate=_NAN,
+      ),
+  )
+  def test_make_filter_mask_string_or_object_invalid_predicate_raises(
+      self, dtype, predicate
+  ):
     tbl = OneColTable(
         key=np.array([0, 1], dtype=np.int64),
-        data=np.array([nan, 'B'], dtype=object),
+        data=np.array(['A', 'B'], dtype=dtype),
+    )
+    with self.assertRaisesRegex(ValueError, 'Cannot filter column data'):
+      tbl.make_filter_mask(data=predicate)
+
+  def test_make_filter_mask_object_column_multi_value_with_none(self):
+    tbl = OneColTable(
+        key=np.arange(4, dtype=np.int64),
+        data=np.array(['A', 'B', None, _NAN], dtype=object),
     )
     np.testing.assert_array_equal(
-        tbl.make_filter_mask(data=(nan, 'B')),
-        np.array([False, True]),
+        tbl.make_filter_mask(data=('B', None)),
+        np.array([False, True, True, False]),
         strict=True,
+    )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='string',
+          predicate='B',
+          expected=[False, True, False],
+      ),
+      dict(
+          testcase_name='none',
+          predicate=None,
+          expected=[False, False, True],
+      ),
+  )
+  def test_make_filter_mask_object_column_single_value(
+      self, predicate, expected
+  ):
+    tbl = OneColTable(
+        key=np.arange(3, dtype=np.int64),
+        data=np.array(['A', 'B', None], dtype=object),
+    )
+    np.testing.assert_array_equal(
+        tbl.make_filter_mask(data=predicate), np.array(expected), strict=True
     )
 
   def test_make_filter_mask_empty_iterable_returns_all_false(self):
@@ -495,6 +551,89 @@ class TableTest(parameterized.TestCase):
         strict=True,
     )
 
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='contiguous_keys',
+          table_keys=[0, 1, 2],
+          query_keys=np.array([2, 0, 1, 2], dtype=np.int32),
+          expected=['C', 'A', 'B', 'C'],
+      ),
+      dict(
+          testcase_name='sparse_unsorted_keys',
+          table_keys=[100_000, 10, 5_000],
+          query_keys=np.array([5_000, 100_000, 10], dtype=np.int64),
+          expected=['C', 'A', 'B'],
+      ),
+      dict(
+          testcase_name='sparse_empty_query',
+          table_keys=[10, 5_000, 100_000],
+          query_keys=np.array([], dtype=np.int64),
+          expected=[],
+      ),
+  )
+  def test_apply_array_to_column_avoids_dense_index_by_key(
+      self, table_keys, query_keys, expected
+  ):
+    tbl = OneColTable(
+        key=np.array(table_keys, dtype=np.int64),
+        data=np.array(['A', 'B', 'C'][: len(table_keys)], dtype=object),
+    )
+    np.testing.assert_array_equal(
+        tbl.apply_array_to_column('data', query_keys),
+        np.array(expected, dtype=object),
+        strict=True,
+    )
+    self.assertNotIn('index_by_key', tbl.__dict__)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='float',
+          bad_query=np.array([0.0, 1.0], dtype=np.float64),
+      ),
+      dict(testcase_name='uint', bad_query=np.array([2**63], dtype=np.uint64)),
+  )
+  def test_apply_array_to_column_non_signed_int_query_raises_index_error(
+      self, bad_query
+  ):
+    tbl = OneColTable(
+        key=np.array([0, 1], dtype=np.int64),
+        data=np.array(['A', 'B'], dtype=object),
+    )
+    with self.assertRaisesRegex(IndexError, 'Keys'):
+      tbl.apply_array_to_column('data', bad_query)
+
+  @parameterized.named_parameters(
+      dict(testcase_name='empty_table', table_keys=[], query_keys=[0]),
+      dict(testcase_name='negative_key', table_keys=[0, 1, 2], query_keys=[-1]),
+      dict(
+          testcase_name='missing_sparse_key',
+          table_keys=[10, 5_000, 100_000],
+          query_keys=[5_001],
+      ),
+  )
+  def test_apply_array_to_column_invalid_key_raises_index_error(
+      self, table_keys, query_keys
+  ):
+    tbl = OneColTable(
+        key=np.array(table_keys, dtype=np.int64),
+        data=np.array(['A', 'B', 'C'][: len(table_keys)], dtype=object),
+    )
+    with self.assertRaisesRegex(IndexError, 'Keys'):
+      tbl.apply_array_to_column('data', np.array(query_keys, dtype=np.int64))
+
+  def test_iterrows_row_keys_avoids_dense_index_by_key(self):
+    tbl = OneColTable(
+        key=np.array([100_000, 10, 5_000], dtype=np.int64),
+        data=np.array(['A', 'B', 'C'], dtype=object),
+    )
+    rows = list(
+        tbl.iterrows(row_keys=np.array([5_000, 100_000], dtype=np.int64))
+    )
+    self.assertSequenceEqual(
+        rows, [{'key': 5_000, 'data': 'C'}, {'key': 100_000, 'data': 'A'}]
+    )
+    self.assertNotIn('index_by_key', tbl.__dict__)
+
   def test_sliced_multidim_table_columns_remain_immutable(self):
     tbl = MultiDimColTable(
         key=np.array([10, 20, 30], dtype=np.int64),
@@ -514,6 +653,176 @@ class TableTest(parameterized.TestCase):
           np.array([[1.0, 3.0], [4.0, 6.0]], dtype=np.float32),
           strict=True,
       )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='empty_spans_preserve_multidim_shape',
+          total_size=5,
+          starts=[2, 4],
+          ends=[2, 4],
+          expected_indices=[],
+      ),
+      dict(
+          testcase_name='adjacent_spans_merge_to_full_table',
+          total_size=5,
+          starts=[0, 2],
+          ends=[2, 5],
+          expected_indices=[0, 1, 2, 3, 4],
+      ),
+      dict(
+          testcase_name='single_interior_span',
+          total_size=6,
+          starts=[1],
+          ends=[4],
+          expected_indices=[1, 2, 3],
+      ),
+      dict(
+          testcase_name='disjoint_spans_concat',
+          total_size=6,
+          starts=[0, 3],
+          ends=[2, 5],
+          expected_indices=[0, 1, 3, 4],
+      ),
+      dict(
+          testcase_name='many_disjoint_spans_concat',
+          total_size=70,
+          starts=list(range(0, 70, 2)),
+          ends=list(range(1, 71, 2)),
+          expected_indices=list(range(0, 70, 2)),
+      ),
+  )
+  def test_slice_spans(self, total_size, starts, ends, expected_indices):
+    tbl = MultiDimColTable(
+        key=np.arange(total_size, dtype=np.int64) * 10,
+        multi_data=np.arange(2 * total_size, dtype=np.float32).reshape(
+            2, total_size
+        ),
+    )
+    sliced = tbl.slice_spans(
+        np.array(starts, dtype=np.int64), np.array(ends, dtype=np.int64)
+    )
+    expected = tbl.apply_index(np.array(expected_indices, dtype=np.int64))
+    np.testing.assert_array_equal(sliced.key, expected.key, strict=True)
+    np.testing.assert_array_equal(
+        sliced.multi_data, expected.multi_data, strict=True
+    )
+    self.assertFalse(sliced.key.flags.writeable)
+    self.assertFalse(sliced.multi_data.flags.writeable)
+
+  def test_slice_spans_adjacent_full_cover_returns_self(self):
+    tbl = MultiDimColTable(
+        key=np.arange(5, dtype=np.int64),
+        multi_data=np.zeros((1, 5), dtype=np.float32),
+    )
+    self.assertIs(
+        tbl.slice_spans(
+            np.array([0, 2], dtype=np.int64), np.array([2, 5], dtype=np.int64)
+        ),
+        tbl,
+    )
+
+  def test_slice_spans_single_span_copies_columns(self):
+    tbl = MultiDimColTable(
+        key=np.array([0, 1, 2], dtype=np.int64),
+        multi_data=np.array([[1.0, 2.0, 3.0]], dtype=np.float32),
+    )
+    sliced = tbl.slice_spans(
+        np.array([1], dtype=np.int64), np.array([2], dtype=np.int64)
+    )
+    self.assertIsNone(sliced.multi_data.base)
+
+  def test_slice_range_full_cover_returns_self(self):
+    empty = MultiDimColTable(
+        key=np.empty((0,), dtype=np.int64),
+        multi_data=np.empty((1, 0), dtype=np.float32),
+    )
+    self.assertIs(empty.slice_range(start=0, end=0), empty)
+
+    tbl = MultiDimColTable(
+        key=np.arange(3, dtype=np.int64),
+        multi_data=np.array([[1.0, 2.0, 3.0]], dtype=np.float32),
+    )
+    self.assertIs(tbl.slice_range(start=0, end=3), tbl)
+
+  @parameterized.named_parameters(
+      dict(testcase_name='interior', start=1, end=3),
+      dict(testcase_name='empty_subrange', start=2, end=2),
+  )
+  def test_slice_range_copies_columns_and_preserves_multidim_shape(
+      self, start, end
+  ):
+    tbl = MultiDimColTable(
+        key=np.array([10, 20, 30, 40], dtype=np.int64),
+        multi_data=np.arange(8, dtype=np.float32).reshape(2, 4),
+    )
+    sliced = tbl.slice_range(start=start, end=end)
+    np.testing.assert_array_equal(sliced.key, tbl.key[start:end], strict=True)
+    np.testing.assert_array_equal(
+        sliced.multi_data, tbl.multi_data[:, start:end], strict=True
+    )
+    self.assertFalse(sliced.key.flags.writeable)
+    self.assertFalse(sliced.multi_data.flags.writeable)
+    self.assertIsNone(sliced.multi_data.base)
+
+  @parameterized.named_parameters(
+      dict(testcase_name='negative_start', start=-1, end=2),
+      dict(testcase_name='start_after_end', start=3, end=2),
+      dict(testcase_name='end_past_size', start=0, end=5),
+  )
+  def test_slice_range_invalid_bounds_raises(self, start, end):
+    tbl = OneColTable(
+        key=np.array([0, 1, 2], dtype=np.int64),
+        data=np.array(['A', 'B', 'C'], dtype=object),
+    )
+    with self.assertRaises(ValueError):
+      tbl.slice_range(start=start, end=end)
+
+  @parameterized.named_parameters(
+      dict(testcase_name='scattered_rows', kept_rows=slice(None, None, 3)),
+      dict(testcase_name='long_run', kept_rows=slice(5, 30)),
+  )
+  def test_apply_array_bool_mask(self, kept_rows):
+    tbl = MultiDimColTable(
+        key=np.arange(40, dtype=np.int64) * 10,
+        multi_data=np.arange(80, dtype=np.float32).reshape(2, 40),
+    )
+    mask = np.zeros(40, dtype=bool)
+    mask[kept_rows] = True
+    sliced = tbl.apply_array(mask)
+    np.testing.assert_array_equal(sliced.key, tbl.key[mask], strict=True)
+    np.testing.assert_array_equal(
+        sliced.multi_data, tbl.multi_data[:, mask], strict=True
+    )
+
+  def test_apply_array_wrong_length_bool_mask_raises_index_error(self):
+    tbl = OneColTable(
+        key=np.array([0, 1, 2], dtype=np.int64),
+        data=np.array(['A', 'B', 'C'], dtype=object),
+    )
+    with self.assertRaises(IndexError):
+      tbl.apply_array(np.array([True, False]))
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='str_dtype',
+          data=np.array(['X', 'Y', 'Z'], dtype=str),
+          expected=np.array(['Z', 'Y'], dtype='<U1'),
+      ),
+      dict(
+          testcase_name='strided_object',
+          data=np.array(['A', 'skip', 'B', 'skip', 'C'], dtype=object)[::2],
+          expected=np.array(['C', 'B'], dtype=object),
+      ),
+  )
+  def test_apply_array_to_column_fallback_columns(self, data, expected):
+    tbl = OneColTable(
+        key=np.array([100_000, 10, 5_000], dtype=np.int64), data=data
+    )
+    gathered = tbl.apply_array_to_column(
+        'data', np.array([5_000, 10], dtype=np.int64)
+    )
+    np.testing.assert_array_equal(gathered, expected, strict=True)
+    self.assertNotIn('index_by_key', tbl.__dict__)
 
 
 @dataclasses.dataclass(frozen=True)

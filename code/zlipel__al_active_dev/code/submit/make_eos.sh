@@ -1,0 +1,170 @@
+#!/bin/bash
+#SBATCH --job-name=make_eos
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=96
+#SBATCH --mem-per-cpu=200MB
+#SBATCH --time=02:59:59
+#SBATCH --output=make_eos.out
+#SBATCH --error=make_eos.err
+# To get failure emails, export SBATCH_MAIL_USER and SBATCH_MAIL_TYPE in your
+# shell rc; sbatch picks them up from the environment automatically. Or pass
+# --mail-user/--mail-type on the sbatch CLI at submit time. (#SBATCH headers
+# are parsed by SLURM before the script runs and do NOT expand bash variables.)
+
+set -eo pipefail
+
+# Resolve repo root. SLURM copies the script to /var/spool/slurmd/... so
+# BASH_SOURCE/$0 don't self-locate here. Prefer SLURM_SUBMIT_DIR (cwd from
+# which sbatch was invoked), fall back to an exported AL_ACTIVE_DEV, then to
+# the canonical install path.
+if [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/config/cluster.env" ]]; then
+    REPO_ROOT="${SLURM_SUBMIT_DIR}"
+elif [[ -n "${AL_ACTIVE_DEV:-}" && -f "${AL_ACTIVE_DEV}/config/cluster.env" ]]; then
+    REPO_ROOT="${AL_ACTIVE_DEV}"
+else
+    REPO_ROOT="${HOME}/PROJECTS/al_active_dev"
+fi
+source "${REPO_ROOT}/config/cluster.env"
+
+module purge
+module load "${INTEL_MODULE}" "${INTEL_MPI_MODULE}"
+module load "${CONDA_MODULE}"
+conda activate "${CONDA_ENV}"
+
+MODEL=""
+ITER=""
+RUN_TAG=""
+DENSITY_START=""
+DENSITY_END=""
+DENSITY_STEP=""
+INIT=false
+VALIDATION=""
+CHECK_DENSITIES=false
+CHECK_FINISHED=false
+CPUS_PER_SIM=""
+MAX_CORES=""
+
+usage() {
+    cat <<EOF
+Usage: $0 --model MODEL --density_start F --density_end F --density_step F [SCOPE] [check flags]
+
+Scope (exactly one of):
+  --init                            Initial-condition seed sims
+                                    (reads \$SCRATCH_AL/<MODEL>/SIMULATIONS/EOS/seq_init.txt)
+  --iter N                          AL iteration N sims
+                                    (reads \$SCRATCH_AL/<MODEL>/GENERATIONS/iteration_N/SIMULATIONS/EOS/)
+  --validation SCOPE                Post-hoc validation sims (e.g. --validation BENCHMARK)
+                                    (reads \$SCRATCH_AL/<MODEL>/VALIDATION/SCOPE/SIMULATIONS/EOS/seq_<scope-lower>.txt
+                                     — populate first with gen_validation_sequences.py)
+
+Optional:
+  --run_tag TAG                     Parallel-policy run tag (--iter only). The AL loop
+                                    appends _TAG to candidate/seq filenames so parallel
+                                    policies (e.g. global/soft/hard) don't collide; pass
+                                    the same TAG here to read the right files. Default: none.
+  --check_densities                 Sanity-check requested density range
+  --check_finished                  Skip already-completed sims
+  --cpus_per_sim N                  CPUs per sim partition (default: make_eos.py = 12)
+  --max_cores N                     Total core ceiling (default: make_eos.py = 1500)
+EOF
+    exit 1
+}
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --init) INIT=true ;;
+        --iter) ITER="$2"; shift ;;
+        --run_tag) RUN_TAG="$2"; shift ;;
+        --validation) VALIDATION="$2"; shift ;;
+        --model) MODEL="$2"; shift ;;
+        --density_start) DENSITY_START="$2"; shift ;;
+        --density_end)   DENSITY_END="$2";   shift ;;
+        --density_step)  DENSITY_STEP="$2";  shift ;;
+        --check_densities) CHECK_DENSITIES=true ;;
+        --check_finished) CHECK_FINISHED=true ;;
+        --cpus_per_sim) CPUS_PER_SIM="$2"; shift ;;
+        --max_cores) MAX_CORES="$2"; shift ;;
+        *) echo "Unknown parameter: $1"; usage ;;
+    esac
+    shift
+done
+
+if [[ -z "$MODEL" || -z "$DENSITY_START" || -z "$DENSITY_END" || -z "$DENSITY_STEP" ]]; then
+    echo "Error: Missing required arguments"
+    usage
+fi
+
+if [[ "$INIT" == true ]]; then
+    SEQS="${SCRATCH_AL}/$MODEL/SIMULATIONS/EOS/seq_init.txt"
+    PAR_DIR="${SCRATCH_AL}/$MODEL/SIMULATIONS/EOS/"
+    LOG_TAG="init"
+elif [[ -n "$VALIDATION" ]]; then
+    SCOPE_LOWER="${VALIDATION,,}"
+    PAR_DIR="${SCRATCH_AL}/$MODEL/VALIDATION/$VALIDATION/SIMULATIONS/EOS"
+    SEQS="$PAR_DIR/seq_${SCOPE_LOWER}.txt"
+    LOG_TAG="validation_${SCOPE_LOWER}"
+    if [[ ! -f "$SEQS" ]]; then
+        echo "Error: sequence file not found at $SEQS" >&2
+        echo "  Populate first via:" >&2
+        echo "    python \"${REPO_ROOT}/beam_search/tools/gen_validation_sequences.py\" \\" >&2
+        echo "        --scratch_dir \"\$SCRATCH_AL\" --length_changes --scope $VALIDATION" >&2
+        exit 1
+    fi
+else
+    if [[ -z "$ITER" ]]; then
+        echo "Error: exactly one of --init / --iter / --validation is required"
+        usage
+    fi
+    PAR_DIR="${SCRATCH_AL}/$MODEL/GENERATIONS/iteration_$ITER/SIMULATIONS/EOS"
+
+    # al_pipeline (ALPaths.next_iter_candidates_file) appends _<run_tag> to the
+    # candidate filename when a run_tag is set, so parallel policies sharing one
+    # iteration dir don't collide. Match that suffix on the combined + copied
+    # seq files too. Empty run_tag ⇒ production naming (backward compatible).
+    TAG_SUFFIX=""
+    [[ -n "$RUN_TAG" ]] && TAG_SUFFIX="_${RUN_TAG}"
+
+    # al_pipeline mirrors candidates into EOS/ at these paths (primary location):
+    SEQ_UPPER="$PAR_DIR/simulation_candidates_gen${ITER}_upper${TAG_SUFFIX}.txt"
+    SEQ_LOWER="$PAR_DIR/simulation_candidates_gen${ITER}_lower${TAG_SUFFIX}.txt"
+    SEQS="$PAR_DIR/seq_gen${ITER}${TAG_SUFFIX}.txt"
+
+    # Combine whichever fronts exist; error if neither found.
+    if [[ -f "$SEQ_UPPER" && -f "$SEQ_LOWER" ]]; then
+        cat "$SEQ_UPPER" "$SEQ_LOWER" > "$SEQS"
+    elif [[ -f "$SEQ_UPPER" ]]; then
+        echo "Note: only upper-front candidates found for iteration $ITER; lower-front absent."
+        cp "$SEQ_UPPER" "$SEQS"
+    elif [[ -f "$SEQ_LOWER" ]]; then
+        echo "Note: only lower-front candidates found for iteration $ITER; upper-front absent."
+        cp "$SEQ_LOWER" "$SEQS"
+    else
+        echo "Error: no candidate sequence files found for iteration $ITER in $PAR_DIR" >&2
+        exit 1
+    fi
+
+    cp "$SEQS" "${SCRATCH_AL}/$MODEL/GENERATIONS/iteration_$ITER/seq_gen${ITER}${TAG_SUFFIX}.txt"
+    LOG_TAG="gen${ITER}${TAG_SUFFIX}"
+fi
+
+LOGS="$PAR_DIR/logs/"
+mkdir -p "$LOGS"
+cd "$PAR_DIR"   # polymerize / gendata drop temp files into cwd
+
+CMD="python \"${REPO_ROOT}/simulation/make_eos.py\" --model \"$MODEL\" --num_polymers 100 \
+    --density_start \"$DENSITY_START\" --density_end \"$DENSITY_END\" --density_step \"$DENSITY_STEP\" \
+    --sequence_file \"$SEQS\" --parent_dir \"$PAR_DIR\""
+[[ "$CHECK_DENSITIES" == true ]] && CMD+=" --check_densities"
+[[ "$CHECK_FINISHED" == true ]] && CMD+=" --check_finished"
+[[ -n "$CPUS_PER_SIM" ]] && CMD+=" --cpus_per_sim $CPUS_PER_SIM"
+[[ -n "$MAX_CORES" ]] && CMD+=" --max_cores $MAX_CORES"
+eval "$CMD"
+
+# SLURM keeps --output / --error open in SLURM_SUBMIT_DIR, even after we cd.
+SLURM_OUT="${SLURM_SUBMIT_DIR:-.}/make_eos.out"
+SLURM_ERR="${SLURM_SUBMIT_DIR:-.}/make_eos.err"
+[[ -f "$SLURM_OUT" ]] && mv "$SLURM_OUT" "$LOGS/make_eos_${LOG_TAG}.out"
+[[ -f "$SLURM_ERR" ]] && mv "$SLURM_ERR" "$LOGS/make_eos_${LOG_TAG}.err"
+
+conda deactivate

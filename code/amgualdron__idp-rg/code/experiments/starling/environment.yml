@@ -1,0 +1,13 @@
+# mamba env create -f experiments/starling/environment.yml
+# Separate from idp-proteome: STARLING pulls in its own torch, numpy and metapredict versions.
+name: starling
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu124
+      - torch==2.6.0+cu124
+      - idptools-starling==2.0.2
+      - psutil        # imported by the `starling` command but not declared by the package

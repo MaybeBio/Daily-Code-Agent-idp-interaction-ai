@@ -1,0 +1,154 @@
+# openmm-lbm
+OpenMM plugin coupling molecular dynamics to a thread-safe lattice Boltzmann fluid (D3Q19, regularized collision, Guo
+forcing) for coarse-grained simulations with hydrodynamics. Particles exchange friction and thermal noise with the
+fluid. Native OpenMM plugin with Reference, CUDA, OpenCL and HIP platforms.
+
+**Version 0.6.5 (2026-10-29).** The fluid, solid walls (bounce-back or regularized), open faces with an imposed
+velocity, density or both, thermal fluctuations of the fluid and the particle-fluid coupling, with the explicit or the
+centred drag, at the nearest node or through an interpolation stencil, run on all platforms (Reference, CUDA, OpenCL,
+HIP), with one domain or with the lattice divided over MPI ranks, one GPU per rank ([running on several
+GPUs](docs/user_guide/parallel.md)); the platforms agree with each other, and the explicit drag at the nearest node
+with the reference CUDA library of the DragOpenMM project. Version 0.6.5 makes the viscosity and the temperature the
+inputs of every example and of the documentation, aligns the protein kick with the diffusion example (SOD1, a fluctuating
+fluid, kicks at a temperature averaged over seeds), adds `examples/cocomo/surface.py` for the surface file of a protein
+and the corrections of a test of the tutorial; version 0.6.4 gives the units of the output files (the DCD files of
+OpenMM in Å, those of the plugin in nm), version 0.6.3 describes the viscosity of the SOD1 examples (five times
+that of water) and validates them at the viscosity of water, version 0.6.2 adds the temperature of the fluctuating fluid
+to the diffusion example, takes the temperature of the beads in the examples from the reporter of the plugin and
+proofreads the documentation, and version 0.6.1 corrects the description of the Guo forcing in `docs/theory.md`, all
+with the C++ code of version 0.6.0. Version 0.6.0 makes the coupling through the three-point and Keys stencils faster on
+the GPUs (up to 41% shorter steps with many particles), and version 0.5.1 the domain decomposition with coupled
+particles, both with the same results (in one case on CUDA up to rounding, see the CHANGELOG). New in version 0.5.0: the
+interpolation stencils of the coupling, trilinear, three-point and Keys (`setInterpolationStencil()`, [step by
+step](docs/user_guide/interpolation.md)); open faces with both the density and the velocity imposed (`DensityVelocity`);
+with a fluctuating fluid, regularized walls and `DensityVelocity` faces exactly at equilibrium, while `Density` faces
+are refused; see the [CHANGELOG](https://github.com/lauricella/openmm-lbm/blob/HEAD/CHANGELOG.md), the [user guide](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/user_guide/README.md#what-works-in-this-version)
+and `docs/validation.md`.
+
+## Requirements
+
+- OpenMM 8.3 to 8.6 (the plugin is built against, and tested with, each minor version in this range).
+- CMake, SWIG and Python to build the plugin and its Python wrapper.
+
+## Building
+
+The plugin is built like other OpenMM plugins, against an existing OpenMM installation, and is
+usually installed into that same installation. The [installation guide](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/user_guide/installation.md)
+does it step by step from nothing, for users new to conda and OpenMM. In short, with OpenMM from
+conda-forge:
+
+```bash
+conda create -n lbm -c conda-forge openmm=8.6.1 cmake make swig=4.5.1 numpy cxx-compiler pytest
+conda activate lbm
+# optional: the CUDA platform needs nvcc (for example conda-forge cuda-nvcc, matching the
+# CUDA version of OpenMM); the OpenCL platform needs ocl-icd and the OpenCL headers.
+mkdir build && cd build
+cmake .. -DOPENMM_DIR=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+make -j
+make install
+make PythonInstall
+```
+
+CMake builds every GPU platform (`LBM_BUILD_CUDA_LIB`, `LBM_BUILD_OPENCL_LIB`, `LBM_BUILD_HIP_LIB`) that both
+the OpenMM in `OPENMM_DIR` has (its header and its library) and the system can compile, and the Python wrapper
+(`LBM_BUILD_PYTHON_WRAPPERS`) if SWIG and Python with the OpenMM module, NumPy, setuptools and pip are
+installed. It says why it leaves a part out, and ends with the list of what it builds, for example
+`-- openmm-lbm 0.6.5: platforms to build: Reference, CUDA, OpenCL; Python wrapper: yes; MPI: no`. An option set to `ON`
+for a part that cannot be built stops `cmake` with an error. CMake also prints the version of OpenMM it found
+and stops with an error if it is older than 8.3 (it warns if it is newer than 8.6, the newest tested version).
+All the checks, options and messages are in
+[section 12 of the installation guide](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/user_guide/installation.md#12-what-cmake-checks-and-the-build-options).
+The option `-DLBM_DEBUG=ON` adds diagnostics of the fluid (see `docs/theory.md`, section 6). The option
+`-DOPENMM_LBM_MPI=ON` builds the decomposition of the lattice over MPI ranks, one GPU per rank
+([running on several GPUs](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/user_guide/parallel.md)).
+
+The Python wrapper must be generated by the same SWIG version as the OpenMM Python module,
+otherwise OpenMM does not recognize an `LBMForce` as a `Force` (for example in
+`System.addForce()`). CMake checks it and stops with an error that names the version to install;
+for example OpenMM 8.3.1 from conda-forge needs `swig=4.3.1` and OpenMM 8.6.1 needs `swig=4.5.1`.
+
+## Testing
+
+```bash
+cd build
+ctest --output-on-failure          # C++ tests: serialization, Reference, and each GPU platform
+                                   # in single, mixed and double precision
+cd ../python/tests && python -m pytest
+```
+
+With `-DOPENMM_LBM_MPI=ON`, `ctest` also runs `TestMPIReferenceLBMForce` with two MPI ranks, and
+`mpirun -n 4 python python/tests/mpi_decomposition.py 2 2 1` compares the decomposition with one domain
+([validation](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/validation.md#domain-decomposition-pythontestsmpi_decompositionpy-mpi)).
+
+## Usage
+
+```python
+import openmm as mm
+import openmm.unit as unit
+from openmmlbm import LBMForce
+
+system = ...                                   # a periodic System with a rectangular box
+force = LBMForce()
+force.setGridSize(30, 30, 30)                  # cubic lattice cells spanning the box
+force.setFluidDensity(602.214*unit.dalton/unit.nanometer**3)
+force.setKinematicViscosity(1.0035*unit.nanometer**2/unit.picosecond)
+force.setFriction(5/unit.picosecond)
+force.setTemperature(300*unit.kelvin)
+for i in range(system.getNumParticles()):
+    force.addParticle(i)
+system.addForce(force)
+
+integrator = mm.VerletIntegrator(0.01*unit.picosecond)   # drag and noise are part of LBMForce
+context = mm.Context(system, integrator, mm.Platform.getPlatformByName('CUDA'),
+                     {'Precision': 'mixed'})
+density, velocity = force.getFluidFields(context)
+```
+
+The fluid is stored in the "mixed" type of the platform: single precision in `single` mode, double
+precision in `mixed` and `double` mode. `mixed` is recommended for production.
+
+The drag has two time discretizations, chosen with `force.setDragScheme()` before the Context is created:
+`LBMForce.Explicit`, the default, and `LBMForce.Centered`, stable for any friction, which requires
+`LBMForce` to be the last force of the System. See
+[choosing the drag](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/user_guide/lattice.md#choosing-the-drag).
+
+The state of the fluid is not part of OpenMM checkpoints: save and continue a run with
+`openmmlbm.saveCheckpoint()`, `openmmlbm.loadCheckpoint()` or `openmmlbm.LBMCheckpointReporter`, which keep
+the OpenMM checkpoint and the fluid together ([restart](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/user_guide/restart.md)).
+
+## Documentation
+
+- [docs/user_guide/](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/user_guide/README.md): user guide. Installation step by step, a tutorial
+  for newcomers to OpenMM, every method of `LBMForce` explained, how to choose the lattice parameters
+  and the drag, and complete examples (channel flow between walls, monitoring, restarts, serialization,
+  `openmm.app.Simulation`, Couette flow and a duct between open faces).
+- [examples/](https://github.com/lauricella/openmm-lbm/blob/HEAD/examples/README.md): example scripts (a kicked bead, thermalization, a bead in a uniform
+  flow, a fluid started from a shear wave, and proteins with the COCOMO2 model: diffusion of SOD1 and
+  of a disordered protein, kicks of a peptide and of ubiquitin), compared with the DragOpenMM plugin.
+- [docs/theory.md](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/theory.md): model, units and conventions.
+- [docs/architecture.md](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/architecture.md): structure of the code.
+- [docs/validation.md](https://github.com/lauricella/openmm-lbm/blob/HEAD/docs/validation.md): tests, tolerances and measured values.
+- [CONTRIBUTING.md](https://github.com/lauricella/openmm-lbm/blob/HEAD/CONTRIBUTING.md): rules for contributors.
+
+An artificial intelligence agent was used to produce the documentation.
+
+## Authors
+
+- Luis Enrique Coronas-Serna, Laboratoire de Biochimie Théorique, Institut de Biologie Physico-Chimique (IBPC), CNRS,
+  Paris, France
+- Marco Lauricella, Istituto per le Applicazioni del Calcolo "Mauro Picone" (IAC), Consiglio Nazionale delle Ricerche
+  (CNR), Rome, Italy
+- Andrea Montessori, Department of Civil, Computer Science and Aeronautical Technologies Engineering, Roma Tre
+  University, Rome, Italy
+- Simone Melchionna, Istituto per le Applicazioni del Calcolo "Mauro Picone" (IAC), Consiglio Nazionale delle Ricerche
+  (CNR), Rome, Italy
+- Fabio Sterpone, Laboratoire de Biochimie Théorique, Institut de Biologie Physico-Chimique (IBPC), CNRS, Paris, France
+
+## License
+
+MIT License, copyright the Authors listed above. See [LICENSE](https://github.com/lauricella/openmm-lbm/blob/HEAD/LICENSE), which also contains the
+notice of the OpenMM example plugin from which the plugin structure is derived.
+
+## Citing
+
+See [CITATION.cff](https://github.com/lauricella/openmm-lbm/blob/HEAD/CITATION.cff).

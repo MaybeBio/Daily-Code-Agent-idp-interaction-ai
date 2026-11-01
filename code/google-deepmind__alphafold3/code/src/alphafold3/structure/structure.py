@@ -26,13 +26,13 @@ import datetime
 import enum
 import functools
 import itertools
-import typing
 from typing import Any, ClassVar, Final, Literal, NamedTuple, Self, TypeAlias, TypeVar
 
 from alphafold3.constants import atom_types
 from alphafold3.constants import chemical_components
 from alphafold3.constants import mmcif_names
 from alphafold3.constants import residue_names
+from alphafold3.cpp import indexing
 from alphafold3.cpp import membership
 from alphafold3.cpp import string_array
 from alphafold3.structure import bioassemblies
@@ -301,6 +301,24 @@ class ResArrays:
   atom_mask: np.ndarray
   atom_b_factor: np.ndarray
   atom_occupancy: np.ndarray
+
+
+def _same_foreign_key_indices(
+    *,
+    self_fk: np.ndarray,
+    self_pk: np.ndarray,
+    other_fk: np.ndarray,
+    other_pk: np.ndarray,
+) -> bool:
+  """Returns True if foreign keys map to identical primary-key row indices."""
+  if self_pk.size <= 1:
+    return True
+  if np.array_equal(self_pk, other_pk) and np.array_equal(self_fk, other_fk):
+    return True
+  return np.array_equal(
+      indexing.index_of(self_fk, self_pk),
+      indexing.index_of(other_fk, other_pk),
+  )
 
 
 class Structure(table.Database):
@@ -605,25 +623,22 @@ class Structure(table.Database):
   @functools.cached_property
   def present_chains(self) -> structure_tables.Chains:
     """Returns table of chains which have at least 1 resolved atom."""
-    is_present_mask = np.isin(self._chains.key, self._atoms.chain_key)
-    return typing.cast(structure_tables.Chains, self._chains[is_present_mask])
+    return self._chains.apply_array(
+        membership.isin(self._chains.key, self._atoms.chain_key)
+    )
 
   @functools.cached_property
   def present_residues(self) -> structure_tables.Residues:
     """Returns table of residues which have at least 1 resolved atom."""
-    is_present_mask = np.isin(self._residues.key, self._atoms.res_key)
-    return typing.cast(
-        structure_tables.Residues, self._residues[is_present_mask]
+    return self._residues.apply_array(
+        membership.isin(self._residues.key, self._atoms.res_key)
     )
 
   @functools.cached_property
   def unresolved_residues(self) -> structure_tables.Residues:
     """Returns table of residues which have at least 1 resolved atom."""
-    is_unresolved_mask = np.isin(
-        self._residues.key, self._atoms.res_key, invert=True
-    )
-    return typing.cast(
-        structure_tables.Residues, self._residues[is_unresolved_mask]
+    return self._residues.apply_array(
+        membership.isin(self._residues.key, self._atoms.res_key, invert=True)
     )
 
   def __getitem__(self, field: str) -> Any:
@@ -1005,6 +1020,38 @@ class Structure(table.Database):
         zip(self.chain_id, res_ids, ins_codes, self.atom_name, strict=True)
     )
 
+  def _has_identical_atom_layout(self, other: 'Structure') -> bool:
+    """Returns True if self and other have identical chains, residues, and atoms."""
+    if (
+        len(self.chains_table) != len(other.chains_table)
+        or len(self.residues_table) != len(other.residues_table)
+        or len(self.atoms_table) != len(other.atoms_table)
+    ):
+      return False
+    return (
+        np.array_equal(self.chains_table.id, other.chains_table.id)
+        and np.array_equal(self.residues_table.id, other.residues_table.id)
+        and np.array_equal(self.atoms_table.name, other.atoms_table.name)
+        and _same_foreign_key_indices(
+            self_fk=self.residues_table.chain_key,
+            self_pk=self.chains_table.key,
+            other_fk=other.residues_table.chain_key,
+            other_pk=other.chains_table.key,
+        )
+        and _same_foreign_key_indices(
+            self_fk=self.atoms_table.chain_key,
+            self_pk=self.chains_table.key,
+            other_fk=other.atoms_table.chain_key,
+            other_pk=other.chains_table.key,
+        )
+        and _same_foreign_key_indices(
+            self_fk=self.atoms_table.res_key,
+            self_pk=self.residues_table.key,
+            other_fk=other.atoms_table.res_key,
+            other_pk=other.residues_table.key,
+        )
+    )
+
   def order_and_drop_atoms_to_match(
       self,
       other: 'Structure',
@@ -1053,6 +1100,8 @@ class Structure(table.Database):
       MissingAtomError: If there are atoms present in the other structure that
         cannot be found in this structure.
     """
+    if self is other or self._has_identical_atom_layout(other):
+      return self  # Shortcut: The operation is a no-op, so just return itself.
     atom_index_map = {atom_id: i for i, atom_id in enumerate(self.atom_ids)}
     try:
       if allow_missing_atoms:
@@ -1365,6 +1414,7 @@ class Structure(table.Database):
         residues=self._residues,
         chains=self._chains,
         bonds=self._bonds,
+        skip_validation=True,
     )
 
   def copy_and_update_atoms(
@@ -1462,19 +1512,79 @@ class Structure(table.Database):
       bonds = self._bonds
 
     if not chains_unchanged:
-      residues_mask = membership.isin(residues.chain_key, set(chains.key))  # pylint:disable=attribute-error
-      if not np.all(residues_mask):  # Only apply if this is not a no-op.
-        residues = residues[residues_mask]
-        residues_unchanged = False
+      residues = residues.apply_array(
+          membership.isin(residues.chain_key, chains.key)
+      )
+      residues_unchanged = residues_unchanged and residues is self._residues
     if not residues_unchanged:
-      atoms_mask = membership.isin(atoms.res_key, set(residues.key))  # pylint:disable=attribute-error
-      if not np.all(atoms_mask):  # Only apply if this is not a no-op.
-        atoms = atoms[atoms_mask]
-        atoms_unchanged = False
+      atoms = atoms.apply_array(membership.isin(atoms.res_key, residues.key))
+      atoms_unchanged = atoms_unchanged and atoms is self._atoms
     if not atoms_unchanged:
       bonds = bonds.restrict_to_atoms(atoms.key)
     return StructureTables(
         chains=chains, residues=residues, atoms=atoms, bonds=bonds
+    )
+
+  def _has_sorted_chain_keys(self) -> bool:
+    """Returns True if chain keys are strictly increasing across tables."""
+    return bool(
+        np.all(self._chains.key[1:] > self._chains.key[:-1])
+        and np.all(
+            self._residues.chain_key[1:] >= self._residues.chain_key[:-1]
+        )
+        and np.all(self._atoms.chain_key[1:] >= self._atoms.chain_key[:-1])
+    )
+
+  def _filter_by_chains(
+      self,
+      chain_mask: np.ndarray,
+      *,
+      invert: bool,
+      cascade_delete: CascadeDelete,
+  ) -> Self:
+    """Slices sorted chain, residue, and atom spans in O(C log A) time."""
+    keep_chain = ~chain_mask if invert else chain_mask
+    chain_keys = self._chains.key[keep_chain]
+    atom_starts = np.searchsorted(
+        self._atoms.chain_key, chain_keys, side='left'
+    )
+    atom_ends = np.searchsorted(self._atoms.chain_key, chain_keys, side='right')
+    filtered_atoms = self._atoms.slice_spans(atom_starts, atom_ends)
+    if cascade_delete == CascadeDelete.NONE:
+      if filtered_atoms is self._atoms:
+        return self  # Shortcut: The filter is a no-op, so just return itself.
+      filtered_chains, filtered_residues = self._chains, self._residues
+    else:
+      # CHAINS and FULL both drop kept chains left without atoms.
+      has_atoms = atom_ends > atom_starts
+      kept_keys = chain_keys[has_atoms]
+      filtered_chains = self._chains.apply_index(
+          np.flatnonzero(keep_chain)[has_atoms]
+      )
+      filtered_residues = self._residues.slice_spans(
+          np.searchsorted(self._residues.chain_key, kept_keys, side='left'),
+          np.searchsorted(self._residues.chain_key, kept_keys, side='right'),
+      )
+      if cascade_delete == CascadeDelete.FULL:
+        filtered_residues = filtered_residues.apply_array(
+            membership.isin(filtered_residues.key, filtered_atoms.res_key)
+        )
+    if (
+        filtered_chains is self._chains
+        and filtered_residues is self._residues
+        and filtered_atoms is self._atoms
+    ):
+      return self  # Shortcut: The filter is a no-op, so just return itself.
+    return self.copy_and_update(
+        chains=filtered_chains,
+        residues=filtered_residues,
+        atoms=filtered_atoms,
+        bonds=(
+            self._bonds
+            if filtered_atoms is self._atoms
+            else self._bonds.restrict_to_atoms(filtered_atoms.key)
+        ),
+        skip_validation=True,
     )
 
   def filter(
@@ -1563,73 +1673,83 @@ class Structure(table.Database):
     chain_mask = self._chains.make_filter_mask(
         **chain_predicates, apply_per_element=apply_per_element  # pyrefly: ignore[bad-argument-type]
     )
+    # Chain-only predicates on sorted tables slice contiguous spans directly.
+    if (
+        chain_mask is not None
+        and mask is None
+        and not res_predicates
+        and not atom_predicates
+        and self._has_sorted_chain_keys()
+    ):
+      return self._filter_by_chains(
+          chain_mask, invert=invert, cascade_delete=cascade_delete
+      )
     res_mask = self._residues.make_filter_mask(
         **res_predicates, apply_per_element=apply_per_element  # pyrefly: ignore[bad-argument-type]
     )
     atom_mask = self._atoms.make_filter_mask(
         mask, **atom_predicates, apply_per_element=apply_per_element
     )
+    # Remove atoms that belong to filtered out chains or residues; foreign keys
+    # are validated in `__init__`, so gather directly by index.
+    for parent_mask, fk_col, parent_keys in (
+        (chain_mask, self._atoms.chain_key, self._chains.key),
+        (res_mask, self._atoms.res_key, self._residues.key),
+    ):
+      if parent_mask is not None:
+        atom_parent_mask = parent_mask[indexing.index_of(fk_col, parent_keys)]
+        if atom_mask is None:
+          atom_mask = atom_parent_mask
+        else:
+          atom_mask = np.logical_and(
+              atom_mask, atom_parent_mask, out=atom_parent_mask
+          )
+
     if atom_mask is None:
-      atom_mask = np.ones((self._atoms.size,), dtype=bool)
-
-    # Remove atoms that belong to filtered out chains.
-    if chain_mask is not None:
-      atom_chain_mask = membership.isin(
-          self._atoms.chain_key, set(self._chains.key[chain_mask])
+      filtered_atoms = (
+          self._atoms.apply_index(np.empty((0,), dtype=np.int64))
+          if invert
+          else self._atoms
       )
-      np.logical_and(atom_mask, atom_chain_mask, out=atom_mask)
-
-    # Remove atoms that belong to filtered out residues.
-    if res_mask is not None:
-      atom_res_mask = membership.isin(
-          self._atoms.res_key, set(self._residues.key[res_mask])
+    else:
+      filtered_atoms = self._atoms.apply_array(
+          ~atom_mask if invert else atom_mask
       )
-      np.logical_and(atom_mask, atom_res_mask, out=atom_mask)
 
-    final_atom_mask = ~atom_mask if invert else atom_mask
-
-    if cascade_delete == CascadeDelete.NONE and np.all(final_atom_mask):
+    if cascade_delete == CascadeDelete.NONE and filtered_atoms is self._atoms:
       return self  # Shortcut: The filter is a no-op, so just return itself.
 
-    filtered_atoms = typing.cast(
-        structure_tables.Atoms, self._atoms[final_atom_mask]
-    )
-
     match cascade_delete:
-      case CascadeDelete.FULL:
-        nonempty_residues_mask = np.isin(
-            self._residues.key, filtered_atoms.res_key
+      case CascadeDelete.FULL | CascadeDelete.CHAINS:
+        filtered_chains = self._chains.apply_array(
+            membership.isin(self._chains.key, filtered_atoms.chain_key)
         )
-        filtered_residues = self._residues[nonempty_residues_mask]
-        nonempty_chain_mask = np.isin(
-            self._chains.key, filtered_atoms.chain_key
-        )
-        filtered_chains = self._chains[nonempty_chain_mask]
-        updated_tables = self._cascade_delete(
-            chains=filtered_chains,  # pyrefly: ignore[bad-argument-type]
-            residues=filtered_residues,  # pyrefly: ignore[bad-argument-type]
-            atoms=filtered_atoms,
-        )
-      case CascadeDelete.CHAINS:
-        # To match v1 behavior we remove chains that have no atoms remaining,
-        # and we remove residues in those chains.
-        # NB we do not remove empty residues.
-        nonempty_chain_mask = membership.isin(
-            self._chains.key, set(filtered_atoms.chain_key)
-        )
-        filtered_chains = self._chains[nonempty_chain_mask]
-        updated_tables = self._cascade_delete(
-            chains=filtered_chains, atoms=filtered_atoms
-        )
+        if cascade_delete == CascadeDelete.FULL:
+          filtered_residues = self._residues.apply_array(
+              membership.isin(self._residues.key, filtered_atoms.res_key)
+          )
+        elif filtered_chains is self._chains:
+          filtered_residues = self._residues
+        else:
+          # To match v1 behavior we remove chains that have no atoms remaining,
+          # and we remove residues in those chains.
+          # NB we do not remove empty residues.
+          filtered_residues = self._residues.apply_array(
+              membership.isin(self._residues.chain_key, filtered_chains.key)
+          )
       case CascadeDelete.NONE:
-        updated_tables = self._cascade_delete(atoms=filtered_atoms)
+        filtered_chains, filtered_residues = self._chains, self._residues
       case _:
         raise ValueError(f'Unknown cascade_delete behaviour: {cascade_delete}')
     return self.copy_and_update(
-        chains=updated_tables.chains,
-        residues=updated_tables.residues,
-        atoms=updated_tables.atoms,
-        bonds=updated_tables.bonds,
+        chains=filtered_chains,
+        residues=filtered_residues,
+        atoms=filtered_atoms,
+        bonds=(
+            self._bonds
+            if filtered_atoms is self._atoms
+            else self._bonds.restrict_to_atoms(filtered_atoms.key)
+        ),
         skip_validation=True,
     )
 
@@ -1722,17 +1842,25 @@ class Structure(table.Database):
 
   def without_terminal_oxygens(self) -> Self:
     """Returns the structure without terminal oxygen atoms."""
-    terminal_oxygen_filter = np.zeros(self.num_atoms, dtype=bool)
-    for chain_type, atom_name in mmcif_names.TERMINAL_OXYGENS.items():
-      chain_keys = self._chains.key[self._chains.type == chain_type]
-      chain_atom_filter = np.logical_and(
-          self._atoms.name == atom_name,
-          np.isin(self._atoms.chain_key, chain_keys),
-      )
-      np.logical_or(
-          terminal_oxygen_filter, chain_atom_filter, out=terminal_oxygen_filter
-      )
-    return self.filter_out(terminal_oxygen_filter)
+    terminal_oxygen_by_chain = np.array(
+        [mmcif_names.TERMINAL_OXYGENS.get(t) for t in self._chains.type],
+        dtype=object,
+    )
+    if not (atoms_to_remove := set(terminal_oxygen_by_chain) - {None}):
+      return self
+    # Scan atom names once, then check chain types only for the candidates.
+    candidates = np.flatnonzero(
+        membership.isin(self._atoms.name, atoms_to_remove)
+    )
+    expected = terminal_oxygen_by_chain[
+        indexing.index_of(self._atoms.chain_key[candidates], self._chains.key)
+    ]
+    drop_indices = candidates[self._atoms.name[candidates] == expected]
+    if drop_indices.size == 0:
+      return self
+    keep_mask = np.ones(self.num_atoms, dtype=bool)
+    keep_mask[drop_indices] = False
+    return self.filter(keep_mask)
 
   def reset_author_naming_scheme(self) -> Self:
     """Remove author chain/residue ids, entity info and use internal ids."""
@@ -1767,10 +1895,8 @@ class Structure(table.Database):
       )
     if res_mask.dtype != bool:
       raise ValueError(f'res_mask must have dtype bool. Got: {res_mask.dtype}.')
-
-    filtered_residues = self.present_residues.filter(res_mask)
-    atom_mask = np.isin(self._atoms.res_key, filtered_residues.key)
-    return self.filter(atom_mask)
+    kept_res_keys = self.present_residues.filter(res_mask).key
+    return self.filter(membership.isin(self._atoms.res_key, kept_res_keys))
 
   def filter_coords(
       self, coord_predicate: Callable[[np.ndarray], bool]
@@ -1814,26 +1940,24 @@ class Structure(table.Database):
       A Structure filtered so that per chain types, only specified atoms are
       present.
     """
-    polymer_chain_keys = self._chains.key[
-        string_array.isin(
-            self._chains.type, set(representative_atom_by_chain_type)
-        )
+    rep_by_chain = [
+        representative_atom_by_chain_type.get(t) for t in self._chains.type
     ]
-    polymer_atoms_mask = np.isin(self._atoms.chain_key, polymer_chain_keys)
-
-    wanted_atom_by_chain_key = {
-        chain_key: representative_atom_by_chain_type.get(chain_type, None)
-        for chain_key, chain_type in zip(self._chains.key, self._chains.type)
-    }
-    wanted_atoms = string_array.remap(
-        self._atoms.chain_key.astype(object), mapping=wanted_atom_by_chain_key
-    )
-
-    representative_polymer_atoms_mask = polymer_atoms_mask & (
-        wanted_atoms == self._atoms.name
-    )
-
-    return self.filter(representative_polymer_atoms_mask | ~polymer_atoms_mask)
+    targets = {r for r in rep_by_chain if r is not None}
+    chain_idx = indexing.index_of(self._atoms.chain_key, self._chains.key)
+    keep_mask = np.array(
+        [t not in representative_atom_by_chain_type for t in self._chains.type],
+        dtype=bool,
+    )[chain_idx]
+    if len(targets) == 1:
+      keep_mask |= membership.isin(self._atoms.name, targets)
+      return self.filter(keep_mask)
+    for rep in targets:
+      in_rep_chain = np.array([r == rep for r in rep_by_chain], dtype=bool)[
+          chain_idx
+      ]
+      keep_mask |= in_rep_chain & membership.isin(self._atoms.name, {rep})
+    return self.filter(keep_mask)
 
   def drop_non_standard_protein_atoms(self, *, drop_oxt: bool = True) -> Self:
     """Drops non-standard atom names from protein chains.
@@ -2273,7 +2397,7 @@ class Structure(table.Database):
       unstacked.append(leading_dim_slice[slice_i])
     return unstacked
 
-  def split_by_chain(self) -> Sequence[Self]:
+  def split_by_chain(self) -> list[Self]:
     """Splits a Structure into single-chain Structures, one for each chain.
 
     The obtained structures can be merged back together into the original
@@ -2283,7 +2407,55 @@ class Structure(table.Database):
       A list of `Structure`s, one for each chain. The order is the same as the
       chain order in the original Structure.
     """
-    return [self.filter(chain_id=chain_id) for chain_id in self.chains]
+    num_chains = self._chains.size
+    if num_chains == 0:
+      return []
+    if num_chains == 1 and self._atoms.size > 0:
+      return [self]
+
+    atom_starts = atom_ends = bonds_by_chain = None
+    if (
+        self._has_sorted_chain_keys()
+        and len(set(self._chains.id)) == num_chains
+    ):
+      atom_starts = np.searchsorted(
+          self._atoms.chain_key, self._chains.key, side='left'
+      )
+      atom_ends = np.searchsorted(
+          self._atoms.chain_key, self._chains.key, side='right'
+      )
+      if int(np.sum(atom_ends - atom_starts)) == self._atoms.size:
+        bonds_by_chain = self._bonds.split_by_atom_ranges(
+            atom_key=self._atoms.key, atom_ends=atom_ends
+        )
+    if atom_starts is None or atom_ends is None or bonds_by_chain is None:
+      return [self.filter(chain_id=chain_id) for chain_id in self.chains]
+
+    res_starts = np.searchsorted(
+        self._residues.chain_key, self._chains.key, side='left'
+    )
+    res_ends = np.searchsorted(
+        self._residues.chain_key, self._chains.key, side='right'
+    )
+
+    result: list[Self] = []
+    for chain_idx in range(num_chains):
+      a_start, a_end = atom_starts[chain_idx], atom_ends[chain_idx]
+      if a_start == a_end:
+        c_start = c_end = r_start = r_end = 0
+      else:
+        c_start, c_end = chain_idx, chain_idx + 1
+        r_start, r_end = res_starts[chain_idx], res_ends[chain_idx]
+      result.append(
+          self.copy_and_update(
+              chains=self._chains.slice_range(start=c_start, end=c_end),
+              residues=self._residues.slice_range(start=r_start, end=r_end),
+              atoms=self._atoms.slice_range(start=a_start, end=a_end),
+              bonds=bonds_by_chain[chain_idx],
+              skip_validation=True,
+          )
+      )
+    return result
 
   def transform_states_to_chains(self) -> Self:
     """Transforms states to chains.
@@ -2501,13 +2673,14 @@ class Structure(table.Database):
     atom_b_factor = np.zeros(shape, dtype=np.float32)
     atom_occupancy = np.zeros(shape, dtype=np.float32)
 
-    atom_idx = np.fromiter(
-        (atom_order.get(name, -1) for name in self._atoms.name),
-        dtype=np.int64,
-        count=self._atoms.size,
+    atom_order_dict = (
+        atom_order if isinstance(atom_order, dict) else dict(atom_order)
     )
+    atom_idx = string_array.remap(
+        self._atoms.name, atom_order_dict, default_value=-1
+    ).astype(np.int64)
     valid = atom_idx >= 0
-    res_idx = res_table.index_by_key[self._atoms.res_key[valid]]
+    res_idx = indexing.index_of(self._atoms.res_key[valid], res_table.key)
     atom_idx = atom_idx[valid]
     atom_positions[res_idx, atom_idx, 0] = self._atoms.x[valid]
     atom_positions[res_idx, atom_idx, 1] = self._atoms.y[valid]
@@ -3255,16 +3428,21 @@ def multichain_residue_index(
     A monotonically increasing residue index, with at least
     `between_chain_buffer` residues in between each chain.
   """
-  if struc.num_atoms:
-    res_id_range = np.max(struc.res_id) - np.min(struc.res_id)
-    assert res_id_range < chain_offset
-  chain_id_int = struc.chain_id
-  monotonic_chain_id_int = np.concatenate(
-      ([0], np.cumsum(chain_id_int[1:] != chain_id_int[:-1]))
+  if struc.num_atoms == 0:
+    return np.empty(0, dtype=np.int64)
+  res_id_range = np.max(struc.res_id) - np.min(struc.res_id)
+  assert res_id_range < chain_offset
+  if struc.num_chains <= 1:
+    return struc.res_id.astype(np.int64, copy=False)
+  chain_keys = (
+      struc.atoms_table.chain_key
+      if len(set(struc.chains)) == struc.num_chains
+      else struc.chain_id
   )
-  return struc.res_id + monotonic_chain_id_int * (
-      chain_offset + between_chain_buffer
-  )
+  chain_index = np.empty(chain_keys.size, dtype=np.int64)
+  chain_index[0] = 0
+  np.cumsum(chain_keys[1:] != chain_keys[:-1], out=chain_index[1:])
+  return struc.res_id + chain_index * (chain_offset + between_chain_buffer)
 
 
 def make_empty_structure() -> Structure:

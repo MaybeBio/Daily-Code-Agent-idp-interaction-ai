@@ -1,0 +1,490 @@
+from openmm.app import Topology
+from collections import defaultdict
+
+if __name__ == "__main__":
+    import os
+    import sys
+
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from dropps.fileio.tpr_reader import read_tpr
+from dropps.fileio.itp_reader import ITPTopology
+from typing import List
+from copy import deepcopy
+
+from itertools import chain
+
+import re
+
+
+## IMPORTANT: In DROPPS indexing, all atom index starts with 0.
+
+
+class index_singleGroup:
+    def __init__(self, name, indices, sorted=False):
+        self.name = deepcopy(name.replace(" ", "_"))
+        self.indices = deepcopy(indices)
+        if sorted:
+            self.indices.sort()
+        self.length = len(self.indices)
+
+
+class indexGroups:
+    def __init__(self, mdtopology: Topology, itp_list: List[ITPTopology]):
+        print("\n## Reading tpr file and loading topology")
+        self.atomNumber = mdtopology.getNumAtoms()
+        self.itp_list = itp_list
+
+        print(f"## Going to load {len(self.itp_list)} itp topology instances.")
+        print(
+            f"## The topology contains {self.atomNumber} atoms within {len(self.itp_list)} molecules."
+        )
+
+        print("## Analysing Proteins...")
+
+        # We now build list for properties of all atoms.
+        all_props = [
+            (
+                itp.molecule_name,
+                atom.name,
+                atom.abbr,
+                atom.residueid,
+                atom.residuename,
+                atom.charge,
+                atom.mass,
+            )
+            for itp in itp_list
+            for atom in itp.atoms
+        ]
+
+        if not all_props:
+            raise ValueError("The run input contains no atoms to index.")
+
+        (
+            self.atom_molnames,
+            self.atom_names,
+            self.atom_abbrs,
+            self.atom_resids,
+            self.atom_resnames,
+            self.atom_charges,
+            self.atom_masses,
+        ) = zip(*all_props)
+
+        self.atom_chainids = [
+            chainid for chainid, chain in enumerate(itp_list) for _ in chain.atoms
+        ]
+
+        # We now build initial list for index groups
+        self.initilize()
+        self.validate()
+
+    def initilize(self):
+        self.index_groups = list()
+        self.index_groups.append(
+            index_singleGroup("System", list(range(0, self.atomNumber)), sorted=True)
+        )
+
+        # Keep first-seen molecule order from topology while removing duplicates.
+        for molname in dict.fromkeys(self.atom_molnames):
+            ids = [i for i, name in enumerate(self.atom_molnames) if name == molname]
+            self.index_groups.append(index_singleGroup(molname, ids))
+
+    def write_ndx(self, ndx_filename):
+        if not ndx_filename.lower().endswith(".ndx"):
+            ndx_filename += ".ndx"
+        with open(ndx_filename, "w", encoding="utf-8") as f:
+            for index_group in self.index_groups:
+                f.write(f"[ {index_group.name} ]\n")
+                f.write(indices2string(index_group.indices))
+                f.write("\n\n")
+
+    def load_ndx(self, ndx_filename):
+        with open(ndx_filename, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+            sections = defaultdict(list)
+            current_section = None
+
+            for line in lines:
+                line = line.strip().split("#")[0]
+                if not line or line.startswith(";"):
+                    continue
+                if line.startswith("[") and line.endswith("]"):
+                    current_section = line.strip("[]").strip().lower()
+                elif current_section:
+                    sections[current_section].append(line)
+
+            if not sections:
+                raise ValueError(f"Index file {ndx_filename!r} defines no groups.")
+
+            index_groups = list()
+
+            for section_name in sections.keys():
+                index_groups.append(
+                    index_singleGroup(
+                        section_name, string2indices(sections[section_name])
+                    )
+                )
+        self.index_groups = deepcopy(index_groups)
+        self.validate()
+
+    def validate(self):
+        validated = True
+        for i, group in enumerate(self.index_groups):
+            indices = group.indices
+            seen = set()
+            for idx in indices:
+                if not (0 <= idx < self.atomNumber):
+                    print(
+                        f"ERROR: Invalid index {idx} found in group {i}. Must be in range 0 to {self.atomNumber - 1}."
+                    )
+                    validated = False
+                if idx in seen:
+                    print(f"ERROR: Duplicate index {idx} found in group {i}.")
+                    validated = False
+                else:
+                    seen.add(idx)
+        if not validated:
+            raise ValueError("Index groups contain invalid or duplicate atom indices.")
+
+    def print_all(self):
+        print("\n")
+        print(
+            "    ###########################################################################"
+        )
+        print(
+            f"    #### Index containing {len(self.index_groups):>3d} groups for {self.atomNumber:>7d} atoms."
+            + "                    ####"
+        )
+        print(
+            "    #### |--------------------|---------------------|---------------------|####"
+        )
+        for id, group in enumerate(self.index_groups):
+            name_formatted = (
+                group.name if len(group.name) <= 20 else group.name[:17] + "..."
+            )
+            print(
+                f"    #### | Index group {id:<6d} | {name_formatted:<20s}| {len(group.indices):>7d} atoms.      |####"
+            )
+        print(
+            "    #### |--------------------|---------------------|---------------------|####"
+        )
+        print(
+            "    ###########################################################################"
+        )
+
+    def __print_chains_verbose(self):
+        print(
+            f"#### This index contains {self.atomNumber} atoms within {len(self.itp_list)} molecules."
+        )
+        print(
+            f"#### {len(set(self.atom_molnames)):>3d} molecule types:  {','.join(set(self.atom_molnames))}"
+        )
+        print(
+            f"#### {len(set(self.atom_names)):>3d} Atom names:      {','.join(set(self.atom_names))}"
+        )
+        print(
+            f"#### {len(set(self.atom_abbrs)):>3d} atom abbrs:      {','.join(set(self.atom_abbrs))}"
+        )
+        print(
+            f"#### {len(set(self.atom_resnames)):>3d} atom resnames:   {','.join(set(self.atom_abbrs))}"
+        )
+        grouped_indices, chainid_list = self.__splitch_indices(
+            list(range(self.atomNumber))
+        )
+
+        string_list = [
+            f"{chainid_list[chainID]}({self.atom_resids[grouped_indices[chainID][0]]}-{self.atom_resids[grouped_indices[chainID][-1]]})"
+            for chainID in range(len(chainid_list))
+        ]
+
+        print(f"#### ChainID(ResID): {';'.join(string_list)}")
+
+    def __splitch_indices(self, indices):
+        # Use defaultdict to group indices by their chainid
+        chainid_to_indices = defaultdict(list)
+        for idx in indices:
+            chainid = self.atom_chainids[idx]
+            chainid_to_indices[chainid].append(idx)
+
+        grouped_indices = list(chainid_to_indices.values())
+        chainid_list = list(chainid_to_indices.keys())
+
+        return grouped_indices, chainid_list
+
+    def splitch_indices(self, indices):
+        return self.__splitch_indices(indices)[0]
+
+    def __splitch(self, groupID):
+        grouped_indices, chainid_list = self.__splitch_indices(
+            self.index_groups[groupID].indices
+        )
+        print(
+            f"#### Splitting group {groupID} ({self.index_groups[groupID].name}) into {len(grouped_indices)} groups."
+        )
+        for newgroupID in range(len(grouped_indices)):
+            newGroupName = (
+                f"{self.index_groups[groupID].name}_Ch{chainid_list[newgroupID]}"
+            )
+            newGroupIndices = grouped_indices[newgroupID]
+            self.index_groups.append(index_singleGroup(newGroupName, newGroupIndices))
+        self.validate()
+
+    def __rename(self, groupID, newname):
+        if groupID >= len(self.index_groups) or groupID < 0:
+            print(f"ERROR: Group {groupID} not exist.")
+            return ()
+        print(
+            f"#### Naming group {groupID} ({self.index_groups[groupID].name}) to {newname}"
+        )
+        self.index_groups[groupID].name = deepcopy(newname)
+
+    def showhelp(self):
+        help_lines = [
+            "",
+            "Enter  :  list groups   'p': print groups   'l': Verbose list of chains   'q': save and quit",
+            "'h'    :  show help     'name' nr:  name group    'splitch nr': split group nr by chains ",
+            "'mol'  name :  select molecule name      'group' x    : select group index or name",
+            "'res'  name :  select residue name       'index' nr   : select atom index (starts with 0)",
+            "'abbr' name :  select atom abbreviation  'resid' nr   : select residue index",
+            "                                         'chainid nr' : select chain index",
+        ]
+        print("\n".join(help_lines))
+
+    def __phraseSingleSelection(self, single_selection_string):
+        def normalize_group_name(name):
+            return name.strip().replace(" ", "_").lower()
+
+        command2list = {
+            "mol": self.atom_molnames,
+            "name": self.atom_names,
+            "abbr": self.atom_abbrs,
+            "res": self.atom_resnames,
+            "index": list(range(self.atomNumber)),
+            "resid": self.atom_resids,
+            "chainid": self.atom_chainids,
+        }
+
+        fields = single_selection_string.split(maxsplit=1)
+        if len(fields) != 2 or not fields[1].strip():
+            raise ValueError(
+                f"Cannot process selection term {single_selection_string!r}; "
+                "expected 'selector value'."
+            )
+
+        command = fields[0].strip().lower()
+        rangestring = fields[1].strip()
+
+        if command == "group":
+            group_name_to_ids = defaultdict(list)
+            for group_id, group in enumerate(self.index_groups):
+                group_name_to_ids[normalize_group_name(group.name)].append(group_id)
+
+            targets = []
+            for token in [
+                part.strip() for part in rangestring.split(",") if part.strip()
+            ]:
+                normalized_token = normalize_group_name(token)
+                if normalized_token in group_name_to_ids:
+                    targets.extend(group_name_to_ids[normalized_token])
+                    continue
+
+                if re.fullmatch(r"\d+(?:-\d+)?", token):
+                    targets.extend(parse_number_range(token))
+                    continue
+
+                print(f"Unknown group name or index range {token}.")
+                raise ValueError(f"Unknown group name or index range {token}.")
+
+            invalid_targets = [
+                group_id
+                for group_id in targets
+                if group_id < 0 or group_id >= len(self.index_groups)
+            ]
+            if invalid_targets:
+                raise ValueError(
+                    "Index group ID out of range: "
+                    + ", ".join(str(group_id) for group_id in invalid_targets)
+                )
+
+            index_in_groups = [
+                self.index_groups[group_id].indices for group_id in targets
+            ]
+            match = sorted(set(chain.from_iterable(index_in_groups)))
+            print(f"## Find {len(match):>4d} matches for {command:<10s} {rangestring}.")
+            return match
+
+        if command in ["mol", "name", "abbr", "res"]:
+            sources = command2list[command]
+            targets = parse_string_range(rangestring)
+
+        elif command in {"index", "resid", "chainid"}:
+            sources = command2list[command]
+            targets = parse_number_range(rangestring)
+
+        else:
+            allowed = ", ".join(command2list)
+            raise ValueError(
+                f"Unknown selection selector {command!r}; choose from {allowed} or group."
+            )
+
+        match = [i for i, val in enumerate(sources) if val in targets]
+        print(f"## Find {len(match):>4d} matches for {command:<10s} {rangestring}.")
+
+        return match
+
+    def phraseSelection(self, selection_string):
+        if not selection_string or not selection_string.strip():
+            raise ValueError("Selection expression cannot be empty.")
+
+        def parse_command(cmd):
+            return set(self.__phraseSingleSelection(cmd.strip()))
+
+        tokens = re.findall(r"\(|\)|&|\||[^&|()]+", selection_string)
+
+        def evaluate(tokens):
+            stack, ops = [], []
+            precedence = {"&": 2, "|": 1}
+
+            def apply_op():
+                if not ops or len(stack) < 2:
+                    raise ValueError("Malformed selection expression.")
+                right, left = stack.pop(), stack.pop()
+                stack.append(left & right if ops.pop() == "&" else left | right)
+
+            for token in tokens:
+                token = token.strip()
+                if not token:
+                    continue
+                if token == "(":
+                    ops.append(token)
+                elif token == ")":
+                    while ops and ops[-1] != "(":
+                        apply_op()
+                    if not ops:
+                        raise ValueError("Unmatched ')' in selection expression.")
+                    ops.pop()
+                elif token in precedence:
+                    while (
+                        ops
+                        and ops[-1] in precedence
+                        and precedence[ops[-1]] >= precedence[token]
+                    ):
+                        apply_op()
+                    ops.append(token)
+                else:
+                    stack.append(parse_command(token))
+
+            while ops:
+                if ops[-1] == "(":
+                    raise ValueError("Unmatched '(' in selection expression.")
+                apply_op()
+
+            if len(stack) != 1:
+                raise ValueError("Malformed selection expression.")
+            return stack[0]
+
+        result_indices = sorted(evaluate(tokens))
+        print(f"## The resultant group will contains {len(result_indices)} atoms.")
+
+        return result_indices
+
+    def __append_selection(self, selection_string):
+        result_indices = self.phraseSelection(selection_string)
+
+        if len(result_indices) > 0:
+            # group_name = selection_string.replace(" ","").replace("&","-").replace("|","|").replace("(","B").replace(")","b")
+            group_name = selection_string.replace(" ", "")
+            self.index_groups.append(index_singleGroup(group_name, result_indices))
+
+    def command(self, command):
+        singleCommandDict = {
+            "p": self.print_all,
+            "l": self.__print_chains_verbose,
+            "h": self.showhelp,
+        }
+        actionDict = {"splitch": self.__splitch, "name": self.__rename}
+
+        try:
+            command_split = command.split(" ")
+            first_command = command_split[0]
+
+            if first_command in singleCommandDict.keys():
+                singleCommandDict[first_command]()
+
+            elif first_command in actionDict.keys():
+                if first_command == "splitch":
+                    if len(command_split) < 2:
+                        print("ERROR: Split chain for which group?")
+                        return
+                    self.__splitch(int(command.split(" ")[1]))
+
+                elif first_command == "name":
+                    if len(command_split) < 3:
+                        print("ERROR: Name what group to what?")
+                        return
+                    self.__rename(int(command.split(" ")[1]), command.split(" ")[2])
+
+            else:
+                # Preparing to phrase selection string
+                self.__append_selection(command)
+
+        except Exception as exc:
+            print(f'ERROR: Error in processing command "{command}".')
+            print(f"ERROR: Root cause: {exc}")
+
+
+def indices2string(indices: List[int], field_width=6):
+    lines = []
+    for i in range(0, len(indices), 10):
+        line = "".join(f"{num:{field_width}d}" for num in indices[i : i + 10])
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def string2indices(indices_lines):
+    numbers = []
+    for line in indices_lines:
+        if not line.strip():
+            continue
+
+        for token in line.split():
+            try:
+                num = int(token)
+                numbers.append(num)
+            except ValueError:
+                continue
+    return numbers
+
+
+def parse_number_range(s):
+    """Parse comma-separated integers and inclusive ascending ranges."""
+
+    result = []
+    for raw_part in s.split(","):
+        part = raw_part.strip()
+        if not part:
+            raise ValueError(f"Empty item in numeric range {s!r}.")
+        match = re.fullmatch(r"(-?\d+)(?:\s*-\s*(-?\d+))?", part)
+        if match is None:
+            raise ValueError(f"Invalid numeric range item {part!r}.")
+        start = int(match.group(1))
+        end = int(match.group(2)) if match.group(2) is not None else start
+        if end < start:
+            raise ValueError(f"Descending range {part!r} is not supported.")
+        result.extend(range(start, end + 1))
+    return result
+
+
+def parse_string_range(s):
+    result = [value.strip() for value in s.split(",") if value.strip()]
+    if not result:
+        raise ValueError("String selection cannot be empty.")
+    return result
+
+
+if __name__ == "__main__":
+    tpr = read_tpr(sys.argv[1])
+    myid = indexGroups(tpr.mdtopology, tpr.itp_list)
+    myid.load_ndx("haha.ndx")
+    myid.print_all()

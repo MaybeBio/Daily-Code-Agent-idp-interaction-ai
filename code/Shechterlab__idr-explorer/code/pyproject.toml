@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "idrkit"
+version = "0.1.0"
+description = "Sequence definitions shared by the Shechter lab's IDR work: charge, charge patterning (SCD), acidic stretches, basic patches, RG/RGG and CK2 grammar"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.setuptools]
+packages = ["idrkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

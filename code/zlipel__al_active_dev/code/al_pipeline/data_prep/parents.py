@@ -1,0 +1,173 @@
+from __future__ import annotations
+
+import json
+
+import pandas as pd
+
+from al_pipeline.core.config import ALConfig
+
+
+def dominates(sol1, sol2, kind = ['max', 'max']):
+    """
+    Check if sol1 dominates sol2 for maximizing D and minimizing B2.
+    """
+    obj1 = kind[0]
+    obj2 = kind[1]
+
+    if obj1 == 'min':
+        if obj2 == 'max':
+            return (sol1[0] <= sol2[0] and sol1[1] >= sol2[1]) and (sol1[0] < sol2[0] or sol1[1] > sol2[1])
+        elif obj2 == 'min':
+            return (sol1[0] <= sol2[0] and sol1[1] <= sol2[1]) and (sol1[0] < sol2[0] or sol1[1] < sol2[1])
+    elif obj1 == 'max':
+        if obj2 == 'min':
+            return (sol1[0] >= sol2[0] and sol1[1] <= sol2[1]) and (sol1[0] > sol2[0] or sol1[1] < sol2[1])
+        elif obj2 == 'max':
+            return (sol1[0] >= sol2[0] and sol1[1] >= sol2[1]) and (sol1[0] > sol2[0] or sol1[1] > sol2[1])
+    else:   
+        raise ValueError("Invalid objective types.")
+
+def find_pareto_front(labels, kind = ['max', 'min'], objectives = ['diff', 'exp_density']):
+    """
+    Identify the non-dominated set based on D (diffusivity) and B2.
+    Returns the non-dominated set data and the original indices from the `labels` DataFrame.
+    """
+    # Copy relevant columns and add original indices
+    data = labels[objectives].copy()
+    data['original_index'] = labels.index  # Store original indices
+    
+    # Drop rows where 'diff' is NaN
+    data = data.dropna(subset=objectives).reset_index(drop=True)
+
+    # Extract the objectives as a list of solutions for the Pareto front search
+    solutions = data[objectives].values.tolist()  #  Convert to list of lists
+
+    non_dominated_set = []
+    non_dominated_indices = []
+
+    for i in range(len(solutions)):
+        is_dominated = False
+        for j in range(len(solutions)):
+            if i != j and dominates(solutions[j], solutions[i], kind=kind):  # Check if solution j dominates solution i
+                is_dominated = True
+                break
+        
+        if not is_dominated:
+            non_dominated_set.append(solutions[i])
+            non_dominated_indices.append(data['original_index'].iloc[i])  # Get original index
+ 
+    # Create a DataFrame for the non-dominated set
+    non_dominated_df = pd.DataFrame(non_dominated_set, columns=objectives)
+    
+
+
+    return non_dominated_df.reset_index(drop=True), non_dominated_indices
+
+
+def get_parents(cfg: ALConfig, log=None, stage: str = "base") -> None:
+    """Generate normalized parent features, labels, and sequences based on the Pareto front."""
+    p = cfg.paths
+    obj1, obj2 = cfg.obj1, cfg.obj2
+    tag = p.tag
+
+    # Always use normalized generation data for GA + augmentation workflows
+    feats_path  = p.features_norm_csv
+
+    if cfg.train_model_type in ("gpr_multitask", "moe"):
+        # Both produce a single labels_norm_csv: gpr_multitask writes it from
+        # the multitask training pipeline; moe writes it via the shared label
+        # scalers under scope='all'. Both end up in a common z-space.
+        labels_path = p.labels_norm_csv
+    elif cfg.train_model_type == "gpr_singletask":
+        labels_path = []
+        for obj in (obj1, obj2):
+            lbl_path = p.labels_csv.with_stem(p.labels_csv.stem + f"_{obj}_NORM_{tag}")
+            if not lbl_path.exists():
+                raise FileNotFoundError(f"Expected label file for single-task GPR not found: {lbl_path}")
+            labels_path.append(lbl_path)
+    else:
+        raise ValueError(f"Unknown train_model_type: {cfg.train_model_type} not implemented yet.")
+
+    # Select sequences + outputs by stage
+    if stage == "base":
+        seq_file           = p.seq_gen_txt
+        pareto_feats_path  = p.parent_features_norm_csv
+        pareto_labels_path = p.parent_labels_norm_csv
+        pareto_seq_path    = p.parent_seqs_txt
+    elif stage == "temp":
+        seq_file           = p.seq_gen_temp_txt
+        pareto_feats_path  = p.parent_features_norm_csv
+        pareto_labels_path = p.parent_labels_norm_csv
+        pareto_seq_path    = p.parent_seqs_temp_txt
+    else:
+        raise ValueError("stage must be 'base' or 'temp'")
+
+    if cfg.front == "upper":
+        kind = ["max", "max"]
+    elif cfg.front == "lower":
+        kind = ["min", "min"]
+    else:
+        raise ValueError("Invalid front type. Use 'upper' or 'lower'.")
+
+    objectives = [obj1, obj2]
+
+    features = pd.read_csv(str(feats_path))
+
+    if cfg.train_model_type in ("gpr_multitask", "moe"):
+        labels   = pd.read_csv(str(labels_path))
+    elif cfg.train_model_type == "gpr_singletask":
+        label_dfs = []
+        for lbl_path in labels_path:
+            label_dfs.append(pd.read_csv(lbl_path))
+        labels = pd.concat(label_dfs, axis=1)
+        labels.columns = [obj1, obj2]
+
+    # At the 'temp' stage the reference the batch must beat is the eps-shifted
+    # REAL front with the (unshifted) kriging-believer fantasy rows added. Apply
+    # the frozen shift to the real rows (< n_base) in memory before the Pareto so
+    # membership is decided in the shifted space; the on-disk labels_norm (used
+    # for reconditioning) stays unshifted. The shift is computed once, pre-loop,
+    # by ga_utils.compute_and_store_shift.
+    if stage == "temp" and cfg.ehvi_variant == "epsilon" and p.epsilon_shift_json.exists():
+        with open(p.epsilon_shift_json) as f:
+            shift = json.load(f)
+        eps, n_base = shift["eps"], shift["n_base"]
+        labels = labels.copy()
+        real = labels.index[:n_base]
+        labels.loc[real, obj1] = labels.loc[real, obj1] + eps[0]
+        labels.loc[real, obj2] = labels.loc[real, obj2] + eps[1]
+
+    _, indices = find_pareto_front(labels, kind=kind, objectives=objectives)
+
+    with open(str(seq_file), "r") as f:
+        all_sequences = [line.strip() for line in f]
+
+    if indices and max(indices) >= len(all_sequences):
+        raise IndexError("Pareto indices exceed sequence file length; labels/features no longer align with sequences.")
+
+    sequences = [all_sequences[i] for i in indices]
+
+    pareto_features = features.iloc[indices].reset_index(drop=True)
+    pareto_labels   = labels.iloc[indices].reset_index(drop=True)
+
+    pareto_features.to_csv(pareto_feats_path, index=False)
+    pareto_labels.to_csv(pareto_labels_path, index=False)
+
+    # Raw parent features are needed only once, pre-loop, to compute the epsilon
+    # shift (ga_utils.compute_and_store_shift). Write them at the base stage,
+    # where they are row-aligned with the immutable features_csv; the temp
+    # reference is consumed in normalized space only, so it needs no raw file.
+    if stage == "base":
+        raw_features = pd.read_csv(str(p.features_csv))
+        raw_features.iloc[indices].reset_index(drop=True).to_csv(p.parent_features_csv, index=False)
+
+    with open(pareto_seq_path, "w") as f:
+        for seq in sequences:
+            f.write(seq + "\n")
+
+    msg = f"Saved parents: feats={pareto_feats_path}, labels={pareto_labels_path}, seqs={pareto_seq_path}"
+    
+    if log:
+        log.info(msg) 
+    else:
+        print(msg, flush=True)

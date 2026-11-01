@@ -1,0 +1,676 @@
+/* -------------------------------------------------------------------------- *
+ *                                 openmm-lbm                                 *
+ * -------------------------------------------------------------------------- *
+ * Copyright (c) 2026 the Authors (see README.md).                            *
+ * SPDX-License-Identifier: MIT                                               *
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Tests of the fluctuating fluid (setFluidFluctuations(), docs/theory.md, section 7): the random part of the
+ * collision conserves mass and momentum and gives every moment its equilibrium variance, on a single node and in a
+ * fluid at rest; without fluctuations or at zero temperature nothing changes; runs are reproducible and restart
+ * exactly; the NVE scheme with a fluctuating fluid; parameters and checkpoints.  The platforms draw different random
+ * numbers (the generator of the force on the Reference platform, OpenMM's on the others), so they are compared
+ * through the statistics.  Include after TestLBMFluid.h and TestLBMCoupling.h.
+ */
+
+/**
+ * The polynomials e_k of the orthogonal D3Q19 basis of Lulli et al. (Phys. Rev. E 109, 045304, 2024), k = 0...18,
+ * written here independently of the plugin, and their norms b_k = sum_q w_q e_k(c_q)^2.
+ */
+double fluctuationMode(int k, int x, int y, int z) {
+    double x2 = x*x, y2 = y*y, z2 = z*z;
+    double values[19] = {1.0, (double) x, (double) y, (double) z, x2-1.0/3.0, y2-1.0/3.0, z2-1.0/3.0,
+            (double) x*y, (double) x*z, (double) y*z, y*(x2-1.0/3.0), z*(x2-1.0/3.0), x*(y2-1.0/3.0),
+            0.5*x*(y2+2*z2-1), 0.5*y*(x2+2*z2-1), 0.5*z*(x2+2*y2-1),
+            x2*y2 - x2/3 - y2/3 + z2/6 + 1.0/18.0,
+            2.0/7.0*x2*y2 + x2*z2 - 3.0/7.0*x2 + y2/14 - 2.0/7.0*z2 + 1.0/14.0,
+            0.4*x2*y2 + 0.4*x2*z2 + y2*z2 - 0.1*x2 - 0.4*y2 - 0.4*z2 + 0.1};
+    return values[k];
+}
+
+const double fluctuationModeNorm[19] = {1.0, 1.0/3.0, 1.0/3.0, 1.0/3.0, 2.0/9.0, 2.0/9.0, 2.0/9.0, 1.0/9.0, 1.0/9.0,
+        1.0/9.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 7.0/162.0, 5.0/126.0, 1.0/30.0};
+
+const int fluctuationCx[19] = {0, 1, -1, 0,  0, 0,  0, 1, -1,  1, -1, 0,  0,  0,  0, 1, -1, -1,  1};
+const int fluctuationCy[19] = {0, 0,  0, 1, -1, 0,  0, 1, -1, -1,  1, 1, -1,  1, -1, 0,  0,  0,  0};
+const int fluctuationCz[19] = {0, 0,  0, 0,  0, 1, -1, 0,  0,  0,  0, 1, -1, -1,  1, 1, -1,  1, -1};
+
+/** The 19 moments m_k = sum_q e_k(c_q) (f_q - w_q) of a node of a fluid state (deviations f - w). */
+void nodeModes(const vector<double>& state, int node, double modes[19]) {
+    int numNodes = state.size()/19;
+    for (int k = 0; k < 19; k++) {
+        modes[k] = 0;
+        for (int q = 0; q < 19; q++)
+            modes[k] += fluctuationMode(k, fluctuationCx[q], fluctuationCy[q], fluctuationCz[q])*state[q*numNodes+node];
+    }
+}
+
+/** Thermal energy kT in the lattice units of the fluid tests (mass rho0 dx^3), at the temperature T (K). */
+double latticeKT(double temperature) {
+    return BOLTZ*temperature*fluidDt*fluidDt/(fluidDensity*fluidDx*fluidDx*fluidDx*fluidDx*fluidDx);
+}
+
+/**
+ * The basis of the test is orthogonal, with the norms b_k.  It checks the table above, which the other tests use
+ * to measure the moments.
+ */
+void testFluctuationBasis() {
+    double w[19] = {1.0/3.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/36.0, 1.0/36.0, 1.0/36.0,
+                    1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0};
+    for (int k = 0; k < 19; k++)
+        for (int l = 0; l < 19; l++) {
+            double product = 0;
+            for (int q = 0; q < 19; q++)
+                product += w[q]*fluctuationMode(k, fluctuationCx[q], fluctuationCy[q], fluctuationCz[q])*
+                        fluctuationMode(l, fluctuationCx[q], fluctuationCy[q], fluctuationCz[q]);
+            ASSERT_EQUAL_TOL(k == l ? fluctuationModeNorm[k] : 0.0, product, 1e-15);
+        }
+}
+
+/**
+ * A lattice of a single node streams every population back to the node itself, so the state after a step is the
+ * post-collision state of the node: f = feq(rho = 1, u = 0) + (1 - omega) fneq + xi.  Mass and momentum are those of
+ * the start, exactly, and the moments k = 4...18 have the variance mu b_k, mu = kT/cs^2: with tau = 1 every step
+ * draws new, independent values; with tau != 1 the stress modes are an autoregressive sequence with the same
+ * stationary variance.  The moments are uncorrelated with each other.
+ */
+void testFluctuationsSingleNode(Platform& platform, double tau) {
+    double temperature = 300.0;
+    int numWarmup = 50, numSamples = 20000;
+    LBMForce* force;
+    System* system = createFluidSystem(force, 1, 1, 1, tau);
+    force->setFluidFluctuations(true);
+    force->setTemperature(temperature);
+    force->setRandomNumberSeed(5);
+    VerletIntegrator integrator(fluidDt);
+    Context context(*system, integrator, platform);
+    context.setPositions(vector<Vec3>(1, Vec3(0.1, 0.2, 0.3)));
+    double mu = 3.0*latticeKT(temperature);
+    vector<double> sum2(19*19, 0.0), state;
+    for (int step = 0; step < numWarmup+numSamples; step++) {
+        integrator.step(1);
+        force->getFluidState(context, state);
+        double modes[19];
+        nodeModes(state, 0, modes);
+        for (int k = 0; k < 4; k++)
+            ASSERT_EQUAL_TOL(0.0, modes[k], getFluidTolerance(platform, 1e-15));
+        if (step < numWarmup)
+            continue;
+        for (int k = 4; k < 19; k++)
+            for (int l = 4; l < 19; l++)
+                sum2[19*k+l] += modes[k]*modes[l];
+    }
+    for (int k = 4; k < 19; k++)
+        for (int l = 4; l < 19; l++) {
+            double ratio = sum2[19*k+l]/(numSamples*mu*sqrt(fluctuationModeNorm[k]*fluctuationModeNorm[l]));
+            ASSERT_EQUAL_TOL(k == l ? 1.0 : 0.0, ratio, 0.05);
+        }
+    delete system;
+}
+
+/**
+ * A fluctuating fluid at rest, without forces, on an 8x8x8 lattice: after a transient, the density, the momentum
+ * and every other moment of a node have their equilibrium variances, mu rho, rho kT and mu rho b_k (rho = 1), for a
+ * small and a large relaxation time.  The total mass and momentum are conserved.
+ */
+void testFluctuationsEquilibrium(Platform& platform, double tau) {
+    double temperature = 300.0;
+    int n = 8, numNodes = n*n*n, numWarmup = 300, numSamples = 300, interval = 5;
+    LBMForce* force;
+    System* system = createFluidSystem(force, n, n, n, tau);
+    force->setFluidFluctuations(true);
+    force->setTemperature(temperature);
+    force->setRandomNumberSeed(11);
+    VerletIntegrator integrator(fluidDt);
+    Context context(*system, integrator, platform);
+    context.setPositions(vector<Vec3>(1, Vec3(0.1, 0.2, 0.3)));
+    double kT = latticeKT(temperature), mu = 3.0*kT;
+    vector<double> sum2(19, 0.0), state;
+    integrator.step(numWarmup);
+    for (int sample = 0; sample < numSamples; sample++) {
+        integrator.step(interval);
+        force->getFluidState(context, state);
+        for (int node = 0; node < numNodes; node++) {
+            double modes[19];
+            nodeModes(state, node, modes);
+            for (int k = 0; k < 19; k++)
+                sum2[k] += modes[k]*modes[k];
+        }
+    }
+    double mass;
+    Vec3 momentum;
+    totalMoments(state, mass, momentum);
+    ASSERT_EQUAL_TOL((double) numNodes, mass, getFluidTolerance(platform, 1e-13, 1e-5));
+    ASSERT_EQUAL_VEC(Vec3(), momentum, getFluidTolerance(platform, 1e-13, 1e-5));
+    double count = (double) numSamples*numNodes;
+    ASSERT_EQUAL_TOL(1.0, sum2[0]/(count*mu), 0.05);
+    for (int k = 1; k < 4; k++)
+        ASSERT_EQUAL_TOL(1.0, sum2[k]/(count*kT), 0.05);
+    for (int k = 4; k < 19; k++)
+        ASSERT_EQUAL_TOL(1.0, sum2[k]/(count*mu*fluctuationModeNorm[k]), 0.05);
+    delete system;
+}
+
+/**
+ * A fluctuating fluid at rest next to regularized walls (the solid planes k = 0 and k = 9) and between two
+ * DensityVelocity faces at rest along z, at tau = 0.62: with the random part of the rebuilt populations of
+ * docs/theory.md, section 7, the nodes next to the boundaries are at equilibrium.  The momentum along the walls of
+ * the first fluid planes has the variance rho kT (the random part of a collision gave 0.955 of it), and the momentum
+ * across the faces and the density of the face planes rho kT and mu rho (0.62 and 0.785 of them before).
+ */
+void testBoundaryFluctuations(Platform& platform) {
+    double temperature = 300.0;
+    int n = 8, nz = 10;
+    double kT = latticeKT(temperature), mu = 3.0*kT;
+    for (int walls = 1; walls >= 0; walls--) {
+        LBMForce* force;
+        System* system = createFluidSystem(force, n, n, nz, 0.62);
+        force->setFluidFluctuations(true);
+        force->setTemperature(temperature);
+        force->setRandomNumberSeed(23);
+        int planes[2] = {walls ? 1 : 0, walls ? nz-2 : nz-1};
+        if (walls) {
+            vector<int> solid;
+            for (int k : {0, nz-1})
+                for (int node = 0; node < n*n; node++)
+                    solid.push_back(node + n*n*k);
+            force->setSolidNodes(solid);
+            force->setWallScheme(LBMForce::Regularized);
+        }
+        else
+            for (LBMForce::Face face : {LBMForce::ZMin, LBMForce::ZMax})
+                force->setFaceBoundary(face, LBMForce::DensityVelocity);
+        VerletIntegrator integrator(fluidDt);
+        Context context(*system, integrator, platform);
+        context.setPositions(vector<Vec3>(1, Vec3(0.1, 0.2, 0.3)));
+        int numSamples = (walls ? 1500 : 500), interval = 10;
+        integrator.step(500);
+        double along = 0, across = 0, density = 0;
+        vector<double> state;
+        for (int sample = 0; sample < numSamples; sample++) {
+            integrator.step(interval);
+            force->getFluidState(context, state);
+            for (int k : planes)
+                for (int node = n*n*k; node < n*n*(k+1); node++) {
+                    double modes[19];
+                    nodeModes(state, node, modes);
+                    along += 0.5*(modes[1]*modes[1] + modes[2]*modes[2]);
+                    across += modes[3]*modes[3];
+                    density += modes[0]*modes[0];
+                }
+        }
+        double count = 2.0*n*n*numSamples;
+        if (walls) {
+            ASSERT_EQUAL_TOL(1.0, along/(count*kT), 0.02);
+        }
+        else {
+            ASSERT_EQUAL_TOL(1.0, across/(count*kT), 0.05);
+            ASSERT_EQUAL_TOL(1.0, density/(count*mu), 0.05);
+        }
+        delete system;
+    }
+}
+
+/**
+ * A fluctuating fluid between two DensityVelocity faces that move along x in opposite directions, -U at ZMin and +U
+ * at ZMax (a double Couette flow, as in examples/cocomo/shear.py), at tau = 0.62 and U = 0.02 (1 nm/ps): the mean
+ * velocity of every plane is the linear profile u_x = U (2 (k + 1)/(n_z + 1) - 1) of the faces holding one node
+ * beyond the box, and the face planes are at equilibrium around it: the momentum along the flow and across the
+ * faces has the variance rho kT, the density mu rho.
+ */
+void testMovingFaceFluctuations(Platform& platform) {
+    double temperature = 300.0, U = 0.02;
+    int n = 8, nz = 10, numSamples = 500, interval = 10;
+    double kT = latticeKT(temperature), mu = 3.0*kT;
+    LBMForce* force;
+    System* system = createFluidSystem(force, n, n, nz, 0.62);
+    force->setFluidFluctuations(true);
+    force->setTemperature(temperature);
+    force->setRandomNumberSeed(29);
+    force->setFaceBoundary(LBMForce::ZMin, LBMForce::DensityVelocity);
+    force->setFaceBoundary(LBMForce::ZMax, LBMForce::DensityVelocity);
+    force->setFaceVelocity(LBMForce::ZMin, Vec3(-U*fluidDx/fluidDt, 0, 0));
+    force->setFaceVelocity(LBMForce::ZMax, Vec3(U*fluidDx/fluidDt, 0, 0));
+    VerletIntegrator integrator(fluidDt);
+    Context context(*system, integrator, platform);
+    context.setPositions(vector<Vec3>(1, Vec3(0.1, 0.2, 0.3)));
+    integrator.step(3000);                       // the profile builds up in about 300 steps, (n_z + 1)^2/(pi^2 nu)
+    vector<double> sum(4*nz, 0.0), sum2(4*nz, 0.0), state;
+    for (int sample = 0; sample < numSamples; sample++) {
+        integrator.step(interval);
+        force->getFluidState(context, state);
+        for (int k = 0; k < nz; k++)
+            for (int node = n*n*k; node < n*n*(k+1); node++) {
+                double modes[19];
+                nodeModes(state, node, modes);
+                for (int m = 0; m < 4; m++) {
+                    sum[4*k+m] += modes[m];
+                    sum2[4*k+m] += modes[m]*modes[m];
+                }
+            }
+    }
+    double count = (double) n*n*numSamples;
+    for (int k = 0; k < nz; k++)
+        ASSERT_EQUAL_TOL(U*(2.0*(k+1)/(nz+1)-1.0), sum[4*k+1]/count, 0.05*U);
+    for (int k : {0, nz-1}) {
+        double variance[4];
+        for (int m = 0; m < 4; m++)
+            variance[m] = sum2[4*k+m]/count - pow(sum[4*k+m]/count, 2);
+        ASSERT_EQUAL_TOL(1.0, variance[0]/mu, 0.05);
+        ASSERT_EQUAL_TOL(1.0, variance[1]/kT, 0.05);
+        ASSERT_EQUAL_TOL(1.0, variance[3]/kT, 0.05);
+    }
+    delete system;
+}
+
+/**
+ * With the fluctuations switched on at zero temperature the run is identical, bit for bit, to the run without
+ * them: walls, body force and coupled particles with the NVE scheme.
+ */
+void testFluctuationsAtZeroTemperature(Platform& platform) {
+    vector<double> fluid[2];
+    vector<Vec3> velocities[2];
+    for (int run = 0; run < 2; run++) {
+        LBMForce* force;
+        System* system = createCoupledSystem(force, 3, 5.0, 0.0);
+        force->setCouplingScheme(LBMForce::NVE);
+        force->setBodyAcceleration(Vec3(0.3, 0.0, 0.1));
+        vector<int> wall;
+        for (int k = 0; k < 8; k++)
+            for (int i = 0; i < 8; i++)
+                wall.push_back(i+8*8*k);
+        force->setSolidNodes(wall);
+        force->setFluidFluctuations(run == 1);
+        VerletIntegrator integrator(fluidDt);
+        Context context(*system, integrator, platform);
+        context.setPositions({Vec3(0.3, 0.8, 0.5), Vec3(1.3, 1.4, 1.5), Vec3(2.3, 2.4, 2.5)});
+        context.setVelocities({Vec3(0.1, -0.2, 0.3), Vec3(-0.3, 0.2, 0.1), Vec3(0.2, 0.2, -0.2)});
+        integrator.step(30);
+        force->getFluidState(context, fluid[run]);
+        velocities[run] = context.getState(State::Velocities).getVelocities();
+        delete system;
+    }
+    for (int i = 0; i < (int) fluid[0].size(); i++)
+        ASSERT_EQUAL(fluid[0][i], fluid[1][i]);
+    for (int i = 0; i < (int) velocities[0].size(); i++)
+        ASSERT_EQUAL_VEC(velocities[0][i], velocities[1][i], 0.0);
+}
+
+/**
+ * A fluctuating fluid with coupled particles at a temperature: two runs with the same seed are identical, also when
+ * one of them evaluates the forces between steps, and a different seed gives a different run.
+ */
+void testFluctuationsReproducible(Platform& platform) {
+    vector<double> fluid[3];
+    vector<Vec3> velocities[3];
+    for (int run = 0; run < 3; run++) {
+        LBMForce* force;
+        System* system = createCoupledSystem(force, 3, 5.0, 300.0);
+        force->setFluidFluctuations(true);
+        force->setRandomNumberSeed(run == 2 ? 8 : 7);
+        VerletIntegrator integrator(fluidDt);
+        Context context(*system, integrator, platform);
+        context.setPositions({Vec3(0.3, 0.8, 0.5), Vec3(1.3, 1.4, 1.5), Vec3(2.3, 2.4, 2.5)});
+        for (int step = 0; step < 20; step++) {
+            integrator.step(1);
+            if (run == 1)
+                context.getState(State::Forces | State::Energy);
+        }
+        force->getFluidState(context, fluid[run]);
+        velocities[run] = context.getState(State::Velocities).getVelocities();
+        delete system;
+    }
+    double difference = 0;
+    for (int i = 0; i < (int) fluid[0].size(); i++) {
+        ASSERT_EQUAL(fluid[0][i], fluid[1][i]);
+        difference = max(difference, fabs(fluid[0][i]-fluid[2][i]));
+    }
+    for (int i = 0; i < (int) velocities[0].size(); i++)
+        ASSERT_EQUAL_VEC(velocities[0][i], velocities[1][i], 0.0);
+    ASSERT(difference > 1e-6);
+}
+
+/**
+ * A run with a fluctuating fluid and coupled particles restarted from the checkpoints of OpenMM and of the force is
+ * identical, bit for bit, to the uninterrupted run.  The seed is 0, so the two Contexts choose different seeds:
+ * the checkpoint restores the generator.  With boundaries the fluid also has a wall (the plane j = 0, with the
+ * given wall scheme), open faces along x (a Velocity inlet and a DensityVelocity outlet, whose random part reads that
+ * of the collision of its nodes; Density faces are refused with fluctuations) and a body force; the force on the walls
+ * of the last step is restored as well.  With useFile the checkpoint is a file of LBMForce::saveCheckpointFile(), the
+ * one that a run with any domain decomposition can load.
+ */
+void testFluctuationsRestart(Platform& platform, bool boundaries=false, LBMForce::WallScheme wallScheme=LBMForce::BounceBack,
+        LBMForce::DragScheme drag=LBMForce::Explicit, bool useFile=false) {
+    int numSteps = 23, split = 9;
+    vector<double> fluid[2];
+    vector<Vec3> velocities[2];
+    Vec3 wallForce[2];
+    stringstream openmmCheckpoint, forceCheckpoint;
+    string file = "TestLBMCheckpointFile_" + platform.getName() + ".chk";
+    for (int run = 0; run < 2; run++) {
+        LBMForce* force;
+        System* system = createCoupledSystem(force, 3, 5.0, 300.0);
+        force->setFluidFluctuations(true);
+        force->setRandomNumberSeed(0);
+        force->setDragScheme(drag);
+        if (boundaries) {
+            force->setSolidNodes(wallPlane(8, 8, 8));
+            force->setWallScheme(wallScheme);
+            force->setFaceBoundary(LBMForce::XMin, LBMForce::Velocity);
+            force->setFaceBoundary(LBMForce::XMax, LBMForce::DensityVelocity);
+            force->setFaceVelocity(LBMForce::XMin, Vec3(0.5, 0.2, 0.0));
+            force->setFaceVelocity(LBMForce::XMax, Vec3(0.5, 0.1, 0.0));
+            force->setFaceDensity(LBMForce::XMax, 1.002*fluidDensity);
+            force->setBodyAcceleration(Vec3(0.0, 0.0, 5.0));
+        }
+        VerletIntegrator integrator(fluidDt);
+        Context context(*system, integrator, platform);
+        if (run == 0) {
+            context.setPositions({Vec3(0.3, 0.8, 0.5), Vec3(1.3, 1.4, 1.5), Vec3(2.3, 2.4, 2.5)});
+            integrator.step(split);
+            context.getState(State::Forces);
+            if (useFile)
+                force->saveCheckpointFile(context, file);
+            else {
+                context.createCheckpoint(openmmCheckpoint);
+                force->createCheckpoint(context, forceCheckpoint);
+            }
+        }
+        else if (useFile) {
+            force->loadCheckpointFile(context, file);
+            remove(file.c_str());
+        }
+        else {
+            context.loadCheckpoint(openmmCheckpoint);
+            force->loadCheckpoint(context, forceCheckpoint);
+        }
+        integrator.step(numSteps-split);
+        force->getFluidState(context, fluid[run]);
+        velocities[run] = context.getState(State::Velocities).getVelocities();
+        wallForce[run] = force->getWallForce(context);
+        delete system;
+    }
+    for (int i = 0; i < (int) fluid[0].size(); i++)
+        ASSERT_EQUAL(fluid[0][i], fluid[1][i]);
+    for (int i = 0; i < (int) velocities[0].size(); i++)
+        ASSERT_EQUAL_VEC(velocities[0][i], velocities[1][i], 0.0);
+    ASSERT_EQUAL_VEC(wallForce[0], wallForce[1], 0.0);
+}
+
+/**
+ * With the NVE scheme the particles have no random force, but a fluctuating fluid sets particles at rest in motion;
+ * without fluid fluctuations they stay at rest.
+ */
+void testFluctuationsWithNVE(Platform& platform) {
+    for (int fluctuations = 0; fluctuations < 2; fluctuations++) {
+        LBMForce* force;
+        System* system = createCoupledSystem(force, 2, 5.0, 300.0);
+        force->setCouplingScheme(LBMForce::NVE);
+        force->setFluidFluctuations(fluctuations == 1);
+        VerletIntegrator integrator(fluidDt);
+        Context context(*system, integrator, platform);
+        context.setPositions({Vec3(0.3, 0.8, 0.5), Vec3(1.3, 1.4, 1.5)});
+        integrator.step(20);
+        vector<Vec3> v = context.getState(State::Velocities).getVelocities();
+        double speed2 = v[0].dot(v[0]) + v[1].dot(v[1]);
+        if (fluctuations) {
+            ASSERT(speed2 > 0);
+        }
+        else {
+            ASSERT_EQUAL(0.0, speed2);
+        }
+        delete system;
+    }
+}
+
+/**
+ * The fluctuations cannot be switched on or off with updateParametersInContext(), which changes their
+ * temperature, and a checkpoint is refused by a Context with the fluctuations switched differently.
+ */
+void testFluctuationsParameters(Platform& platform) {
+    LBMForce* force;
+    System* system = createCoupledSystem(force, 2, 5.0, 300.0);
+    force->setFluidFluctuations(true);
+    VerletIntegrator integrator(fluidDt);
+    Context context(*system, integrator, platform);
+    context.setPositions({Vec3(0.3, 0.8, 0.5), Vec3(1.3, 1.4, 1.5)});
+    integrator.step(2);
+    force->setTemperature(310.0);
+    force->updateParametersInContext(context);
+    integrator.step(1);
+    force->setFluidFluctuations(false);
+    bool thrown = false;
+    try {
+        force->updateParametersInContext(context);
+    }
+    catch (OpenMMException& e) {
+        thrown = true;
+    }
+    ASSERT(thrown);
+    stringstream checkpoint;
+    force->setFluidFluctuations(true);
+    force->createCheckpoint(context, checkpoint);
+    LBMForce* force2;
+    System* system2 = createCoupledSystem(force2, 2, 5.0, 300.0);
+    VerletIntegrator integrator2(fluidDt);
+    Context context2(*system2, integrator2, platform);
+    thrown = false;
+    try {
+        force2->loadCheckpoint(context2, checkpoint);
+    }
+    catch (OpenMMException& e) {
+        thrown = true;
+    }
+    ASSERT(thrown);
+    delete system;
+    delete system2;
+}
+
+/**
+ * Density faces are refused with the fluid fluctuations, which they keep away from equilibrium next to the face
+ * (docs/theory.md, section 7), on every axis, as XMin, YMax or ZMin, also at zero temperature and next to faces of
+ * the other types; without fluctuations, or with DensityVelocity faces instead, the same lattices are accepted.
+ */
+void testDensityFaceWithFluctuations(Platform& platform) {
+    for (int axis = 0; axis < 3; axis++)
+        for (int run = 0; run < 3; run++) {
+            LBMForce* force;
+            System* system = createCoupledSystem(force, 1, 5.0, (axis == 1 ? 0.0 : 300.0));
+            force->setFluidFluctuations(run != 1);
+            force->setDragScheme(LBMForce::Centered);
+            LBMForce::Face densityFace = (LBMForce::Face) (2*axis + axis%2);
+            LBMForce::Face otherFace = (LBMForce::Face) (2*axis + 1 - axis%2);
+            force->setFaceBoundary(densityFace, run == 2 ? LBMForce::DensityVelocity : LBMForce::Density);
+            force->setFaceBoundary(otherFace, axis == 2 ? LBMForce::DensityVelocity : LBMForce::Velocity);
+            force->setFaceDensity(densityFace, 1.001*fluidDensity);
+            VerletIntegrator integrator(fluidDt);
+            bool refused = false;
+            try {
+                Context context(*system, integrator, platform);
+                context.setPositions({Vec3(1.3, 1.4, 1.5)});
+                integrator.step(1);
+            }
+            catch (OpenMMException& e) {
+                refused = (string(e.what()).find("Density faces cannot be used with fluid fluctuations") != string::npos);
+                ASSERT(refused);
+            }
+            ASSERT_EQUAL(run == 0, refused);
+            delete system;
+        }
+}
+
+/**
+ * With the fluid fluctuations a warning is printed when the drag is explicit, particles are coupled with the EM scheme
+ * at T > 0 and the friction is not zero (docs/theory.md, section 7): the explicit drag makes them too hot.
+ */
+void testFluctuationDragWarning(Platform& platform) {
+    for (bool fluctuations : {false, true})
+        for (LBMForce::DragScheme drag : {LBMForce::Explicit, LBMForce::Centered})
+            for (LBMForce::CouplingScheme scheme : {LBMForce::EulerMaruyama, LBMForce::NVE}) {
+                LBMForce* force;
+                System* system = createCoupledSystem(force, 2, 10.0, 300.0);
+                force->setFluidFluctuations(fluctuations);
+                force->setDragScheme(drag);
+                force->setCouplingScheme(scheme);
+                VerletIntegrator integrator(fluidDt);
+                stringstream captured;
+                streambuf* original = cerr.rdbuf(captured.rdbuf());
+                try {
+                    Context context(*system, integrator, platform);
+                }
+                catch (...) {
+                    cerr.rdbuf(original);
+                    throw;
+                }
+                cerr.rdbuf(original);
+                bool warned = (captured.str().find("with fluid fluctuations the explicit drag") != string::npos);
+                ASSERT(warned == (fluctuations && drag == LBMForce::Explicit && scheme == LBMForce::EulerMaruyama));
+                if (warned)
+                    ASSERT(captured.str().find("= 6.64") != string::npos);
+                delete system;
+            }
+}
+
+/**
+ * With the fluid fluctuations a warning is printed when regularized walls or DensityVelocity faces cannot hold the
+ * fluid next to them exactly at equilibrium, for tau outside [0.586, 3.41] (docs/theory.md, section 7), and not with
+ * bounce-back walls, Velocity faces, tau inside the range or without fluctuations.
+ */
+void testBoundaryNoiseWarning(Platform& platform) {
+    for (double tau : {0.55, 1.0})
+        for (int boundary = 0; boundary < 5; boundary++) {
+            LBMForce* force;
+            System* system = createFluidSystem(force, 6, 5, 4, tau);
+            force->setTemperature(300.0);
+            force->setFluidFluctuations(boundary != 4);
+            if (boundary == 0 || boundary == 1 || boundary == 4) {
+                force->setSolidNodes(wallPlane(6, 5, 4));
+                force->setWallScheme(boundary == 1 ? LBMForce::BounceBack : LBMForce::Regularized);
+            }
+            else
+                for (LBMForce::Face face : {LBMForce::ZMin, LBMForce::ZMax})
+                    force->setFaceBoundary(face, boundary == 2 ? LBMForce::DensityVelocity : LBMForce::Velocity);
+            VerletIntegrator integrator(fluidDt);
+            stringstream captured;
+            streambuf* original = cerr.rdbuf(captured.rdbuf());
+            try {
+                Context context(*system, integrator, platform);
+            }
+            catch (...) {
+                cerr.rdbuf(original);
+                throw;
+            }
+            cerr.rdbuf(original);
+            bool warned = (captured.str().find("exactly at equilibrium only for 0.586 <= tau <= 3.41") != string::npos);
+            ASSERT(warned == (tau < 0.586 && (boundary == 0 || boundary == 2)));
+            delete system;
+        }
+}
+
+/**
+ * Spectrum of the velocity fluctuations.  At every sample the velocity field of getFluidFields() (the velocity a
+ * user reads), minus the mean velocity of the sample, is Fourier transformed on the 8x8x8 lattice,
+ * F(k) = sum_x u(x) exp(-i k.x)/sqrt(N).  Equipartition gives a white spectrum: the longitudinal part khat.F has
+ * <|khat.F|^2> = kT/rho and the transverse part 2 kT/rho at every wave vector, checked here in three bands of |k|
+ * (long, medium and short waves), and the variance per node is (N - 1)/N kT/rho per component.  The mean velocity
+ * is subtracted even when it should be zero.  The test runs at rest, in a uniform flow u0 and in a fluid accelerated
+ * by a uniform body force g, whose mean velocity grows as u0 + g t (u0 and g in lattice units).
+ */
+void testVelocitySpectrum(Platform& platform, Vec3 u0, Vec3 g) {
+    double temperature = 300.0;
+    int n = 8, numNodes = n*n*n, numWarmup = 300, numSamples = 400, interval = 5;
+    LBMForce* force;
+    System* system = createFluidSystem(force, n, n, n, 1.0);
+    force->setFluidFluctuations(true);
+    force->setTemperature(temperature);
+    force->setRandomNumberSeed(13);
+    force->setInitialFluidVelocity(u0*(fluidDx/fluidDt));
+    force->setBodyAcceleration(g*(fluidDx/(fluidDt*fluidDt)));
+    VerletIntegrator integrator(fluidDt);
+    Context context(*system, integrator, platform);
+    context.setPositions(vector<Vec3>(1, Vec3(0.1, 0.2, 0.3)));
+    double kT = latticeKT(temperature);
+    vector<double> cosTable(n), sinTable(n);
+    for (int m = 0; m < n; m++) {
+        cosTable[m] = cos(2*M_PI*m/n);
+        sinTable[m] = sin(2*M_PI*m/n);
+    }
+    // bands of |m|^2, for the wave vectors k = 2 pi m/n with the components of m in -n/2+1 ... n/2
+    const int numBands = 3;
+    vector<double> longitudinal(numBands, 0.0), transverse(numBands, 0.0), count(numBands, 0.0);
+    double nodeVariance = 0.0;
+    vector<double> density;
+    vector<Vec3> velocity, du(numNodes);
+    Vec3 mean;
+    integrator.step(numWarmup);
+    for (int sample = 0; sample < numSamples; sample++) {
+        integrator.step(interval);
+        force->getFluidFields(context, density, velocity);
+        mean = Vec3();
+        for (int node = 0; node < numNodes; node++)
+            mean += velocity[node];
+        mean *= 1.0/numNodes;
+        for (int node = 0; node < numNodes; node++) {
+            du[node] = (velocity[node]-mean)*(fluidDt/fluidDx);
+            nodeVariance += du[node].dot(du[node]);
+        }
+        for (int mz = 0; mz < n; mz++)
+            for (int my = 0; my < n; my++)
+                for (int mx = 0; mx < n; mx++) {
+                    if (mx == 0 && my == 0 && mz == 0)
+                        continue;
+                    Vec3 re, im;
+                    for (int z = 0; z < n; z++)
+                        for (int y = 0; y < n; y++)
+                            for (int x = 0; x < n; x++) {
+                                int phase = (mx*x+my*y+mz*z)%n, node = x+n*(y+n*z);
+                                re += du[node]*cosTable[phase];
+                                im -= du[node]*sinTable[phase];
+                            }
+                    Vec3 m(mx > n/2 ? mx-n : mx, my > n/2 ? my-n : my, mz > n/2 ? mz-n : mz);
+                    double m2 = m.dot(m);
+                    Vec3 khat = m/sqrt(m2);
+                    double power = (re.dot(re)+im.dot(im))/numNodes;
+                    double powerL = (re.dot(khat)*re.dot(khat)+im.dot(khat)*im.dot(khat))/numNodes;
+                    int band = (m2 <= 3 ? 0 : (m2 <= 12 ? 1 : 2));
+                    longitudinal[band] += powerL;
+                    transverse[band] += power-powerL;
+                    count[band] += 1;
+                }
+    }
+    // the mean velocity of the last sample is that of the uniform flow accelerated by g, to within the fluctuations
+    double time = numWarmup+numSamples*interval;
+    ASSERT_EQUAL_VEC((u0+g*time)*(fluidDx/fluidDt), mean, 2e-4*fluidDx/fluidDt);
+    for (int band = 0; band < numBands; band++) {
+        ASSERT_EQUAL_TOL(1.0, longitudinal[band]/(count[band]*kT), 0.05);
+        ASSERT_EQUAL_TOL(1.0, transverse[band]/(count[band]*2*kT), 0.05);
+    }
+    ASSERT_EQUAL_TOL(1.0, nodeVariance/(numSamples*(numNodes-1)*3*kT), 0.03);
+    delete system;
+}
+
+void runFluctuationTests(Platform& platform) {
+    testFluctuationBasis();
+    testFluctuationsSingleNode(platform, 1.0);
+    testFluctuationsSingleNode(platform, 0.8);
+    testFluctuationsEquilibrium(platform, 0.8);
+    testFluctuationsEquilibrium(platform, 2.5);
+    testBoundaryFluctuations(platform);
+    testMovingFaceFluctuations(platform);
+    testVelocitySpectrum(platform, Vec3(), Vec3());
+    testVelocitySpectrum(platform, Vec3(0.05, 0.02, -0.03), Vec3());
+    testVelocitySpectrum(platform, Vec3(), Vec3(1e-5, 0.0, 0.0));
+    testFluctuationsAtZeroTemperature(platform);
+    testFluctuationsReproducible(platform);
+    testFluctuationsRestart(platform);
+    testFluctuationsRestart(platform, true, LBMForce::Regularized, LBMForce::Explicit);
+    testFluctuationsRestart(platform, true, LBMForce::Regularized, LBMForce::Centered);
+    testFluctuationsRestart(platform, true, LBMForce::BounceBack, LBMForce::Centered);
+    testFluctuationsRestart(platform, true, LBMForce::Regularized, LBMForce::Centered, true);
+    testFluctuationsWithNVE(platform);
+    testFluctuationsParameters(platform);
+    testDensityFaceWithFluctuations(platform);
+    testFluctuationDragWarning(platform);
+    testBoundaryNoiseWarning(platform);
+}

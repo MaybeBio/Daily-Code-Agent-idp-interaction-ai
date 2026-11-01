@@ -1,7 +1,7 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/KULL-Centre/_2026_streit_opes
-- 快照日期: 2026-10-28
+- 快照日期: 2026-11-01
 - 快照 commit: [`4955833964b9`](https://github.com/KULL-Centre/_2026_streit_opes/commit/4955833964b9db8ef3508236240e22cca99198d7)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 

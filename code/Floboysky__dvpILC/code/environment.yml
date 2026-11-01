@@ -1,0 +1,14 @@
+name: NFIL3_ILC
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::python=3.12.3
+  - conda-forge::pip=24.2
+  - pip:
+      - jupyter==1.0.0
+      - biopython==1.85
+      - scipy==1.13.1
+      - pandas==2.2.2
+      - numpy==1.26.4
+      - matplotlib==3.9.2
+      - odfpy==1.4.1

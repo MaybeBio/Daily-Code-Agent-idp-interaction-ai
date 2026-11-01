@@ -1,0 +1,11 @@
+{
+  "name": "idr-explorer-tools",
+  "private": true,
+  "description": "Generates docs/assets/ptm-core.js and ptm-core.css from the Methylarginine Site Explorer (tools/sync-ptm-core.mjs)",
+  "type": "module",
+  "dependencies": {
+    "acorn": "8.14.0",
+    "acorn-walk": "8.3.4",
+    "postcss": "8.4.49"
+  }
+}

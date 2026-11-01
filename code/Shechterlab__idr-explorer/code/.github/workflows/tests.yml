@@ -1,0 +1,24 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  idrkit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[test]"
+      - run: pytest -q
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --prefix tools
+      # ptm-core.js and ptm-core.css are exactly what the Methylarginine Site Explorer's code at the pinned commit gives
+      - run: node tools/sync-ptm-core.mjs --check
+      # the Overview's tests in the browser equal the Python tables they are built from
+      - run: node --test tests/overview.test.mjs

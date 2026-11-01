@@ -1,0 +1,67 @@
+# Conda environment for the al_active_dev pipeline.
+#
+# Cluster setup (Princeton Stellar):
+#   module purge
+#   module load anaconda3/2024.6
+#   conda env create -f config/environment.yml
+#   conda activate al_active_dev
+#
+# Additional cluster-only install steps after the env exists:
+#   - md_calcs C++ extension: see external/md_calcs/README.md
+#   - mpi4py:                 see "Cluster bootstrap" in the root README.md
+#     (must be built against the cluster's openmpi/gcc/4.1.2)
+#
+# Local dev (macOS / Linux without HPC modules):
+#   conda env create -f config/environment.yml
+#   conda activate al_active_dev
+#   # md_calcs_par.so and mpi4py are not required locally; pytest stubs both.
+
+name: al_active_dev
+
+channels:
+  - conda-forge
+  - pytorch
+
+dependencies:
+  - python=3.12
+
+  # Core scientific stack
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - joblib
+  - statsmodels
+  - tqdm
+
+  # ML / Bayesian optimization
+  - pytorch
+  - gpytorch
+
+  # Multi-objective utilities
+  - pygmo
+
+  # Distributed / parallel (Ray for simulation_candidates filtering)
+  - ray-default
+
+  # Beam search (numerics; MPI bindings installed separately — see README)
+  - numba
+  - shapely
+  - umap-learn
+
+  # pybind11 headers for the md_calcs C++ extension.
+  # Compilers, OpenMP, cmake all come from cluster modules (intel/2022.2,
+  # cmake module) — do NOT vendor them via conda or they'll override the
+  # cluster's toolchain and link against the wrong libstdc++ / MPI.
+  - pybind11
+
+  # Dev / test
+  - pytest
+  - ruff
+
+  # Pip-only additions
+  - pip
+  - pip:
+      - botorch

@@ -1,0 +1,12 @@
+### AlphaFold Server JSON Request Schema
+Job submissions to the AlphaFold Server are defined by a JSON file format, enabling the automation of modeling tasks. This format is specified in [`/google-deepmind/alphafold/server/README.md`](https://github.com/google-deepmind/alphafold/server/README.md). Each submission is a list of dictionaries, where each dictionary represents a distinct job. This structure allows for multiple jobs to be batched within a single file.
+
+Every job description mandates specific top-level fields:
+*   [`name`](https://github.com/google-deepmind/alphafold/pyproject.toml#L20): A string identifier for the job, used in the job history.
+*   [`modelSeeds`](https://github.com/google-deepmind/alphafold/server/README.md#L31): A list of strings representing [`uint32`](https://github.com/google-deepmind/alphafold/server/README.md#L31) seed values for model initialization. An empty list is recommended for automatic random seed assignment.
+*   [`sequences`](https://github.com/google-deepmind/alphafold/alphafold/data/parsers.py#L33): A list of dictionaries that detail the molecular entities (e.g., proteins, DNA, RNA, ligands, ions) to be modeled.
+*   [`dialect`](https://github.com/google-deepmind/alphafold/server/README.md#L43): Must be set to [`"alphafoldserver"`](https://github.com/google-deepmind/alphafold/server/README.md#L58).
+*   [`version`](https://github.com/google-deepmind/alphafold/pyproject.toml#L63): Set to [`1`](https://github.com/google-deepmind/alphafold/LICENSE#L8). This version specifically supports fields such as [`maxTemplateDate`](https://github.com/google-deepmind/alphafold/server/README.md#L70) and [`useStructureTemplate`](https://github.com/google-deepmind/alphafold/server/README.md#L70).
+
+The [`sequences`](https://github.com/google-deepmind/alphafold/alphafold/data/parsers.py#L33) field is critical as it defines the inputs for the AlphaFold models. It accommodates various molecular entity types, each with its own set of parameters for specifying the sequence, count, modifications, and other modeling considerations. For example, [`proteinChain`](https://github.com/google-deepmind/alphafold/server/README.md#L52) entries can include details about glycans, post-translational modifications, and even custom structural templates, as further described in [Entity-Specific Modeling Parameters](#alphafold-server-job-submission-entity-specific-modeling-parameters).
+

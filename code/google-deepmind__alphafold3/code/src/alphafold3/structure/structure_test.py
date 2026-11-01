@@ -965,6 +965,50 @@ class StructureTest(test_utils.StructureTestCase):
         strict=True,
     )
 
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='mask_only',
+          kwargs={},
+          expected=[2.0],
+      ),
+      dict(
+          testcase_name='mask_with_chain_predicate',
+          kwargs={'chain_id': 'A'},
+          expected=[2.0, 3.0],
+      ),
+  )
+  def test_filter_does_not_mutate_input_mask(self, kwargs, expected):
+    struc = self.make_test_structure(
+        name='test_structure',
+        chain_id=np.array(['A', 'A', 'B'], dtype=object),
+        res_id=np.array([1, 2, 1], dtype=np.int32),
+        atom_x=np.array([1.0, 2.0, 3.0], dtype=np.float32),
+    )
+    mask = np.array([True, False, True], dtype=bool)
+    mask.flags.writeable = False
+    np.testing.assert_array_equal(
+        struc.filter(mask, invert=True, **kwargs).atom_x,
+        np.array(expected, dtype=np.float32),
+        strict=True,
+    )
+
+  def test_filter_does_not_mutate_callable_mask(self):
+    struc = self.make_test_structure(
+        name='test_structure',
+        chain_id=np.array(['A', 'A', 'B'], dtype=object),
+        res_id=np.array([1, 2, 1], dtype=np.int32),
+        atom_x=np.array([1.0, 2.0, 3.0], dtype=np.float32),
+    )
+    callable_mask = np.array([True, False, True], dtype=bool)
+    np.testing.assert_array_equal(
+        struc.filter(invert=True, atom_x=lambda _: callable_mask).atom_x,
+        np.array([2.0], dtype=np.float32),
+        strict=True,
+    )
+    np.testing.assert_array_equal(
+        callable_mask, np.array([True, False, True]), strict=True
+    )
+
   def test_filter_empty_chain_preserves_multimodel_shape(self):
     coords = np.array([[1.0], [2.0]], dtype=np.float32)
     struc = structure_lib.Structure(
@@ -1032,6 +1076,70 @@ class StructureTest(test_utils.StructureTestCase):
         struc.filter(chain_id='B').atom_x,
         np.array([2.0], dtype=np.float32),
         strict=True,
+    )
+
+  def test_filter_single_chain_owns_sliced_columns(self):
+    coords = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    struc = structure.from_atom_arrays(
+        name='owns_slice',
+        chain_id=np.array(['A', 'B', 'C'], dtype=object),
+        res_id=np.array([1, 1, 1], dtype=np.int32),
+        atom_x=coords,
+        atom_y=coords,
+        atom_z=coords,
+    )
+    self.assertIsNone(struc.filter(chain_id='B').atom_x.base)
+
+  def test_filter_unsorted_chain_keys(self):
+    coords = np.array([1.0, 2.0], dtype=np.float32)
+    base = structure.from_atom_arrays(
+        name='unsorted',
+        chain_id=np.array(['A', 'B'], dtype=object),
+        res_id=np.array([1, 1], dtype=np.int32),
+        atom_x=coords,
+        atom_y=coords,
+        atom_z=coords,
+    )
+    unsorted = base.copy_and_update(
+        chains=base.chains_table.copy_and_update(
+            key=np.array([1, 0], dtype=np.int64)
+        ),
+        residues=base.residues_table.copy_and_update(
+            chain_key=np.array([1, 0], dtype=np.int64)
+        ),
+        atoms=base.atoms_table.copy_and_update(
+            chain_key=np.array([1, 0], dtype=np.int64)
+        ),
+    )
+    filtered = unsorted.filter(chain_id='B')
+    np.testing.assert_array_equal(filtered.chain_id, ['B'])
+    np.testing.assert_array_equal(
+        filtered.atom_x, np.array([2.0], dtype=np.float32), strict=True
+    )
+
+  def test_filter_after_concat_preserves_chain_order(self):
+    coords = np.array([1.0, 2.0], dtype=np.float32)
+    s1 = structure.from_atom_arrays(
+        name='s1',
+        chain_id=np.array(['D', 'B'], dtype=object),
+        res_id=np.array([1, 1], dtype=np.int32),
+        atom_x=coords,
+        atom_y=coords,
+        atom_z=coords,
+    )
+    s2 = structure.from_atom_arrays(
+        name='s2',
+        chain_id=np.array(['C', 'A'], dtype=object),
+        res_id=np.array([1, 1], dtype=np.int32),
+        atom_x=coords + 10.0,
+        atom_y=coords,
+        atom_z=coords,
+    )
+    merged = structure.concat([s1, s2], assign_unique_chain_ids=False)
+    filtered = merged.filter(chain_id=('B', 'A'))
+    np.testing.assert_array_equal(filtered.chain_id, ['B', 'A'])
+    np.testing.assert_array_equal(
+        filtered.atom_x, np.array([2.0, 12.0], dtype=np.float32), strict=True
     )
 
   def test_filter_residues(self):
@@ -1482,6 +1590,11 @@ class StructureTest(test_utils.StructureTestCase):
     self.assertEqual(updated.release_date, datetime.date(3000, 1, 1))
     self.assertEqual(updated.resolution, 42.0)
     self.assertEqual(updated.structure_method, 'test')
+    self.assertIs(updated.chains_table, struc.chains_table)
+    self.assertIs(updated.residues_table, struc.residues_table)
+    self.assertIs(updated.atoms_table, struc.atoms_table)
+    self.assertIs(updated.bonds, struc.bonds)
+    self.assertNotIn('chain_boundaries', updated.__dict__)
 
   def test_copy_and_update_atoms(self):
     struc = self.make_test_structure(
@@ -3235,6 +3348,50 @@ class StructureTest(test_utils.StructureTestCase):
         res_arrays.atom_occupancy.shape, (0, atom_types.ATOM37_NUM)
     )
 
+  @parameterized.parameters(True, False)
+  def test_to_res_arrays_sparse_res_keys(self, include_missing_residues):
+    struc = structure.from_mmcif(
+        test_utils.read_test_cif_file('2pv7'),
+        model_id=structure.ModelID.FIRST,
+        include_bonds=False,
+    )
+    sparse_keys = struc.residues_table.key * 100_000 + 10_000_000
+    perm = np.arange(struc.residues_table.size)[::-1]
+    sparse = struc.copy_and_update(
+        residues=struc.residues_table.apply_array(perm).copy_and_update(
+            key=sparse_keys[perm]
+        ),
+        atoms=struc.atoms_table.copy_and_update(
+            res_key=sparse_keys[struc.atoms_table.res_key]
+        ),
+        skip_validation=True,
+    )
+    expected = struc.to_res_arrays(
+        include_missing_residues=include_missing_residues
+    )
+    actual = sparse.to_res_arrays(
+        include_missing_residues=include_missing_residues
+    )
+    expected_perm = np.arange(expected.atom_positions.shape[0])[::-1]
+    np.testing.assert_array_equal(
+        actual.atom_positions,
+        expected.atom_positions[expected_perm],
+        strict=True,
+    )
+    np.testing.assert_array_equal(
+        actual.atom_mask, expected.atom_mask[expected_perm], strict=True
+    )
+    np.testing.assert_array_equal(
+        actual.atom_b_factor, expected.atom_b_factor[expected_perm], strict=True
+    )
+    np.testing.assert_array_equal(
+        actual.atom_occupancy,
+        expected.atom_occupancy[expected_perm],
+        strict=True,
+    )
+    self.assertNotIn('index_by_key', sparse.residues_table.__dict__)
+    self.assertNotIn('index_by_key', sparse.present_residues.__dict__)
+
   def test_to_res_arrays_single_model_leading_dim_raises(self):
     # 2pv7 is a single-model mmCIF, so ModelID.ALL adds a size-1 leading dim.
     batched = structure.from_mmcif(
@@ -4177,6 +4334,65 @@ class StructureTest(test_utils.StructureTestCase):
     np.testing.assert_array_equal(permuted.is_water_mask, water_mask[perm])
     np.testing.assert_array_equal(permuted.is_nucleic_mask, nucleic_mask[perm])
 
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='mixed_polymers',
+          chain_type=[
+              *[mmcif_names.PROTEIN_CHAIN] * 2,
+              *[mmcif_names.RNA_CHAIN] * 2,
+              *[mmcif_names.DNA_CHAIN] * 2,
+              *[mmcif_names.NON_POLYMER_CHAIN] * 2,
+          ],
+          expected_atom_name=['CA', 'OXT', 'C1', 'OXT', 'OP3'],
+      ),
+      dict(
+          testcase_name='protein_without_oxt_and_ligand_oxt',
+          chain_type=[
+              *[mmcif_names.NON_POLYMER_CHAIN] * 4,
+              *[mmcif_names.PROTEIN_CHAIN] * 2,
+              *[mmcif_names.NON_POLYMER_CHAIN] * 2,
+          ],
+          expected_atom_name=[
+              'CA',
+              'OXT',
+              'OP3',
+              'OXT',
+              'OP3',
+              'C1',
+              'OXT',
+              'OP3',
+          ],
+      ),
+      dict(
+          testcase_name='ligands_only',
+          chain_type=[mmcif_names.NON_POLYMER_CHAIN] * 8,
+          expected_atom_name=[
+              'CA',
+              'OXT',
+              'OP3',
+              'OXT',
+              'OP3',
+              'C1',
+              'OXT',
+              'OP3',
+          ],
+      ),
+  )
+  def test_without_terminal_oxygens(self, chain_type, expected_atom_name):
+    struc = self.make_test_structure(
+        chain_id=np.array(list('AABBCCDD'), dtype=object),
+        res_id=np.ones(8, dtype=np.int32),
+        chain_type=np.array(chain_type, dtype=object),
+        atom_name=np.array(
+            ['CA', 'OXT', 'OP3', 'OXT', 'OP3', 'C1', 'OXT', 'OP3'], dtype=object
+        ),
+    )
+    np.testing.assert_array_equal(
+        struc.without_terminal_oxygens().atom_name,
+        np.array(expected_atom_name, dtype=object),
+        strict=True,
+    )
+
   @parameterized.parameters([True, False])
   def test_drop_non_standard_protein_atoms(self, drop_oxt):
     chain_type = [
@@ -4447,6 +4663,265 @@ class StructureTest(test_utils.StructureTestCase):
     self.assertEqual(struc.num_residues(count_unresolved=True), 4)
     self.assertEqual(struc.num_residues(count_unresolved=False), 2)
     self.assertEqual(struc.num_atoms, 2)
+
+  def test_order_and_drop_atoms_to_match_identical_layout_returns_self(self):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A', 'B'], dtype=object),
+        res_id=np.array([1, 2], dtype=np.int32),
+        atom_name=np.array(['CA', 'CB'], dtype=object),
+    )
+    shifted = self.make_test_structure(
+        chain_id=np.array(['A', 'B'], dtype=object),
+        res_id=np.array([1, 2], dtype=np.int32),
+        atom_name=np.array(['CA', 'CB'], dtype=object),
+        atom_x=np.array([10.0, 20.0]),
+    )
+    self.assertIs(struc.order_and_drop_atoms_to_match(shifted), struc)
+
+  def test_order_and_drop_atoms_to_match_reordered_atoms(self):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A', 'B'], dtype=object),
+        res_id=np.array([1, 2], dtype=np.int32),
+        atom_name=np.array(['CA', 'CB'], dtype=object),
+    )
+    reversed_struc = struc.reorder_chains(['B', 'A'])
+    reordered = struc.order_and_drop_atoms_to_match(reversed_struc)
+    self.assertIsNot(reordered, struc)
+    np.testing.assert_array_equal(reordered.atom_name, reversed_struc.atom_name)
+
+  def test_order_and_drop_atoms_to_match_shifted_and_gapped_chain_keys(self):
+    base = self.make_test_structure(
+        chain_id=np.array(['A', 'B', 'C'], dtype=object),
+        res_id=np.array([1, 1, 1], dtype=np.int32),
+        res_name=np.array(['ALA', 'ALA', 'ALA'], dtype=object),
+        atom_name=np.array(['CA', 'CA', 'CA'], dtype=object),
+        atom_x=np.array([0.0, 5.0, 10.0], dtype=np.float32),
+        atom_y=np.zeros(3, dtype=np.float32),
+        atom_z=np.zeros(3, dtype=np.float32),
+    )
+    ab = base.filter(chain_id=('A', 'B'))
+    bc_as_ab = base.filter(chain_id=('B', 'C')).rename_chain_ids(
+        {'B': 'A', 'C': 'B'}
+    )
+    ac_as_ab = base.filter(chain_id=('A', 'C')).rename_chain_ids({'C': 'B'})
+    matched_contiguous = bc_as_ab.order_and_drop_atoms_to_match(ab)
+    np.testing.assert_array_equal(matched_contiguous.coords, bc_as_ab.coords)
+    matched_gapped = ac_as_ab.order_and_drop_atoms_to_match(ab)
+    np.testing.assert_array_equal(matched_gapped.coords, ac_as_ab.coords)
+
+  def test_filter_by_chains_noop_returns_self(self):
+    mono = self.make_test_structure(
+        chain_id=np.array(['A', 'A'], dtype=object),
+        res_id=np.array([1, 2], dtype=np.int32),
+        res_name=np.array(['ALA', 'GLY'], dtype=object),
+        atom_name=np.array(['CA', 'CA'], dtype=object),
+    )
+    self.assertIs(mono.filter(chain_id='A'), mono)
+    self.assertIs(
+        mono.filter(chain_id='A', cascade_delete=structure.CascadeDelete.FULL),
+        mono,
+    )
+
+  def test_split_by_chain_empty_and_single_chain_fast_path(self):
+    empty_struc = structure.Structure(
+        chains=structure.Chains.make_empty(),
+        residues=structure.Residues.make_empty(),
+        atoms=structure.Atoms.make_empty(),
+        bonds=structure.Bonds.make_empty(),
+    )
+    self.assertEqual(empty_struc.split_by_chain(), [])
+
+    mono = self.make_test_structure(
+        chain_id=np.array(['A', 'A'], dtype=object),
+        res_id=np.array([1, 2], dtype=np.int32),
+        res_name=np.array(['ALA', 'GLY'], dtype=object),
+        atom_name=np.array(['CA', 'CA'], dtype=object),
+    )
+    split = mono.split_by_chain()
+    self.assertLen(split, 1)
+    self.assertIs(split[0], mono)
+
+    empty_chain_struc = structure.Structure(
+        chains=structure.Chains.from_defaults(
+            key=np.array([0], dtype=np.int64),
+            id=np.array(['A'], dtype=object),
+        ),
+        residues=structure.Residues.from_defaults(
+            key=np.array([0], dtype=np.int64),
+            chain_key=np.array([0], dtype=np.int64),
+            id=np.array([1], dtype=np.int32),
+            name=np.array(['ALA'], dtype=object),
+        ),
+        atoms=structure.Atoms.make_empty(),
+        bonds=structure.Bonds.make_empty(),
+    )
+    empty_split = empty_chain_struc.split_by_chain()
+    self.assertLen(empty_split, 1)
+    self.assertEqual(empty_split[0].num_chains, 0)
+    self.assertEqual(empty_split[0].num_atoms, 0)
+
+  def test_split_by_chain_intra_and_inter_chain_bonds(self):
+    with_bonds = structure.Structure(
+        chains=structure.Chains.from_defaults(
+            key=np.array([10, 20, 30], dtype=np.int64),
+            id=np.array(['A', 'B', 'C'], dtype=object),
+        ),
+        residues=structure.Residues.from_defaults(
+            key=np.array([100, 101, 200, 300], dtype=np.int64),
+            chain_key=np.array([10, 20, 20, 30], dtype=np.int64),
+            id=np.array([1, 1, 2, 1], dtype=np.int32),
+        ),
+        atoms=structure.Atoms.from_defaults(
+            key=np.array([1000, 1001, 2000, 2001], dtype=np.int64),
+            chain_key=np.array([20, 20, 30, 30], dtype=np.int64),
+            res_key=np.array([200, 200, 300, 300], dtype=np.int64),
+        ),
+        bonds=structure.Bonds(
+            key=np.array([0, 1, 2], dtype=np.int64),
+            type=np.array(['covale', 'covale', 'covale'], dtype=object),
+            role=np.array(['?', '?', '?'], dtype=object),
+            from_atom_key=np.array([2000, 1000, 1001], dtype=np.int64),
+            dest_atom_key=np.array([2001, 2000, 1000], dtype=np.int64),
+        ),
+    )
+    split_chains = with_bonds.split_by_chain()
+    self.assertLen(split_chains, 3)
+    for part, cid in zip(split_chains, ('A', 'B', 'C'), strict=True):
+      self.assertStructuresEqual(part, with_bonds.filter(chain_id=cid))
+
+  def test_split_by_chain_unsorted_keys(self):
+    chain_keys = np.array([2, 1], dtype=np.int64)
+    res_keys = np.array([0, 1], dtype=np.int64)
+    unsorted_keys = structure.Structure(
+        chains=structure.Chains.from_defaults(
+            key=chain_keys, id=np.array(['B', 'A'], dtype=object)
+        ),
+        residues=structure.Residues.from_defaults(
+            chain_key=chain_keys, id=np.array([1, 1], dtype=np.int32)
+        ),
+        atoms=structure.Atoms.from_defaults(
+            chain_key=chain_keys, res_key=res_keys
+        ),
+        bonds=structure.Bonds.make_empty(),
+    )
+    split_chains = unsorted_keys.split_by_chain()
+    self.assertLen(split_chains, 2)
+    for part, cid in zip(split_chains, ('B', 'A'), strict=True):
+      self.assertStructuresEqual(part, unsorted_keys.filter(chain_id=cid))
+
+  @parameterized.named_parameters(
+      dict(testcase_name='adjacent_duplicates', chain_ids=('A', 'A')),
+      dict(testcase_name='non_adjacent_duplicates', chain_ids=('A', 'B', 'A')),
+  )
+  def test_split_by_chain_duplicate_chain_ids(self, chain_ids):
+    n = len(chain_ids)
+    keys = np.arange(n, dtype=np.int64)
+    struc = structure.Structure(
+        chains=structure.Chains.from_defaults(
+            id=np.array(chain_ids, dtype=object)
+        ),
+        residues=structure.Residues.from_defaults(
+            chain_key=keys, id=np.arange(1, n + 1, dtype=np.int32)
+        ),
+        atoms=structure.Atoms.from_defaults(chain_key=keys, res_key=keys),
+        bonds=structure.Bonds.make_empty(),
+    )
+    self.assertLen(struc.split_by_chain(), n)
+
+  def test_split_by_chain_multiple_empty_and_multistate_chains(self):
+    coords = np.arange(12, dtype=np.float32).reshape(2, 2, 3)
+    struc = structure.Structure(
+        chains=structure.Chains.from_defaults(
+            id=np.array(['A', 'B', 'C'], dtype=object)
+        ),
+        residues=structure.Residues.from_defaults(
+            chain_key=np.array([0, 1], dtype=np.int64),
+            id=np.array([1, 1], dtype=np.int32),
+        ),
+        atoms=structure.Atoms.from_defaults(
+            chain_key=np.array([1, 1], dtype=np.int64),
+            res_key=np.array([1, 1], dtype=np.int64),
+            x=coords[..., 0],
+            y=coords[..., 1],
+            z=coords[..., 2],
+        ),
+        bonds=structure.Bonds.make_empty(),
+    )
+    split = struc.split_by_chain()
+    self.assertLen(split, 3)
+    self.assertStructuresEqual(split[0], struc.filter(chain_id='A'))
+    self.assertStructuresEqual(split[2], struc.filter(chain_id='C'))
+    self.assertEqual(split[0].coords.shape, (2, 0, 3))
+    self.assertEqual(split[1].coords.shape, (2, 2, 3))
+
+  def test_multichain_residue_index_single_and_multi_chain(self):
+    empty = structure.make_empty_structure()
+    self.assertEqual(structure.multichain_residue_index(empty).shape, (0,))
+
+    mono = self.make_test_structure(
+        chain_id=np.array(['A', 'A'], dtype=object),
+        res_id=np.array([3, 7], dtype=np.int32),
+        res_name=np.array(['ALA', 'GLY'], dtype=object),
+        atom_name=np.array(['CA', 'CA'], dtype=object),
+    )
+    mono_idx = structure.multichain_residue_index(mono)
+    self.assertEqual(mono_idx.dtype, np.int64)
+    np.testing.assert_array_equal(mono_idx, np.array([3, 7], dtype=np.int64))
+
+    dimer = self.make_test_structure(
+        chain_id=np.array(['A', 'B'], dtype=object),
+        res_id=np.array([3, 7], dtype=np.int32),
+        res_name=np.array(['ALA', 'GLY'], dtype=object),
+        atom_name=np.array(['CA', 'CA'], dtype=object),
+    )
+    dimer_idx = structure.multichain_residue_index(dimer)
+    self.assertEqual(dimer_idx.dtype, np.int64)
+    np.testing.assert_array_equal(
+        dimer_idx, np.array([3, 10007], dtype=np.int64)
+    )
+
+    zero_atom_multichain = structure.Structure(
+        chains=structure.Chains.from_defaults(
+            key=np.array([0, 1], dtype=np.int64),
+            id=np.array(['A', 'B'], dtype=object),
+        ),
+        residues=structure.Residues.from_defaults(
+            key=np.array([0, 1], dtype=np.int64),
+            chain_key=np.array([0, 1], dtype=np.int64),
+            id=np.array([1, 2], dtype=np.int32),
+            name=np.array(['ALA', 'GLY'], dtype=object),
+        ),
+        atoms=structure.Atoms.make_empty(),
+        bonds=structure.Bonds.make_empty(),
+    )
+    self.assertEqual(
+        structure.multichain_residue_index(zero_atom_multichain).shape, (0,)
+    )
+
+  def test_multichain_residue_index_duplicate_chain_ids(self):
+    dup_chains = structure.Structure(
+        chains=structure.Chains.from_defaults(
+            key=np.array([0, 1], dtype=np.int64),
+            id=np.array(['A', 'A'], dtype=object),
+        ),
+        residues=structure.Residues.from_defaults(
+            key=np.array([0, 1], dtype=np.int64),
+            chain_key=np.array([0, 1], dtype=np.int64),
+            id=np.array([3, 7], dtype=np.int32),
+            name=np.array(['ALA', 'GLY'], dtype=object),
+        ),
+        atoms=structure.Atoms.from_defaults(
+            key=np.array([0, 1], dtype=np.int64),
+            chain_key=np.array([0, 1], dtype=np.int64),
+            res_key=np.array([0, 1], dtype=np.int64),
+            name=np.array(['CA', 'CA'], dtype=object),
+        ),
+        bonds=structure.Bonds.make_empty(),
+    )
+    np.testing.assert_array_equal(
+        structure.multichain_residue_index(dup_chains),
+        np.array([3, 7], dtype=np.int64),
+    )
 
 
 if __name__ == '__main__':
