@@ -1,0 +1,48 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-03 10:40:38 | ⭐️ ji0eeeee starred google-deepmind/detectorscope
+2026-11-03 10:31:26 | 🍴 theveks-cell forked google-deepmind/mujoco
+2026-11-03 10:31:19 | 🍴 ukniusanqian-alt forked google-deepmind/formal-conjectures
+2026-11-03 10:18:46 | 🍴 JiaCheng310 forked google-deepmind/mujoco_warp
+2026-11-03 10:13:13 | ⭐️ COaffection starred google-deepmind/detectorscope
+2026-11-03 10:12:55 | 💬 ProblemHunter created issue 'WOWII 84: induced-tree bound for graphs with a cut vertex (written proof for review)' in google-deepmind/formal-conjectures
+2026-11-03 10:08:56 | 💬 XiiiiaoT created issue 'TAPVid-3D v1.0: queries_xyt (x, y) does not match query frame t' in google-deepmind/tapnet
+2026-11-03 09:57:46 | ⭐️ fangfangshen39-ops starred google-deepmind/detectorscope
+2026-11-03 09:48:23 | ⭐️ plumLee211 starred google-deepmind/detectorscope
+2026-11-03 09:47:25 | ⭐️ HuahaiNo1 starred google-deepmind/detectorscope
+2026-11-03 09:43:20 | 🔹 bocowgill performed PullRequestReviewEvent on google-deepmind/formal-conjectures
+2026-11-03 09:42:14 | ⭐️ abhishekaich27 starred google-deepmind/proeval
+2026-11-03 09:28:15 | 🍴 Child-pi forked google-deepmind/mujoco
+2026-11-03 09:27:24 | ⭐️ oceanyangjs starred google-deepmind/mujoco_menagerie
+2026-11-03 09:19:38 | ⭐️ mbclub77 starred google-deepmind/detectorscope
+2026-11-03 09:05:49 | ⭐️ Haouo starred google-deepmind/detectorscope
+2026-11-03 09:04:54 | ⭐️ Emptope starred google-deepmind/mujoco
+2026-11-03 09:03:56 | ⭐️ sheenkd1 starred google-deepmind/materials_discovery
+2026-11-03 08:47:34 | ⭐️ YuLuo-yy starred google-deepmind/detectorscope
+2026-11-03 08:47:18 | ⭐️ younesjavanmard starred google-deepmind/alphaprotein-novo
+2026-11-03 08:28:41 | ⭐️ jyoung19 starred google-deepmind/detectorscope
+2026-11-03 08:04:47 | 🍴 recursive-duck forked google-deepmind/tracr
+2026-11-03 07:56:25 | ⭐️ cookt starred google-deepmind/mujoco_playground
+2026-11-03 07:46:28 | ⭐️ qovw102 starred google-deepmind/detectorscope
+2026-11-03 07:30:13 | 🔀 dependabot labeled PR in PDB-REDO/alphafill
+2026-11-03 07:30:13 | 🔀 dependabot labeled PR in PDB-REDO/alphafill
+2026-11-03 07:30:11 | 🔀 dependabot opened PR in PDB-REDO/alphafill
+2026-11-03 07:25:11 | ⭐️ sanyasamineva0x starred google-deepmind/alphafold3
+2026-11-03 07:24:56 | ⭐️ jonj20 starred google-deepmind/mujoco
+2026-11-03 05:07:50 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [01b76d7] (expanded) Harden service dependencies and isolate online and local PBS deployment
+2026-11-03 04:49:13 | 🔹 Sanexxxx777 performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-03 03:12:47 | 🔹 Cloudhabil performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-03 03:12:25 | 🔹 Cloudhabil performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-03 03:07:50 | 🔹 Copilot performed PullRequestReviewEvent on KULL-Centre/CALVADOS
+2026-11-03 03:04:25 | 🔹 AtharvaTilewale performed PullRequestReviewEvent on KULL-Centre/CALVADOS
+2026-11-03 03:04:24 | 🔹 AtharvaTilewale performed PullRequestReviewCommentEvent on KULL-Centre/CALVADOS
+2026-11-03 02:58:00 | 🔹 Copilot performed PullRequestReviewEvent on KULL-Centre/CALVADOS
+2026-11-03 02:57:58 | 🔹 Copilot performed PullRequestReviewCommentEvent on KULL-Centre/CALVADOS
+2026-11-03 02:53:39 | 🔹 Copilot performed PullRequestReviewEvent on KULL-Centre/CALVADOS
+2026-11-03 02:53:29 | 🔀 AtharvaTilewale opened PR in KULL-Centre/CALVADOS
+2026-11-03 02:53:25 | 🐛 AtharvaTilewale opened issue in KULL-Centre/CALVADOS: 'SlabAnalysis.calc_profiles fails for boxes >= 204.8 nm (z-bin count mismatch)'
+2026-11-03 02:25:00 | 🐛 AtharvaTilewale opened issue in KULL-Centre/CALVADOS: 'Phosphorylated Ser/Thr parameters for CALVADOS 3 (residues_pCALVADOS3.csv?)'
+2026-11-03 02:24:25 | 🍴 AtharvaTilewale forked KULL-Centre/CALVADOS
+2026-11-02 00:39:02 | 🚀 delalamo pushed to delalamo/SAbR
+    - [084e6ed] (expanded) Extend register-error analysis: antibody fiducials, EM transition, author-interest and impact tests
