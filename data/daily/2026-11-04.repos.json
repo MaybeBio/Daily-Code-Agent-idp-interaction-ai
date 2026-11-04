@@ -1,0 +1,200 @@
+[
+  {
+    "full_name": "heygen-com/hyperframes",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 78374,
+    "language": "TypeScript",
+    "description": "Write HTML. Render video. Built for agents.",
+    "url": "https://github.com/heygen-com/hyperframes"
+  },
+  {
+    "full_name": "obsidianmd/obsidian-releases",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "fork",
+    "stars": 22889,
+    "language": "",
+    "description": "Community plugins list, theme list, and releases of Obsidian.",
+    "url": "https://github.com/obsidianmd/obsidian-releases"
+  },
+  {
+    "full_name": "thu-ml/tianshou",
+    "who": [
+      "Trinkle23897"
+    ],
+    "event": "issue",
+    "stars": 11046,
+    "language": "Python",
+    "description": "An elegant PyTorch deep reinforcement learning library.",
+    "url": "https://github.com/thu-ml/tianshou"
+  },
+  {
+    "full_name": "google-deepmind/sonnet",
+    "who": [
+      "lyrasheu21"
+    ],
+    "event": "star",
+    "stars": 9975,
+    "language": "Python",
+    "description": "TensorFlow-based neural network library",
+    "url": "https://github.com/google-deepmind/sonnet"
+  },
+  {
+    "full_name": "google-deepmind/dm_control",
+    "who": [
+      "YamanAlJ"
+    ],
+    "event": "star",
+    "stars": 4724,
+    "language": "Python",
+    "description": "Google DeepMind's software stack for physics-based simulation and Reinforcement Learning environments, using MuJoCo.",
+    "url": "https://github.com/google-deepmind/dm_control"
+  },
+  {
+    "full_name": "tidyverse/purrr",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 1410,
+    "language": "R",
+    "description": "A functional programming toolkit for R",
+    "url": "https://github.com/tidyverse/purrr"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "zblore"
+    ],
+    "event": "pr",
+    "stars": 1347,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "copybara-service"
+    ],
+    "event": "pr",
+    "stars": 747,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "google-deepmind/treescope",
+    "who": [
+      "Auxeno"
+    ],
+    "event": "other",
+    "stars": 478,
+    "language": "Python",
+    "description": "An interactive HTML pretty-printer for machine learning research in IPython notebooks.",
+    "url": "https://github.com/google-deepmind/treescope"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "Pobby02"
+    ],
+    "event": "star",
+    "stars": 403,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "shunxinyoushuoxing"
+    ],
+    "event": "star",
+    "stars": 81,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "THGLab/IDPForge",
+    "who": [
+      "chengwilliamlin"
+    ],
+    "event": "star",
+    "stars": 20,
+    "language": "Python",
+    "description": "Disordered protein ensemble prediction",
+    "url": "https://github.com/THGLab/IDPForge"
+  },
+  {
+    "full_name": "kennethreitz/fetch.py",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "pr",
+    "stars": 18,
+    "language": "Python",
+    "description": "Requests energy for when the dependency is the problem.",
+    "url": "https://github.com/kennethreitz/fetch.py"
+  },
+  {
+    "full_name": "google-deepmind/reaf-sim",
+    "who": [
+      "skavrx"
+    ],
+    "event": "star",
+    "stars": 9,
+    "language": "Python",
+    "description": "native MuJoCo environment authoring framework built for robotics",
+    "url": "https://github.com/google-deepmind/reaf-sim"
+  },
+  {
+    "full_name": "PeptoneLtd/contrastive-finetuning-plms",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 5,
+    "language": "Python",
+    "description": "Optimizing protein language models with Sentence Transformers - ADOPT2",
+    "url": "https://github.com/PeptoneLtd/contrastive-finetuning-plms"
+  },
+  {
+    "full_name": "kennethreitz/obsidian-reitz-latex",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 5,
+    "language": "",
+    "description": "An Obsidian theme: write like iA Writer, read like a LaTeX paper.",
+    "url": "https://github.com/kennethreitz/obsidian-reitz-latex"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 2,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  }
+]
