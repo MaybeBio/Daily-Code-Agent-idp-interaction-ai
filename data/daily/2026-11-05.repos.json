@@ -1,0 +1,148 @@
+[
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "yoko19191"
+    ],
+    "event": "star",
+    "stars": 3404,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/optax",
+    "who": [
+      "DiadkoShmek"
+    ],
+    "event": "pr",
+    "stars": 2363,
+    "language": "Python",
+    "description": "Optax is a gradient processing and optimization library for JAX.",
+    "url": "https://github.com/google-deepmind/optax"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "asiryan",
+      "bocowgill",
+      "github-actions"
+    ],
+    "event": "mixed",
+    "stars": 1351,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/android_env",
+    "who": [
+      "copybara-service"
+    ],
+    "event": "pr",
+    "stars": 1253,
+    "language": "Python",
+    "description": "RL research on Android devices.",
+    "url": "https://github.com/google-deepmind/android_env"
+  },
+  {
+    "full_name": "google-deepmind/funsearch",
+    "who": [
+      "siddharthramputty"
+    ],
+    "event": "star",
+    "stars": 1142,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/funsearch"
+  },
+  {
+    "full_name": "ai4protein/VenusFactory2",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 254,
+    "language": "Python",
+    "description": "🏭 AI agent platform with skills for protein engineering, the noob-friendly AI tutorial tool for life science professionals. (ACL Demo2025, arXiv 2026)",
+    "url": "https://github.com/ai4protein/VenusFactory2"
+  },
+  {
+    "full_name": "idptools/finches",
+    "who": [
+      "ONERAI"
+    ],
+    "event": "fork",
+    "stars": 52,
+    "language": "Jupyter Notebook",
+    "description": "FINCHES (First-principle Interactions via CHEmical Specificity) - Python package for predicting chemically-specific molecular interactions for IDRs",
+    "url": "https://github.com/idptools/finches"
+  },
+  {
+    "full_name": "xLongLink/longlink",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "star",
+    "stars": 38,
+    "language": "Python",
+    "description": "Open-source platform for building and running custom business applications with Python and FastAPI",
+    "url": "https://github.com/xLongLink/longlink"
+  },
+  {
+    "full_name": "idptools/goose",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "issue",
+    "stars": 28,
+    "language": "Python",
+    "description": "A python package for generating disordered sequences and disorder sequence variants.",
+    "url": "https://github.com/idptools/goose"
+  },
+  {
+    "full_name": "THGLab/IDPForge",
+    "who": [
+      "AlbertCui07",
+      "Chenghao-Wu"
+    ],
+    "event": "star",
+    "stars": 22,
+    "language": "Python",
+    "description": "Disordered protein ensemble prediction",
+    "url": "https://github.com/THGLab/IDPForge"
+  },
+  {
+    "full_name": "kennethreitz/kennethreitz.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "pr",
+    "stars": 16,
+    "language": "Python",
+    "description": "The source code of kennethreitz.org.",
+    "url": "https://github.com/kennethreitz/kennethreitz.org"
+  },
+  {
+    "full_name": "BioComputingUP/idpo",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 7,
+    "language": "Makefile",
+    "description": "The Intrinsically Disordered Proteins Ontology, a standardized vocabulary for intrinsically disordered proteins",
+    "url": "https://github.com/BioComputingUP/idpo"
+  },
+  {
+    "full_name": "boscoh/gigmap",
+    "who": [
+      "boscoh"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/gigmap"
+  }
+]
