@@ -1,0 +1,36 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-06 09:14:33 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-06 09:14:33 | 🔀 bocowgill opened PR in google-deepmind/formal-conjectures
+2026-11-06 09:11:16 | 🐛 bocowgill opened issue in google-deepmind/formal-conjectures: 'Formalize the Irving–Leather conjecture on stable matchings'
+2026-11-06 09:09:32 | ⭐️ wenchu36 starred google-deepmind/science-skills
+2026-11-06 08:59:28 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-06 08:59:28 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-06 08:59:28 | 🔀 bocowgill opened PR in google-deepmind/formal-conjectures
+2026-11-06 08:35:44 | ⭐️ Ribetzer starred google-deepmind/funsearch
+2026-11-06 08:29:29 | 🐛 bocowgill opened issue in google-deepmind/formal-conjectures: 'Formalize the always-matched worker question under switching costs (Pittel–Rudov)'
+2026-11-06 08:22:56 | ⭐️ xbitz88 starred google-deepmind/alphaevolve
+2026-11-06 08:21:48 | 🍴 SevenLands forked google-deepmind/ferminet
+2026-11-06 08:11:31 | ⭐️ talmo starred google-deepmind/reaf-sim
+2026-11-06 08:11:17 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-06 08:08:45 | 🍴 EbTech forked google-deepmind/neural_networks_solomonoff_induction
+2026-11-06 08:07:53 | 🔀 bocowgill opened PR in google-deepmind/formal-conjectures
+2026-11-06 08:07:20 | 💬 sylvesterkaczmarek created issue 'Add electron-ion collision time to outputs' in google-deepmind/torax
+2026-11-06 08:02:11 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-06 08:01:48 | 🔀 omarrayyann opened PR in google-deepmind/mujoco
+2026-11-06 07:57:11 | ⭐️ s3bastiankoch starred google-deepmind/formal-conjectures
+2026-11-06 07:56:47 | 💬 bocowgill created issue 'Pittel’s Stable-Matching Hyperbola Threshold Conjecture' in google-deepmind/formal-conjectures
+2026-11-06 07:52:07 | 💬 sylvesterkaczmarek created issue 'Keep classification likelihood calculations in log space' in google-deepmind/enn
+2026-11-06 07:49:07 | 🐛 bocowgill opened issue in google-deepmind/formal-conjectures: 'Formalize the switching-cost hyperbola question (Pittel–Rudov)'
+2026-11-06 07:44:26 | ⭐️ Shaelynnnn starred google-deepmind/alphafold3
+2026-11-06 07:39:46 | 💬 vineethsaivs created issue 'Apply polyak_sgd's scaling after the Polyak step' in google-deepmind/optax
+2026-11-06 07:39:40 | 💬 vineethsaivs created issue 'Take the absolute difference in triplet_margin_loss' in google-deepmind/optax
+2026-11-06 07:37:17 | ⭐️ felipefcm starred google-deepmind/alphaevolve
+2026-11-06 07:35:36 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-06 07:35:36 | 🔀 bocowgill opened PR in google-deepmind/formal-conjectures
+2026-11-06 07:31:19 | ⭐️ TangentDeng starred google-deepmind/science-skills
+2026-11-06 07:31:17 | 🔀 dependabot labeled PR in google-deepmind/agentic_ecology
+2026-11-06 05:45:01 | ⭐️ kennethreitz starred featureJosh/pokopia-recomp
+2026-11-06 05:39:53 | ⭐️ kennethreitz starred seedds/nxnative
+2026-11-05 23:32:18 | 🚀 tyang816 pushed to tyang816/Awesome-TCM-LLM
+    - [5781599] (expanded) Add TCM resources and source verification notes

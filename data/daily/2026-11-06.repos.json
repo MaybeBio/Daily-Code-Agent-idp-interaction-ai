@@ -1,0 +1,226 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "omarrayyann"
+    ],
+    "event": "pr",
+    "stars": 16074,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "seedds/nxnative",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "star",
+    "stars": 12530,
+    "language": "Python",
+    "description": "Switch games running natively on iPhone, iPad and Mac: an NSP folder becomes an unsigned IPA (NSO rewriter, Horizon HLE host, NVN→Metal)",
+    "url": "https://github.com/seedds/nxnative"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "Shaelynnnn"
+    ],
+    "event": "star",
+    "stars": 8728,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "TangentDeng",
+      "wenchu36"
+    ],
+    "event": "star",
+    "stars": 3416,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/optax",
+    "who": [
+      "vineethsaivs"
+    ],
+    "event": "issue",
+    "stars": 2364,
+    "language": "Python",
+    "description": "Optax is a gradient processing and optimization library for JAX.",
+    "url": "https://github.com/google-deepmind/optax"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "bocowgill",
+      "github-actions",
+      "s3bastiankoch"
+    ],
+    "event": "mixed",
+    "stars": 1352,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/funsearch",
+    "who": [
+      "Ribetzer"
+    ],
+    "event": "star",
+    "stars": 1143,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/funsearch"
+  },
+  {
+    "full_name": "google-deepmind/ferminet",
+    "who": [
+      "SevenLands"
+    ],
+    "event": "fork",
+    "stars": 856,
+    "language": "Python",
+    "description": "An implementation of the Fermionic Neural Network for ab-initio electronic structure calculations",
+    "url": "https://github.com/google-deepmind/ferminet"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "sylvesterkaczmarek"
+    ],
+    "event": "issue",
+    "stars": 750,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "google-deepmind/enn",
+    "who": [
+      "sylvesterkaczmarek"
+    ],
+    "event": "issue",
+    "stars": 324,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/enn"
+  },
+  {
+    "full_name": "tyang816/Awesome-TCM-LLM",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 136,
+    "language": "Python",
+    "description": "开源中医大模型、数据、新闻、专利合集 (Open-source Traditional Chinese Medical Large Language Models, Datasets, News and Patents hub.)",
+    "url": "https://github.com/tyang816/Awesome-TCM-LLM"
+  },
+  {
+    "full_name": "featureJosh/pokopia-recomp",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "star",
+    "stars": 123,
+    "language": "C++",
+    "description": "Pokémon Pokopia (Switch 2) recompiled to run natively on Windows. With multiplayer support",
+    "url": "https://github.com/featureJosh/pokopia-recomp"
+  },
+  {
+    "full_name": "google-deepmind/neural_networks_solomonoff_induction",
+    "who": [
+      "EbTech"
+    ],
+    "event": "fork",
+    "stars": 85,
+    "language": "Python",
+    "description": "Learning Universal Predictors",
+    "url": "https://github.com/google-deepmind/neural_networks_solomonoff_induction"
+  },
+  {
+    "full_name": "idptools/goose",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "issue",
+    "stars": 28,
+    "language": "Python",
+    "description": "A python package for generating disordered sequences and disorder sequence variants.",
+    "url": "https://github.com/idptools/goose"
+  },
+  {
+    "full_name": "google-deepmind/alphaevolve",
+    "who": [
+      "felipefcm",
+      "xbitz88"
+    ],
+    "event": "star",
+    "stars": 24,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphaevolve"
+  },
+  {
+    "full_name": "holehouse-lab/supportingdata",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 14,
+    "language": "Jupyter Notebook",
+    "description": "A general repository for additional supporting data for manuscripts published from the Holehouse lab",
+    "url": "https://github.com/holehouse-lab/supportingdata"
+  },
+  {
+    "full_name": "google-deepmind/agentic_ecology",
+    "who": [
+      "dependabot"
+    ],
+    "event": "pr",
+    "stars": 12,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/agentic_ecology"
+  },
+  {
+    "full_name": "google-deepmind/reaf-sim",
+    "who": [
+      "talmo"
+    ],
+    "event": "star",
+    "stars": 10,
+    "language": "Python",
+    "description": "native MuJoCo environment authoring framework built for robotics",
+    "url": "https://github.com/google-deepmind/reaf-sim"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  }
+]

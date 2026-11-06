@@ -1,0 +1,24 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-11-06 05:38:26 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [f445bd0] (expanded) monitor data 2026-11-05
+2026-11-06 04:55:39 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [0d8a84d] (expanded) monitor data 2026-11-05
+2026-11-06 04:36:58 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [9f89ba2] (expanded) tracker data 2026-11-05
+2026-11-06 03:35:29 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [8c0c6b3] (expanded) monitor data 2026-11-05
+2026-11-06 01:35:28 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [db76e2e] (expanded) monitor data 2026-11-05
+2026-11-05 23:28:10 | 🚀 alexholehouse pushed to holehouse-lab/supportingdata
+    - [d7cb48f] (expanded) Updated metapredict and removed old altson_2026 in prep for updated directory
+2026-11-05 16:35:31 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [1a6eec7] (expanded) monitor data 2026-11-05
+2026-11-05 15:55:27 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [eea39d5] (expanded) monitor data 2026-11-05
+2026-11-05 07:55:28 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [ab80867] (expanded) monitor data 2026-11-04
+2026-11-05 07:35:28 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [cbbcc6c] (expanded) monitor data 2026-11-04
+2026-11-05 03:26:02 | 🐛 ryanemenecker closed issue in idptools/goose: 'GOOSE colab cannot set up'
+2026-11-05 03:25:56 | 💬 ryanemenecker created issue 'GOOSE colab cannot set up' in idptools/goose
