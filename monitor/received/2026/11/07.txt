@@ -1,0 +1,44 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-07 08:11:12 | 💬 Hydrowelder created issue 'Studio web viewer is unusable: studio.web.headless_ui is missing from the wheel' in google-deepmind/mujoco
+2026-11-07 08:11:01 | 🍴 stjordanis forked google-deepmind/game_arena
+2026-11-07 08:10:54 | ⭐️ stjordanis starred google-deepmind/game_arena
+2026-11-07 07:48:35 | 🐛 bviggiano closed issue in evo-design/proto-tools: 'ccd-lookup: formula check fails against current CCD'
+2026-11-07 07:36:20 | 🐛 bviggiano closed issue in evo-design/proto-tools: 'interproscan-fetch: sequence submit returns 400'
+2026-11-07 07:34:31 | 🐛 bviggiano closed issue in evo-design/proto-tools: 'ccd-lookup: test_ccd_lookup_index errors with ccd_index.json not found'
+2026-11-07 07:34:28 | 💬 bviggiano created issue 'ccd-lookup: test_ccd_lookup_index errors with ccd_index.json not found' in evo-design/proto-tools
+2026-11-07 07:34:05 | 🏷️  github-actions published release v1.0.0 in google-deepmind/mujoco_playground
+2026-11-07 07:07:19 | ⭐️ ziyan-wang98 starred google-deepmind/proeval
+2026-11-07 06:59:06 | ⭐️ akshayansamy starred ProteinDesignLab/caliby
+2026-11-07 06:55:41 | ⭐️ bdelwood starred google-deepmind/optax
+2026-11-07 06:41:41 | ⭐️ huanxve starred google-deepmind/dramatron
+2026-11-07 05:59:04 | ⭐️ Xia0Lu starred google-deepmind/open_x_embodiment
+2026-11-07 05:36:19 | ⭐️ mswiseman starred google-deepmind/science-skills
+2026-11-07 05:23:10 | ⭐️ peg500and starred google-deepmind/mujoco
+2026-11-07 05:09:10 | ⭐️ syphrpunk starred google-deepmind/detectorscope
+2026-11-07 04:56:57 | 💬 sylvesterkaczmarek created issue 'Support X-FEN and Shredder-FEN castling rights for Chess960' in google-deepmind/open_spiel
+2026-11-07 04:51:47 | 🐛 nvan21 opened issue in google-deepmind/mujoco: 'Sparse mju_cholFactorNumeric returns a wrong factor when it merges rows with different descendants (Newton solver, since 4.0.0)'
+2026-11-07 04:51:13 | 🍴 nvan21 forked google-deepmind/mujoco
+2026-11-07 04:32:53 | ⭐️ gmorso starred google-deepmind/concordia
+2026-11-07 04:32:38 | 🍴 someone192 forked google-deepmind/mujoco_menagerie
+2026-11-07 04:06:53 | 🐛 Nas01010101 opened issue in google-deepmind/mujoco_warp: 'Joint limit sensors read tendon limit rows with the same id'
+2026-11-07 04:06:49 | 🐛 Nas01010101 opened issue in google-deepmind/mujoco_warp: 'Joint and tendon limits create one row when both sides are within the margin'
+2026-11-07 04:04:23 | ⭐️ op12no2 starred google-deepmind/searchless_chess
+2026-11-07 03:56:49 | ⭐️ lucasflores starred google-deepmind/alphaevolve
+2026-11-07 03:37:12 | 💬 felixpernegger created issue 'Newmans Conjecture' in google-deepmind/formal-conjectures
+2026-11-07 03:26:06 | ⭐️ kianjagtiani starred google-deepmind/alphafold3
+2026-11-07 03:25:25 | 💬 UmitGUL1 created issue 'Support X-FEN and Shredder-FEN castling rights for Chess960' in google-deepmind/open_spiel
+2026-11-07 01:48:07 | 🔹 mo271 performed PullRequestReviewCommentEvent on google-deepmind/cryptids
+2026-11-07 00:31:29 | ⭐️ Junchao-Zhu starred Muyiiiii/Muyi_Rebuttal-Skills
+2026-11-07 00:16:05 | 🔹 salma2vec performed PullRequestReviewCommentEvent on google-deepmind/optax
+2026-11-06 23:28:12 | ⭐️ Zuricho starred smiles724/ProteoCraft_v1
+2026-11-06 21:01:10 | ⭐️ sirius777coder starred smiles724/ProteoCraft_v1
+2026-11-06 19:45:41 | ⭐️ meneshail starred tsubo-lab/monoyield-predictor
+2026-11-06 19:43:21 | 🚀 tyang816 pushed to tyang816/Awesome-TCM-LLM
+    - [8a087c4] (expanded) Add TCM–AI supervisors and group them by region and institution.
+2026-11-06 19:08:11 | 🔀 sobuelow opened PR in KULL-Centre/CALVADOS
+2026-11-06 19:07:53 | 🆕 sobuelow created branch 'develop' at KULL-Centre/CALVADOS
+2026-11-06 19:04:48 | 🔹 sobuelow performed DeleteEvent on KULL-Centre/CALVADOS
+2026-11-06 19:04:44 | 🔹 sobuelow performed DeleteEvent on KULL-Centre/CALVADOS
+2026-11-06 18:57:27 | 🚀 Immortals-33 pushed to blt2114/MotifBench
+    - [a1973ae] (expanded) Update results of RFD4-Proteina

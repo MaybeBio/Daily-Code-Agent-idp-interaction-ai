@@ -1,0 +1,11 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-06 23:28:12 | ⭐️ Zuricho starred smiles724/ProteoCraft_v1
+2026-11-06 20:57:55 | 🚀 Junjie-Zhu pushed to Junjie-Zhu/SurPass
+    - [3ba1948] (expanded) Delete uniprot_sprot.fasta.gz
+2026-11-06 20:49:31 | 🚀 Junjie-Zhu pushed to Junjie-Zhu/SurPass
+    - [5dc06cd] (expanded) diagnose long protein failures
+2026-11-06 20:19:38 | ⭐️ Junjie-Zhu starred idptools/metapredict
+2026-11-06 20:17:56 | 🚀 Junjie-Zhu pushed to Junjie-Zhu/SurPass
+    - [17cf4f0] (expanded) update benchmark scripts
+2026-11-06 15:38:04 | ⭐️ Junjie-Zhu starred pinder-org/pinder
