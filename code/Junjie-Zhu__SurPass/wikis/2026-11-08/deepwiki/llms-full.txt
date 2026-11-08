@@ -1,0 +1,2850 @@
+# Page: Overview
+
+# Overview
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/__init__.py](src/__init__.py)
+- [src/model/surpass.py](src/model/surpass.py)
+- [src/train.py](src/train.py)
+
+</details>
+
+
+
+SurPass is a deep learning framework designed for protein-protein interaction (PPI) and inter-chain contact prediction [src/train.py:1-35](). It leverages protein language model (pLM) embeddings combined with sequence features to model residue and pair representations through an iterative transformer and geometric update architecture [src/model/surpass.py:28-192]().
+
+The core model architecture, `ResOnly` [src/model/surpass.py:28](), processes residue tokens and pair representations through stacked residue transformers [src/model/surpass.py:75](), outer product mean modules [src/model/surpass.py:90](), and triangle update layers [src/model/surpass.py:98-110](). It produces outputs structured in `SurpassOutput` [src/model/surpass.py:20-26](), which include pair distogram logits, residue-level binding scores, and whole-protein interaction logits [src/model/surpass.py:187-191]().
+
+```mermaid
+graph TD
+    A["Protein Sequence & pLM Embeddings"] --> B["ResidueEmbedder src/model/components/embedder.py"]
+    B --> C["ResOnly Model src/model/surpass.py"]
+    C --> D["ResidueTransformer src/model/components/transformer.py"]
+    C --> E["EfficientOuterProductMean src/model/components/outer_product_mean.py"]
+    C --> F["Triangle Updates src/model/components/triangle_update.py"]
+    C --> G["SurpassOutput src/model/surpass.py"]
+    G --> H["Pair Logits / Distograms src/train.py"]
+    G --> I["Residue Bind Scores src/train.py"]
+    G --> J["Protein Logit src/train.py"]
+```
+
+Sources: `src/model/surpass.py:20-192]`, `src/train.py:1-35`
+
+## 1.1 Getting Started & Environment
+
+The repository provides automated installation procedures and structured entry points for running training pipelines, inference jobs, and diagnostic previews. The environment setup relies on configuration files that manage dependencies across compute hardware, including distributed training support.
+
+For details on setting up the environment, repository layout, and launching entry points, see [Getting Started & Environment](#1.1).
+
+Sources: `src/train.py:1-45`
+
+## 1.2 Configuration System (Hydra)
+
+SurPass utilizes Hydra to manage configurations for training and inference workflows. Configuration schemas are split into modular blocks covering data loaders, network architecture parameters, loss weighting schemes, optimizers, and experiment tracking via Weights & Biases (`wandb`).
+
+For details on config schemas and parameter mapping, see [Configuration System (Hydra)](#1.2).
+
+Sources: `src/train.py:6-10`, `src/model/surpass.py:28-46`
+
+---
+
+# Page: Getting Started & Environment
+
+# Getting Started & Environment
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [.gitignore](.gitignore)
+- [env.yaml](env.yaml)
+- [setup.py](setup.py)
+- [src/__init__.py](src/__init__.py)
+
+</details>
+
+
+
+## Purpose and Scope
+This page outlines the technical setup, environment configuration, repository organization, and execution entrypoints for the SurPass codebase. SurPass relies on PyTorch and Hydra for flexible configuration and distributed training. Here we detail how to set up the runtime environment using `env.yaml` and `setup.py`, understand the directory layout, and launch core execution pipelines.
+
+Sources: [src/__init__.py:1-1](), [env.yaml:1-25](), [setup.py:1-14]()
+
+---
+
+## Environment Installation
+SurPass manages its dependencies via Conda and pip. The environment specification is provided in `env.yaml`, which sets up Python 3.11 alongside deep learning libraries (`torch==2.6.0`, `torch-geometric`) and data processing utilities (`biopython`, `biopandas`, `hydra-core`, `wandb`) [env.yaml:1-25]().
+
+### Installation Steps
+1. Create and activate the Conda environment named `idpfold2` using the specification file [env.yaml:1-1]():
+   ```bash
+   conda env create -f env.yaml
+   conda activate idpfold2
+   ```
+2. Install the local package in editable mode using `setup.py`:
+   ```bash
+   pip install -e .
+   ```
+
+### Dependency Stack Summary
+| Category | Packages / Tools | Source Reference |
+| :--- | :--- | :--- |
+| **Core Runtime** | `python=3.11`, `torch==2.6.0`, `torch-geometric`, `numpy==1.26.0` | [env.yaml:5-16]() |
+| **Configuration & Logging** | `hydra-core==1.3.1`, `wandb`, `loguru==0.7.2`, `rootutils` | [env.yaml:11-25]() |
+| **Protein Processing** | `biopython`, `biopandas==0.5.1`, `biotite`, `cpdb-protein` | [env.yaml:19-22]() |
+| **Utilities** | `einops==0.6`, `dm-tree==0.1.8`, `pandas==1.5.3`, `scikit-learn>=1.3` | [env.yaml:9-24]() |
+
+Sources: [env.yaml:1-25](), [setup.py:1-14]()
+
+---
+
+## Repository Layout & Build Configuration
+The repository is structured around a modular Python package rooted in `src/`, with configuration files and helper scripts organized cleanly. Build metadata is defined in `setup.py` [setup.py:4-14](), which automatically discovers internal packages.
+
+```
+SurPass/
+├── env.yaml            # Conda environment specification
+├── setup.py            # Package installation script
+├── .gitignore          # Git exclusion patterns
+├── src/                # Core source code package
+│   ├── __init__.py     # Package marker
+│   ├── common/         # Shared constants and utilities
+│   ├── data/           # Dataset pipelines, cropping, and collation
+│   ├── models/         # ResOnly neural network architecture
+│   └── utils/          # DDP, tensor, and windowing utilities
+└── configs/            # Hydra configuration yaml files
+```
+
+### Git Ignores
+Transient directories such as local logs, generated outputs, python cache files, and test artifacts are excluded from version control via `.gitignore` [-.gitignore:1-8]().
+
+Sources: [.gitignore:1-8](), [setup.py:1-14](), [src/__init__.py:1-1]()
+
+---
+
+## Execution Entrypoints & Workflows
+SurPass operates through distinct entrypoints managed by Hydra configuration blocks. The training system, inference pipeline, and visualization tools are invoked from command-line interfaces driven by configuration YAML files.
+
+### 1. Training Entrypoint
+Training is driven by distributed data parallel (DDP) execution models, orchestrating dataset multi-source balancing, loss calculation, and optimization.
+
+### 2. Inference Pipeline
+Inference execution evaluates trained checkpoints against FASTA and embedding inputs, utilizing long-sequence windowing algorithms for complex protein structures.
+
+### 3. Preview Utilities
+Debugging and preview scripts allow direct spatial visualization of distance maps and NaN monitoring during development.
+
+```mermaid
+graph TD
+    A["UserCommand"] -->|Runs| B["env.yaml"]
+    A -->|Installs| C["setup.py"]
+    C -->|BuildsPackage| D["src"]
+    
+    subgraph "Execution Surfaces"
+        D --> E["TrainingEntryPoint"]
+        D --> F["InferencePipeline"]
+        D --> G["PreviewUtility"]
+    end
+
+    E -->|ConfiguresVia| H["configs/train.yaml"]
+    F -->|ConfiguresVia| I["configs/inference.yaml"]
+    G -->|MonitorsTensors| J["src/preview.py"]
+
+    style A fill:none,stroke:#000,stroke-width:1px
+    style B fill:none,stroke:#000,stroke-width:1px
+    style C fill:none,stroke:#000,stroke-width:1px
+    style D fill:none,stroke:#000,stroke-width:1px
+    style E fill:none,stroke:#000,stroke-width:1px
+    style F fill:none,stroke:#000,stroke-width:1px
+    style G fill:none,stroke:#000,stroke-width:1px
+    style H fill:none,stroke:#000,stroke-width:1px
+    style I fill:none,stroke:#000,stroke-width:1px
+    style J fill:none,stroke:#000,stroke-width:1px
+```
+*Figure 1.1.1: Environment installation and execution workflow bridging setup artifacts to entrypoints.*
+
+Sources: [env.yaml:1-25](), [setup.py:1-14]()
+
+```mermaid
+graph TD
+    EnvironmentSetup["EnvironmentSetup"] -->|CondaInstall| CondaEnv["idpfold2"]
+    CondaEnv -->|PipEditable| SetupPy["setup.py"]
+    SetupPy -->|Registers| PackageSrc["src"]
+    
+    PackageSrc --> TrainModule["TrainingSystem"]
+    PackageSrc --> InferModule["InferencePipeline"]
+    PackageSrc --> PrevModule["PreviewDebugging"]
+
+    style EnvironmentSetup fill:none,stroke:#000,stroke-width:1px
+    style CondaEnv fill:none,stroke:#000,stroke-width:1px
+    style SetupPy fill:none,stroke:#000,stroke-width:1px
+    style PackageSrc fill:none,stroke:#000,stroke-width:1px
+    style TrainModule fill:none,stroke:#000,stroke-width:1px
+    style InferModule fill:none,stroke:#000,stroke-width:1px
+    style PrevModule fill:none,stroke:#000,stroke-width:1px
+```
+*Figure 1.1.2: Mapping natural language initialization concepts to code package structures.*
+
+Sources: [env.yaml:1-25](), [setup.py:1-14](), [src/__init__.py:1-1]()
+
+---
+
+# Page: Configuration System (Hydra)
+
+# Configuration System (Hydra)
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [configs/inference.yaml](configs/inference.yaml)
+- [configs/train.yaml](configs/train.yaml)
+
+</details>
+
+
+
+## Purpose and Scope
+This page details the configuration schema and management system used in SurPass, driven by Facebook Hydra. It covers the structural schemas of `configs/train.yaml` and `configs/inference.yaml`, detailing how configuration blocks (`data`, `model`, `loss`, `optimizer`, `wandb`, `hydra`, and `performance`) map directly to python code structures, dataset loaders, neural network modules, and training/inference execution routines.
+
+Sources: `configs/train.yaml:1-127` [configs/train.yaml:1-126](), `configs/inference.yaml:1-53` [configs/inference.yaml:1-52]()
+
+---
+
+## Configuration Architecture and YAML Schemas
+
+SurPass uses Hydra to manage hyper-parameters, data paths, model dimensions, and optimization details. Configuration files are split into training (`configs/train.yaml`) and inference (`configs/inference.yaml`) profiles. 
+
+### Global Runtime Settings
+* `task_prefix`: A string prefix used for logging and run identification (`configs/train.yaml:1-1` [], `configs/inference.yaml:1-1` []).
+* `seed`: Random seed for reproducibility across runs (`configs/train.yaml:3-3` [], `configs/inference.yaml:3-3` []).
+* `deterministic`: Boolean flag to enforce deterministic algorithms in PyTorch (`configs/train.yaml:4-4` [], `configs/inference.yaml:4-4` []).
+* `ckpt_dir`: Path to checkpoint directories for resuming training or loading weights for inference (`configs/train.yaml:7-7` [], `configs/inference.yaml:5-5` []).
+
+```mermaid
+graph TD
+    YAML["configs/train.yaml"] --> Global["Global Settings (seed, deterministic, task_prefix)"]
+    YAML --> DataBlock["data: root_dir, datasets, batch_size, crop_size"]
+    YAML --> ModelBlock["model: n_layers, dim_token, dim_pair, n_heads"]
+    YAML --> LossBlock["loss: intra, inter, focal, mae, tversky"]
+    YAML --> OptBlock["optimizer: lr, weight_decay, lr_scheduler"]
+    YAML --> WandbBlock["wandb: project, entity, mode"]
+    YAML --> HydraBlock["hydra: run.dir, output_subdir"]
+```
+*Sources: `configs/train.yaml:1-123` [configs/train.yaml:1-123]()*
+
+---
+
+## Data Block Schema
+
+The `data` block configures dataset paths, multiprocessing parameters, negative sampling ratios, distance binning, and spatial cropping.
+
+### Training Data Configuration (`configs/train.yaml`)
+* `root_dir`: Base directory containing all training datasets (`configs/train.yaml:16-16` []).
+* `epoch_size`: Number of samples per training epoch (`configs/train.yaml:17-17` []).
+* `datasets`: A multi-source dataset list specifying `pdb_ppi`, `afdb_pos`, and `afdb_neg` subdirectories, cluster TSV files, assembly flags, and sampling weights (`configs/train.yaml:18-35` []).
+* `batch_size` & `num_workers`: DataLoader batch configuration (`configs/train.yaml:36-37` []).
+* `negative_ratio`: Ratio of negative to positive pairs during negative assembly (`configs/train.yaml:40-40` []).
+* `distance_bin_start`, `distance_bin_end`, `distance_bin_count`: Parameters defining the distogram discretization range (2.0Å to 22.0Å over 64 bins) (`configs/train.yaml:41-43` []).
+* `crop_size` & `crop_contiguous_prob`: Spatial and contiguous cropping parameters for residue pair matrices (`configs/train.yaml:45-46` []).
+
+### Inference Data Configuration (`configs/inference.yaml`)
+* `test_set_tsv` & `fasta_path`: Paths to evaluation tabular data and input FASTA sequences (`configs/inference.yaml:9-10` []).
+* `embedding_dir`: Directory containing precomputed protein language model (pLM) embeddings (`configs/inference.yaml:11-11` []).
+* `max_full_length`: Maximum sequence length supported in full-length inference before windowing (`configs/inference.yaml:15-15` []).
+* `ppi_score_threshold`: Threshold used to call predicted inter-chain contacts or interfaces (`configs/inference.yaml:20-20` []).
+
+```mermaid
+graph TD
+    DataSchema["data block in YAML"] -->|root_dir & subdir| Dataset["PepoTrainDataset / InferencePairDataset"]
+    DataSchema -->|crop_size / crop_contiguous_prob| Cropping["src/data/cropping.py"]
+    DataSchema -->|distance_bin_*| Distogram["Distance Binning & Labels"]
+    DataSchema -->|batch_size / num_workers| DataLoader["PyTorch DataLoader"]
+```
+*Sources: `configs/train.yaml:15-47` [configs/train.yaml:15-47](), `configs/inference.yaml:7-21` [configs/inference.yaml:7-21]()*
+
+---
+
+## Model Block Schema
+
+The `model` block configures the architecture dimensions, network depth, and attention mechanisms of the `ResOnly` network.
+
+* `n_layers`: Number of stacked transformer layers (`configs/train.yaml:49-49` [], `configs/inference.yaml:26-26` []).
+* `dim_token`: Dimensionality of the residue/token stream (`configs/train.yaml:50-50` [], `configs/inference.yaml:27-27` []).
+* `dim_pair`: Dimensionality of the pair representation stream (`configs/train.yaml:51-51` [], `configs/inference.yaml:28-28` []).
+* `n_heads`: Number of attention heads in multi-head attention blocks (`configs/train.yaml:52-52` [], `configs/inference.yaml:29-29` []).
+* `use_attn_pair_bias` & `use_qkln`: Flags enabling pair-wise attention biases and Query-Key Layer Normalization (`configs/train.yaml:55-56` [], `configs/inference.yaml:32-33` []).
+* `plm_in_dim` & `plm_out_dim`: Input and projected dimensions for pLM embeddings (`configs/train.yaml:59-60` [], `configs/inference.yaml:36-37` []).
+* `r_max`: Maximum residue separation distance considered for relative positional encodings (`configs/train.yaml:61-61` [], `configs/inference.yaml:38-38` []).
+* `dim_opm_inner` & `dim_triangle_hidden`: Inner dimensions for Outer Product Mean and Triangle update modules (`configs/train.yaml:65-66` [], `configs/inference.yaml:42-43` []).
+* `num_classes`: Number of discrete distance bins for output prediction heads (`configs/train.yaml:67-67` [], `configs/inference.yaml:44-44` []).
+
+Sources: `configs/train.yaml:48-68` [configs/train.yaml:48-68](), `configs/inference.yaml:25-45` [configs/inference.yaml:25-45]()
+
+---
+
+## Loss, Optimizer, and Training Execution Blocks
+
+Training-specific blocks control objective functions, optimization schedules, EMA, and experiment tracking.
+
+### Loss Configuration (`configs/train.yaml`)
+* `intra` & `inter`: Weighting factors for intra-chain versus inter-chain pairs (`configs/train.yaml:70-71` []).
+* `focal`: Focal loss sub-block containing `weight`, `gamma`, and `alpha` (`configs/train.yaml:73-76` []).
+* `mae` & `tversky`: Supplementary loss configurations (`configs/train.yaml:77-82` []).
+* `residue_bind` & `protein`: Interface binding classification objectives (`configs/train.yaml:83-88` []).
+* `consistency`: Geometric/structural consistency loss term (`configs/train.yaml:89-90` []).
+
+### Optimizer & EMA Configuration (`configs/train.yaml`)
+* `optimizer`: Configures `lr` (0.0005), `weight_decay` (1e-6), Adam parameters, `lr_scheduler` (`af3`), warmup steps, gradient accumulation steps (`grad_accum_steps: 4`), and gradient clipping (`max_grad_norm: 1.0`) (`configs/train.yaml:92-103` []).
+* `ema`: Exponential Moving Average settings including `decay` (0.999) and mutable parameter keywords (`configs/train.yaml:11-13` []).
+* `wandb`: Weights & Biases integration parameters (`enabled`, `project`, `entity`, `mode`, `tags`) (`configs/train.yaml:108-117` []).
+
+```mermaid
+graph TD
+    LossSchema["loss block in YAML"] --> Focal["Focal Loss (gamma, alpha)"]
+    LossSchema --> Tversky["Tversky Loss (alpha, beta)"]
+    LossSchema --> Bind["Residue & Protein Binding Loss"]
+    OptSchema["optimizer block in YAML"] --> Adam["AdamW Optimizer"]
+    OptSchema --> Sched["AlphaFold3 LR Scheduler"]
+    OptSchema --> Grad["Gradient Accumulation & Clipping"]
+```
+*Sources: `configs/train.yaml:11-14` [configs/train.yaml:11-14](), `configs/train.yaml:69-117` [configs/train.yaml:69-117]()*
+
+---
+
+## Natural Language to Code Entity Mapping
+
+The configuration system acts as the blueprint for instantiating python classes across the codebase. The following diagram maps high-level configuration declarations directly to their corresponding python modules and class implementations.
+
+```mermaid
+graph TD
+    YAMLData["data block configs"] -->|instantiates| PepoDataset["PepoTrainDataset (src/data/dataset.py)"]
+    YAMLModel["model block configs"] -->|instantiates| ResModel["ResOnly Network (src/model/resonly.py)"]
+    YAMLModel -->|instantiates| Embedder["ResidueEmbedder (src/model/embedding.py)"]
+    YAMLModel -->|instantiates| Transformer["ResidueTransformer (src/model/transformer.py)"]
+    YAMLModel -->|instantiates| PairStack["Triangle & OPM Blocks (src/model/pair_stack.py)"]
+    YAMLOpt["optimizer block configs"] -->|instantiates| Optimizer["AdamW / AF3 Scheduler"]
+    YAMLEma["ema block configs"] -->|instantiates| EMA["EMAWrapper (src/utils/model_utils.py)"]
+```
+*Sources: `configs/train.yaml:15-68` [configs/train.yaml:15-68](), `configs/train.yaml:92-103` [configs/train.yaml:92-103]()*
+
+---
+
+# Page: Data Pipeline
+
+# Data Pipeline
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/data/__init__.py](src/data/__init__.py)
+- [src/data/balancing.py](src/data/balancing.py)
+- [src/data/dataset.py](src/data/dataset.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+The data pipeline in SurPass is responsible for transforming raw protein structural data, protein Language Model (pLM) embeddings, and PPI cluster annotations into model-ready batches. It manages the ingestion of paired chain features, spatial or contiguous cropping for memory efficiency, distance binning for distogram prediction, negative sampling for contrastive/binary learning, dataset balancing across multiple data sources, and collation into variable-length concatenated pair tensors.
+
+This page provides a high-level parent overview of the data pipeline sub-systems. For deep technical implementation details, refer to the individual child sections:
+- [PepoTrainDataset and Feature Loading](#2.1)
+- [Cropping, Labels and Collation](#2.2)
+- [Multi-Source Balancing and Splits](#2.3)
+- [Dataset Preparation Scripts](#2.4)
+
+Sources: [src/data/dataset.py:26-167](), [src/data/balancing.py:1-106]()
+
+---
+
+## Data Pipeline Architecture Overview
+
+The pipeline integrates multiple stages from raw dataset preparation scripts to batched training inputs. The diagram below bridges the natural language conceptual flow to the core codebase entities involved in dataset construction and batching.
+
+```mermaid
+graph TD
+    sub-DataIngestion["Data Ingestion & Loading"]
+      Prep["Scripts & Preparation (scripts/)"] --> TSV["Cluster TSV Metadata (src/data/dataset.py)"]
+      TSV --> PTD["PepoTrainDataset (src/data/dataset.py:26-40)"]
+    end
+
+    sub-PairSampling["Pair Sampling & Cropping"]
+      PTD -->|Positive Pair| Pos["_positive_sample_from_row (src/data/dataset.py:108-134)"]
+      PTD -->|Negative Pair| Neg["get_negative_item / get_static_negative_item (src/data/dataset.py:135-149)"]
+      Pos --> Crop["crop_positive_pair / crop_negative_pair (src/data/cropping.py)"]
+      Neg --> Crop
+    end
+
+    sub-LabelsAndBatching["Labels & Collation"]
+      Crop --> Labels["distance_to_bins / build_negative_pair_labels (src/data/labels.py)"]
+      Labels --> Collate["collate_concatenated_pairs (src/data/collate.py)"]
+      Collate --> Sampler["DistributedWeightedSampler (src/data/balancing.py:131-182)"]
+    end
+
+    Collate --> Model["Model Training / Inference (src/models/)"]
+
+    classDef default font-family:sans-serif;
+```
+*Figure 2.1: High-level mapping from dataset preparation and ingestion to collation and model consumption.*
+
+Sources: [src/data/dataset.py:26-167](), [src/data/balancing.py:131-182](), [src/data/__init__.py:1-25]()
+
+---
+
+## 2.1 PepoTrainDataset and Feature Loading
+
+The core dataset class `PepoTrainDataset` (`[src/data/dataset.py:26]`) indexes protein-protein interaction (PPI) clusters from a metadata TSV file (`[src/data/dataset.py:62-76]`). It coordinates positive sampling from true interacting pairs within the same cluster and negative sampling across distinct clusters (`[src/data/dataset.py:81-149]`).
+
+Chain features (such as pLM embeddings and residue positions) are loaded from `.pt` files and preprocessed via `_process_complex` before pairing. Distance matrices and labels are dynamically fetched or calculated to prepare training items.
+
+For full implementation details, see [PepoTrainDataset and Feature Loading](#2.1).
+
+Sources: [src/data/dataset.py:26-149]()
+
+---
+
+## 2.2 Cropping, Labels and Collation
+
+Because protein complexes vary dramatically in sequence length, the pipeline applies spatial or contiguous cropping via `src/data/cropping.py` to bound memory consumption (`[src/data/dataset.py:114-123]`). Ground-truth inter-chain and intra-chain distances are converted into discrete distance bins (`[src/data/dataset.py:127-132]`) defined in `src/data/labels.py`.
+
+Finally, variable-sized residue pairs are batched using specialized collation routines like `collate_concatenated_pairs` (`[src/data/collate.py]`), handling padding and mask generation for PyTorch data loaders.
+
+For full implementation details, see [Cropping, Labels and Collation](#2.2).
+
+Sources: [src/data/dataset.py:114-133](), [src/data/collate.py:1-9]()
+
+---
+
+## 2.3 Multi-Source Balancing and Splits
+
+To handle multiple data sources and prevent class imbalance between positive interactions and negative non-interacting pairs, SurPass provides dataset wrappers and samplers (`[src/data/balancing.py]`). 
+
+`BalancedClusterDataset` (`[src/data/balancing.py:33]`) pairs positive items with a configurable `negative_ratio` (`[src/data/balancing.py:39]`). Additionally, `DistributedWeightedSampler` (`[src/data/balancing.py:131]`) facilitates distributed training (DDP) by drawing replacement samples according to source-specific dataset weights across ranks (`[src/data/balancing.py:172-181]`).
+
+```mermaid
+graph TD
+    sub-BalancingAndSplits["Balancing & Splitting Module (src/data/balancing.py)"]
+      Split["split_dataset (src/data/balancing.py:13-30)"] --> TrainSet["Train Subset"]
+      Split --> TestSet["Test Subset"]
+      TrainSet --> Bal["BalancedClusterDataset (src/data/balancing.py:33-64)"]
+      TestSet --> BalTest["BalancedClusterDataset (Test)"]
+      Bal --> Sampler["DistributedWeightedSampler (src/data/balancing.py:131-182)"]
+    end
+
+    classDef default font-family:sans-serif;
+```
+*Figure 2.2: Data balancing and distributed sampling structure.*
+
+For full implementation details, see [Multi-Source Balancing and Splits](#2.3).
+
+Sources: [src/data/balancing.py:13-182]()
+
+---
+
+## 2.4 Dataset Preparation Scripts
+
+Prior to training, raw databases must be processed through preparation scripts located in `scripts/`. These pipelines handle PDB entry parsing, AlphaFold Database (AFDB) domain verification, MMSeqs2 sequence clustering and redundancy filtering, pLM embedding generation (e.g., via ESMC), and UniProt sequence fetching.
+
+For full implementation details, see [Dataset Preparation Scripts](#2.4).
+
+Sources: [src/data/dataset.py:41-43]()
+
+---
+
+# Page: PepoTrainDataset and Feature Loading
+
+# PepoTrainDataset and Feature Loading
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/data/dataset.py](src/data/dataset.py)
+- [src/data/preprocess.py](src/data/preprocess.py)
+
+</details>
+
+
+
+## Purpose and Scope
+This page details the implementation of `PepoTrainDataset` and the associated feature loading pipeline in the SurPass codebase. The dataset handles protein-protein interaction (PPI) clusters, executes positive and negative sampling strategies, loads precomputed chain feature PyTorch tensors (`.pt`), processes distance labels from pickled files, and normalizes tensors via complex processing methods.
+
+---
+
+## 1. PepoTrainDataset Initialization and Cluster Organization
+
+The `PepoTrainDataset` class inherits from `torch.utils.data.Dataset` and is designed to load protein-protein interaction pairs grouped by structural similarity clusters (`ppi_cluster_id`) [src/data/dataset.py:26-40]().
+
+During initialization, the dataset reads a metadata TSV file (`cluster_tsv_path`) containing cluster assignments and file paths [src/data/dataset.py:62-63](). It validates the presence of required columns (`chain1`, `chain2`, `ppi_cluster_id`, and optionally `label_path`) [src/data/dataset.py:63-70](). The dataset indexes unique PPI clusters to balance sampling across distinct structural families rather than individual complex instances [src/data/dataset.py:72-76]().
+
+```mermaid
+graph TD
+    A["Cluster TSV File"] --> B["pd.read_csv(cluster_tsv_path)"]
+    B --> C["PepoTrainDataset.__init__"]
+    C --> D["Validate Required Columns: chain1, chain2, ppi_cluster_id, label_path"]
+    C --> E["Group Metadata by ppi_cluster_id -> self.cluster_to_rows"]
+    C --> F["Extract Unique Clusters -> self.items"]
+
+    style A fill:#fff,stroke:#333,stroke-width:2px
+    style C fill:#fff,stroke:#333,stroke-width:2px
+    style E fill:#fff,stroke:#333,stroke-width:2px
+```
+*Diagram 1: Initialization flow of `PepoTrainDataset` mapping TSV metadata into cluster groupings.*
+
+Sources: `[src/data/dataset.py:26-76]()`
+
+---
+
+## 2. Positive Sampling and Chain Feature Loading
+
+When indexing the dataset via `__getitem__`, it delegates to `get_positive_item(idx)` [src/data/dataset.py:81-82](). This method selects a random row from the specified PPI cluster, shuffling available structural representatives until a valid positive pair containing an inter-chain contact is found [src/data/dataset.py:94-106]().
+
+The chain features are loaded via `_load_pair_features`, which retrieves chain features and normalizes them through `_process_complex` [src/data/dataset.py:89-92](). Pairwise distances and masks are loaded from label paths, after which `crop_positive_pair` is invoked to extract spatial or contiguous sub-crops [src/data/dataset.py:108-123](). Finally, continuous distance matrices are converted into discrete distance bins using `distance_to_bins` [src/data/dataset.py:127-132]().
+
+```mermaid
+graph TD
+    G["PepoTrainDataset.__getitem__(idx)"] --> H["get_positive_item(idx)"]
+    H --> I["_positive_sample_from_row(row)"]
+    I --> J["_load_pair_features(row)"]
+    J --> K["_load_chain_features(chain1/2) & _process_complex"]
+    I --> L["_load_pair_distance_and_mask(label_path)"]
+    I --> M["crop_positive_pair(...)"]
+    M --> N["distance_to_bins(...)"]
+    N --> O["Return (p1_features, p2_features, label_bins, pairwise_mask, True)"]
+
+    style G fill:#fff,stroke:#333,stroke-width:2px
+    style H fill:#fff,stroke:#333,stroke-width:2px
+    style J fill:#fff,stroke:#333,stroke-width:2px
+    style M fill:#fff,stroke:#333,stroke-width:2px
+```
+*Diagram 2: Positive sampling and feature loading pipeline execution paths.*
+
+Sources: `[src/data/dataset.py:81-134]()`
+
+---
+
+## 3. Negative Sampling Pipeline
+
+To support contrastive or non-interacting pair training, `PepoTrainDataset` provides negative sampling methods (`get_negative_item` and `get_static_negative_item`) [src/data/dataset.py:135-149](). 
+
+Negative sampling ensures that paired chains originate from different PPI clusters (`self.items[p1_idx] != self.items[p2_idx]`) [src/data/dataset.py:136-137](). Features for both chains are processed independently and passed to `crop_negative_pair` [src/data/dataset.py:139-155](). Labels and validity masks for negative pairs are dynamically generated using `build_negative_pair_labels` based on residue positions and sequence masks, returning a binary interaction flag of `False` [src/data/dataset.py:156-167]().
+
+Sources: `[src/data/dataset.py:135-167]()`
+
+---
+
+## 4. Tensor Normalization and Distance Binning
+
+Feature processing relies heavily on tensor transformations within `_process_complex` and labeling utilities in `src/data/labels.py`. 
+
+- **Chain Feature Files**: Chain-level `.pt` files provide precomputed residue coordinates, sequence masks, residue positions, and pre-trained language model (pLM) embeddings.
+- **Tensor Normalization**: `_process_complex` standardizes shapes, applies dtype casting, and ensures mask alignment across variable-length protein chains [src/data/dataset.py:90-91]().
+- **Distance Bins**: Continuous spatial distances are discretized into configurable bins defined by `distance_bin_start`, `distance_bin_end`, and `distance_bin_count` [src/data/dataset.py:32-37, 127-132]().
+
+Sources: `[src/data/dataset.py:32-37]`, `[src/data/dataset.py:90-132]()`, `[src/data/labels.py:1-23]()`
+
+---
+
+# Page: Cropping, Labels and Collation
+
+# Cropping, Labels and Collation
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/data/collate.py](src/data/collate.py)
+- [src/data/cropping.py](src/data/cropping.py)
+- [src/data/labels.py](src/data/labels.py)
+
+</details>
+
+
+
+This page documents the spatial cropping algorithms, distance-based label engineering, and dynamic padding/collation routines used to prepare protein-protein interaction (PPI) data for training and evaluation in SurPass.
+
+---
+
+## 1. Spatial and Contiguous Cropping (`src/data/cropping.py`)
+
+When protein complexes exceed memory limits or configured maximum crop sizes (default `DEFAULT_CROP_SIZE = 256`), `src/data/cropping.py` applies deterministic or stochastic cropping strategies [src/data/cropping.py:1-7].
+
+### Key Cropping Functions
+
+*   `select_contiguous_crop_indices(length, crop_size, start)`: Returns a contiguous slice of length `crop_size` from a sequence of length `length` [src/data/cropping.py:13-25]. If `length <= crop_size`, returns the full range [src/data/cropping.py:18-19].
+*   `select_centered_contiguous_crop_indices(length, crop_size, center)`: Centers a contiguous crop around a specific residue index `center` [src/data/cropping.py:28-36].
+*   `select_interface_crop_indices(contacts, n1, n2, crop_size, neighborhood_size)`: Gathers interface-centric sparse residue indices from interacting pairs using local spatial neighborhood windows (`DEFAULT_CROP_NEIGHBORHOOD_SIZE = 10`) and fills remaining slots if needed [src/data/cropping.py:97-122, src/data/cropping.py:61-94].
+*   `select_contact_centered_crop_indices(contacts, n1, n2, crop_size)`: Selects a random inter-chain contact seed and builds centered contiguous crops for both interacting chains [src/data/cropping.py:125-135].
+*   `crop_positive_pair(...)`: Orchestrates cropping for positive interacting pairs based on `crop_contiguous_probability` (default `0.3`) and distance thresholds (`DEFAULT_CONTACT_THRESHOLD_A = 8.0`) [src/data/cropping.py:7-11, src/data/cropping.py:166-205].
+
+```mermaid
+graph TD
+    A["crop_positive_pair"] --> B["inter_chain_contact_mask"]
+    B --> C{ContactsExist?}
+    C -- No --> D[ReturnNone]
+    C -- Yes --> E{UseContiguous?}
+    E -- Yes --> F["select_contact_centered_crop_indices"]
+    E -- No --> G["select_interface_crop_indices"]
+    F --> H["slice_complex_features"]
+    G --> H
+```
+Sources: `src/data/cropping.py:1-205`, `src/data/labels.py:111-122`
+
+---
+
+## 2. Distance Binning and Label Generation (`src/data/labels.py`)
+
+Ground truth pairwise distances are discretized into classification bins to facilitate distogram prediction objectives [src/data/labels.py:1-24].
+
+### Distance Binning Parameters
+
+*   `DISTANCE_BIN_START_A = 2.0` [src/data/labels.py:3]
+*   `DISTANCE_BIN_END_A = 22.0` [src/data/labels.py:4]
+*   `DISTANCE_BIN_WIDTH_A = 0.5` [src/data/labels.py:5]
+*   `DISTANCE_BIN_NUM = 64` [src/data/labels.py:6]
+
+### Key Label Functions
+
+*   `distance_to_bins(distance, bin_start, bin_end, bin_count)`: Converts continuous distance tensors into discrete integer class bins via `torch.bucketize` [src/data/labels.py:11-23].
+*   `inter_chain_pair_mask(p1_length, p2_length, device, total_length)`: Generates boolean masks indicating inter-chain pairs versus intra-chain pairs within a concatenated complex representation [src/data/labels.py:26-73].
+*   `build_negative_pair_labels(p1_positions, p1_mask, p2_positions, p2_mask, bin_start, bin_end, bin_count)`: Computes pairwise distance matrices for non-interacting or negative protein pairs, assigning out-of-range distance bins (`bin_end + 1.0`) to unmasked residue pairs [src/data/labels.py:76-108].
+*   `inter_chain_contact_mask(pairwise_dist, pairwise_mask, p1_length, contact_threshold)`: Extracts cross-chain distance sub-matrices and filters by contact threshold [src/data/labels.py:111-121].
+
+```mermaid
+graph TD
+    A["build_negative_pair_labels"] --> B["torch.cdist"]
+    B --> C["distance_to_bins"]
+    C --> D["label_bins"]
+    A --> E["residue_mask"]
+    E --> F["label_mask"]
+```
+Sources: `src/data/labels.py:1-137`
+
+---
+
+## 3. Batching and Collation (`src/data/collate.py`)
+
+The collation system in `src/data/collate.py` aggregates variable-length protein-peptide pairs into uniform padded mini-batches [src/data/collate.py:1-113].
+
+### Collation Pipeline
+
+1.  `concat_pair_residue_features(p1, p2)`: Concatenates protein (`p1`) and peptide (`p2`) residue features along the sequence dimension. Offsets `chain_index` for the second chain (`p2_chain = p2_value.long() + p1_chain.amax() + 1`) [src/data/collate.py:24-37].
+2.  `pad_first_dim(tensors)`: Pads a list of tensors along dimension 0 to match the maximum sequence length in the batch (`max_n`), using type-specific fill values (`False` for boolean, `0.0` for floats, `0` for integers) [src/data/collate.py:5-21].
+3.  `collate_concatenated_pairs(proteins, peptides)`: Merges protein and peptide feature dictionaries and tracks individual chain lengths (`p1_length`, `p2_length`) [src/data/collate.py:62-72].
+4.  `collate_fn(batch)`: Unpacks dataset tuples, delegates sequence collation to `collate_concatenated_pairs`, and pads 2D pair maps via `pad_pair_maps` [src/data/collate.py:75-90].
+5.  `get_dataloader(...)`: Instantiates a standard PyTorch `DataLoader` with custom `collate_fn` and worker configurations [src/data/collate.py:93-112].
+
+```mermaid
+graph TD
+    A["collate_fn"] --> B["collate_concatenated_pairs"]
+    B --> C["concat_pair_residue_features"]
+    B --> D["pad_residue_dicts"]
+    A --> E["pad_pair_maps"]
+    D --> F["residue_batch"]
+    E --> G["label_batch"]
+```
+Sources: `src/data/collate.py:1-113`
+
+---
+
+# Page: Multi-Source Balancing and Splits
+
+# Multi-Source Balancing and Splits
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/data/__init__.py](src/data/__init__.py)
+- [src/data/balancing.py](src/data/balancing.py)
+- [src/train.py](src/train.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+This page covers the data balancing, negative sampling, dataset splitting, and distributed weighted sampling mechanisms implemented in the `SurPass` data pipeline. These components ensure that protein-protein interaction (PPI) training data from multiple biological sources are properly partitioned, balanced with negative interacting pairs, and distributed evenly across multi-GPU environments during distributed data parallel (DDP) training.
+
+Sources: `[src/data/balancing.py:1-186]`, `[src/data/__init__.py:1-25]()`
+
+---
+
+## Dataset Splitting
+
+The pipeline partitions raw dataset instances into training and testing splits deterministically using a fixed random seed. The `split_dataset` function accepts a PyTorch `Dataset` and a `test_fraction`, returning a random split of subsets [src/data/balancing.py:13-30]().
+
+```python
+def split_dataset(
+    dataset: Dataset,
+    test_fraction: float = 0.2,
+    seed: int = 42,
+) -> tuple[Dataset, Dataset]:
+```
+
+- **Validation Checks**: Verifies that `test_fraction` is strictly between `0.0` and `1.0`, and that the dataset is non-empty [src/data/balancing.py:18-21]().
+- **Size Computation**: Computes test length as `max(1, int(round(len(dataset) * test_fraction)))` and guarantees a non-empty training length [src/data/balancing.py:25-28]().
+- **Generator**: Uses a seeded `torch.Generator` for reproducibility across runs [src/data/balancing.py:29-30]().
+
+Sources: `[src/data/balancing.py:13-30]()`
+
+---
+
+## Balanced Cluster Datasets and Negative Sampling
+
+To prevent model bias toward always predicting positive interacting interfaces, `SurPass` incorporates negative sampling via `BalancedClusterDataset` [src/data/balancing.py:33-65]() and `StaticClusterDataset` [src/data/balancing.py:108-129]().
+
+### BalancedClusterDataset
+
+`BalancedClusterDataset` wraps a `PepoTrainDataset` to dynamically generate negative pairs alongside positive pairs during training [src/data/balancing.py:33-40]().
+
+```mermaid
+graph TD
+    subcode["Code Entity Space"]
+    BCDS["BalancedClusterDataset"] --> PTDS["PepoTrainDataset"]
+    BCDS -->|Positive Index| GPI["get_positive_item(source_idx)"]
+    BCDS -->|Negative Index| GNI["get_negative_item(source_idx, target_idx)"]
+    
+    subnl["Natural Language Space"]
+    NL1["Dataset Expansion for Contrastive Learning"] --> BCDS
+    NL2["Positive PPI Pair Retrieval"] --> GPI
+    NL3["Non-Interacting Negative Pair Mining"] --> GNI
+    
+    style BCDS fill:#fff,stroke:#000,stroke-width:1px
+    style PTDS fill:#fff,stroke:#000,stroke-width:1px
+    style GPI fill:#fff,stroke:#000,stroke-width:1px
+    style GNI fill:#fff,stroke:#000,stroke-width:1px
+```
+Sources: `[src/data/balancing.py:33-65]`, `[src/data/balancing.py:67-91]()`
+
+- **Length Expansion**: The dataset length is scaled by the negative ratio: `len(self.indices) * (1 + self.negative_ratio)` [src/data/balancing.py:50-51]().
+- **Item Access (`__getitem__`)**:
+  - Indices below `len(self.indices)` return positive items via `self.dataset.get_positive_item(source_idx)` [src/data/balancing.py:55-57]().
+  - Indices beyond positive count sample a random *different* PPI cluster (`target_idx != source_idx`) to form a negative pair via `self.dataset.get_negative_item(source_idx, target_idx)` [src/data/balancing.py:59-64]().
+
+### Helper Functions
+
+- `_as_balanced_cluster_dataset`: Inspects the dataset type (e.g., `Subset` or `PepoTrainDataset`) and wraps it in a `BalancedClusterDataset` if `negative_ratio > 0` [src/data/balancing.py:67-91]().
+- `create_balanced_split_datasets`: Combines `split_dataset` and `_as_balanced_cluster_dataset` to produce balanced train and test sets [src/data/balancing.py:94-105]().
+
+Sources: `[src/data/balancing.py:33-105]()`
+
+---
+
+## Distributed Weighted Sampling
+
+When training across multiple GPUs via Distributed Data Parallel (DDP), `DistributedWeightedSampler` controls weighted sampling with replacement [src/data/balancing.py:131-182]().
+
+```mermaid
+graph TD
+    subcode["Code Entity Space"]
+    DWS["DistributedWeightedSampler"] --> WTensor["weights (1D Tensor)"]
+    DWS --> Multinomial["torch.multinomial()"]
+    Multinomial --> Draws["draws tensor"]
+    Draws --> Slice["draws[rank :: num_replicas]"]
+    
+    subnl["Natural Language Space"]
+    NL_DS["Epoch-level Weighted Draw"] --> DWS
+    NL_DDP["Rank-Equal Sharding"] --> Slice
+    
+    style DWS fill:#fff,stroke:#000,stroke-width:1px
+    style WTensor fill:#fff,stroke:#000,stroke-width:1px
+    style Multinomial fill:#fff,stroke:#000,stroke-width:1px
+    style Slice fill:#fff,stroke:#000,stroke-width:1px
+```
+Sources: `[src/data/balancing.py:131-182]()`
+
+### Key Properties and Parameters
+
+- **Arguments**: Takes `weights` (1D tensor of sampling weights), `num_samples`, `num_replicas`, `rank`, `seed`, and `replacement` [src/data/balancing.py:134-142]().
+- **Validation**: Ensures weights are non-negative, non-empty, have a positive sum, and that `rank` lies within `[0, num_replicas)` [src/data/balancing.py:151-155]().
+- **Sizing**: Rounds `total_size` up to be evenly divisible by `num_replicas` (`math.ceil(num_samples / num_replicas) * num_replicas`), yielding `num_samples_per_rank = total_size // num_replicas` [src/data/balancing.py:163-164]().
+
+### Epoch Iteration
+
+- `set_epoch(epoch)`: Updates the internal epoch counter used for seed offsetting [src/data/balancing.py:166-167]().
+- `__iter__()`: 
+  1. Instantiates a local `torch.Generator` seeded with `self.seed + self.epoch` [src/data/balancing.py:173-174]().
+  2. Draws indices using `torch.multinomial(self.weights, self.total_size, replacement=self.replacement, generator=generator)` [src/data/balancing.py:175-180]().
+  3. Slices the drawn indices for the current process rank: `draws[self.rank :: self.num_replicas].tolist()` [src/data/balancing.py:181]().
+
+Sources: `[src/data/balancing.py:131-182]()`
+
+---
+
+# Page: Dataset Preparation Scripts
+
+# Dataset Preparation Scripts
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [scripts/prepare_afdb_entries.py](scripts/prepare_afdb_entries.py)
+- [scripts/prepare_inference_embeddings.py](scripts/prepare_inference_embeddings.py)
+- [scripts/prepare_pdb_entries.py](scripts/prepare_pdb_entries.py)
+- [scripts/prepare_plm_embeddings.py](scripts/prepare_plm_embeddings.py)
+- [scripts/uniprot_sequence.py](scripts/uniprot_sequence.py)
+- [scripts/uniprot_sprot.fasta.gz](scripts/uniprot_sprot.fasta.gz)
+
+</details>
+
+
+
+### Purpose and Scope
+
+The `scripts/` directory houses the standalone pipelines responsible for raw data ingestion, structural feature extraction, sequence similarity filtering, protein language model (pLM) embedding generation, and external database retrieval. These scripts transform raw public databases (such as RCSB PDB, AFDB, and UniProt) into preprocessed, tensorized datasets optimized for efficient training and inference within SurPass.
+
+---
+
+### 1. PDB Entry Preparation Pipeline
+
+The PDB preparation pipeline downloads structural metadata, parses sequence databases, filters out redundancies against external test sets using MMSeqs2, and identifies interacting protein-protein interfaces (PPI).
+
+The ingestion and retrieval process is managed by `DataRetriever` [scripts/prepare_pdb_entries.py:49-107], which downloads metadata like sequence sets, resolution indices, source maps, and SIFTS cross-references [scripts/prepare_pdb_entries.py:57-88]. Unzipping and parsing operations are handled via helper methods such as `download_metadata()` [scripts/prepare_pdb_entries.py:90-97] and `_read_fasta_records()` [scripts/prepare_pdb_entries.py:135-155].
+
+```mermaid
+graph TD
+    A["Raw PDB Metadata Sources"] -->|DataRetriever.download_metadata| B["Compressed Files in root_dir"]
+    B -->|DataRetriever.unzip_metadata| C["Unzipped FASTA & TSV Index Files"]
+    C -->|PDBDataSelector._read_fasta_records| D["Parsed PDB Chains"]
+    D -->|MMSeqs2 Filter (30% Identity)| E["Filtered Non-Redundant Chains"]
+    E -->|Atom Distance < 4.5A| F["Verified Interacting PPI Pairs"]
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+```
+*Sources: [scripts/prepare_pdb_entries.py:49-155]*
+
+---
+
+### 2. AFDB Domain Verification and DDI Processing
+
+For AlphaFold Database (AFDB) domain-domain interactions (DDI), `scripts/prepare_afdb_entries.py` processes local domain structures without web downloads, verifying domain integrity and computing pairwise distance labels.
+
+Pair metadata tables are loaded and validated via `load_pair_table()` [scripts/prepare_afdb_entries.py:95-118], which checks for required columns (`PAIRID`, `HASH`, `CLUSTER`, `LEN`) and handles malformed entries. Domain structures are resolved from sharded directories using `resolve_domain_pdb()` [scripts/prepare_afdb_entries.py:157-163], and structural features are extracted via `extract_domain_features()` [scripts/prepare_afdb_entries.py:166-192].
+
+```mermaid
+graph TD
+    A["Input DDI Pair Tables"] -->|load_pair_table| B["Validated DataFrame (PAIRID, HASH)"]
+    B -->|resolve_domain_pdb| C["Local PDB/CIF Domain Files"]
+    C -->|extract_domain_features| D["Extracted Chain Tensors (atom14, cb_positions)"]
+    D -->|Distance Matrix Calculation| E["Verified Positive & Negative DDI Pairs"]
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+```
+*Sources: [scripts/prepare_afdb_entries.py:95-192]*
+
+---
+
+### 3. MMSeqs2 Clustering and Similarity Filtering
+
+Both PDB and AFDB preparation pipelines integrate MMSeqs2 to enforce strict sequence separation between training datasets and test sets. 
+
+Sequences are clustered or searched against benchmark sets at a 30% sequence identity threshold. The pipeline groups homodimers and heterodimers separately, removing any training chains that share high similarity with evaluation benchmarks to prevent data leakage. Cluster outputs and duplicate mappings are subsequently serialized into `.tsv` files for downstream balancing scripts.
+
+*Sources: [scripts/prepare_pdb_entries.py:1-46], [scripts/prepare_afdb_entries.py:30-41]*
+
+---
+
+### 4. Protein Language Model (pLM) Embedding Generation
+
+SurPass utilizes pre-computed residue embeddings derived from the ESMC-6B model (`biohub/ESMC-6B`) [scripts/prepare_plm_embeddings.py:32]. The codebase provides two embedding generators: `scripts/prepare_plm_embeddings.py` for training dataset features and `scripts/prepare_inference_embeddings.py` for inference FASTA files.
+
+```mermaid
+graph TD
+    A["FASTA Records / PDB Pickles"] -->|_embed_on_devices / embed_sequences| B["load_esmc (ESMC-6B Model & Tokenizer)"]
+    B -->|Forward Pass in Inference Mode| C["Hidden States Extraction"]
+    C -->|Token Filtering (Remove BOS/EOS/Pad)| D["Residue Matrix [length, hidden]"]
+    D -->|save_embedding / tensorize_feature_dict| E["Saved PyTorch Tensor File (.pt)"]
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+```
+*Sources: [scripts/prepare_plm_embeddings.py:84-124], [scripts/prepare_inference_embeddings.py:86-98]*
+
+#### Core Embedding Functions
+* `load_esmc(model_name, device)`: Instantiates `EsmcForMaskedLM` and `EsmcTokenizer` in evaluation mode [scripts/prepare_plm_embeddings.py:84-89].
+* `embed_sequences(model, tokenizer, sequences)`: Tokenizes input sequences, executes model inference, strips special tokens (`BOS`, `EOS`, and padding), and returns a list of CPU float tensors of shape `[length, hidden]` [scripts/prepare_plm_embeddings.py:92-115].
+* `_embed_shard(...)`: Manages multi-GPU parallelization by splitting pending records into contiguous shards assigned to distinct CUDA devices [scripts/prepare_plm_embeddings.py:165-203].
+
+*Sources: [scripts/prepare_plm_embeddings.py:84-203], [scripts/prepare_inference_embeddings.py:1-163]*
+
+---
+
+### 5. UniProt Sequence Fetching Utility
+
+`scripts/uniprot_sequence.py` is a standalone utility that queries the UniProt REST API (`https://rest.uniprot.org`) to fetch protein records and extract amino-acid sequences [scripts/uniprot_sequence.py:17-59].
+
+* `fetch_entry(accession, output_dir, dataset, timeout)`: Downloads JSON entries for specific UniProt accessions using `wget` [scripts/prepare_inference_embeddings.py:21-38].
+* `extract_sequence(entry)`: Parses the JSON payload to retrieve the sequence string [scripts/prepare_inference_embeddings.py:50-59].
+* `format_fasta(label, sequence, width)`: Formats sequences into standard FASTA format with configurable line width wrapping [scripts/prepare_inference_embeddings.py:71-78].
+
+*Sources: [scripts/uniprot_sequence.py:1-79]*
+
+---
+
+# Page: Model Architecture
+
+# Model Architecture
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/__init__.py](src/model/__init__.py)
+- [src/model/surpass.py](src/model/surpass.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+This page provides a high-level overview of the `ResOnly` network architecture [src/model/surpass.py:28-46] implemented in SurPass. The model processes protein sequences and protein Language Model (pLM) embeddings through dual concurrent streams: a 1D residue stream (`dim_token`) and a 2D pair stream (`dim_pair`). By iteratively exchanging information between token representations and pairwise distances/contacts via attention pair biases, outer product means, and triangle updates, SurPass predicts inter-chain residue contacts, residue-level binding scores, and overall protein-protein interaction (PPI) logits.
+
+This is a parent overview page. Detailed technical implementations, tensor manipulations, and layer-by-layer mathematics are documented in the child pages linked below:
+- **[ResOnly Model and SurpassOutput](#3.1)** — Forward pass orchestration, layer stacking, activation checkpointing, and prediction output heads.
+- **[Embedding Layer](#3.2)** — `ResidueEmbedder`: pLM feature extraction, residue type encodings, relative position encoding (`r_max`), and initial pair construction.
+- **[Transformer and Attention Primitives](#3.3)** — `ResidueTransformer`, multi-head attention with pair bias, QK LayerNorm, and attention primitives.
+- **[Pair Stack: Outer Product Mean and Triangle Updates](#3.4)** — `EfficientOuterProductMean`, `TriangleMultiplicationOutgoing`, `TriangleMultiplicationIncoming`, and `PairTransition`.
+
+Sources: [src/model/surpass.py:20-46]()
+
+---
+
+## High-Level Architecture Overview
+
+The SurPass architecture bridges sequence-level embeddings with 2D structural relationship maps. The network is structured around a stack of $N$ alternating blocks (`n_layers`) [src/model/surpass.py:31-88] where the residue stream and pair stream co-evolve.
+
+```mermaid
+graph TD
+    sub5 ["Input Processing"]
+    A["ResidueInput / pLM"] --> B["ResidueEmbedder"]
+    
+    subgraph Stream ["Dual-Stream Architecture"]
+        B --> C["SingleRepresentation (dim_token)"]
+        B --> D["PairRepresentation (dim_pair)"]
+        
+        C --> E["ResidueTransformer"]
+        D --> F["EfficientOuterProductMean"]
+        D --> G["TriangleMultiplicationOutgoing/Incoming"]
+        D --> H["PairTransition"]
+        
+        E <-->|"Pair Bias & OPM"| F
+        F --> G --> H
+    end
+    
+    subgraph Outputs ["SurpassOutput"]
+        E --> I["residue_bind_linear"]
+        H --> J["pair_out_linear"]
+        E --> K["protein_head"]
+    end
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+```
+*Figure 1: High-level data flow through the `ResOnly` dual-stream architecture from `ResidueEmbedder` to `SurpassOutput` [src/model/surpass.py:143-192].*
+
+Sources: [src/model/surpass.py:143-192]()
+
+---
+
+## 3.1 ResOnly Model and SurpassOutput
+
+The core orchestrator of the architecture is the `ResOnly` module [src/model/surpass.py:28-46], which manages the iterative update loops across `n_layers`. During the forward pass [src/model/surpass.py:143-192], input dictionaries are passed to the embedder, generating initial single and pair representations. Within each layer, `ResidueTransformer` updates the token stream, while `EfficientOuterProductMean`, triangle multiplication blocks, and `PairTransition` update the pair stream.
+
+The model encapsulates its predictions in a structured `SurpassOutput` dataclass [src/model/surpass.py:20-27] containing `pair_logits`, `residue_logits`, `protein_logit`, and `pair_mask`. 
+
+For deep technical details on the forward pass, layer sequencing, activation checkpointing (`checkpoint_pair_blocks`), and output head formulations, see **[ResOnly Model and SurpassOutput](#3.1)**.
+
+Sources: [src/model/surpass.py:20-192]()
+
+---
+
+## 3.2 Embedding Layer
+
+The embedding subsystem (`ResidueEmbedder`) serves as the bridge between raw inputs (such as precomputed protein Language Model representations and sequence identities) and the internal vector spaces of `ResOnly`. It projects input features into a token dimension (`dim_token`) and initializes a 2D pairwise representation (`dim_pair`) incorporating relative position encodings governed by maximum distance parameters (`r_max`).
+
+For detailed information on embedding combinations, feature dimensions, and relative positional encoding schemes, see **[Embedding Layer](#3.2)**.
+
+Sources: [src/model/surpass.py:68-72]()
+
+---
+
+## 3.3 Transformer and Attention Primitives
+
+At the heart of the 1D feature processing stream is `ResidueTransformer` [src/model/surpass.py:76-88]. It implements multi-head attention mechanisms enhanced by 2D pair biases, allowing pairwise structural context to directly modulate residue-to-residue attention weights. It incorporates QK LayerNorm (`use_qkln`) for training stability and residue-level transition expansions.
+
+For comprehensive architectural specifics regarding attention mechanisms, pair bias integration, and stable layer normalization, see **[Transformer and Attention Primitives](#3.3)**.
+
+Sources: [src/model/surpass.py:75-88]()
+
+---
+
+## 3.4 Pair Stack: Outer Product Mean and Triangle Updates
+
+To allow 1D representations to inform 2D pairwise features, SurPass uses `EfficientOuterProductMean` [src/model/surpass.py:90-96]. Additionally, geometric constraints are propagated across the pair stream using `TriangleMultiplicationOutgoing` [src/model/surpass.py:98-103], `TriangleMultiplicationIncoming` [src/model/surpass.py:105-110], and `PairTransition` [src/model/surpass.py:112-118]. These modules ensure triangle inequality constraints and relational consistency across interacting residues.
+
+For detailed equations, hidden dimension configurations (`dim_opm_inner`, `dim_triangle_hidden`), and tensor contraction details, see **[Pair Stack: Outer Product Mean and Triangle Updates](#3.4)**.
+
+Sources: [src/model/surpass.py:90-118]()
+
+---
+
+# Page: ResOnly Model and SurpassOutput
+
+# ResOnly Model and SurpassOutput
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/surpass.py](src/model/surpass.py)
+
+</details>
+
+
+
+### Purpose and Scope
+This section details the primary network architecture of the codebase, centered around the `ResOnly` module and its associated output container, `SurpassOutput`. The `ResOnly` model integrates residue-level sequence embeddings with pair-level representations through an alternating stack of residue transformers and pair-updating modules (outer product mean, triangle updates, and pair transitions). It produces multi-level predictions including distograms, residue binding logits, and protein-level interaction scores.
+
+Sources: `[src/model/surpass.py:1-194]()`
+
+---
+
+## 1. Output Container: `SurpassOutput`
+
+The `SurpassOutput` dataclass encapsulates the multi-scale predictions generated during the forward pass of the `ResOnly` network.
+
+*   `pair_logits` (`torch.Tensor`): Logits representing pairwise distances or contact distributions between residues.
+*   `residue_logits` (`torch.Tensor`): Logits indicating residue-level binding or interface propensity.
+*   `protein_logit` (`torch.Tensor`): A global logit representing the protein-protein interaction likelihood for the complex.
+*   `pair_mask` (`torch.Tensor`): Boolean mask indicating valid pairs of residues.
+
+Sources: `[src/model/surpass.py:20-27]()`
+
+---
+
+## 2. Natural Language Space to Code Entity Space: Architecture Mapping
+
+The following diagram maps high-level architectural concepts to their precise classes and modules defined in the codebase.
+
+```mermaid
+graph TD
+    A["Protein Sequence & pLM Inputs"] --> B["ResidueEmbedder src/model/components/embedder.py"]
+    B --> C["Residue Stream single_repr"]
+    B --> D["Pair Stream pair_repr"]
+    
+    C --> E["ResidueTransformer src/model/components/transformer.py"]
+    D --> F["EfficientOuterProductMean src/model/components/outer_product_mean.py"]
+    D --> G["TriangleMultiplicationOutgoing src/model/components/triangle_update.py"]
+    D --> H["TriangleMultiplicationIncoming src/model/components/triangle_update.py"]
+    D --> I["PairTransition src/model/components/primitives.py"]
+    
+    E --> J["Output Heads pair_out_linear, residue_bind_linear, protein_head"]
+    D --> J
+    J --> K["SurpassOutput src/model/surpass.py"]
+
+    subgraph "Natural Language Concepts"
+        L1["Residue Embedding"]
+        L2["Residue Transformer Stack"]
+        L3["Pair Stack Updates"]
+        L4["Multi-Scale Output Container"]
+    end
+```
+Sources: `[src/model/surpass.py:8-15]`, `[src/model/surpass.py:20-27]`, `[src/model/surpass.py:68-129]()`
+
+---
+
+## 3. Model Initialization and Hyperparameters
+
+The `ResOnly` class initializes dimensions, attention heads, and module lists for the multi-layer network.
+
+```mermaid
+graph TD
+    Init["ResOnly.__init__"] --> Check["Dimension & Head Validation"]
+    Check --> Embedder["ResidueEmbedder"]
+    Check --> Layers["Iterative Stack Construction n_layers"]
+    
+    Layers --> RT["ResidueTransformer"]
+    Layers --> EOPM["EfficientOuterProductMean"]
+    Layers --> TO["TriangleMultiplicationOutgoing"]
+    Layers --> TI["TriangleMultiplicationIncoming"]
+    Layers --> PT["PairTransition"]
+    
+    Init --> Heads["Output Heads LayerNorm & Linear"]
+    Heads --> S1["pair_out_linear"]
+    Heads --> S2["residue_bind_linear"]
+    Heads --> S3["protein_head"]
+```
+Sources: `[src/model/surpass.py:28-132]()`
+
+### Parameter Validation & Configuration
+During `__init__`, `ResOnly` enforces several structural rules:
+*   `dim_token` must be cleanly divisible by `n_heads` (`[src/model/surpass.py:48-51]()`).
+*   `num_classes` must match `xt_pair_dist_dim` (`[src/model/surpass.py:52-58]()`).
+*   `contact_bins` must be within the range `1..num_classes` (`[src/model/surpass.py:59-62]()`).
+
+Component modules are instantiated across `n_layers`:
+*   `self.residue_blocks`: A `nn.ModuleList` of `ResidueTransformer` instances (`[src/model/surpass.py:75-88]()`).
+*   `self.outer_product_mean`: A `nn.ModuleList` of `EfficientOuterProductMean` instances (`[src/model/surpass.py:90-96]()`).
+*   `self.triangle_multiplication_outgoing`: A `nn.ModuleList` of `TriangleMultiplicationOutgoing` instances (`[src/model/surpass.py:98-104]()`).
+*   `self.triangle_multiplication_incoming`: A `nn.ModuleList` of `TriangleMultiplicationIncoming` instances (`[src/model/surpass.py:105-111]()`).
+*   `self.pair_blocks`: A `nn.ModuleList` of `PairTransition` instances (`[src/model/surpass.py:112-118]()`).
+
+Parameters for OPM and pair transition linear layers are zero-initialized via `reset_parameters()` (`[src/model/surpass.py:133-142]()`).
+
+Sources: `[src/model/surpass.py:28-142]()`
+
+---
+
+## 4. Forward Pass Execution Flow
+
+The forward pass processes a residue batch dictionary, executes the alternating residue-pair block stack, and computes final outputs.
+
+```mermaid
+graph TD
+    Input["residue_batch Dict"] --> Extract["Filter Length Keys & ResidueEmbedder"]
+    Extract --> Embed["single_repr, pair_repr, mask"]
+    Embed --> LoopInit["For i in range n_layers"]
+    
+    LoopInit --> Trans["single_repr = ResidueTransformer"]
+    Trans --> PairStack["pair_repr = _apply_pair_stack i"]
+    
+    PairStack --> CheckMore{"i < n_layers - 1?"}
+    CheckMore -- Yes --> LoopInit
+    CheckMore -- No --> Heads["Compute Output Projections"]
+    
+    Heads --> PairLog["pair_logits Symmetrization & Contact Bias"]
+    Heads --> ResLog["residue_logits Residue Bind Head"]
+    Heads --> ProtLog["protein_logit Protein Head"]
+    
+    PairLog --> Output["SurpassOutput Container"]
+    ResLog --> Output
+    ProtLog --> Output
+```
+Sources: `[src/model/surpass.py:143-192]()`
+
+### Step-by-Step Data Flow
+1.  **Embedding Extraction**: Length keys (`p1_length`, `p2_length`) are filtered out of the residue batch before passing inputs to `residue_embedder` (`[src/model/surpass.py:147-152]()`).
+2.  **Mask Generation**: The returned mask is converted to a boolean tensor, and a pairwise mask (`pair_mask`) is derived via outer boolean conjunction (`[src/model/surpass.py:153-155]()`).
+3.  **Iterative Layer Stack**: For each layer up to `n_layers`:
+    *   `single_repr` is updated through `ResidueTransformer` (`[src/model/surpass.py:158-163]()`).
+    *   `pair_repr` is updated through the pair stack via `_apply_pair_stack` (`[src/model/surpass.py:164-170]()`).
+4.  **Pair Logits Projection**: Pair representations are normalized using `pair_out_layernorm`, projected via `pair_out_linear`, symmetrized, and adjusted with contact bin biases (`[src/model/surpass.py:172-180]()`).
+5.  **Residue Logits Projection**: Single representations are normalized via `residue_bind_norm` and projected through `residue_bind_linear` to produce residue-level logits, masked out for invalid positions (`[src/model/surpass.py:175-178]()`).
+6.  **Protein Logit Computation**: Global protein-level interaction scores are computed by `_protein_logit` using concatenated representations and sequence lengths (`[src/model/surpass.py:181-186]()`).
+
+Sources: `[src/model/surpass.py:143-192]()`
+
+---
+
+## 5. Output Heads and Post-Processing
+
+*   **Pair Symmetrization**: Raw pair logits are symmetrized by averaging with their transposed counterpart:
+    $$\text{logits} = \frac{\text{logits} + \text{logits}^T}{2}$$
+    `[src/model/surpass.py:173-174]()`
+*   **Protein Head**: Implemented as a sequential network consisting of a `LayerNorm` (operating on `dim_token * 3`), a `Linear` projection to `dim_token`, a `GELU` activation, and a final `Linear` projection to `1` (`[src/model/surpass.py:124-129]()`).
+
+Sources: `[src/model/surpass.py:124-129]`, `[src/model/surpass.py:172-192]()`
+
+---
+
+# Page: Embedding Layer
+
+# Embedding Layer
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/components/embedder.py](src/model/components/embedder.py)
+- [src/model/components/rotary.py](src/model/components/rotary.py)
+
+</details>
+
+
+
+## Purpose and Scope
+The embedding layer constructs initial representations for residues and residue pairs in the SurPass architecture. It processes protein language model (pLM) embeddings, categorical residue types, absolute indices, chain identifiers, and biophysical energy calculations (via CALVADOS) to produce rich starting tensors for downstream transformer and pair-stack modules.
+
+Sources: `src/model/components/embedder.py:1-203`
+
+---
+
+## Positional and Index Embeddings
+
+Positional information is integrated via sine/cosine index embeddings and relative position encodings that account for chain boundaries and sequence separations up to a maximum distance parameter `r_max`.
+
+### Absolute Index Embeddings
+The function `get_index_embedding` computes standard sinusoidal positional encodings for a given set of integer indices:
+- Takes `indices` of shape `[n]` or `[b, n]`.
+- Computes sinusoidal frequencies across dimension `edim`.
+- Returns positional embeddings of shape `[n, edim]` or `[b, n, edim]`.
+
+```python
+def get_index_embedding(indices, edim, max_len=2056):
+    ...
+```
+*Implementation reference:* `src/model/components/embedder.py:120-149`
+
+### Relative Position Encoding
+The function `relative_position_encoding` constructs pairwise relative representations combining token distance, residue index offsets, and chain identity flags:
+- `same_chain_mask`: Binary indicator of whether two residues belong to the same chain (`src/model/components/embedder.py:162`).
+- `d_residue`: Clipped residue index difference bounded by `r_max` (`src/model/components/embedder.py:166-169`).
+- `d_token`: Global position encoding offset (`src/model/components/embedder.py:175-178`).
+- Outputs a concatenated one-hot feature tensor `rel_pos` of shape `[b, n, n, 2 + 4 * (r_max + 1)]` masked by valid pair masks (`src/model/components/embedder.py:183-184`).
+
+Sources: `src/model/components/embedder.py:120-185`
+
+---
+
+## Biophysical Potential Integration (CALVADOS)
+
+To incorporate physical priors into pairwise representations, the embedding module computes residue-residue interaction energies using the CALVADOS model (Ashbaugh-Hatch hydrophobic interactions and Yukawa electrostatic potentials).
+
+- `normalize_calvados_energy`: Applies $\text{arcsinh}(E/kT)$ compression to maintain linear behavior in attractive wells while compressing Lennard-Jones walls (`src/model/components/embedder.py:30-32`).
+- `build_calvados_bin_energy_table`: Generates a cached `[20, 20, dim]` tensor of pairwise energy values mapped across distance bins (`src/model/components/embedder.py:94-116`).
+- `_cached_calvados_bin_energy_table`: Uses `lru_cache` to avoid redundant physics re-computations (`src/model/components/embedder.py:84-91`).
+
+Sources: `src/model/components/embedder.py:30-117`
+
+---
+
+## Pairwise Distance Binning
+
+Pairwise Euclidean distances computed from residue coordinates are discretized into one-hot histograms using linear binning limits:
+- `bin_pairwise_distances`: Calculates pairwise distance matrices of shape `[b, n, n]` from coordinate tensors `[b, n, 3]` and maps them to one-hot bin representations (`src/model/components/embedder.py:187-203`).
+
+Sources: `src/model/components/embedder.py:187-203`
+
+---
+
+## System-to-Code Mapping Diagrams
+
+### Diagram 1: Positional and Relative Encoding Flow
+```mermaid
+graph TD
+    A["InputIndices"] -->|GetIndexEmbedding| B["src/model/components/embedder.py:get_index_embedding"]
+    C["ResidueIndexAndChain"] -->|RelativePositionEncoding| D["src/model/components/embedder.py:relative_position_encoding"]
+    B --> E["PositionEmbeddings"]
+    D --> F["RelPosTensor"]
+    E --> G["ResidueRepresentation"]
+    F --> H["PairRepresentation"]
+```
+Sources: `src/model/components/embedder.py:120-185`
+
+### Diagram 2: Biophysical Energy and Distance Binning Pipeline
+```mermaid
+graph TD
+    A["Coordinates"] -->|BinPairwiseDistances| B["src/model/components/embedder.py:bin_pairwise_distances"]
+    C["DistanceBinsAndTemp"] -->|BuildCalvadosTable| D["src/model/components/embedder.py:build_calvados_bin_energy_table"]
+    D -->|NormalizeEnergy| E["src/model/components/embedder.py:normalize_calvados_energy"]
+    E --> F["CachedEnergyTable"]
+    B --> G["DistanceOneHotTensor"]
+    F --> H["InitialPairFeatures"]
+    G --> H
+```
+Sources: `src/model/components/embedder.py:30-117, src/model/components/embedder.py:187-203`
+
+---
+
+# Page: Transformer and Attention Primitives
+
+# Transformer and Attention Primitives
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/components/calvados_functions.py](src/model/components/calvados_functions.py)
+- [src/model/components/calvados_residues.pickle](src/model/components/calvados_residues.pickle)
+- [src/model/components/primitives.py](src/model/components/primitives.py)
+- [src/model/components/transformer.py](src/model/components/transformer.py)
+- [src/model/components/triangle_attention.py](src/model/components/triangle_attention.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+This page details the foundational building blocks, attention mechanisms, update primitives, and physical energy functions residing in `src/model/components/`. These primitives form the structural backbone of SurPass's residue and pair streams, enabling residue-level feature updates, pair-conditioned multi-head attention, geometric triangle attention, and integration with the CALVADOS coarse-grained force field.
+
+---
+
+## 1. Primitive Modules and Activation Functions
+
+SurPass implements custom neural network primitives tailored for structural biology models, featuring adaptive normalizations, gated activation functions, and transition blocks.
+
+### Adaptive Layer Normalization (`AdaptiveLayerNorm` and `AdaptiveLayerNormOutputScale`)
+`AdaptiveLayerNorm` applies a standard LayerNorm with element-wise affine parameters ($\gamma$ and $\beta$) dynamically generated from conditioning variables (e.g., global or context embeddings) via linear projections and a sigmoid activation on $\gamma$ [src/model/components/primitives.py:11-43](). `AdaptiveLayerNormOutputScale` applies zero-initialized gating to scale representations conditioned on auxiliary signals [src/model/components/primitives.py:45-73]().
+
+### Gated Linear Units and Transitions (`SwiGLU`, `Transition`, `PairTransition`)
+* **`SwiGLU`**: Splits the input tensor along the final dimension into two halves, applying the SiLU (Swish) activation function to the gate half before element-wise multiplication [src/model/components/primitives.py:75-88]().
+* **`Transition` / `PairTransition`**: Feed-forward blocks that expand hidden dimensions by an `expansion_factor` (default 4), apply `SwiGLU`, and project back to the model dimension, with an optional initial LayerNorm [src/model/components/primitives.py:90-151]().
+
+```mermaid
+graph TD
+    subcode["Code Entity Space"]
+        IN["Input Tensor (x)"] --> LN["torch.nn.LayerNorm"]
+        LN --> SWI["SwiGLU (src/model/components/primitives.py:75)"]
+        SWI --> LIN["Linear Out (src/model/components/primitives.py:106)"]
+        LIN --> MASK["Mask Multiplication"]
+    end
+    
+    style IN fill:none,stroke:#000,stroke-width:1px
+    style LN fill:none,stroke:#000,stroke-width:1px
+    style SWI fill:none,stroke:#000,stroke-width:1px
+    style LIN fill:none,stroke:#000,stroke-width:1px
+    style MASK fill:none,stroke:#000,stroke-width:1px
+```
+*Sources: `[src/model/components/primitives.py:11-151]()`*
+
+---
+
+## 2. Attention Mechanisms and QK LayerNorm
+
+Multi-head attention in SurPass incorporates query-key layer normalization (`qk_layernorm`), rotary position embeddings (`RotaryEmbedding`), and pair-wise bias terms.
+
+### `GatedAttention`
+`GatedAttention` computes standard self-attention over residue sequences with integrated rotary position embeddings and an output gating mechanism [src/model/components/transformer.py:40-138](). 
+
+* **QKV Projection**: Projects input features `d_model` into queries, keys, and values of inner dimension `n_heads * d_head` [src/model/components/transformer.py:59]() alongside a gate projection `g_proj` [src/model/components/transformer.py:61]().
+* **QK LayerNorm**: Applies `nn.LayerNorm` independently to queries and keys prior to rotary embedding application to stabilize attention logits [src/model/components/transformer.py:64-70]().
+* **Rotary Embedding**: Applies `RotaryEmbedding` to the unflattened head dimensions of $Q$ and $K$ [src/model/components/transformer.py:71-80]().
+* **Scaled Dot-Product Attention**: Leverages `torch.nn.functional.scaled_dot_product_attention` (SDPA) with key padding masks [src/model/components/transformer.py:114-121]().
+* **Output Gating**: Multiplies attention outputs by the sigmoid of the gate projection `g` before the final linear projection [src/model/components/transformer.py:135]().
+
+### `PairBiasAttention`
+`PairBiasAttention` integrates pair-wise representations (`pair_feats`) directly into the attention score matrix as additive bias terms [src/model/components/transformer.py:141-194]().
+
+* **Pair Bias Projection**: When `pair_dim` is provided, pair features are normalized and projected via `nn.Linear(pair_dim, heads, bias=False)` to yield per-head spatial biases [src/model/components/transformer.py:171-175]().
+* **Logit Modification**: The projected pair bias is added directly to the $QK^T$ attention matrix before softmax normalization.
+
+```mermaid
+graph TD
+    subcode["Attention Architecture & Code Entities"]
+        InputNode["node_feats (b,n,d_s)"] --> QKV["to_qkv (Transformer.py:165)"]
+        InputPair["pair_feats (b,n,n,d_e)"] --> PairNorm["pair_norm (Transformer.py:173)"]
+        PairNorm --> ToBias["to_bias (Transformer.py:172)"]
+        QKV --> QKLN["q_layer_norm / k_layer_norm (Transformer.py:169)"]
+        QKLN --> QKMatMul["Scaled Dot Product + Pair Bias"]
+        ToBias --> QKMatMul
+        QKMatMul --> Gate["to_g Output Gate (Transformer.py:166)"]
+        Gate --> OutNode["to_out_node (Transformer.py:167)"]
+    end
+
+    style InputNode fill:none,stroke:#000,stroke-width:1px
+    style InputPair fill:none,stroke:#000,stroke-width:1px
+    style QKV fill:none,stroke:#000,stroke-width:1px
+    style PairNorm fill:none,stroke:#000,stroke-width:1px
+    style ToBias fill:none,stroke:#000,stroke-width:1px
+    style QKLN fill:none,stroke:#000,stroke-width:1px
+    style QKMatMul fill:none,stroke:#000,stroke-width:1px
+    style Gate fill:none,stroke:#000,stroke-width:1px
+    style OutNode fill:none,stroke:#000,stroke-width:1px
+```
+*Sources: `[src/model/components/transformer.py:40-194]()`*
+
+---
+
+## 3. Triangle Attention Primitives
+
+To update pair representations along geometric triangle inequalities (AlphaFold2/OpenFold style), SurPass implements specialized triangle attention modules.
+
+### `BiasGatedAttention`
+`BiasGatedAttention` executes multi-head attention on pair tensors `[*, I, J, C]` using multiple additive bias tensors (e.g., masking and triangle bias) and an output gating projection [src/model/components/triangle_attention.py:12-56]().
+
+### `TriangleAttention` (`TriangleAttentionStartingNode` & `TriangleAttentionEndingNode`)
+`TriangleAttention` operates on pair representations `[*, I, J, C_in]` by treating either starting nodes or ending nodes as the sequence dimension [src/model/components/triangle_attention.py:58-164]().
+
+* **Orientation**: 
+  * `TriangleAttentionStartingNode` sets `starting=True` (Algorithm 13 equivalent) [src/model/components/triangle_attention.py:151-156]().
+  * `TriangleAttentionEndingNode` sets `starting=False` (Algorithm 14 equivalent), transposing dimensions `-2` and `-3` prior to processing [src/model/components/triangle_attention.py:159-164]().
+* **Triangle Bias**: Computes a linear projection of LayerNorm-normalized pair features, permutes dimensions, and adds it as an attention bias alongside sequence masks [src/model/components/triangle_attention.py:138-139]().
+* **Chunking**: Supports optional sequence chunking (`_chunk`) to reduce memory consumption during large-scale pair updates [src/model/components/triangle_attention.py:96-115]().
+
+*Sources: `[src/model/components/triangle_attention.py:1-164]()`*
+
+---
+
+## 4. CALVADOS Force Field and Energy Functions
+
+SurPass includes support for the CALVADOS coarse-grained polymer physics model (`calvados_functions.py`), enabling physical energy calculations based on residue-specific interaction parameters [src/model/components/calvados_functions.py:1-121]().
+
+### `CalvadosModel` Dataclass
+Encapsulates physical interaction maps and parameters [src/model/components/calvados_functions.py:9-19]():
+* `sigmamap`: DataFrame of pairwise Lennard-Jones distance parameters $\sigma_{ij}$ [src/model/components/calvados_functions.py:11]().
+* `lambdamap`: DataFrame of hydrophobicity scaling parameters $\lambda_{ij}$ [src/model/components/calvados_functions.py:12]().
+* `yukawa_eps`: DataFrame of electrostatic coupling amplitudes [src/model/components/calvados_functions.py:13]().
+* `yukawa_kappa`: Debye-Huckel screening parameter derived from salt concentration [src/model/components/calvados_functions.py:14]().
+
+### Key Functions
+* `load_calvados_model`: Loads residue pickle tables (`calvados_residues.pickle`), adjusts histidine charge states based on pH, computes Bjerrum length, and constructs pairwise parameter matrices [src/model/components/calvados_functions.py:34-80]().
+* `compute_ashbaugh_hatch`: Calculates the Ashbaugh-Hatch functional form for hydrophobicity-scaled Lennard-Jones interactions with switching functions [src/model/components/calvados_functions.py:100-110]().
+* `compute_yukawa`: Computes screened electrostatic interactions via Yukawa potential [src/model/components/calvados_functions.py:112-116]().
+* `compute_calvados_energy`: Combines Ashbaugh-Hatch and Yukawa terms to yield total coarse-grained interaction energies [src/model/components/calvados_functions.py:118-121]().
+
+```mermaid
+graph TD
+    subcode["CALVADOS Physics Integration"]
+        Pickle["calvados_residues.pickle"] --> Load["load_calvados_model (calvados_functions.py:34)"]
+        Load --> Model["CalvadosModel Dataclass (calvados_functions.py:9)"]
+        Model --> AH["compute_ashbaugh_hatch (calvados_functions.py:100)"]
+        Model --> YU["compute_yukawa (calvados_functions.py:112)"]
+        AH --> Energy["compute_calvados_energy (calvados_functions.py:118)"]
+        YU --> Energy
+    end
+
+    style Pickle fill:none,stroke:#000,stroke-width:1px
+    style Load fill:none,stroke:#000,stroke-width:1px
+    style Model fill:none,stroke:#000,stroke-width:1px
+    style AH fill:none,stroke:#000,stroke-width:1px
+    style YU fill:none,stroke:#000,stroke-width:1px
+    style Energy fill:none,stroke:#000,stroke-width:1px
+```
+*Sources: `[src/model/components/calvados_functions.py:1-121](), [src/model/components/calvados_residues.pickle:1-8]()`*
+
+---
+
+# Page: Pair Stack: Outer Product Mean and Triangle Updates
+
+# Pair Stack: Outer Product Mean and Triangle Updates
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/components/outer_product_mean.py](src/model/components/outer_product_mean.py)
+- [src/model/components/triangle_update.py](src/model/components/triangle_update.py)
+- [src/model/optimizer.py](src/model/optimizer.py)
+- [src/utils/model_utils.py](src/utils/model_utils.py)
+- [src/utils/nan_monitor.py](src/utils/nan_monitor.py)
+
+</details>
+
+
+
+This section details the components responsible for updating the pair representation tensor ($Z$) within the SurPass architecture. Specifically, it covers the memory-efficient outer product mean (`EfficientOuterProductMean`), triangle multiplicative updates for outgoing and incoming paths (`TriangleMultiplicationOutgoing` and `TriangleMultiplicationIncoming`), numerical stabilization via `_stable_triangle_matmul`, and their coordination within the model's pair stack.
+
+---
+
+## 1. Efficient Outer Product Mean (`EfficientOuterProductMean`)
+
+The outer product mean translates token-level (residue stream) representations into pair-level updates without materializing the massive intermediate $[N_{res}, N_{res}, C_{hidden}, C_{hidden}]$ tensor required by traditional implementations. 
+
+`EfficientOuterProductMean` normalizes the input token representation, projects it to a hidden channel dimension without bias, and computes the outer product using batched Einstein summation (`torch.einsum`) [src/model/components/outer_product_mean.py:25-47]().
+
+```mermaid
+graph TD
+    A["InputTokenRepr"] --> B["nn.LayerNorm"]
+    B --> C["LinearNoBias"]
+    C --> D["Masking"]
+    D --> E["ProjectedEinsum"]
+    E --> F["OuterProductEinsum"]
+    F --> G["OutputPairTensor"]
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+```
+*Diagram 1: Data flow in `EfficientOuterProductMean` mapping conceptual steps to tensor operations.*
+
+Sources: `src/model/components/outer_product_mean.py:25-47`
+
+---
+
+## 2. Triangle Multiplicative Updates
+
+Triangle updates propagate structural information across graph edges (pairs) by enforcing triangular inequalities. SurPass implements both outgoing and incoming variants derived from AlphaFold architectures [src/model/components/triangle_update.py:24-121]().
+
+### Base Class: `TriangleMultiplicativeUpdate`
+The base module performs LayerNorm on the input pair tensor $z$, computes two separate linear projections $a$ and $b$ modulated by gating sigmoid networks, combines them, applies another LayerNorm and output projection, and gates the final residual output [src/model/components/triangle_update.py:24-90]().
+
+### Outgoing Update (`TriangleMultiplicationOutgoing`)
+Implements the outgoing triangle multiplicative update by overriding `_combine_projections` using `_stable_triangle_matmul` on permuted final dimensions [src/model/components/triangle_update.py:92-106]().
+
+### Incoming Update (`TriangleMultiplicationIncoming`)
+Implements the incoming triangle multiplicative update by modifying the transposition permutation order prior to contractive multiplication [src/model/components/triangle_update.py:108-121]().
+
+```mermaid
+graph TD
+    H["PairInputZ"] --> I["LayerNormIn"]
+    I --> J["ProjectionsAandB"]
+    J --> K["CombineProjections"]
+    K --> L["StableTriangleMatmul"]
+    L --> M["LayerNormOut"]
+    M --> N["GatedOutputZ"]
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+```
+*Diagram 2: Processing pipeline for `TriangleMultiplicativeUpdate` subclasses.*
+
+Sources: `src/model/components/triangle_update.py:24-122`
+
+---
+
+## 3. Stable Triangle Matrix Multiplication
+
+To prevent numerical overflow or `Inf` propagation through LayerNorm layers during matrix contraction over the hidden dimension $K$, `_stable_triangle_matmul` executes the contraction in single-precision (`fp32`) and scales the output by $\frac{1}{\sqrt{K}}$ [src/model/components/triangle_update.py:15-22]().
+
+```python
+def _stable_triangle_matmul(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    k = int(a.shape[-1])
+    out = torch.matmul(a.float(), b.float())
+    if k > 0:
+        out = out * (float(k) ** -0.5)
+    return out
+```
+
+Sources: `src/model/components/triangle_update.py:15-22`
+
+---
+
+## 4. Code Entity Mapping & Integration
+
+The following mapping associates the natural language concepts of pair stack operations with their concrete classes and helper functions in the codebase.
+
+| Conceptual Operation / Component | Code Entity (Class / Function) | File Path |
+| :--- | :--- | :--- |
+| Memory-Efficient OPM | `EfficientOuterProductMean` | `src/model/components/outer_product_mean.py:25` |
+| Standard Chunked OPM | `OuterProductMean` | `src/model/components/outer_product_mean.py:49` |
+| Stable Triangle Matmul | `_stable_triangle_matmul` | `src/model/components/triangle_update.py:15` |
+| Triangle Outgoing Update | `TriangleMultiplicationOutgoing` | `src/model/components/triangle_update.py:92` |
+| Triangle Incoming Update | `TriangleMultiplicationIncoming` | `src/model/components/triangle_update.py:108` |
+| Tensor Dimension Permutation | `permute_final_dims` | `src/model/components/triangle_update.py:9` |
+
+Sources: `src/model/components/outer_product_mean.py:25-75`, `src/model/components/triangle_update.py:9-122`
+
+---
+
+# Page: Training System
+
+# Training System
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/train.py](src/train.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+The Training System of SurPass orchestrates end-to-end model optimization, coordinating distributed data parallelism, multi-objective loss computation, specialized parameter grouping, learning rate scheduling, and Exponential Moving Average (EMA) weight tracking [src/train.py:1-36](). It binds dataset pipelines to the `ResOnly` architecture [src/train.py:35](), supervising both residue-level and inter-chain pairwise representations [src/train.py:168-182]().
+
+This page provides a high-level overview of the training infrastructure. For detailed technical specifications, implementation routines, and mathematical formulations, refer to the child pages:
+- [Training Loop and Distributed Execution](#4.1)
+- [Loss Functions and Objectives](#4.2)
+- [Optimizer, LR Schedules and EMA](#4.3)
+
+---
+
+## Architecture to Code Mapping
+
+The following diagram illustrates how conceptual training operations map directly to codebase entities within `src/train.py`, `src/model/loss.py`, `src/model/optimizer.py`, and `src/model/ema.py`.
+
+```mermaid
+graph TD
+    subgraph "Natural Language Space"
+      A["Distributed Training Setup"] --> B["Epoch Execution & Logging"]
+      B --> C["Multi-Objective Loss Computation"]
+      C --> D["Optimizer & Parameter Grouping"]
+      D --> E["Shadow Weight Maintenance"]
+    end
+
+    subgraph "Code Entity Space"
+      A --> F["src/utils/ddp_utils.py:seed_everything"]
+      A --> G["torch.nn.parallel.DistributedDataParallel"]
+      B --> H["src/train.py:main"]
+      C --> I["src/model/loss.py:FocalCELoss"]
+      C --> J["src/model/loss.py:TverskyLoss"]
+      D --> K["src/model/optimizer.py:get_optimizer"]
+      D --> L["src/model/optimizer.py:get_lr_scheduler"]
+      E --> M["src/model/ema.py:EMAWrapper"]
+    end
+```
+*Sources: [src/train.py:1-36](), [src/model/loss.py:1-50](), [src/model/optimizer.py:1-50](), [src/model/ema.py:1-40]()*
+
+---
+
+## 4.1 Training Loop and Distributed Execution
+
+The training entrypoint is anchored in `src/train.py`, managing distributed execution across multiple ranks using PyTorch DDP (`DistributedDataParallel`) [src/train.py:11](). It initializes environment seeds [src/train.py:36](), constructs distributed dataloaders with `DistributedWeightedSampler` [src/train.py:20](), executes training and evaluation epochs, handles gradient accumulation, and logs metrics (such as AUROC and AUPRC via scikit-learn [src/train.py:7-112]()) to Weights & Biases (`wandb`) [src/train.py:15-18]().
+
+For detailed coverage of the training loop, DDP configuration, epoch cycles, checkpoint management, and metrics evaluation, see [Training Loop and Distributed Execution](#4.1).
+
+```mermaid
+graph TD
+    Start["Hydra Config"] --> Init["src/train.py:main"]
+    Init --> DDP["src/utils/ddp_utils.py:init_distributed"]
+    DDP --> Load["src/data/collate.py:get_dataloader"]
+    Load --> Loop["Epoch Training Loop"]
+    Loop --> Forward["ResOnly Forward Pass"]
+    Forward --> Loss["_compute_pair_losses"]
+    Loss --> Backward["Backward & Step"]
+    Backward --> Log["wandb Logging & Checkpoint"]
+```
+*Sources: [src/train.py:6-36](), [src/data/collate.py:21-25]() *
+
+---
+
+## 4.2 Loss Functions and Objectives
+
+SurPass optimizes complex protein-protein interactions using a composite loss formulation defined in `src/model/loss.py`. The objective suite combines distogram supervision via Cross-Entropy, Focal loss, and Mean Absolute Error (MAE) [src/train.py:23-32](), along with Tversky loss [src/train.py:29]() to handle class imbalance in contact maps. Specialized binding losses (`ResidueBindLoss`, `ProteinBindLoss`) [src/train.py:27-28]() and consistency regularizers [src/train.py:24]() supervise inter-chain and intra-chain spatial relationships.
+
+For a thorough breakdown of target generation, distance binning, masking strategies, and loss equations, see [Loss Functions and Objectives](#4.2).
+
+```mermaid
+graph LR
+    Outputs["SurpassOutput"] --> Dist["Distogram CE/Focal/MAE"]
+    Outputs --> Tversky["Tversky Loss"]
+    Outputs --> ResBind["Residue Bind Loss"]
+    Outputs --> ProtBind["Protein Bind Loss"]
+    Outputs --> Consist["Consistency Loss"]
+    Dist --> Total["Total Combined Loss"]
+    Tversky --> Total
+    ResBind --> Total
+    ProtBind --> Total
+    Consist --> Total
+```
+*Sources: [src/train.py:23-32](), [src/model/loss.py:1-100]()*
+
+---
+
+## 4.3 Optimizer, LR Schedules and EMA
+
+Optimization and hyperparameter scheduling are modularized in `src/model/optimizer.py` and `src/model/ema.py`. The `get_optimizer` function constructs an `AdamW` optimizer with customized parameter grouping (e.g., separating weight decay for normalization layers or biases) [src/train.py:34](). Learning rate scheduling supports AlphaFold3-style warmups and cosine decay schedules via `get_lr_scheduler` [src/train.py:34](). Furthermore, `EMAWrapper` maintains shadow copies of model weights to stabilize evaluation and inference performance [src/train.py:33]().
+
+For full details on parameter filtering, optimizer configuration, schedule curves, and EMA weight updating rules, see [Optimizer, LR Schedules and EMA](#4.3).
+
+```mermaid
+graph TD
+    Params["Model Parameters"] --> Group["src/model/optimizer.py:get_optimizer"]
+    Group --> Opt["AdamW Optimizer"]
+    Opt --> Sched["src/model/optimizer.py:get_lr_scheduler"]
+    Sched --> Update["Parameter Update"]
+    Update --> EMA["src/model/ema.py:EMAWrapper"]
+```
+*Sources: [src/train.py:33-34](), [src/model/optimizer.py:1-60](), [src/model/ema.py:1-49]()*
+
+---
+
+# Page: Training Loop and Distributed Execution
+
+# Training Loop and Distributed Execution
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/train.py](src/train.py)
+- [src/utils/ddp_utils.py](src/utils/ddp_utils.py)
+
+</details>
+
+
+
+This page documents the training system entry point, distributed data parallel (DDP) initialization, epoch execution routines (`train_epoch` and `evaluate_epoch`), gradient accumulation, checkpoint management, Weights & Biases (`wandb`) integration, and performance metric computation.
+
+---
+
+## 1. Initialization and Distributed Execution Setup
+
+The training pipeline is initiated via the Hydra-configured entry point function `main()` in `src/train.py`. The setup process configures deterministic random seeding, detects and initializes distributed training environments, wraps models with PyTorch's `DistributedDataParallel` (DDP), and instantiates optimizers, learning rate schedulers, and exponential moving average (EMA) wrappers.
+
+Distributed execution metadata is managed by the `DistWrapper` class [src/utils/ddp_utils.py:12-34](), which inspects environment variables like `RANK`, `LOCAL_RANK`, `WORLD_SIZE`, and `LOCAL_WORLD_SIZE`.
+
+```mermaid
+graph TD
+    A["Hydra Config (cfg)"] --> B["seed_everything()"]
+    B --> C["DistWrapper (src/utils/ddp_utils.py)"]
+    C --> D["torch.distributed.init_process_group"]
+    D --> E["ResOnly Model Initialization"]
+    E --> F["DistributedDataParallel (DDP)"]
+    F --> G["get_optimizer() & get_lr_scheduler()"]
+    G --> H["EMAWrapper Initialization"]
+```
+*Sources: [src/train.py:1-50](), [src/utils/ddp_utils.py:1-49]()*
+
+The function `seed_everything(seed, deterministic)` sets random seeds across `random`, `numpy`, and `torch`, and configures CuDNN determinism when requested [src/utils/ddp_utils.py:37-49](). Log messages are filtered by rank via `log_info(message)` to ensure only rank 0 writes to standard output [src/train.py:47-50]().
+
+---
+
+## 2. Epoch Execution: Training and Evaluation Loops
+
+Data loading leverages distributed sampling (`DistributedWeightedSampler`) combined with `get_dataloader` [src/train.py:20-21](). Tensors are moved to the target hardware accelerator device using `to_device(obj, device)` [src/train.py:60-74](), supporting nested dictionaries and individual tensors.
+
+```mermaid
+graph TD
+    A["DataLoader Batches"] --> B["to_device(batch, device)"]
+    B --> C["Forward Pass: ResOnly"]
+    C --> D["SurpassOutput"]
+    D --> E["_compute_pair_losses()"]
+    E --> F["Backward Pass & Gradient Accumulation"]
+    F --> G["Optimizer Step & LR Scheduler"]
+    G --> H["EMAWrapper Update"]
+```
+*Sources: [src/train.py:60-193]()*
+
+During the training epoch:
+1. Batches are fetched from the distributed data loader.
+2. Inputs are transferred to the accelerator device using `to_device` [src/train.py:60-74]().
+3. The forward pass computes residue and pair representations through the `ResOnly` model, returning a `SurpassOutput` container [src/train.py:35]().
+4. Losses are computed via helper routines like `_compute_pair_losses` [src/train.py:168-193](), which evaluates specific loss terms (such as distogram cross-entropy, focal loss, Tversky loss, and binding objectives).
+5. Gradient accumulation and optimizer stepping update model weights, followed by EMA shadow weight updates via `EMAWrapper` [src/train.py:33]().
+
+---
+
+## 3. Metrics, Logging, and Checkpointing
+
+Evaluation routines assess model performance on validation sets without updating model weights. Key validation tasks include binary classification metrics calculation and residue/protein-level contact scoring.
+
+```mermaid
+graph TD
+    A["Model Logits / Output"] --> B["pair_bind_scores()"]
+    B --> C["_binary_classification_metrics()"]
+    C --> D["AUROC & AUPRC Calculation"]
+    D --> E["Wandb Logging"]
+    E --> F["Checkpoint Saving"]
+```
+*Sources: [src/train.py:77-113](), [src/train.py:140-165]()`
+
+### Key Evaluation Functions
+* `_binary_classification_metrics(scores, target, positive_weight)`: Computes Receiver Operating Characteristic Area Under Curve (AUROC) and Precision-Recall Area Under Curve (AUPRC) using scikit-learn (`roc_curve`, `auc`, `average_precision_score`), supporting optional positive class weighting [src/train.py:92-113]().
+* `pair_bind_scores(logits, pair_mask, p1_length, contact_bins, ppi_score_threshold, p2_length)`: Converts distogram logits into contact probabilities via softmax, applies inter-chain masks via `inter_chain_pair_mask` [src/train.py:22](), and extracts maximum binding probabilities (`p_bind`) and contact counts (`n_contacts`) [src/train.py:140-165]().
+* `_region_masks(pair_mask, label_mask, p1_length, p2_length)`: Separates contact and pair maps into intra-chain and inter-chain regions to isolate protein-protein interaction (PPI) supervision signals [src/train.py:115-137]().
+
+Logging is integrated with `wandb` (Weights & Biases) when available [src/train.py:15-18](), tracking training loss components, learning rates, and validation metrics across distributed ranks. Checkpoints capture model weights, optimizer states, scheduler states, and EMA parameters.
+
+*Sources: [src/train.py:1-193](), [src/utils/ddp_utils.py:1-49]()*
+
+---
+
+# Page: Loss Functions and Objectives
+
+# Loss Functions and Objectives
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [configs/train.yaml](configs/train.yaml)
+- [src/model/loss.py](src/model/loss.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+This page documents the loss functions, target generation schemes, masking strategies, and supervision objectives implemented in SurPass for training protein-protein interaction (PPI) and inter-chain contact prediction models. The loss architecture balances local intra-chain geometry with global inter-chain contacts using a combination of distogram cross-entropy, focal cross-entropy, mean absolute error (MAE) on expected distances, Tversky similarity for contact maps, residue-level and protein-level binding heads, and consistency regularizers.
+
+Sources: [`configs/train.yaml:69-91](), [`src/model/loss.py:1-197]()
+
+---
+
+## Loss Configuration & Hyperparameters
+
+The loss configuration is defined in `configs/train.yaml` under the `loss` block. These hyperparameters dictate the relative weighting of intra-chain versus inter-chain components, focal modulation parameters, and specialized binding objectives.
+
+```yaml
+loss:
+  intra: 0.3
+  inter: 0.7
+  inter_neg_per_pos: 10.0
+  focal:
+    weight: 1.0
+    gamma: 1.5
+    alpha: 5.0
+  mae:
+    weight: 0.2
+  tversky:
+    weight: 1.0
+    alpha: 0.7
+    beta: 0.3
+  residue_bind:
+    weight: 1.0
+    neg_per_pos: 0.0
+    negative_pair_weight: 0.25
+  protein:
+    weight: 1.0
+  consistency:
+    weight: 0.1
+```
+
+Sources: [`configs/train.yaml:69-91]()
+
+---
+
+## Target Generation and Distance Binning
+
+Pairwise distances are discretized into bins to formulate classification and regression targets. The function `distance_bin_centers()` computes the center of each distance bin given linear spacing limits.
+
+```mermaid
+graph TD
+    A["Distance Limits (bin_start, bin_end, bin_count)"] --> B["distance_bin_centers()"]
+    B --> C["Linear Bin Edges (torch.linspace)"]
+    C --> D["First & Last Bin Width Extrapolation"]
+    D --> E["Bin Center Tensors (torch.Tensor)"]
+
+    style A fill:#fff,stroke:#333,stroke-width:2px
+    style B fill:#fff,stroke:#333,stroke-width:2px
+    style C fill:#fff,stroke:#333,stroke-width:2px
+    style D fill:#fff,stroke:#333,stroke-width:2px
+    style E fill:#fff,stroke:#333,stroke-width:2px
+```
+*Figure 1: Natural Language to Code Entity Space mapping for distance binning.*
+
+The distance bin centers and supervision flags are initialized in `src/model/loss.py`:
+- `distance_bin_centers()` [src/model/loss.py:6-26]: Constructs bin centers for regression and evaluation.
+- `distogram_supervision()` [src/model/loss.py:78-92]: Derives contact indicators (`is_contact`), softmax probabilities (`pair_probs`), and contact probabilities (`contact_probability`) from raw network logits.
+
+Sources: [`src/model/loss.py:6-92]()
+
+---
+
+## Distance and Contact Loss Modules
+
+SurPass employs several loss modules operating on pairwise logits and target bins, partitioned by intra-chain and inter-chain masks.
+
+### 1. Distogram Cross-Entropy (`DistogramCELoss`)
+Calculates masked cross-entropy over pairwise distance bins across the predicted logit tensor and target bins [src/model/loss.py:113-129].
+
+```python
+class DistogramCELoss(nn.Module):
+    def forward(self, logits, target_bins, mask):
+        loss = F.cross_entropy(
+            logits.permute(0, 3, 1, 2),
+            target_bins.long(),
+            reduction="none",
+        )
+        return _masked_mean(loss, mask)
+```
+
+### 2. Focal Cross-Entropy (`FocalCELoss`)
+Applies modulating factors to address class imbalance between contact and non-contact pairs, scaling losses by a contact-bin `alpha` factor and modulating by `(1 - p_t)^gamma` [src/model/loss.py:131-172]. It returns separate intra-chain and inter-chain losses.
+
+### 3. Distogram Mean Absolute Error (`DistogramMAELoss`)
+Computes the L1 error between the expected distance (calculated via softmax probabilities over `bin_centers`) and the target bin center, masked appropriately [src/model/loss.py:174-197].
+
+```mermaid
+graph TD
+    A["Raw Model Logits (logits)"] --> B["distogram_supervision()"]
+    B --> C["DistogramCELoss"]
+    B --> D["FocalCELoss"]
+    B --> E["DistogramMAELoss"]
+    C --> F["Combined Loss Total"]
+    D --> F
+    E --> F
+
+    style A fill:#fff,stroke:#333,stroke-width:2px
+    style B fill:#fff,stroke:#333,stroke-width:2px
+    style C fill:#fff,stroke:#333,stroke-width:2px
+    style D fill:#fff,stroke:#333,stroke-width:2px
+    style E fill:#fff,stroke:#333,stroke-width:2px
+    style F fill:#fff,stroke:#333,stroke-width:2px
+```
+*Figure 2: Loss computation data flow through supervision and individual loss modules.*
+
+Sources: [`src/model/loss.py:113-197]()
+
+---
+
+## Masking and Partitioning
+
+Loss calculations are strictly governed by masks to isolate intra-chain contacts from inter-chain interactions:
+- **Intra-chain Mask (`intra_mask`)**: Restricts loss evaluation to residue pairs belonging to the same protein chain.
+- **Inter-chain Mask (`inter_mask`)**: Restricts loss evaluation to residue pairs spanning different interacting chains.
+- **Masked Mean (`_masked_mean`)**: Normalizes loss sums by the count of valid unmasked elements, clamping the denominator to a minimum of `1.0` to avoid division by zero [src/model/loss.py:29-32].
+
+Sources: [`src/model/loss.py:29-32](), [`src/model/loss.py:131-197]()
+
+---
+
+# Page: Optimizer, LR Schedules and EMA
+
+# Optimizer, LR Schedules and EMA
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/components/triangle_update.py](src/model/components/triangle_update.py)
+- [src/model/ema.py](src/model/ema.py)
+- [src/model/optimizer.py](src/model/optimizer.py)
+- [src/utils/model_utils.py](src/utils/model_utils.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+This page documents the training optimization infrastructure in SurPass, located in `src/model/optimizer.py` and `src/model/ema.py`. It covers parameter grouping strategies for weight decay in `get_adamw`, standard and fused optimizer initialization (`get_optimizer`), learning rate schedules (`AlphaFold3LRScheduler` and `CosineAnnealingWithWarmup`), and shadow weight management via `EMAWrapper`.
+
+---
+
+## 1. Optimizer Configuration and Parameter Grouping
+
+The optimization setup distinguishes between weights that benefit from L2 regularization (weight decay) and those that do not (biases and layer normalization parameters). 
+
+### Parameter Grouping in `get_adamw`
+The function `get_adamw()` inspects model parameters that require gradients (`[src/model/optimizer.py:30-33]()`). It separates them into two distinct groups based on tensor dimensionality (`[src/model/optimizer.py:34-41]()`):
+- **Decay Parameters**: Tensors with dimensionality $\ge 2$ (such as weight matrices in matrix multiplications and embedding layers) receive the specified `weight_decay`.
+- **Non-Decay Parameters**: Tensors with dimensionality $< 2$ (such as biases and LayerNorm parameters) have their `weight_decay` set explicitly to `0.0`.
+
+Additionally, `get_adamw()` checks for CUDA availability and fused optimizer support in `torch.optim.AdamW`, enabling fused execution (`fused=True`) when possible (`[src/model/optimizer.py:50-57]()`).
+
+```mermaid
+graph TD
+    Model["torch.nn.Module"] -->|named_parameters| Filter["Filter requires_grad=True"]
+    Filter -->|dim >= 2| Decay["decay_params (Weights & Embeddings)"]
+    Filter -->|dim < 2| NoDecay["nodecay_params (Biases & LayerNorm)"]
+    Decay -->|weight_decay=wd| Group["optim_groups"]
+    NoDecay -->|weight_decay=0.0| Group
+    Group -->|Check Fused| AdamW["torch.optim.AdamW src/model/optimizer.py:54-56"]
+```
+*Sources: [src/model/optimizer.py:10-59]()*, *[src/model/optimizer.py:62-84]()*
+
+---
+
+## 2. Learning Rate Schedulers
+
+SurPass provides a factory function `get_lr_scheduler()` (`[src/model/optimizer.py:170-192]()`) that instantiates learning rate schedulers compatible with PyTorch's `LRScheduler` interface.
+
+### AlphaFold3 Learning Rate Scheduler
+`AlphaFold3LRScheduler` implements the training schedule described in AlphaFold 3 (`[src/model/optimizer.py:132-141]()`). It features:
+- A linear warmup phase during the initial `warmup_steps` (`[src/model/optimizer.py:151-152]()`).
+- Periodic step-wise decays every `decay_every_n_steps`, scaling the learning rate by `decay_factor` (`[src/model/optimizer.py:154-155]()`).
+
+### Cosine Annealing with Warmup
+`CosineAnnealingWithWarmup` provides a smooth decay profile (`[src/model/optimizer.py:87-114]()`):
+- Linear warmup up to `warmup_steps` (`[src/model/optimizer.py:104-105]()`).
+- Cosine decay curve down to `min_lr` across `decay_steps` (`[src/model/optimizer.py:109-114]()`).
+
+```mermaid
+graph TD
+    SchedulerFactory["get_lr_scheduler() src/model/optimizer.py:170-192"] -->|lr_scheduler='af3'| AF3["AlphaFold3LRScheduler src/model/optimizer.py:132-169"]
+    SchedulerFactory -->|lr_scheduler='cosine_annealing'| Cosine["CosineAnnealingWithWarmup src/model/optimizer.py:87-130"]
+    AF3 -->|Step Check| AF3Calc["Linear Warmup or Step Decay Formula"]
+    Cosine -->|Step Check| CosineCalc["Linear Warmup or Cosine Curve Formula"]
+```
+*Sources: [src/model/optimizer.py:87-192]()*
+
+---
+
+## 3. Exponential Moving Average (EMA) Wrapper
+
+To stabilize model evaluation and improve generalization, `EMAWrapper` (`[src/model/ema.py:4-50]`) maintains an exponential moving average of model weights.
+
+### Lifecycle and Operations
+1. **Registration**: `register()` clones the initial parameters of the model into a `self.shadow` dictionary (`[src/model/ema.py:23-26]()`).
+2. **Update**: `update()` computes the exponential average at each step:
+   $$\theta_{\text{shadow}} = (1 - \text{decay}) \cdot \theta_{\text{param}} + \text{decay} \cdot \theta_{\text{shadow}}$$
+   Parameters can be selectively filtered using `mutable_param_keywords` (`[src/model/ema.py:27-38]()`).
+3. **Shadow Application**: `apply_shadow()` backs up current model weights to `self.backup` and swaps them with `self.shadow` weights for evaluation (`[src/model/ema.py:39-44]()`).
+4. **Restoration**: `restore()` puts the backed-up training weights back into the model (`[src/model/ema.py:45-49]()`).
+
+```mermaid
+graph TD
+    Init["EMAWrapper.__init__() src/model/ema.py:4-14"] -->|register()| Reg["Clone weights to self.shadow src/model/ema.py:23-26"]
+    Reg -->|Training Step| Upd["EMAWrapper.update() src/model/ema.py:27-38"]
+    Upd -->|Evaluate Model| Apply["EMAWrapper.apply_shadow() src/model/ema.py:39-44"]
+    Apply -->|Resume Training| Rest["EMAWrapper.restore() src/model/ema.py:45-50"]
+```
+*Sources: [src/model/ema.py:4-49]()*
+
+---
+
+# Page: Inference and Evaluation
+
+# Inference and Evaluation
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/inference.py](src/inference.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+Section 5 covers the execution of trained SurPass models on new or benchmark protein pairs, producing protein-, residue-, and pair-level interaction predictions. This workflow handles raw input data ingestion from FASTA files and precomputed protein language model (pLM) embeddings, supports long-sequence tiling via windowing strategies, and provides diagnostic utilities for monitoring tensors and visualizing distance maps.
+
+As a parent page, this section provides a high-level overview of the inference ecosystem. For in-depth technical details, refer to the following child pages:
+- [Inference Pipeline](#5.1) — Details on `InferencePairDataset`, dataset loading, prediction heads, and evaluation outputs (`[src/inference.py:157-192]()`).
+- [Long-Sequence Windowing](#5.2) — Details on `src/utils/ppi_windows.py` and sequence tiling (`[src/utils/ppi_windows.py:1-50]()`).
+- [Preview and Debugging Utilities](#5.3) — Details on `src/preview.py` for distance map visualization and debugging (`[src/preview.py:1-50]()`).
+
+```mermaid
+graph TD
+    A["Input Data: FASTA & Embeddings"] --> B["Dataset Loading: InferencePairDataset"]
+    B --> C["Model Execution: ResOnly"]
+    C --> D["Prediction Heads: protein, residue, pair"]
+    D --> E["Evaluation & Metrics: TSV/CSV/.pt outputs"]
+
+    sub5_1["Inference Pipeline"] --> A
+    sub5_1 --> B
+    sub5_1 --> C
+    sub5_1 --> D
+    sub5_1 --> E
+```
+*Figure 5.1: High-level overview of the inference and evaluation pipeline bridging input data files to model prediction outputs.*
+
+Sources: `[src/inference.py:1-192]()`
+
+---
+
+## 5.1. Inference Pipeline
+
+The inference pipeline ingests test set manifests (TSVs) specifying protein pairs, matches them with FASTA sequence records, and loads precomputed pLM embeddings from disk `[src/inference.py:157-192]()`. The `InferencePairDataset` class structures these components into paired inputs suitable for batching via `inference_collate_fn` and `collate_concatenated_pairs` `[src/inference.py:151-192]()`.
+
+Model predictions are evaluated across multiple interaction heads (`protein`, `residue`, and `pair`) defined in `PPI_HEADS` `[src/inference.py:33-46]`. Binary classification metrics and scores are logged and exported to structured formats such as TSV, CSV, or PyTorch tensors.
+
+For comprehensive details on data loading, prediction heads, and evaluation metrics, see [Inference Pipeline](#5.1).
+
+Sources: `[src/inference.py:33-192]()`
+
+---
+
+## 5.2. Long-Sequence Windowing
+
+Protein complexes that exceed standard memory or sequence length limits cannot be processed in a single pass without severe GPU memory constraints. To resolve this, SurPass implements a windowing utility module in `src/utils/ppi_windows.py`.
+
+The function `plan_ppi_windows` computes sliding-window partitions across long chain pairs, enabling localized feature extraction and model inference. The resulting sub-window predictions are subsequently aggregated back to the full sequence length using max-pooled strategies.
+
+For detailed algorithms on tiling schedules, overlapping window management, and aggregation logic, see [Long-Sequence Windowing](#5.2).
+
+Sources: `[src/utils/ppi_windows.py:1-60]()`
+
+---
+
+## 5.3. Preview and Debugging Utilities
+
+SurPass provides dedicated diagnostic utilities in `src/preview.py` to inspect intermediate model states during inference and training. These utilities include distance map generation and visualization helpers, automated NaN and anomaly monitoring for model activations, and tensor utility functions.
+
+These tools allow developers to debug spatial predictions, inspect distogram outputs, and verify tensor shape transformations across network layers.
+
+```mermaid
+graph TD
+    A["Model Tensors & Distograms"] --> B["src/preview.py"]
+    B --> C["Distance Map Visualization"]
+    B --> D["NaN & Activation Monitoring"]
+    B --> E["Tensor Inspection Utilities"]
+
+    sub5_3["Preview and Debugging Utilities"] --> B
+    sub5_3 --> C
+    sub5_3 --> D
+    sub5_3 --> E
+```
+*Figure 5.2: Diagnostic tooling architecture centering around `src/preview.py` for visualization and tensor inspection.*
+
+For code-level documentation on visualization functions and tensor monitoring routines, see [Preview and Debugging Utilities](#5.3).
+
+Sources: `[src/preview.py:1-50]()`
+
+---
+
+# Page: Inference Pipeline
+
+# Inference Pipeline
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [configs/inference.yaml](configs/inference.yaml)
+- [src/inference.py](src/inference.py)
+
+</details>
+
+
+
+The inference pipeline executes trained `ResOnly` models on protein-protein interaction (PPI) test sets [src/inference.py:17](). It ingests structural protein sequences from FASTA files [src/inference.py:78](), pre-computed protein Language Model (pLM) embeddings [src/inference.py:114](), and test metadata TSVs [src/inference.py:167](). It coordinates data batching [src/inference.py:151](), long-sequence windowing via `plan_ppi_windows` [src/inference.py:30](), multi-head prediction scoring across protein, residue, and pair levels [src/inference.py:33](), and output generation.
+
+Sources: [src/inference.py:1-47](), [src/inference.py:78-155](), [src/inference.py:157-192]()
+
+---
+
+## Configuration System (`configs/inference.yaml`)
+
+The inference configuration governs model architecture hyperparameters, input data directories, threshold settings, and execution flags. It maps directly to model construction and dataset instantiation routines.
+
+| Configuration Block | Key Parameters | Code Mapping |
+| :--- | :--- | :--- |
+| `data` | `test_set_tsv`, `fasta_path`, `embedding_dir`, `max_full_length`, `contact_threshold` | `InferencePairDataset` [src/inference.py:157-192]() |
+| `model` | `n_layers`, `dim_token`, `dim_pair`, `n_heads`, `plm_in_dim`, `plm_out_dim` | `ResOnly` [src/inference.py:17]() |
+| `metrics` | `positive_weight` | Evaluation weighting [src/inference.py:22-24]() |
+| `performance` | `checkpoint_pair_blocks` | Gradient checkpointing flags [src/inference.py:46-48]() |
+
+```yaml
+# configs/inference.yaml excerpt
+task_prefix: infer
+seed: 42
+ckpt_dir: null
+data:
+  test_set_tsv: ${data.root_dir}/test_set.tsv
+  fasta_path: ${data.root_dir}/test_set.fasta
+  embedding_dir: ${data.root_dir}/embeddings
+model:
+  n_layers: 8
+  dim_token: 768
+  dim_pair: 512
+```
+
+Sources: [configs/inference.yaml:1-52]()
+
+---
+
+## Data Loading and Preprocessing (`InferencePairDataset`)
+
+The inference dataset infrastructure parses raw FASTA strings, loads tensorized pLM features, encodes residue types into vocabulary indices, and constructs batch representations suitable for dual-protein complex evaluation.
+
+```mermaid
+graph TD
+    A["test_set.tsv"] --> B["InferencePairDataset"]
+    C["test_set.fasta"] --> D["load_fasta_sequences"]
+    D --> B
+    E["embedding_dir"] --> F["load_plm_embedding"]
+    F --> B
+    B --> G["build_residue_features"]
+    G --> H["encode_residue_types"]
+    H --> I["inference_collate_fn"]
+    I --> J["collate_concatenated_pairs"]
+
+    sub-graph Code_Entities
+        D
+        F
+        G
+        H
+        I
+        J
+        B
+    end
+
+    style B fill:#fff,stroke:#000,stroke-width:2px
+    style D fill:#fff,stroke:#000,stroke-width:2px
+    style F fill:#fff,stroke:#000,stroke-width:2px
+    style G fill:#fff,stroke:#000,stroke-width:2px
+    style H fill:#fff,stroke:#000,stroke-width:2px
+    style I fill:#fff,stroke:#000,stroke-width:2px
+    style J fill:#fff,stroke:#000,stroke-width:2px
+```
+*Figure 5.1.1: Data loading flow from raw disk inputs to collated token tensors.*
+
+Sources: [src/inference.py:78-192]()
+
+### FASTA and Embedding Parsers
+- **`load_fasta_sequences`**: Reads FASTA files sequentially, validates identifiers and non-empty sequences, and outputs a dictionary mapping protein IDs to uppercase sequence strings [src/inference.py:78-111]().
+- **`load_plm_embedding`**: Loads pre-computed embedding files supporting raw `torch.Tensor` objects or nested dictionary wrappers containing the `plm_emb` key, coercing types to `torch.float32` [src/inference.py:114-120]().
+- **`encode_residue_types`**: Maps residue characters to integer vocabularies using `restype_order` with fallback to `unk_restype_index` [src/inference.py:12-14](), [src/inference.py:123-127]().
+- **`build_residue_features`**: Combines token embeddings, residue codes, positions, and masks into a standard feature dictionary [src/inference.py:130-148]().
+
+Sources: [src/inference.py:78-148]()
+
+### Dataset and Collation
+`InferencePairDataset` iterates through the test set TSV metadata, resolves protein pairs via `parse_protein_pair`, checks sequence presence, and caches valid query items [src/inference.py:157-192](). The helper `inference_collate_fn` unpacks batch tuples and delegates pairing concatenation to `collate_concatenated_pairs` [src/inference.py:151-155]().
+
+Sources: [src/inference.py:151-192]()
+
+---
+
+## Inference Execution & Prediction Heads
+
+During execution, complexes exceeding length thresholds are processed via long-sequence windowing (`plan_ppi_windows`) [src/inference.py:30](). The `ResOnly` model computes predictions across defined PPI heads (`PPI_HEADS = ("protein", "residue", "pair")`) [src/inference.py:17](), [src/inference.py:33]().
+
+```mermaid
+graph TD
+    A["InferencePairDataset"] --> B["inference_collate_fn"]
+    B --> C["plan_ppi_windows"]
+    C --> D["ResOnly"]
+    D --> E["pair_bind_scores"]
+    D --> F["_binary_classification_metrics"]
+    E --> G["PREDICTION_COLUMNS"]
+    F --> G
+
+    sub-graph Code_Execution
+        B
+        C
+        D
+        E
+        F
+    end
+
+    style A fill:#fff,stroke:#000,stroke-width:2px
+    style B fill:#fff,stroke:#000,stroke-width:2px
+    style C fill:#fff,stroke:#000,stroke-width:2px
+    style D fill:#fff,stroke:#000,stroke-width:2px
+    style E fill:#fff,stroke:#000,stroke-width:2px
+    style F fill:#fff,stroke:#000,stroke-width:2px
+    style G fill:#fff,stroke:#000,stroke-width:2px
+```
+*Figure 5.1.2: Execution pipeline mapping data batches to model evaluation heads and metrics.*
+
+Sources: [src/inference.py:17-33](), [src/inference.py:151-155]()
+
+Sources: [src/inference.py:17-33](), [src/inference.py:151-155]()
+
+---
+
+## Metrics and Output Generation
+
+Results are compiled into structured dataframes containing prediction probabilities, binary classification decisions, contact counts, and forward pass statistics. Output columns are explicitly defined by `PREDICTION_COLUMNS` [src/inference.py:34-46](). Serialized outputs are written to disk as TSV, CSV, or PyTorch tensor (`.pt`) files.
+
+```python
+PREDICTION_COLUMNS = [
+    "Protein pairs",
+    "Category",
+    "p_protein",
+    "pred_protein",
+    "p_residue",
+    "pred_residue",
+    "n_pos_residues",
+    "p_pair",
+    "pred_pair",
+    "n_inter_contacts",
+    "n_forwards",
+]
+```
+
+Sources: [src/inference.py:34-46]()
+
+---
+
+# Page: Long-Sequence Windowing
+
+# Long-Sequence Windowing
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/inference.py](src/inference.py)
+- [src/utils/ppi_windows.py](src/utils/ppi_windows.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+Protein complexes that exceed the maximum inference length budget (`budget`) cannot be processed in a single forward pass without running out of memory or violating model dimension constraints. The module `src/utils/ppi_windows.py` implements a sequence tiling strategy (`plan_ppi_windows`) that divides long protein complexes into smaller, non-overlapping contiguous spatial windows (`contiguous_spans`) while minimizing the total number of model evaluations (forward passes). 
+
+This page details the mathematical and algorithmic design of window planning, chunk generation, and optimization heuristics used during long-sequence inference.
+
+Sources: [src/utils/ppi_windows.py:1-7]()
+
+---
+
+## Window Planning and Tiling Architecture (`src/utils/ppi_windows.py`)
+
+When a protein complex consisting of two chains with lengths `length_1` and `length_2` exceeds the allowed `budget` (defined as the maximum concatenated length of one forward pass), the system must partition the chains. Cutting both chains indiscriminately multiplies the number of required model evaluations (`k1 * k2`). The planner therefore searches for optimal window counts (`count_1`, `count_2`) that satisfy the budget constraint while preferring single-chain splitting over dual-chain splitting.
+
+### Helper Functions: Ceiling Division and Spans
+
+The module relies on basic partitioning primitives:
+- `_ceil_div(numerator, denominator)`: Computes the ceiling division integer `(numerator + denominator - 1) // denominator` [src/utils/ppi_windows.py:12-14]().
+- `contiguous_spans(length, count)`: Splits an interval `[0, length)` into `count` non-overlapping contiguous spans where span lengths differ by at most one, placing longer spans first [src/utils/ppi_windows.py:16-38]().
+
+```python
+# Conceptual view of span generation
+def contiguous_spans(length: int, count: int) -> list[tuple[int, int]]:
+    ...
+```
+
+Sources: [src/utils/ppi_windows.py:12-38]()
+
+### Optimization Strategy: `choose_window_counts`
+
+The core optimization routine `choose_window_counts(length_1, length_2, budget)` iterates over possible window partition counts to find the minimum number of rounds (`k1 * k2`) [src/utils/ppi_windows.py:41-86](). 
+
+Feasibility is determined by the condition:
+$$\lceil \text{length\_1} / k_1 \rceil + \lceil \text{length\_2} / k_2 \rceil \le \text{budget}$$
+
+Tie-breaking rules prioritize:
+1. Minimizing total forward rounds (`rounds = count_1 * count_2`).
+2. Minimizing the rank of single-chain splits (`min(count_1, count_2)`), preferring to cut only one chain rather than both.
+3. Cutting the longer chain when applicable [src/utils/ppi_windows.py:71-78]().
+
+Sources: [src/utils/ppi_windows.py:41-86]()
+
+### Window Generation: `plan_ppi_windows`
+
+The public entrypoint `plan_ppi_windows(length_1, length_2, budget)` integrates span creation and window counts [src/utils/ppi_windows.py:89-121](). If `budget` is `None` or the sum of lengths is within the budget, a single window covering both chains `((0, length_1), (0, length_2))` is returned [src/utils/ppi_windows.py:107-108](). Otherwise, it invokes `choose_window_counts` and generates a list of paired intervals `((start_1, end_1), (start_2, end_2))` [src/utils/ppi_windows.py:111-114]().
+
+Sources: [src/utils/ppi_windows.py:89-121]()
+
+---
+
+## Natural Language Space to Code Entity Space Mappings
+
+To bridge high-level descriptions of windowing operations with actual codebase symbols, the following diagrams map domain concepts to their specific Python functions and data structures.
+
+### Diagram 1: Window Planning Control Flow
+
+```mermaid
+graph TD
+    A["InputComplexLengths"] --> B["plan_ppi_windows"]
+    B --> C{LengthSum <= Budget?}
+    C -- "Yes" --> D["SingleWindow [0,L1) x [0,L2)"]
+    C -- "No" --> E["choose_window_counts"]
+    E --> F["contiguous_spans Chain 1"]
+    E --> G["contiguous_spans Chain 2"]
+    F --> H["CartesianProduct of Spans"]
+    G --> H
+    H --> I["ValidatedWindowList"]
+
+    sub: "Code Entities"
+    style B fill:none,stroke:#000,stroke-width:1px
+    style E fill:none,stroke:#000,stroke-width:1px
+    style F fill:none,stroke:#000,stroke-width:1px
+    style G fill:none,stroke:#000,stroke-width:1px
+    style H fill:none,stroke:#000,stroke-width:1px
+```
+
+Sources: [src/utils/ppi_windows.py:41-121]()
+
+### Diagram 2: Long Complex Tiling and Budget Constraints
+
+```mermaid
+graph LR
+    subgraph "Natural Language Space"
+        N1["Long Protein Complex"] --> N2["Budget Constraint Check"]
+        N2 --> N3["Fewest-Forward Tiling Strategy"]
+    end
+
+    subgraph "Code Entity Space"
+        C1["length_1, length_2, budget"] --> C2["choose_window_counts()"]
+        C2 --> C3["_ceil_div()"]
+        C2 --> C4["contiguous_spans()"]
+        C4 --> C5["plan_ppi_windows()"]
+    end
+
+    N1 -.-> C1
+    N2 -.-> C2
+    N3 -.-> C5
+```
+
+Sources: [src/utils/ppi_windows.py:12-121]()
+
+---
+
+# Page: Preview and Debugging Utilities
+
+# Preview and Debugging Utilities
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/components/outer_product_mean.py](src/model/components/outer_product_mean.py)
+- [src/preview.py](src/preview.py)
+- [src/utils/__init__.py](src/utils/__init__.py)
+- [src/utils/nan_monitor.py](src/utils/nan_monitor.py)
+
+</details>
+
+
+
+## Purpose and Scope
+Section 5.3 covers the diagnostic and visualization utilities implemented in `src/preview.py` and `src/utils/nan_monitor.py`. These tools provide insight into model predictions by converting categorical distogram bins into continuous physical distance maps, rendering side-by-side comparison figures with chain boundaries, and monitoring training stability through deep tensor scanning, forward hook probing, and automated non-finite (NaN/Inf) root-cause classification.
+
+Sources: `[src/preview.py:1-196]()`, `[src/utils/nan_monitor.py:1-217]()`
+
+---
+
+## Distance Map Visualization and Binned Utilities (`src/preview.py`)
+
+The preview module (`src/preview.py`) loads checkpoints, runs inference on a subset of validation or training examples, and saves visual representations of true distance labels versus predicted distance maps.
+
+### Key Functions
+- **`distance_bin_centers(bin_start: float, bin_end: float, bin_count: int) -> torch.Tensor`**: Computes the physical distance boundaries and center points corresponding to discrete distogram classification bins `[src/preview.py:28-48]()`.
+- **`bins_to_distance(bins: torch.Tensor, centers: torch.Tensor) -> torch.Tensor`**: Maps discrete bin index predictions back to continuous physical distance values using precomputed `centers` `[src/preview.py:51-53]()`.
+- **`masked_distance_map(bins: torch.Tensor, centers: torch.Tensor, valid_mask: torch.Tensor) -> torch.Tensor`**: Applies `valid_mask` to distance matrices, setting invalid or masked pairs to `NaN` for visualization purposes `[src/preview.py:55-62]()`.
+- **`save_distance_pair_figure(label_map, pred_map, output_path, p1_length)`**: Generates a side-by-side matplotlib figure comparing ground truth and prediction matrices using a `viridis` colormap where invalid/NaN entries are rendered in light gray. It invokes `_draw_chain_margin` to delineate multi-chain interfaces `[src/preview.py:64-110]()`.
+- **`summarize_prediction(pred_bins, valid_mask, last_bin) -> str`**: Computes diagnostic string metrics including valid pair counts, unique predicted bins, and the fraction of pairs falling into the furthest distance bin (`far_bin_frac`) `[src/preview.py:112-126]()`.
+
+```mermaid
+graph TD
+    A["DataLoader"] -->|Batch| B["ResOnly Model"]
+    B -->|Logits / Bins| C["bins_to_distance"]
+    C -->|Continuous Distances| D["masked_distance_map"]
+    D -->|Valid Masked Array| E["save_distance_pair_figure"]
+    E -->|PNG Figure| F["preview/ Output Directory"]
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+    linkStyle default stroke:#000,stroke-width:1px;
+```
+*Figure 1: Data flow in `src/preview.py` from raw model output to saved distance map figures.*
+
+Sources: `[src/preview.py:28-126]()`
+
+---
+
+## NaN Monitoring and Numerical Diagnostics (`src/utils/nan_monitor.py`)
+
+To prevent training instability or gradient poisoning from propagating through `AdamW`, `src/utils/nan_monitor.py` provides tensor inspection utilities, forward hook probing, and root-cause classification.
+
+### Key Components & Functions
+- **`NonFiniteTrainingError`**: A custom `RuntimeError` raised immediately upon detecting non-finite losses or gradients `[src/utils/nan_monitor.py:28-30]()`.
+- **`finite_stats(name: str, value: Any) -> dict[str, Any]`**: Recursively traverses nested pytrees of tensors (`_as_tensors`), calculating total element counts, counts of `NaN` and `Inf` entries, and the absolute maximum value (`abs_max`) across floating-point elements `[src/utils/nan_monitor.py:32-80]()`.
+- **`probe_first_nonfinite_module(model: nn.Module, residue_batch: dict) -> list[dict]`**: Attaches temporary forward hooks to watched submodules (`residue_embedder`, `outer_product_mean`, `pair_blocks`, etc.) to isolate the exact layer producing non-finite outputs from finite inputs (`true_risk`) `[src/utils/nan_monitor.py:122-166]()`.
+- **`classify_nan_cause(report: dict[str, Any]) -> str`**: Analyzes a diagnostic report dictionary to categorize failure modes into clean categories: `dirty_input`, `empty_residue_mask`, `forward` layer overflows, `loss` term explosions, or `backward` gradient anomalies `[src/utils/nan_monitor.py:169-217]()`.
+
+```mermaid
+graph TD
+    A["Model Forward Pass"] -->|Inputs/Outputs| B["finite_stats"]
+    B -->|Check NaN/Inf| C{"Is Finite?"}
+    C -->|Yes| D["Continue Training"]
+    C -->|No| E["probe_first_nonfinite_module"]
+    E -->|Trigger Hooks| F["classify_nan_cause"]
+    F -->|Raise Error| G["NonFiniteTrainingError"]
+
+    classDef default fill:#fff,stroke:#000,stroke-width:1px;
+    linkStyle default stroke:#000,stroke-width:1px;
+```
+*Figure 2: Execution flow of numerical debugging and exception handling in `src/utils/nan_monitor.py`.*
+
+Sources: `[src/utils/nan_monitor.py:32-217]()`
+
+---
+
+## Code Entity Reference
+
+| Natural Language Concept | Code Symbol / Entity | File Location |
+| :--- | :--- | :--- |
+| Physical Bin Center Calculation | `distance_bin_centers()` | `[src/preview.py:28-48]()` |
+| Distance Map Figure Generation | `save_distance_pair_figure()` | `[src/preview.py:64-100]()` |
+| Multi-Chain Boundary Line Drafter | `_draw_chain_margin()` | `[src/preview.py:102-110]()` |
+| Non-Finite Training Exception | `NonFiniteTrainingError` | `[src/utils/nan_monitor.py:28-30]()` |
+| Tensor Tree Statistics Scanne | `finite_stats()` | `[src/utils/nan_monitor.py:32-80]()` |
+| Forward Hook Module Prober | `probe_first_nonfinite_module()` | `[src/utils/nan_monitor.py:122-166]()` |
+| Automated Failure Categorization | `classify_nan_cause()` | `[src/utils/nan_monitor.py:169-217]()` |
+
+Sources: `[src/preview.py:28-110]`, `[src/utils/nan_monitor.py:28-217]`
+
+---
+
+# Page: Shared Constants and Utilities
+
+# Shared Concepts and Utilities
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/common/__init__.py](src/common/__init__.py)
+- [src/utils/__init__.py](src/utils/__init__.py)
+
+</details>
+
+
+
+This page provides a high-level overview of the shared structural constants in `src/common` and general utility helpers in `src/utils` within the SurPass codebase. These modules supply foundational definitions for protein residue vocabularies, atom representations, tensor tree manipulations, and distributed execution primitives used across data pipelines, models, and training loops.
+
+For deeper technical details, refer to the child pages:
+- [Residue and Atom Constants](#6.1)
+- [Tensor and DDP Utilities](#6.2)
+
+---
+
+## Constants and Utilities Architecture
+
+The shared infrastructure supports the core architecture by centralizing biological domain knowledge (residue types, atom configurations) and operational helpers (tensor tree transformations, DDP state handling) into decoupled modules.
+
+Diagram: Constants Namespace Mapping
+```mermaid
+graph TD
+    subgraph NaturalLanguageSpace["Domain Concepts"]
+        A["Residue Vocabularies"] --> B["Atom14 Coordinates"]
+    end
+    subgraph CodeEntitySpace["Code Implementation"]
+        C["src/common/residue_constants.py"] --> D["src/common/atom_constants.py"]
+    end
+    NaturalLanguageSpace -.-> CodeEntitySpace
+```
+*Sources: [src/common/__init__.py:1-1]()*
+
+Diagram: Utilities Namespace Mapping
+```mermaid
+graph TD
+    subgraph NaturalLanguageSpace["Operational Helpers"]
+        A["Tensor Tree Maps"] --> B["Distributed Process Group"]
+    end
+    subgraph CodeEntitySpace["Code Implementation"]
+        C["src/utils/model_utils.py"] --> D["src/utils/ddp_utils.py"]
+    end
+    NaturalLanguageSpace -.-> CodeEntitySpace
+```
+*Sources: [src/utils/__init__.py:1-1]()*
+
+---
+
+## 6.1 Residue and Atom Constants
+
+The `src/common` package houses domain-specific constants that define how amino acids, backbone atoms, and sidechains are encoded within tensors. These definitions establish standard amino acid indexing, one-letter/three-letter conversions, and the `atom14` atomic representation scheme commonly adopted in structural biology pipelines.
+
+For detailed specifications on atom coordinate structures, atom indices, and residue vocabularies, see [Residue and Atom Constants](#6.1).
+
+*Sources: [src/common/__init__.py:1-1]()*
+
+---
+
+## 6.2 Tensor and DDP Utilities
+
+The `src/utils` package contains general-purpose helpers for handling complex nested data structures and orchestrating distributed training. This includes tensor tree traversal utilities (`model_utils`) for nested dictionaries/tuples of tensors, shape validation helpers, and distributed data parallel (`ddp_utils`) initialization and synchronization primitives.
+
+For detailed implementations of tree mapping functions, shape assertions, and DDP wrappers, see [Tensor and DDP Utilities](#6.2).
+
+*Sources: [src/utils/__init__.py:1-1]()*
+
+---
+
+# Page: Residue and Atom Constants
+
+# Residue and Atom Constants
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/common/atom_constants.py](src/common/atom_constants.py)
+- [src/common/residue_constants.py](src/common/residue_constants.py)
+
+</details>
+
+
+
+### Purpose and Scope
+This page documents the foundational chemical, atomic, and residue-level constants defined in `src/common/residue_constants.py` and `src/common/atom_constants.py`. These modules establish the fundamental vocabulary, amino acid dictionaries, atom type universes, the AlphaFold-style `atom14` coordinate padding representation, and chemical/hydrogen-bonding parameters adapted from MaSIF. They are consumed across data loading, geometric cropping, structural feature extraction, and evaluation pipelines within SurPass.
+
+---
+
+## 1. Residue Vocabularies and Mappings
+
+The codebase defines standard representations for the 20 canonical amino acids, alongside handling for unknown or padding residues (`'X'` / `'UNK'`). These mappings provide bidirectional lookups between single-letter codes, three-letter codes, and integer indices.
+
+* **Standard Residues (`restypes`)**: An alphabetically sorted list of the 20 standard single-letter amino acid codes [src/common/residue_constants.py:43-46]().
+* **Integer Encodings**: `restype_order` maps single-letter codes to contiguous integers `0` through `19` [src/common/residue_constants.py:47](). An extended vocabulary `restypes_with_x` appends `'X'` for unknown residues at index `20` (`unk_restype_index`) [src/common/residue_constants.py:49-51]().
+* **Code Converters**: Dictionaries `restype_1to3` and `restype_3to1` facilitate conversion between single-letter codes and three-letter residue names (e.g., `'A'` to `'ALA'`, `'X'` to `'UNK'`) [src/common/residue_constants.py:54-77]().
+
+```mermaid
+graph TD
+    A["SingleLetterAA ('A', 'R', 'N'...)"] --> B["restypes (src/common/residue_constants.py:43-46)"]
+    B --> C["restype_order (src/common/residue_constants.py:47)"]
+    A --> D["restype_1to3 (src/common/residue_constants.py:54-76)"]
+    D --> E["ThreeLetterAA ('ALA', 'ARG'...)"]
+    E --> F["restype_3to1 (src/common/residue_constants.py:77)"]
+    G["UnknownAA ('X')"] --> H["restypes_with_x (src/common/residue_constants.py:51)"]
+```
+*Sources: [src/common/residue_constants.py:43-77]()*
+
+---
+
+## 2. Atom Types and the `atom14` Representation
+
+To handle variable numbers of side-chain atoms across different amino acid types while maintaining fixed-size tensor shapes (common in AlphaFold-derived architectures), SurPass utilizes a universal atom registry and a compact 14-atom per residue layout (`atom14`).
+
+* **Universal Atom Universe (`atom_types`)**: A complete list of 37 unique heavy and polar hydrogen atom names encountered across standard amino acids, ranging from backbone atoms (`'N'`, `'CA'`, `'C'`, `'O'`, `'OXT'`) to specialized side-chain atoms (`'CG1'`, `'OG'`, `'SD'`, `'CZ2'`, etc.) [src/common/residue_constants.py:1-6]().
+* **Atom Ordering**: `atom_order` maps each atom name string to its integer index in `atom_types` [src/common/residue_constants.py:7]().
+* **`atom14` Encoding (`restype_name_to_atom14_names`)**: A dictionary mapping 3-letter residue names to a fixed-length list of 14 atom names [src/common/residue_constants.py:13-36](). Amino acids with fewer than 14 atoms (such as Glycine or Alanine) have their remaining slots padded with empty strings `''`.
+
+```mermaid
+graph TD
+    AA["ThreeLetterName ('ALA', 'ARG', 'GLY'...)"] --> Dict["restype_name_to_atom14_names (src/common/residue_constants.py:13-36)"]
+    Dict --> Array["Fixed 14-Element Atom List"]
+    Array --> Pad["Empty String Padding ('') for Missing Atoms"]
+    Universe["Universal Atom Types (37 total)"] --> Types["atom_types (src/common/residue_constants.py:1-6)"]
+    Types --> Order["atom_order (src/common/residue_constants.py:7)"]
+```
+*Sources: [src/common/residue_constants.py:1-38]()*
+
+---
+
+## 3. Chemical and Hydrogen Bonding Constants
+
+Physical and chemical parameters used for surface analysis, atomic radii assignment, and hydrogen bond geometry are defined in `atom_constants.py` (adapted from MaSIF) [src/common/atom_constants.py:1-151]().
+
+* **Atomic Radii (`radii`)**: Dictionary mapping element symbols (`'N'`, `'O'`, `'C'`, `'H'`, `'S'`, `'P'`), pseudo-atoms (`'Z'`), and disembodied points (`'X'`) to floating-point radius values [src/common/atom_constants.py:7-17]().
+* **Polar Hydrogens (`polarHydrogens`)**: Maps 3-letter residue codes to lists of polar hydrogen atom names recognized by reduction programs (e.g., SER maps to `['H', 'HG']`, PRO maps to `[]`) [src/common/atom_constants.py:19-39]().
+* **Hydrogen Bond Geometry**: 
+  * `hbond_std_dev`: Standard deviation for angular distributions ($\pi / 3$) [src/common/atom_constants.py:41]().
+  * `acceptorAngleAtom`: Maps acceptor atoms to their directly bonded reference atoms for angle calculations [src/common/atom_constants.py:45-51]().
+  * `acceptorPlaneAtom`: Maps acceptor atoms to third reference atoms for plane determination [src/common/atom_constants.py:53-54]().
+  * `donorAtom`: Maps hydrogen/donor atoms to their parent donor groups (e.g., `'HH11'` maps to `'NH1'`) [src/common/atom_constants.py:56-151]().
+
+*Sources: [src/common/atom_constants.py:1-151]()*
+
+---
+
+# Page: Tensor and DDP Utilities
+
+# Tensor and DDP Utilities
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [src/model/components/triangle_update.py](src/model/components/triangle_update.py)
+- [src/model/optimizer.py](src/model/optimizer.py)
+- [src/utils/ddp_utils.py](src/utils/ddp_utils.py)
+- [src/utils/model_utils.py](src/utils/model_utils.py)
+
+</details>
+
+
+
+## Purpose and Scope
+This page details the shared utility functions and classes located in `src/utils/model_utils.py` and `src/utils/ddp_utils.py`. These modules provide core tensor manipulation primitives, recursive tensor tree mapping utilities for complex nested data structures, distributed multi-process state management wrappers, and global reproducibility seeding routines.
+
+---
+
+## Model Tensor Utilities (`src/utils/model_utils.py`)
+
+The `src/utils/model_utils.py` module defines tensor reshaping, expansion, padding, dimension movement functions, and recursive tree mapping operations used throughout the model architecture.
+
+### Shape Manipulation Helpers
+
+- **`expand_at_dim(x, dim, n)`**: Expands a tensor `x` along a specified `dim` by repeating it `n` times using `unsqueeze` and `expand` [src/utils/model_utils.py:8-25]().
+- **`pad_at_dim(x, dim, pad_length, value)`**: Pads a tensor along dimension `dim` with left and right padding amounts defined by `pad_length` [src/utils/model_utils.py:27-54]().
+- **`reshape_at_dim(x, dim, target_shape)`**: Reshapes a specific dimension `dim` of a tensor into `target_shape` while preserving all surrounding dimensions [src/utils/model_utils.py:57-79]().
+- **`move_final_dim_to_dim(x, dim)`**: Permutes a tensor to relocate its final dimension to an arbitrary target dimension `dim` [src/utils/model_utils.py:81-106]().
+
+Sources: `src/utils/model_utils.py`
+
+### Recursive Tensor Tree Mapping
+
+To facilitate operations on arbitrarily nested structures (such as dictionaries, lists, and tuples containing PyTorch tensors), `src/utils/model_utils.py` provides recursive tree traversal functions:
+
+- **`dict_map(fn, dic, leaf_type)`**: Recursively traverses a dictionary, applying `tree_map` to non-dictionary leaf nodes and recursing into sub-dictionaries [src/utils/model_utils.py:108-116]().
+- **`tree_map(fn, tree, leaf_type)`**: Inspects the type of `tree`. If it is a `dict`, `list`, or `tuple`, it recurses over its elements; if it matches `leaf_type`, it applies `fn(tree)` [src/utils/model_utils.py:119-130]().
+- **`tensor_tree_map`**: A pre-configured `partial` application of `tree_map` where `leaf_type` is fixed to `torch.Tensor` [src/utils/model_utils.py:132-132]().
+
+```mermaid
+graph TD
+    Root["Input Tree (dict/list/tuple)"] --> Check{"Is instance of leaf_type?"}
+    Check -- "No (Container)" --> Recurse["Traverse dict / list / tuple"]
+    Recurse --> Root
+    Check -- "Yes (torch.Tensor)" --> Apply["Apply fn(Tensor)"]
+    Apply --> Output["Return Transformed Tree"]
+```
+*Figure 1: Recursive execution flow of `tree_map` and `tensor_tree_map` over nested data structures.*
+
+Sources: `src/utils/model_utils.py`
+
+---
+
+## Distributed Data Processing Utilities (`src/utils/ddp_utils.py`)
+
+The `src/utils/ddp_utils.py` module handles distributed environment initialization checks, process rank resolution, object gathering across distributed nodes, and deterministic random seeding.
+
+### Distributed State and `DistWrapper`
+
+- **`distributed_available()`**: Returns `True` if `torch.distributed` is both available and initialized [src/utils/ddp_utils.py:8-10]().
+- **`DistWrapper`**: A class that inspects environment variables (`RANK`, `LOCAL_RANK`, `LOCAL_WORLD_SIZE`, `WORLD_SIZE`) to compute process topology parameters including global rank, local rank, world size, number of nodes, and node rank [src/utils/ddp_utils.py:12-20]().
+- **`DIST_WRAPPER`**: A module-level singleton instance of `DistWrapper` [src/utils/ddp_utils.py:34-34]().
+- **`DistWrapper.all_gather_object(obj, group)`**: Gathers arbitrary Python objects across all processes in the world using `torch.distributed.all_gather_object` when distributed training is active, or returns a single-item list containing `obj` otherwise [src/utils/ddp_utils.py:21-32]().
+
+Sources: `src/utils/ddp_utils.py`
+
+### Reproducibility and Seeding
+
+- **`seed_everything(seed, deterministic)`**: Seeds `random`, `numpy`, `torch`, and `torch.cuda`. When `deterministic=True`, it disables `cudnn.benchmark`, sets `cudnn.deterministic = True`, enforces `torch.use_deterministic_algorithms(True)`, and configures `CUBLAS_WORKSPACE_CONFIG` to ensure reproducible execution on CUDA devices [src/utils/ddp_utils.py:37-49]().
+
+```mermaid
+graph TD
+    Env["Environment Variables (RANK / WORLD_SIZE)"] --> DW["DistWrapper.__init__()"]
+    DW --> Singleton["DIST_WRAPPER Instance"]
+    Singleton --> Gather["DistWrapper.all_gather_object()"]
+    
+    Seed["seed_everything(seed, deterministic)"] --> PyRNG["random, numpy, torch seeds"]
+    Seed --> Det{"deterministic == True?"}
+    Det -- "Yes" --> CUDNN["cudnn.deterministic = True & use_deterministic_algorithms()"]
+```
+*Figure 2: Distributed environment configuration via `DistWrapper` and global reproducibility control via `seed_everything`.*
+
+Sources: `src/utils/ddp_utils.py`
+
+---
+
+# Page: Glossary
+
+# Glossary
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [scripts/prepare_afdb_entries.py](scripts/prepare_afdb_entries.py)
+- [scripts/prepare_inference_embeddings.py](scripts/prepare_inference_embeddings.py)
+- [scripts/uniprot_sprot.fasta.gz](scripts/uniprot_sprot.fasta.gz)
+- [src/data/dataset.py](src/data/dataset.py)
+- [src/model/loss.py](src/model/loss.py)
+- [src/model/surpass.py](src/model/surpass.py)
+
+</details>
+
+
+
+## Purpose and Scope
+
+This page provides formal definitions of domain-specific concepts, structural biology terminology, and codebase jargon used across the `SurPass` repository. Each entry links directly to the underlying classes, functions, and configuration parameters in the source code.
+
+---
+
+## 1. Architectural and Modeling Jargon
+
+### Distogram
+A **distogram** is a two-dimensional matrix of probability distributions over discrete pairwise distance bins for all residue pairs in a protein complex [src/model/loss.py:113-128](). In `SurPass`, the distogram output logits are generated by projecting the pair representation tensor through a linear layer and layer normalization [src/model/surpass.py:120-121]() and are supervised via cross-entropy [src/model/loss.py:123-128]() or focal loss [src/model/loss.py:131-171]().
+
+### Contact Bins
+**Contact bins** define the contiguous subset of distance bins at the lower end of the distogram (e.g., distances $< 8.0\,\text{Å}$) that denote physical inter-residue contacts [src/model/loss.py:84-92](). The integer parameter `contact_bins` specifies the cutoff index separating contacting pairs from non-contacting pairs [src/model/surpass.py:44-45]().
+
+### Intra / Inter Mask
+* **`intra_mask`**: A Boolean tensor indicating residue pairs belonging to the same protein chain [src/model/loss.py:151]().
+* **`inter_mask`**: A Boolean tensor indicating residue pairs spanning two different interacting chains [src/model/loss.py:152]().
+These masks decouple intra-chain folding supervision from inter-chain protein-protein interaction (PPI) supervision during multi-objective loss computation [src/model/loss.py:171]().
+
+### QKLN (Query-Key Layer Normalization)
+**QKLN** refers to Query-Key Layer Normalization applied directly to query and key projections within multi-head attention mechanisms (`use_qkln=True`) [src/model/surpass.py:38,84]() to stabilize training dynamics and prevent attention logit explosion in deep transformer stacks.
+
+### $r_{\max}$ (Maximum Relative Position Encoding)
+$r_{\max}$ defines the maximum clipping distance or relative sequence separation window used by the `ResidueEmbedder` when constructing relative positional encodings between residues [src/model/components/embedder.py]().
+
+### Outer Product Mean (OPM)
+The **Outer Product Mean** (`EfficientOuterProductMean`) is a module that bridges the single residue stream ($\mathbf{m}$) and the pair stream ($\mathbf{z}$) by computing outer products of single representations across channel dimensions, updating pair features at each layer [src/model/surpass.py:90-96]() [src/model/components/outer_product_mean.py]().
+
+### Triangle Updates (Incoming / Outgoing)
+**Triangle updates** (`TriangleMultiplicationOutgoing` and `TriangleMultiplicationIncoming`) update the pair representation $\mathbf{z}$ using triangular relational reasoning along incoming and outgoing edges of the residue pair graph [src/model/surpass.py:98-110]() [src/model/components/triangle_update.py]().
+
+### EMA (Exponential Moving Average)
+**EMA** maintains a shadow copy of model parameters updated as an exponential moving average of training weights, stabilizing evaluation and inference checkpoints [4.3]().
+
+---
+
+## 2. Biological and Data Pipeline Jargon
+
+### PPI Cluster
+A **PPI cluster** is a group of protein-protein interaction pairs clustered by sequence and interface similarity (via MMSeqs2) to prevent data leakage between training, validation, and test splits [src/data/dataset.py:30,62-76](). The dataset loads samples indexed by `ppi_cluster_id` [src/data/dataset.py:63,72]().
+
+### AFDB (AlphaFold Database)
+**AFDB** refers to local collections of AlphaFold Database domain structures utilized to extract experimental and predicted structural features for training complexes [scripts/prepare_afdb_entries.py:2-13]().
+
+### pLM / ESMC (Protein Language Model)
+**pLM / ESMC** refers to Evolutionary Scale Modeling protein language model embeddings (`plm_emb`) extracted from amino acid sequences, providing rich evolutionary and biochemical context as inputs to the `ResidueEmbedder` [scripts/prepare_inference_embeddings.py:1-4]() [src/model/components/embedder.py]().
+
+### Atom14 Representation
+**Atom14** is a fixed 14-atom coordinate and mask schema per residue used internally for structural feature extraction and geometric validation [scripts/prepare_afdb_entries.py:44-46]().
+
+### CB Positions ($C_\beta$)
+**$C_\beta$ positions** (`cb_positions`, `cb_mask`) denote the 3D coordinates and validity masks of carbon-beta atoms (or carbon-alpha for Glycine) utilized for inter-residue distance calculations and ground-truth label generation [scripts/prepare_afdb_entries.py:50-51]().
+
+### Tversky Loss
+**Tversky loss** is an asymmetric generalization of the Dice coefficient used to handle severe class imbalance between positive contact pairs and negative non-contact pairs [src/model/loss.py]().
+
+### Noisy-OR
+**Noisy-OR** is a probabilistic aggregation function used to combine multi-residue or windowed predictions into global protein-level interaction scores.
+
+### Long-Sequence Windowing
+**Windowing** (`plan_ppi_windows`) is a spatial tiling strategy that divides exceptionally long protein complexes into manageable sub-windows to fit within GPU memory constraints during inference [5.2]().
+
+---
+
+## 3. System Architecture Mapping
+
+The following diagram bridges natural language domain concepts to their exact code entity implementations across the codebase:
+
+```mermaid
+graph TD
+    subgraph "NaturalLanguageSpace"
+        NL_OPM["Outer Product Mean"]
+        NL_TRI["Triangle Updates"]
+        NL_QKLN["Query-Key Layer Norm"]
+        NL_PLM["pLM Embeddings"]
+        NL_DIST["Distogram & Contact Bins"]
+    end
+
+    subgraph "CodeEntitySpace"
+        CE_OPM["src/model/components/outer_product_mean.py:EfficientOuterProductMean"]
+        CE_TRI_OUT["src/model/components/triangle_update.py:TriangleMultiplicationOutgoing"]
+        CE_TRI_IN["src/model/components/triangle_update.py:TriangleMultiplicationIncoming"]
+        CE_QKLN["src/model/components/transformer.py:ResidueTransformer"]
+        CE_EMB["src/model/components/embedder.py:ResidueEmbedder"]
+        CE_LOSS["src/model/loss.py:DistogramCELoss"]
+        CE_SURP["src/model/surpass.py:ResOnly"]
+    end
+
+    NL_OPM --> CE_OPM
+    NL_TRI --> CE_TRI_OUT
+    NL_TRI --> CE_TRI_IN
+    NL_QKLN --> CE_QKLN
+    NL_PLM --> CE_EMB
+    NL_DIST --> CE_LOSS
+    CE_OPM --> CE_SURP
+    CE_TRI_OUT --> CE_SURP
+    CE_TRI_IN --> CE_SURP
+```
+*Sources: [src/model/surpass.py:90-110](), [src/model/components/outer_product_mean.py](), [src/model/components/triangle_update.py](), [src/model/components/transformer.py](), [src/model/components/embedder.py](), [src/model/loss.py:113-128]()*
+
+---
+
+## 4. Data Pipeline Jargon Mapping
+
+```mermaid
+graph TD
+    subgraph "NaturalLanguageDataSpace"
+        ND_PPI["PPI Cluster"]
+        ND_AFDB["AFDB Domain Database"]
+        ND_ATOM["Atom14 / CB Positions"]
+        ND_WIN["Long-Sequence Windowing"]
+    end
+
+    subgraph "CodeEntityDataSpace"
+        CD_DATA["src/data/dataset.py:PepoTrainDataset"]
+        CD_AFDB["scripts/prepare_afdb_entries.py:extract_domain_features"]
+        CD_CROP["src/data/cropping.py:crop_positive_pair"]
+        CD_WIN["src/utils/ppi_windows.py:plan_ppi_windows"]
+    end
+
+    ND_PPI --> CD_DATA
+    ND_AFDB --> CD_AFDB
+    ND_ATOM --> CD_CROP
+    ND_WIN --> CD_WIN
+```
+*Sources: [src/data/dataset.py:26-76](), [scripts/prepare_afdb_entries.py:166-192](), [src/data/cropping.py](), [src/utils/ppi_windows.py]()*

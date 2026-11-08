@@ -1,0 +1,1469 @@
+"""
+Build working AMBER topology/coordinate files from native AMBER inputs.
+"""
+
+# ##############################################################################
+#                           GPLv3 LICENSE INFO                                 #
+#                                                                              #
+#  Copyright (C) 2020  Mario S. Valdés-Tresanco and Mario E. Valdés-Tresanco   #
+#  Copyright (C) 2014  Jason Swails, Bill Miller III, and Dwight McGee         #
+#                                                                              #
+#   Project: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA                  #
+#                                                                              #
+#   This program is free software; you can redistribute it and/or modify it    #
+#  under the terms of the GNU General Public License version 3 as published    #
+#  by the Free Software Foundation.                                            #
+#                                                                              #
+#  This program is distributed in the hope that it will be useful, but         #
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY  #
+#  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License    #
+#  for more details.                                                           #
+# ##############################################################################
+
+import os
+import platform
+import textwrap
+import tempfile
+
+import parmed
+from GMXMMPBSA.exceptions import *
+from GMXMMPBSA.make_trajs import Trajectory
+from GMXMMPBSA.make_top import (CheckMakeTop, GB_RECOMMENDED_RADII, water_residues, solvent_ion_residues)
+from GMXMMPBSA.utils import (selector, get_dist, list2range, res2map, get_indexes, log_subprocess_output, check_str,
+                             eq_strs, get_index_groups, reconcile_qm_charges, topology_mismatch_error, res2map_amber,
+                             residue_names_match)
+from GMXMMPBSA.logging_utils import elapsed_progress
+import subprocess
+from pathlib import Path
+import logging
+import string
+from parmed.tools.changeradii import ChRad
+
+if platform.system() == "Darwin":
+    echo_command = ['echo']
+else:
+    echo_command = ['echo', '-e']
+
+chains_letters = list(string.ascii_uppercase)
+his = ['HIS', 'HIE', 'HID', 'HIP', 'HSP', 'HSD', 'HSE']
+cys_name = ['CYS', 'CYX', 'CYM']
+lys = ['LYS', 'LYN']
+asp = ['ASP', 'ASH']
+glu = ['GLU', 'GLH']
+positive_aa = ['LYS', 'ARG', 'HIP']
+negative_aa = ['GLU', 'ASP']
+nonpolar_aa = ['PHE', 'TRP', 'VAL', 'ILE', 'LEU', 'MET', 'PRO', 'CYX', 'ALA', 'GLY']
+polar_aa = ['TYR', 'SER', 'THR', 'CYM', 'CYS', 'HIE', 'HID', 'GLN', 'ASN', 'ASH', 'GLH', 'LYN']
+
+PBRadii = {1: 'bondi', 2: 'mbondi', 3: 'mbondi2', 4: 'mbondi3', 5: 'mbondi_pb2', 6: 'mbondi_pb3', 7: 'charmm_radii'}
+
+# ions_para_files = {1: 'frcmod.ions234lm_126_tip3p', 2: 'frcmod.ions234lm_iod_tip4pew', 3: 'frcmod.ions234lm_iod_spce',
+#                    4: 'frcmod.ions234lm_hfe_spce', 5: 'frcmod.ions234lm_126_tip4pew', 6: 'frcmod.ions234lm_126_spce',
+#                    7: 'frcmod.ions234lm_1264_tip4pew', 8: 'frcmod.ions234lm_1264_tip3p',
+#                    9: 'frcmod.ions234lm_1264_spce', 10: 'frcmod.ions234lm_iod_tip3p',
+#                    11: 'frcmod.ions234lm_hfe_tip4pew', 12: 'frcmod.ions234lm_hfe_tip3p}'}
+
+ions_para_files = {1: 'frcmod.ions234lm_126_tip3p', 2: 'frcmod.ions234lm_126_spce', 3: 'frcmod.ions234lm_126_tip4pew',
+                   4: 'frcmod.ions234lm_hfe_tip3p', 5: 'frcmod.ions234lm_hfe_spce', 6: 'frcmod.ions234lm_hfe_tip4pew',
+                   7: 'frcmod.ions234lm_iod_tip3p', 8: 'frcmod.ions234lm_iod_spce', 9: 'frcmod.ions234lm_iod_tip4pew',
+                   10: 'frcmod.ionslm_126_opc', 11: 'frcmod.ionslm_hfe_opc', 12: 'frcmod.ionslm_iod_opc',
+                   13: 'frcmod.ions1lm_126_tip3p', 14: 'frcmod.ions1lm_126_spce', 15: 'frcmod.ions1lm_126_tip4pew',
+                   16: 'frcmod.ions1lm_iod'}
+
+ions = ["AG", "AL", "Ag", "BA", "BR", "Be", "CA", "CD", "CE", "CL", "CO", "CR", "CS", "CU", "CU1", "Ce", "Cl-", "Cr",
+        "Dy", "EU", "EU3", "Er", "F", "FE", "FE2", "GD3", "H3O+", "HE+", "HG", "HZ+", "Hf", "IN", "IOD", "K", "K+",
+        "LA", "LI", "LU", "MG", "MN", "NA", "NH4", "NI", "Na+", "Nd", "PB", "PD", "PR", "PT", "Pu", "RB", "Ra", "SM",
+        "SR", "Sm", "Sn", "TB", "TL", "Th", "Tl", "Tm", "U4+", "V2+", "Y", "YB2", "ZN", "Zr"]
+
+
+class CheckAmberTop(CheckMakeTop):
+    def __init__(self, FILES, INPUT, external_programs):
+        self.FILES = FILES
+        self.INPUT = INPUT
+        self.external_progs = external_programs
+        self.use_temp = False
+        self.com_mut_index = None
+        self.com_mut_indices = []
+        self.part_indices = []
+
+
+        self.cys_bonds = {'COM': [], 'REC': [], 'LIG': []}
+
+        self.ref_str = None
+
+        self.ligand_tpr = None
+        self.ligand_mol2 = None
+
+        self.rec_str_ions = False
+        self.lig_str_ions = False
+
+        self.explicit_waters = self.INPUT['general']['explicit_waters']
+        self.explicit_waters_mask = self.INPUT['general']['explicit_waters_mask']
+        self.explicit_waters_group = self.INPUT['general']['explicit_waters_group']
+        self.explicit_waters_extra_points = self.INPUT['general']['explicit_waters_extra_points'].lower()
+        self.explicit_water_prmtop = None
+        self.explicit_water_source_mask = ''
+        self.explicit_water_source_all_mask = ''
+        self.explicit_water_source_residues = []
+        self.explicit_water_source_ions = []
+        self.explicit_water_source_ion_mask = ''
+        self.explicit_water_source_extra_points = ''
+        self.explicit_water_range = ''
+        self.explicit_receptor_mask = None
+        self.explicit_ligand_mask = None
+
+        # create the * prmtop variables for compatibility with the original code
+        self.complex_pmrtop = 'COM.prmtop'
+        self.receptor_pmrtop = 'REC.prmtop'
+        self.ligand_pmrtop = 'LIG.prmtop'
+
+        self.mutant_complex_pmrtop = 'MUT_COM.prmtop'
+        self.mutant_receptor_pmrtop = 'MUT_REC.prmtop'
+        self.mutant_ligand_pmrtop = 'MUT_LIG.prmtop'
+
+        self.complex_str_file = f'{self.FILES.prefix}COM.pdb'
+        self.receptor_str_file = f'{self.FILES.prefix}REC.pdb'
+        self.ligand_str_file = f'{self.FILES.prefix}LIG.pdb'
+
+        self.checkFiles()
+
+    def checkFiles(self):
+        if (not self.FILES.complex_top or not self.FILES.complex_trajs or not self.FILES.complex_mask):
+            GMXMMPBSA_ERROR('You must define the complex topology (-cp), trajectory (-ct) and complex masks (-cm).')
+
+        if self.FILES.receptor_trajs and not self.FILES.receptor_top:
+            GMXMMPBSA_ERROR('A receptor topology (-rp) is required when receptor trajectories (-rt) are defined.')
+        if self.FILES.receptor_trajs and not self.FILES.receptor_mask:
+            GMXMMPBSA_ERROR('A receptor mask (-rm) is required when receptor trajectories (-rt) are defined.')
+        if self.FILES.ligand_trajs and not self.FILES.ligand_top:
+            GMXMMPBSA_ERROR('A ligand topology (-lp) is required when ligand trajectories (-lt) are defined.')
+        if self.FILES.ligand_trajs and not self.FILES.ligand_mask:
+            GMXMMPBSA_ERROR('A ligand mask (-lm) is required when ligand trajectories (-lt) are defined.')
+
+    def buildTopology(self):
+        """
+        :return: complex, receptor, ligand topologies and their mutants
+        """
+        self.amber2pdb()
+        if (self.explicit_waters and
+                self.explicit_waters_mask.strip().lower() != 'dasa'):
+            self._resolve_explicit_waters_mask()
+        tops = self.ambertop2prmtop()
+
+        if self.INPUT['decomp']['decomprun']:
+            explicit_water_res = []
+            if self.explicit_waters and self.INPUT['decomp']['print_res'] == 'all':
+                explicit_water_res = self._ensure_explicit_water_residues_mapped()
+            decomp_res = self.get_selected_residues(self.INPUT['decomp']['print_res'])
+            if 'within' in self.INPUT['decomp']['print_res']:
+                if len(decomp_res) < 2:
+                    logging.info(f"Number of decomp residues to print using "
+                                 f"print_res = '{self.INPUT['decomp']['print_res']}' < 2; expanding the cutoff")
+                    logging.info(
+                        'Increasing cutoff value by 0.1 until number of decomp residues to print >= 2'
+                    )
+                    cutoff = float(self.INPUT['decomp']['print_res'].split()[1])
+                    it = 0
+                    while len(decomp_res) < 2:
+                        cutoff = round(cutoff, 1) + 0.25
+                        decomp_res = self.get_selected_residues(f'within {cutoff}')
+                        if it == 20:
+                            # probably not needed, but...
+                            GMXMMPBSA_ERROR('The maximum number of iterations to select interaction residues was '
+                                            'reached. Please set print_res with a valid selection.')
+                        it += 1
+
+                    logging.info(f"Selecting residues by distance ({round(cutoff, 1)} Å) between "
+                                 f"receptor and ligand for decomposition analysis...")
+                else:
+                    logging.info(
+                        f"Selecting residues by distance ({self.INPUT['decomp']['print_res'].split()[1]} Å) between "
+                        f"receptor and ligand for decomposition analysis...")
+                explicit_water_res = self._ensure_explicit_water_residues_mapped()
+                decomp_res = self._include_explicit_waters_in_decomp(decomp_res, explicit_water_res)
+            elif self.INPUT['decomp']['print_res'] == 'all':
+                logging.info('Selecting all residues for decomposition analysis...')
+                decomp_res = self._include_explicit_waters_in_decomp(decomp_res, explicit_water_res)
+            else:
+                logging.info('User-selected residues for decomposition analysis...')
+
+            textwraped = textwrap.wrap('\t'.join(x.string for x in decomp_res), tabsize=4, width=120)
+            logging.info(f'Selected {len(decomp_res)} residues:\n' + '\n'.join(textwraped) + '\n')
+
+            if self.INPUT['decomp']['idecomp'] in [3, 4]:
+                if self.INPUT['decomp']['dec_verbose'] == 0:
+                    mol_terms = 1
+                elif self.INPUT['decomp']['dec_verbose'] == 1:
+                    mol_terms = 3
+                elif self.INPUT['decomp']['dec_verbose'] == 2:
+                    mol_terms = 4
+                else:
+                    mol_terms = 12
+                energy_terms = 6
+                num_res = len(decomp_res)
+                total_items = energy_terms * mol_terms * num_res ** 2
+                if total_items > 250:
+                    logging.warning(f"Using idecomp = {self.INPUT['decomp']['idecomp']} and dec_verbose ="
+                                    f" {self.INPUT['decomp']['dec_verbose']} will generate approximately {total_items} items. "
+                                    f"Large print selections demand a large amount of memory and take a "
+                                    f"significant amount of time to print!")
+
+            self.INPUT['decomp']['print_res'] = ','.join(list2range(decomp_res)['string'])
+        qmmm_active = self.INPUT['gb'].get('gbrun', False) and self.INPUT['gb']['ifqnt']
+        if qmmm_active and self.INPUT['gb']['com_qmmask'] == '':
+            qm_residues, (rec_charge, lig_charge) = self.get_selected_residues(self.INPUT['gb']['qm_residues'], True)
+
+            if 'within' in self.INPUT['gb']['qm_residues']:
+                if len(qm_residues) == 0:
+                    logging.info(f"Number of qm_residues using print_res = '{self.INPUT['gb']['qm_residues']}' = 0; "
+                                 'expanding the cutoff')
+                    logging.info(
+                        'Increasing cutoff value by 0.1 until number of qm_residues > 0'
+                    )
+                    cutoff = float(self.INPUT['gb']['qm_residues'].split()[1])
+                    it = 0
+                    while len(qm_residues) == 0:
+                        cutoff = round(cutoff, 1) + 0.25
+                        qm_residues, (rec_charge, lig_charge) = self.get_selected_residues(f'within {cutoff}', True)
+                        if it == 20:
+                            # probably not needed, but...
+                            GMXMMPBSA_ERROR('The maximum number of iterations to select interaction residues was '
+                                            'reached. Please set print_res with a valid selection.')
+                        it += 1
+
+                    logging.info(f"Selecting residues by distance ({round(cutoff, 1)} Å) between "
+                                 f"receptor and ligand for QM/MM calculation...")
+                else:
+                    logging.info(
+                        f"Selecting residues by distance ({self.INPUT['gb']['qm_residues'].split()[1]} Å) between "
+                        f"receptor and ligand for QM calculation...")
+            elif self.INPUT['gb']['qm_residues'] == 'all':
+                logging.info('Selecting all residues for QM calculation...')
+            else:
+                logging.info('User-selected residues for QM calculation...')
+
+            textwraped = textwrap.wrap('\t'.join(x.string for x in qm_residues), tabsize=4, width=120)
+            logging.info(f'Selected {len(qm_residues)} residues:\n' + '\n'.join(textwraped) + '\n')
+            self.INPUT['gb']['qm_residues'] = ','.join(list2range(qm_residues)['string'])
+
+            reconcile_qm_charges(self.INPUT['gb'], rec_charge, lig_charge)
+
+        elif qmmm_active and self.INPUT['gb']['com_qmmask'] != '':
+            logging.warning('Overriding automatic assigment of qmcharge_com, qmcharge_rec, and qmcharge_lig. Using '
+                            'default or user defined qmcharge_com, qmcharge_rec, and qmcharge_lig instead...')
+
+        self.cleanup_trajs()
+        return tops
+
+    def amber2pdb(self):
+        """
+        Generate PDB file to generate topology
+        :return:
+        """
+
+        logging.info('Generating PDB files from AMBER files...')
+
+        # wt complex
+        # make index for extract pdb structure
+        com_rec_mask, com_lig_mask = self.FILES.complex_mask
+        if com_rec_mask == com_lig_mask:
+            GMXMMPBSA_ERROR('The receptor and ligand masks must be different')
+
+
+
+        logging.info(f'Normal Complex: Saving COMPLEX from {com_rec_mask}|{com_lig_mask} as '
+                     f'{self.complex_str_file}')
+
+        # use cpptraj to extract pdb structure
+        # IMPORTANT: not space between |
+        com_traj = Trajectory(self.FILES.complex_top, self.FILES.complex_trajs[0])
+        com_traj.Setup()
+        com_traj.Strip(f'!({com_rec_mask}|{com_lig_mask})')
+        com_traj.Outtraj(self.complex_str_file, frames='1', filetype='pdb')
+        com_traj.Run('complex_pdb.out')
+
+
+        # make a temp receptor pdb (even when stability) if decomp to get correct receptor residues from complex. This
+        # avoids get multiples molecules from complex.split()
+        if self.INPUT['decomp']['decomprun'] and self.FILES.stability:
+            self.use_temp = True
+            logging.info('Generating a receptor file internally to extract interface residues for decomposition.')
+
+            com_traj = Trajectory(self.FILES.complex_top, self.FILES.complex_trajs[0])
+            com_traj.Setup()
+            com_traj.Strip(f'!{com_rec_mask}')
+            com_traj.Outtraj('rec_temp.pdb', frames='1', filetype='pdb')
+            com_traj.Run('temp_rec_pdb.out')
+
+
+        # check if stability
+        if self.FILES.stability and (self.FILES.receptor_top or self.FILES.ligand_top or self.FILES.receptor_trajs or self.FILES.ligand_trajs):
+            logging.info('Stability calculation mode does not need separate receptor or ligand files; ignoring them.')
+        # wt receptor
+        if self.FILES.receptor_trajs:
+            logging.info('A receptor trajectory file was defined. Using MT approach...')
+            self._extract_mtp_structure(
+                self.FILES.receptor_top, self.FILES.receptor_trajs,
+                self.FILES.receptor_mask, self.receptor_str_file,
+                'receptor'
+            )
+
+        else:
+            logging.info('No receptor structure file was defined. Using ST approach...')
+            logging.info('Using receptor structure from complex to generate AMBER topology')
+
+            com_traj = Trajectory(self.FILES.complex_top, self.FILES.complex_trajs[0])
+            com_traj.Setup()
+            com_traj.Strip(f'!{com_rec_mask}')
+            com_traj.Outtraj(self.receptor_str_file, frames='1', filetype='pdb')
+            com_traj.Run('rec_pdb.out')
+
+
+        # ligand
+        if self.FILES.ligand_trajs:
+            logging.info('A ligand trajectory file was defined. Using MT approach...')
+            self._extract_mtp_structure(
+                self.FILES.ligand_top, self.FILES.ligand_trajs,
+                self.FILES.ligand_mask, self.ligand_str_file,
+                'ligand'
+            )
+        else:
+            # wt complex ligand
+            logging.info('No ligand structure file was defined. Using ST approach...')
+            logging.info('Using ligand structure from complex to generate AMBER topology')
+
+            com_traj = Trajectory(self.FILES.complex_top, self.FILES.complex_trajs[0])
+            com_traj.Setup()
+            com_traj.Strip(f'!{com_lig_mask}')
+            com_traj.Outtraj(self.ligand_str_file, frames='1', filetype='pdb')
+            com_traj.Run('lig_pdb.out')
+
+        # initialize receptor and ligand structures. Needed to get residues map
+        with elapsed_progress('Loading structures with ParmEd'):
+            self.complex_str = self.molstr(self.complex_str_file)
+            self.receptor_str = self.molstr(self.receptor_str_file)
+            self.ligand_str = self.molstr(self.ligand_str_file)
+        if self.FILES.reference_structure:
+            self.ref_str = check_str(self.FILES.reference_structure, ref=True)
+        self.check4water()
+        with elapsed_progress('Building receptor/ligand residue maps'):
+            self.resi, self.resl, self.orderl = res2map_amber({"REC": com_rec_mask, "LIG": com_lig_mask},
+                                                              self.complex_str)
+        self.check_structures(self.complex_str, self.receptor_str, self.ligand_str)
+
+    @staticmethod
+    def _extract_mtp_structure(topology, trajectories, mask, output, label):
+        """Extract the first unbound MTP frame in the supplied topology order."""
+        traj = Trajectory(topology, trajectories)
+        traj.Setup()
+        traj.Strip(f'!{mask}')
+        traj.Outtraj(output, frames='1', filetype='pdb')
+        traj.Run(f'{label}_pdb.out')
+
+    def check4water(self):
+        if getattr(self, 'explicit_waters', 0):
+            return
+
+        solvent_names = {name.strip().upper() for name in solvent_ion_residues}
+        solvent_names.add('HOH')
+        if counter := sum(
+                res.name.strip().upper() in solvent_names
+                for res in self.complex_str.residues
+        ):
+            GMXMMPBSA_ERROR(f'AMBER dry workflows do not support water/ions molecules in the complex, but we found'
+                            f' {counter} molecules in the complex.')
+
+    def _check_periodicity(self, parm, system):
+        """
+        check for periodicities == 0 and change them to 1. This is required especially for nmode calculations
+        """
+        invalid_per = 0
+
+        for dt in parm.dihedral_types:
+            if dt.per == 0:
+                invalid_per += 1
+                dt.per = 1
+
+        if invalid_per:
+            logging.warning(f'{invalid_per} invalid DIHEDRAL_PERIODICITY = 0 found in {system.capitalize()} '
+                            f'topology... Setting DIHEDRAL_PERIODICITY = 1')
+
+        return parm
+
+    @staticmethod
+    def _radius_set(parm):
+        return parm.parm_data.get('RADIUS_SET', ['unknown'])[0]
+
+    def _topology_radius_name(self, parm):
+        radius_set = self._radius_set(parm).lower()
+        for radius_name in PBRadii.values():
+            if f'({radius_name.lower()})' in radius_set:
+                return radius_name
+        for radius_name in sorted(PBRadii.values(), key=len, reverse=True):
+            if radius_name.lower() in radius_set:
+                return radius_name
+        return None
+
+    def _warn_gb_radius_compatibility(self, parm, system):
+        """Warn when preserved native-AMBER radii differ from the usual GB choice."""
+        if not self.INPUT.get('gb', {}).get('gbrun', False):
+            return
+
+        igb = self.INPUT['gb']['igb']
+        recommended = GB_RECOMMENDED_RADII.get(igb)
+        if recommended is None:
+            return
+
+        actual = self._topology_radius_name(parm)
+        if actual is None:
+            logging.warning(
+                f"Could not identify the GB radii in the {system} AMBER topology from "
+                f"RADIUS_SET '{self._radius_set(parm)}'; compatibility with igb={igb} "
+                f"(normally {recommended}) could not be checked."
+            )
+            return
+
+        if actual != recommended:
+            logging.warning(
+                f"The {system} AMBER topology uses '{actual}' radii, while igb={igb} "
+                f"is conventionally used with '{recommended}' radii. The input topology "
+                f"radii will be preserved; rebuild the AMBER topology with the desired "
+                f"PBradii in tleap if this combination is not intentional."
+            )
+
+    def _chrad_radius_name(self, parm):
+        radius_set = self._radius_set(parm).lower()
+        for radius_name in PBRadii.values():
+            if f'({radius_name.lower()})' in radius_set:
+                return radius_name
+        for radius_name in sorted(PBRadii.values(), key=len, reverse=True):
+            if radius_name.lower() in radius_set:
+                return radius_name
+        logging.warning(f"Could not identify GB radii from topology RADIUS_SET '{self._radius_set(parm)}'. "
+                        f"Using input PBRadii {PBRadii[self.INPUT['general']['PBRadii']]}.")
+        return PBRadii[self.INPUT['general']['PBRadii']]
+
+    def _copy_implicit_radii(self, source, target, system):
+        for flag in ['RADII', 'SCREEN']:
+            if flag not in source.parm_data:
+                GMXMMPBSA_ERROR(f'The {system} topology does not contain the {flag} flag required for GB radii.')
+            if len(source.parm_data[flag]) != len(target.atoms):
+                GMXMMPBSA_ERROR(f'The number of {flag} values in the {system} topology '
+                                f'({len(source.parm_data[flag])}) does not match the generated topology '
+                                f'({len(target.atoms)} atoms).')
+            target.parm_data[flag] = list(source.parm_data[flag])
+        target.parm_data['RADIUS_SET'] = list(source.parm_data.get('RADIUS_SET', ['unknown']))
+        logging.info(f'Preserving {system} GB radii from input topology: {self._radius_set(target)}')
+
+    def _amber_water_names(self):
+        names = {name.upper() for name in water_residues}
+        names.add('HOH')
+        group = self.explicit_waters_group.strip()
+        if group and group.lower() not in {'auto', 'automatic'}:
+            names.update(name.strip().upper() for name in group.split(',') if name.strip())
+        return names
+
+    @staticmethod
+    def _amber_ion_names():
+        return {name.upper() for name in ions} | {
+            'SOD', 'CLA', 'POT', 'NA+', 'CL-', 'K+', 'MG2+', 'CA2+', 'ZN2+'
+        }
+
+    def _amber_residue_is_water(self, residue):
+        return residue.name.strip().upper() in self._amber_water_names()
+
+    def _amber_residue_is_ion(self, residue):
+        return residue.name.strip().upper() in self._amber_ion_names()
+
+    @staticmethod
+    def _amber_residue_numbers(residues):
+        # AmberMask residue selectors are 1-based topology indexes, while
+        # ParmEd exposes AmberParm residue.number as a 0-based value.
+        return [res.idx + 1 for res in residues]
+
+    @staticmethod
+    def _amber_mask(residue_numbers):
+        if not residue_numbers:
+            return ''
+        return ':' + ','.join(list2range(sorted(set(residue_numbers)))['string'])
+
+    def _source_residue_classes(self, parm):
+        rec_mask, lig_mask = self.FILES.complex_mask
+        try:
+            rec_selection = parmed.amber.AmberMask(parm, rec_mask).Selection()
+            lig_selection = parmed.amber.AmberMask(parm, lig_mask).Selection()
+        except Exception as exc:
+            GMXMMPBSA_ERROR(f'Could not evaluate the AMBER complex masks for the solvated topology: {exc}')
+
+        rec_residues = []
+        lig_residues = []
+        water_residues_found = []
+        ion_residues = []
+        unassigned = []
+        for residue in parm.residues:
+            atom_indexes = [atom.idx for atom in residue.atoms]
+            rec_atoms = [index for index in atom_indexes if rec_selection[index]]
+            lig_atoms = [index for index in atom_indexes if lig_selection[index]]
+            in_rec = bool(rec_atoms)
+            in_lig = bool(lig_atoms)
+            if in_rec and in_lig:
+                GMXMMPBSA_ERROR(f'AMBER receptor and ligand masks overlap at residue {residue.idx + 1}.')
+            if in_rec and len(rec_atoms) != len(atom_indexes):
+                GMXMMPBSA_ERROR(
+                    f'AMBER receptor mask selects only part of residue {residue.name}:{residue.idx + 1}. '
+                    'Complex masks must select complete residues.'
+                )
+            if in_lig and len(lig_atoms) != len(atom_indexes):
+                GMXMMPBSA_ERROR(
+                    f'AMBER ligand mask selects only part of residue {residue.name}:{residue.idx + 1}. '
+                    'Complex masks must select complete residues.'
+                )
+            if in_rec or in_lig:
+                if self._amber_residue_is_water(residue) or self._amber_residue_is_ion(residue):
+                    GMXMMPBSA_ERROR(
+                        f'AMBER complex masks must select solute residues only; solvent/ion residue '
+                        f'{residue.name}:{residue.idx + 1} was selected.'
+                    )
+                (rec_residues if in_rec else lig_residues).append(residue)
+            elif self._amber_residue_is_water(residue):
+                water_residues_found.append(residue)
+            elif self._amber_residue_is_ion(residue):
+                ion_residues.append(residue)
+            else:
+                unassigned.append(residue)
+
+        if unassigned:
+            names = ', '.join(f'{res.name}:{res.idx + 1}' for res in unassigned[:8])
+            suffix = '...' if len(unassigned) > 8 else ''
+            GMXMMPBSA_ERROR(
+                'Every non-solvent residue in the solvated AMBER topology must be selected by -cm. '
+                f'Unassigned residues: {names}{suffix}'
+            )
+        if not rec_residues or not lig_residues:
+            GMXMMPBSA_ERROR('The solvated AMBER complex masks must select both a receptor and a ligand.')
+        if len(water_residues_found) < self.explicit_waters:
+            GMXMMPBSA_ERROR(
+                f'EXPLICIT_WATERS requested {self.explicit_waters} waters, but only '
+                f'{len(water_residues_found)} water residues were found in the complex topology.'
+            )
+
+        return rec_residues, lig_residues, water_residues_found, ion_residues
+
+    @staticmethod
+    def _water_extra_point_indices(parm, water_names):
+        return [
+            atom.idx + 1 for residue in parm.residues if residue.name.strip().upper() in water_names
+            for atom in residue.atoms
+            if (
+                getattr(atom, 'atomic_number', None) == 0 or
+                getattr(atom, 'mass', None) == 0 or
+                getattr(atom, 'type', '').upper() == 'EP' or
+                getattr(atom, 'name', '').upper().startswith('EP')
+            )
+        ]
+
+    def _explicit_water_preprocessing_actions(self, source):
+        """Resolve source masks before stripping, then renumber surviving atoms.
+
+        cpptraj evaluates each action against the topology produced by the
+        preceding action. Both the structure and trajectory must use these
+        same remapped selections.
+        """
+        masks = [mask for mask in (self.explicit_water_source_ion_mask,
+                                  self.explicit_water_source_extra_points) if mask]
+        strip_mask = '|'.join(f'({mask})' for mask in masks)
+        removed = (parmed.amber.AmberMask(source, strip_mask).Selection()
+                   if strip_mask else [0] * len(source.atoms))
+        reference = parmed.amber.AmberMask(
+            source, f'({self.explicit_waters_mask})&(!{self.explicit_water_source_all_mask})'
+        ).Selection()
+        solvent = parmed.amber.AmberMask(source, self.explicit_water_source_all_mask).Selection()
+        reference_atoms, solvent_atoms = [], []
+        current_index = 0
+        for index, remove in enumerate(removed):
+            if remove:
+                continue
+            current_index += 1
+            if reference[index]:
+                reference_atoms.append(current_index)
+            if solvent[index]:
+                solvent_atoms.append(current_index)
+        if not reference_atoms:
+            GMXMMPBSA_ERROR('EXPLICIT_WATERS_MASK selected no solute atoms after removing ions/extra points.')
+        def atom_mask(indices):
+            return '@' + ','.join(list2range(indices)['string'])
+        actions = [f'strip {strip_mask}'] if strip_mask else []
+        actions.append(f'closest {self.explicit_waters} {atom_mask(reference_atoms)} '
+                       f'solventmask {atom_mask(solvent_atoms)} noimage')
+        return actions
+
+    def _prepare_explicit_water_source(self):
+        source = parmed.amber.LoadParm(self.FILES.complex_top)
+        rec_residues, lig_residues, waters, ions_found = self._source_residue_classes(source)
+        water_names = self._amber_water_names()
+
+        all_water_residues = self._amber_residue_numbers(waters)
+        self.explicit_water_source_residues = all_water_residues[:self.explicit_waters]
+        self.explicit_water_source_mask = self._amber_mask(self.explicit_water_source_residues)
+        self.explicit_water_source_all_mask = self._amber_mask(all_water_residues)
+        self.explicit_water_source_ions = self._amber_residue_numbers(ions_found)
+        self.explicit_water_source_ion_mask = self._amber_mask(self.explicit_water_source_ions)
+        self.explicit_water_source_extra_points = ''
+        extra_points = self._water_extra_point_indices(source, water_names)
+        if extra_points:
+            self.explicit_water_source_extra_points = '@' + ','.join(list2range(extra_points)['string'])
+            if self.explicit_waters_extra_points == 'error':
+                GMXMMPBSA_ERROR(
+                    'EXPLICIT_WATERS found extra-point atoms in the AMBER water model. '
+                    'Use EXPLICIT_WATERS_EXTRA_POINTS="strip" or a 3-site water model such as TIP3P/SPC.'
+                )
+            logging.warning(
+                'EXPLICIT_WATERS_EXTRA_POINTS="strip" will remove %d virtual-site atom(s) from the AMBER '
+                'solvent preprocessing topology.', len(extra_points)
+            )
+            logging.warning(
+                'GB/PB energies with stripped OPC/TIP4P extra points should be interpreted cautiously because '
+                'the water electrostatics no longer correspond to the original virtual-site model.'
+            )
+
+        self.explicit_water_prmtop = f'{self.FILES.prefix}COM_FULL_SOLVENT.prmtop'
+        source.write_parm(self.explicit_water_prmtop)
+        if self.explicit_waters_mask.strip().lower() == 'dasa':
+            self._resolve_explicit_waters_mask()
+        self.explicit_water_actions = self._explicit_water_preprocessing_actions(source)
+        self._write_explicit_water_structures()
+
+        # ParmEd renumbers residues when unselected solvent/ions are removed.
+        retained = set(self._amber_residue_numbers(rec_residues + lig_residues)
+                       + self.explicit_water_source_residues)
+        compact = {number: index + 1 for index, number in enumerate(sorted(retained))}
+        self.explicit_source_receptor_mask = self._amber_mask(
+            [compact[number] for number in self._amber_residue_numbers(rec_residues)])
+        self.explicit_source_ligand_mask = self._amber_mask(
+            [compact[number] for number in self._amber_residue_numbers(lig_residues)])
+
+    def _write_explicit_water_structures(self):
+        cpptraj = self.external_progs['cpptraj']
+        trajectories = list(self.FILES.complex_trajs)
+        source_traj = Trajectory(self.explicit_water_prmtop, trajectories, cpptraj)
+        startframe = self.INPUT['general']['startframe']
+        frame_ranges = self._global_frame_ranges(source_traj.traj_sizes, startframe, startframe, 1)
+        if not frame_ranges:
+            GMXMMPBSA_ERROR('No frames were available to build the explicit-water structure.')
+
+        # Build the topology template from the first frame that will enter the
+        # calculation, after applying the same closest-water operation used by
+        # _cleanup_explicit_water_trajs(). This keeps the visible PDB and the
+        # first calculation frame spatially consistent.
+        output = f'{self.FILES.prefix}COMPLEX_EXPLICIT.pdb'
+        traj = Trajectory.__new__(Trajectory)
+        traj.exe = cpptraj
+        traj.prmtop = self.explicit_water_prmtop
+        traj.actions = [
+            f'trajin {trajectories[file_index]} {local_start} {local_end} {local_interval}'
+            for file_index, local_start, local_end, local_interval in frame_ranges
+        ]
+        traj.actions.append('noprogress')
+        traj.actions.extend(self.explicit_water_actions)
+        traj.Outtraj(output, frames='1', filetype='pdb')
+        traj.Run(f'{self.FILES.prefix}complex_explicit_pdb.out')
+        self.explicit_complex_str = self.molstr(output)
+
+        # The closest action produces a compact complex topology with the
+        # selected waters after the solute. Derive the receptor and ligand
+        # structures from that same frame rather than reintroducing arbitrary
+        # first-in-topology waters.
+        water_numbers = [res.idx + 1 for res in self.explicit_complex_str.residues
+                         if self._amber_residue_is_water(res)]
+        water_mask = self._amber_mask(water_numbers)
+        rec_mask = ':' + ','.join(self.resi['REC']['string'])
+        lig_mask = ':' + ','.join(self.resi['LIG']['string'])
+        structures = [
+            ('explicit_receptor_str', f'!({rec_mask}|{water_mask})', 'receptor'),
+            ('explicit_ligand_str', f'!{lig_mask}', 'ligand'),
+        ]
+        for attr, strip_mask, label in structures:
+            structure = self.molstr(self.explicit_complex_str)
+            structure.strip(strip_mask)
+            structure_file = f'{self.FILES.prefix}{label.upper()}_EXPLICIT.pdb'
+            structure.save(structure_file, 'pdb', overwrite=True, renumber=False)
+            setattr(self, attr, self.molstr(structure_file))
+
+    @staticmethod
+    def _amber_mask_numbers(mask):
+        if not mask:
+            return []
+        numbers = []
+        for item in mask.strip(':').split(','):
+            if '-' in item:
+                start, end = map(int, item.split('-', 1))
+                numbers.extend(range(start, end + 1))
+            else:
+                numbers.append(int(item))
+        return numbers
+
+    def ambertop2prmtop(self):
+        if self.INPUT.get('pb', {}).get('pbrun', False):
+            logging.info('Using topology radii for PB (radiopt=0).')
+            self.INPUT['pb']['radiopt'] = 0
+        logging.info('Building Normal Complex Amber topology...')
+
+        if self.explicit_waters:
+            self._prepare_explicit_water_source()
+            with elapsed_progress('Reading complex topology with ParmEd'):
+                com_top = parmed.amber.LoadParm(self.FILES.complex_top)
+            keep_mask = f'({self.FILES.complex_mask[0]}|{self.FILES.complex_mask[1]}|'
+            keep_mask += f'{self.explicit_water_source_mask})'
+            logging.debug(f'Stripping solvated complex topology with mask: {keep_mask}')
+            with elapsed_progress('Applying complex selection to topology'):
+                com_top.strip(f'!{keep_mask}')
+        else:
+            with elapsed_progress('Reading complex topology with ParmEd'):
+                com_top = parmed.amber.LoadParm(self.FILES.complex_top)
+            logging.debug(f'Stripping complex topology with mask: {"|".join(self.FILES.complex_mask)}')
+            with elapsed_progress('Applying complex selection to topology'):
+                com_top.strip(f'!({"|".join(self.FILES.complex_mask)})')
+
+        self._warn_gb_radius_compatibility(com_top, 'complex')
+
+        if self.explicit_waters and self.explicit_water_source_extra_points:
+            extra_points = self._water_extra_point_indices(com_top, self._amber_water_names())
+            if extra_points:
+                with elapsed_progress('Applying complex selection to topology'):
+                    com_top.strip('@' + ','.join(list2range(extra_points)['string']))
+
+
+        # com_top = self.cleantop(self.FILES.complex_top, self.indexes['COM']['COM'])
+        structure_for_topology = self.explicit_complex_str if self.explicit_waters else self.complex_str
+        if error_info := eq_strs(com_top, structure_for_topology):
+            topology_mismatch_error('complex', self.FILES.complex_top, self.complex_str_file, error_info)
+
+        com_top.coordinates = structure_for_topology.coordinates
+
+        if self.explicit_waters:
+            water_numbers = [res.idx + 1 for res in com_top.residues
+                             if self._amber_residue_is_water(res)]
+            source_rec_numbers = set(self._amber_mask_numbers(self.explicit_source_receptor_mask))
+            source_lig_numbers = set(self._amber_mask_numbers(self.explicit_source_ligand_mask))
+            rec_numbers = [res.idx + 1 for res in com_top.residues if res.idx + 1 in source_rec_numbers]
+            lig_numbers = [res.idx + 1 for res in com_top.residues if res.idx + 1 in source_lig_numbers]
+            self.explicit_water_range = self._amber_mask(water_numbers).lstrip(':')
+            self.explicit_receptor_mask = self._amber_mask(rec_numbers + water_numbers)
+            self.explicit_ligand_mask = self._amber_mask(lig_numbers)
+        com_top.save(f"{self.FILES.prefix}COM.inpcrd", format='rst7', overwrite=True)
+        # try:
+        if isinstance(com_top, parmed.amber.ChamberParm) or com_top.impropers or com_top.urey_bradleys:
+            com_amb_prm = self._convert_amber_topology(com_top, parmed.amber.ChamberParm, 'complex')
+            com_top_parm = 'chamber'
+
+            title = com_amb_prm.parm_data['CTITLE']
+            com_amb_prm.add_flag('TITLE', '20a4', title or '', after='CTITLE')
+
+            logging.info('Detected CHARMM force field topology format...')
+        else:
+            com_amb_prm = self._convert_amber_topology(com_top, parmed.amber.AmberParm, 'complex')
+            com_top_parm = 'amber'
+            logging.info('Detected Amber/OPLS force field topology format...')
+
+        # IMPORTANT: make_trajs ends in error if the box is defined
+        com_amb_prm.box = None
+
+        # check periodicity
+        com_amb_prm = self._check_periodicity(com_amb_prm, 'complex')
+
+        self.fixparm2amber(com_amb_prm)
+
+        self._copy_implicit_radii(com_top, com_amb_prm, 'Complex')
+        logging.info('Writing Normal Complex AMBER topology...')
+        com_amb_prm.write_parm(self.complex_pmrtop)
+
+        rec_indexes_string = (self.explicit_receptor_mask.lstrip(':') if self.explicit_waters
+                              else ','.join(self.resi['REC']['string']))
+
+        rec_hastop = True
+        if self.FILES.receptor_top:
+            logging.info('A Receptor topology file was defined. Using MT approach...')
+            logging.info('Building AMBER Receptor Topology from AMBER Receptor Topology...')
+            with elapsed_progress('Reading receptor topology with ParmEd'):
+                rec_top = parmed.amber.LoadParm(self.FILES.receptor_top)
+            self._warn_gb_radius_compatibility(rec_top, 'receptor')
+
+            if error_info := eq_strs(rec_top, self.receptor_str):
+                topology_mismatch_error('receptor', self.FILES.receptor_top, self.receptor_str_file, error_info)
+
+            rec_top.coordinates = self.receptor_str.coordinates
+            # rec_top.save(f"{self.FILES.prefix}REC.inpcrd", format='rst7', overwrite=True)
+            if isinstance(rec_top, parmed.amber.ChamberParm) or rec_top.impropers or rec_top.urey_bradleys:
+                if com_top_parm == 'amber':
+                    GMXMMPBSA_ERROR('Inconsistent parameter format. The defined Complex is Amber/OPLS type while the '
+                                    'Receptor is CHAMBER type!')
+                rec_amb_prm = self._convert_amber_topology(rec_top, parmed.amber.ChamberParm, 'receptor')
+            else:
+                if com_top_parm == 'chamber':
+                    GMXMMPBSA_ERROR('Inconsistent parameter format. The defined Complex is CHAMBER type while the '
+                                    'Receptor is Amber/OPLS type!')
+                rec_amb_prm = self._convert_amber_topology(rec_top, parmed.amber.AmberParm, 'receptor')
+            logging.info('Converting receptor residue names from GROMACS to AMBER...')
+
+            # check periodicity
+            rec_amb_prm = self._check_periodicity(rec_amb_prm, 'receptor')
+
+            self.fixparm2amber(rec_amb_prm)
+        else:
+            logging.info('No Receptor topology file was defined. Using ST approach...')
+            logging.info('Building AMBER Receptor topology from Complex...')
+            # we make a copy for receptor topology
+            rec_amb_prm = self.molstr(com_amb_prm)
+            rec_amb_prm.strip(f'!:{rec_indexes_string}')
+            rec_hastop = False
+
+        if rec_hastop:
+            self._copy_implicit_radii(rec_top, rec_amb_prm, 'Receptor')
+        else:
+            logging.info(f'Preserving Receptor GB radii inherited from Complex: {self._radius_set(rec_amb_prm)}')
+        logging.info('Writing Normal Receptor AMBER topology...')
+        rec_amb_prm.write_parm(self.receptor_pmrtop)
+        rec_amb_prm.save(f"{self.FILES.prefix}REC.inpcrd", format='rst7', overwrite=True)
+
+        lig_hastop = True
+        if self.FILES.ligand_top:
+            logging.info('A Ligand Topology file was defined. Using MT approach...')
+            logging.info('Building AMBER Ligand Topology from AMBER Ligand Topology...')
+            with elapsed_progress('Reading ligand topology with ParmEd'):
+                lig_top = parmed.amber.LoadParm(self.FILES.ligand_top)
+            self._warn_gb_radius_compatibility(lig_top, 'ligand')
+
+            if error_info := eq_strs(lig_top, self.ligand_str):
+                topology_mismatch_error('ligand', self.FILES.ligand_top, self.ligand_str_file, error_info)
+
+            lig_top.coordinates = self.ligand_str.coordinates
+            # lig_top.save(f"{self.FILES.prefix}LIG.inpcrd", format='rst7', overwrite=True)
+            if isinstance(lig_top, parmed.amber.ChamberParm) or lig_top.impropers or lig_top.urey_bradleys:
+                if com_top_parm == 'amber':
+                    GMXMMPBSA_ERROR('Inconsistent parameter format. The defined Complex is Amber/OPLS type while the '
+                                    'Ligand is CHAMBER type!')
+                lig_amb_prm = self._convert_amber_topology(lig_top, parmed.amber.ChamberParm, 'ligand')
+            else:
+                if com_top_parm == 'chamber':
+                    GMXMMPBSA_ERROR('Inconsistent parameter format. The defined Complex is CHAMBER type while the '
+                                    'Ligand is Amber/OPLS type!')
+                lig_amb_prm = self._convert_amber_topology(lig_top, parmed.amber.AmberParm, 'ligand')
+            logging.info('Converting ligand residue names from GROMACS to AMBER...')
+
+            # check periodicity
+            lig_amb_prm = self._check_periodicity(lig_amb_prm, 'ligand')
+
+            self.fixparm2amber(lig_amb_prm)
+        else:
+            logging.info('No Ligand topology file was defined. Using ST approach...')
+            logging.info('Building AMBER Ligand topology from Complex...')
+            # we make a copy for ligand topology
+            lig_amb_prm = self.molstr(com_amb_prm)
+            lig_amb_prm.strip(f':{rec_indexes_string}')
+            lig_hastop = False
+        if lig_hastop:
+            self._copy_implicit_radii(lig_top, lig_amb_prm, 'Ligand')
+        else:
+            logging.info(f'Preserving Ligand GB radii inherited from Complex: {self._radius_set(lig_amb_prm)}')
+        logging.info('Writing Normal Ligand AMBER topology...')
+        lig_amb_prm.write_parm(self.ligand_pmrtop)
+        lig_amb_prm.save(f"{self.FILES.prefix}LIG.inpcrd", format='rst7', overwrite=True)
+
+        if self.INPUT['ala']['alarun']:
+            logging.info('Building Mutant Complex Topology...')
+            # get mutation index in complex
+            self.com_mut_indices, self.part_mut, self.part_indices = self.getMutationInfo()
+            self.com_mut_index = self.com_mut_indices[0] if len(self.com_mut_indices) == 1 else None
+            self.part_index = self.part_indices[0] if len(self.part_indices) == 1 else None
+            mut_com_amb_prm = self.makeMutTop(com_amb_prm, self.com_mut_indices)
+            mutant_radius = self._chrad_radius_name(com_amb_prm)
+            logging.info(f"Assigning inherited PBRadii {mutant_radius} to Mutant Complex...")
+            action = ChRad(mut_com_amb_prm, mutant_radius)
+            logging.info('Writing Mutant Complex AMBER topology...')
+            mut_com_amb_prm.write_parm(self.mutant_complex_pmrtop)
+
+            if self.part_mut == 'REC':
+                logging.info('Detecting mutation in Receptor. Building Mutant Receptor topology...')
+                out_prmtop = self.mutant_receptor_pmrtop
+                self.mutant_ligand_pmrtop = None
+                if rec_hastop:
+                    mtop = self.makeMutTop(rec_amb_prm, self.part_indices)
+                else:
+                    mut_com_amb_prm.strip(f'!:{rec_indexes_string}')
+                    mtop = mut_com_amb_prm
+            else:
+                logging.info('Detecting mutation in Ligand. Building Mutant Ligand topology...')
+                out_prmtop = self.mutant_ligand_pmrtop
+                self.mutant_receptor_pmrtop = None
+                if lig_hastop:
+                    mtop = self.makeMutTop(lig_amb_prm, self.part_indices)
+                else:
+                    mut_com_amb_prm.strip(f':{rec_indexes_string}')
+                    mtop = mut_com_amb_prm
+
+            if com_top_parm == 'chamber':
+                mut_prot_amb_prm = parmed.amber.ChamberParm.from_structure(mtop)
+            else:
+                mut_prot_amb_prm = parmed.amber.AmberParm.from_structure(mtop)
+            mutant_part_radius = self._chrad_radius_name(rec_amb_prm if self.part_mut == 'REC' else lig_amb_prm)
+            logging.info(f"Assigning inherited PBRadii {mutant_part_radius} to Mutant "
+                         f"{'Receptor' if self.part_mut == 'REC' else 'Ligand'}...")
+            action = ChRad(mut_prot_amb_prm, mutant_part_radius)
+            logging.info(f"Writing Mutant {'Receptor' if self.part_mut == 'REC' else 'Ligand'} AMBER topology...")
+            mut_prot_amb_prm.write_parm(out_prmtop)
+        else:
+            self.mutant_complex_pmrtop = None
+
+        return (self.complex_pmrtop, self.receptor_pmrtop, self.ligand_pmrtop, self.mutant_complex_pmrtop,
+                self.mutant_receptor_pmrtop, self.mutant_ligand_pmrtop)
+
+    def _split_str(self, start, r, c, basename, struct, mut_index=None):
+        end = start + (r[1] - r[0])
+        mask = f'!:{start}-{end}'
+        str_ = self.molstr(struct)
+        if mut_index is not None and (not isinstance(mut_index, (list, tuple)) or mut_index):
+            str_ = self.makeMutTop(str_, mut_index, True)
+        str_.strip(mask)
+        str_file = f'{self.FILES.prefix}{basename}_F{c}.pdb'
+        str_.save(str_file, 'pdb', True, renumber=False)
+        return end, str_file
+
+
+    @staticmethod
+    def cleantop(top_file, ndx, id='complex'):
+        """
+        Create a new top file with selected groups and without SOL and IONS
+        :param top_file: User-defined topology file
+        :param ndx: atoms index
+        :return: new and clean top instance
+        """
+        top_file = Path(top_file)
+        molsect = False
+
+        with tempfile.NamedTemporaryFile(dir=top_file.parent, prefix='_temp_top', suffix='.top', mode='w', delete=False) as temp_top:
+            # temp_top.write('; Modified by gmx_MMPBSA\n')
+            # TODO: keep solvent when n-wat is implemented
+            with open(top_file) as topf:
+                for line in topf:
+                    if '[ molecules ]' in line:
+                        molsect = True
+                    if molsect:
+                        # not copy ions and solvent
+                        sol_ion = [
+                            # standard gmx form
+                            'NA', 'CL', 'SOL', 'K'
+                            # charmm-GUI form ??
+                                            'SOD', 'Na+', 'CLA', 'Cl-', 'POT', 'K+',
+                            'TIP3P', 'TIP3', 'TP3', 'TIPS3P', 'TIP3o',
+                            'TIP4P', 'TIP4PEW', 'T4E', 'TIP4PD',
+                            'TIP5P',
+                            'SPC', 'SPC/E', 'SPCE',
+                            'WAT',
+                            'OPC']
+                        if not line.split():
+                            continue
+                        if line.split()[0].strip() in sol_ion:
+                            continue
+                    temp_top.write(line)
+
+        # read the temp topology with parmed
+        rtemp_top = parmed.gromacs.GromacsTopologyFile(temp_top.name)
+        # get the residues in the top from the com_ndx
+        res_list = []
+
+        for i in ndx:
+            try:
+                idx = rtemp_top.atoms[i - 1].residue.idx + 1
+                if idx not in res_list:
+                    res_list.append(rtemp_top.atoms[i - 1].residue.number + 1)
+            except IndexError:
+                GMXMMPBSA_ERROR(f'The atom {i} in the {id} index is not found in the topology file. Please check that '
+                                'the files are consistent.')
+
+        ranges = list2range(res_list)
+        rtemp_top.strip(f"!:{','.join(ranges['string'])}")
+
+        # Clean temporal file
+        Path(temp_top.name).unlink()
+        return rtemp_top
+
+    def get_masks(self):
+        if self.explicit_waters:
+            rec_mask = self.explicit_receptor_mask
+            lig_mask = self.explicit_ligand_mask
+        else:
+            rec_mask = ':' + ','.join(self.resi['REC']['string'])
+            lig_mask = ':' + ','.join(self.resi['LIG']['string'])
+
+        if self.INPUT['ala']['alarun']:
+            for index in self.com_mut_indices:
+                self.resl[index].set_mut(self.INPUT['ala']['mutant'])
+        return rec_mask, lig_mask, self.resl
+
+    def get_selected_residues(self, select, qm_sele=False):
+        """
+        Convert string selection format to amber index list
+        """
+        if qm_sele:
+            com_top = parmed.load_file(self.complex_pmrtop)
+
+        dist, res_selection = selector(select)
+        residues_selection = {'rec': [], 'lig': []}
+        rec_charge = 0
+        lig_charge = 0
+        if dist:
+            for rres in self.resl:
+                if rres.is_ligand():
+                    continue
+                for lres in self.resl:
+                    if lres.is_receptor():
+                        continue
+                    for rat in self.complex_str.residues[rres - 1].atoms:
+                        rat_coor = [rat.xx, rat.xy, rat.xz]
+                        for lat in self.complex_str.residues[lres - 1].atoms:
+                            lat_coor = [lat.xx, lat.xy, lat.xz]
+                            if get_dist(rat_coor, lat_coor) <= dist:
+                                if rres not in residues_selection['rec']:
+                                    residues_selection['rec'].append(rres)
+                                    if qm_sele:
+                                        rec_charge += sum(atm.charge for atm in com_top.residues[rres - 1].atoms)
+                                if lres not in residues_selection['lig']:
+                                    residues_selection['lig'].append(lres)
+                                    if qm_sele:
+                                        lig_charge += sum(atm.charge for atm in com_top.residues[lres - 1].atoms)
+                                break
+        elif res_selection:
+            for i in self.resl:
+                rres = self.complex_str.residues[i - 1]
+                if [rres.chain, rres.number, rres.insertion_code] in res_selection:
+                    if i.is_ligand():
+                        residues_selection['lig'].append(i)
+                        if qm_sele:
+                            # Sum raw partial charges; round once at the end so
+                            # list / within / all selection paths agree.
+                            lig_charge += sum(atm.charge for atm in com_top.residues[i - 1].atoms)
+                    else:
+                        residues_selection['rec'].append(i)
+                        if qm_sele:
+                            rec_charge += sum(atm.charge for atm in com_top.residues[i - 1].atoms)
+                    res_selection.remove([rres.chain, rres.number, rres.insertion_code])
+            for res in res_selection:
+                logging.warning("We couldn't find this residue CHAIN:{} RES_NUM:{} ICODE: {}".format(*res))
+            # check if residues in receptor and ligand was defined
+            if not residues_selection['rec'] or not residues_selection['lig']:
+                if not self.INPUT['ala']['alarun']:
+                    GMXMMPBSA_ERROR(
+                        'For decomposition analysis, you must define residues for both receptor and ligand!')
+        else:
+            for i in self.resl:
+                if i.is_ligand():
+                    residues_selection['lig'].append(i)
+                    if qm_sele:
+                        lig_charge += sum(atm.charge for atm in com_top.residues[i - 1].atoms)
+                else:
+                    residues_selection['rec'].append(i)
+                    if qm_sele:
+                        rec_charge += sum(atm.charge for atm in com_top.residues[i - 1].atoms)
+        if qm_sele:
+            rec_charge = int(round(rec_charge))
+            lig_charge = int(round(lig_charge))
+        sele_res = sorted([r for m in residues_selection.values() for r in m], key=lambda x: x.index)
+        return (sele_res, (rec_charge, lig_charge)) if qm_sele else sele_res
+
+    def fixparm2amber(self, structure, str_name=None):
+
+        for c, residue in enumerate(structure.residues, start=1):
+            # change atoms name from GROMACS to AMBER
+            for atom in residue.atoms:
+                if atom.name == 'OC1':
+                    atom.name = 'O'
+                elif atom.name == 'OC2':
+                    atom.name = 'OXT'
+                    residue.ter = True  # parmed terminal
+            # change residues name according to AMBER
+            if residue.name == 'ILE':
+                for atom in residue.atoms:
+                    if atom.name == 'CD':
+                        atom.name = 'CD1'
+                        break
+            elif residue.name == 'LYS':
+                atoms = [atom.name for atom in residue.atoms]
+                if 'HZ3' not in atoms:
+                    residue.name = 'LYN'
+            elif residue.name == 'ASP':
+                atoms = [atom.name for atom in residue.atoms]
+                if 'HD2' in atoms:
+                    residue.name = 'ASH'
+            elif residue.name == 'GLU':
+                atoms = [atom.name for atom in residue.atoms]
+                if 'HE2' in atoms:
+                    residue.name = 'GLH'
+            elif residue.name in his:
+                atoms = [atom.name for atom in residue.atoms if atom.atomic_number == 1]
+                if 'HD1' in atoms and 'HE2' in atoms:
+                    residue.name = 'HIP'
+                elif 'HD1' in atoms:
+                    residue.name = 'HID'
+                elif 'HE2' in atoms:
+                    residue.name = 'HIE'
+            elif residue.name in cys_name:
+                for atom in residue.atoms:
+                    if 'SG' in atom.name:
+                        for bondedatm in atom.bond_partners:
+                            if bondedatm.name == 'SG':
+                                if str_name:
+                                    if str_name == 'COM':
+                                        cys1 = c
+                                        cys2 = structure.residues.index(bondedatm.residue) + 1
+                                    else:
+                                        cys1 = residue.number
+                                        cys2 = bondedatm.residue.number
+                                    if ([cys1, cys2] not in self.cys_bonds[str_name] and
+                                            [cys2, cys1] not in self.cys_bonds[str_name]):
+                                        self.cys_bonds[str_name].append([cys1, cys2])
+                                if residue.name == 'CYX' and bondedatm.residue.name == 'CYX':
+                                    continue
+                                residue.name = 'CYX'
+                                bondedatm.residue.name = 'CYX'
+                        break
+        if str_name:
+            structure.strip('@/H')
+
+    def getMutationInfo(self):
+        if not self.INPUT['ala']['mutant_res']:
+            GMXMMPBSA_ERROR("No residue for mutation was defined")
+        # dict = { resind: [chain, resnum, icode]
+        sele_res_dict = self.get_selected_residues(self.INPUT['ala']['mutant_res'])
+        if not sele_res_dict:
+            GMXMMPBSA_ERROR('No valid residue was found for mutation')
+
+        parts = {'REC' if residue.is_receptor() else 'LIG' if residue.is_ligand() else None
+                 for residue in sele_res_dict}
+        if None in parts:
+            residue = next(residue for residue in sele_res_dict
+                           if not residue.is_receptor() and not residue.is_ligand())
+            GMXMMPBSA_ERROR(f'Residue {residue.chain}:{residue.number} not found')
+        if len(parts) > 1:
+            GMXMMPBSA_ERROR('Composite alanine/glycine mutations cannot mix receptor and ligand residues.')
+        if len(sele_res_dict) > 1 and self.INPUT['ala']['cas_intdiel']:
+            GMXMMPBSA_ERROR('cas_intdiel=1 is ambiguous for composite mutations. Set cas_intdiel=0 or select one residue.')
+
+        com_mut_indices = []
+        part_indices = []
+        for residue_ref in sele_res_dict:
+            res = self.complex_str.residues[residue_ref - 1]
+            icode = f':{res.insertion_code}' if res.insertion_code else ''
+            if (
+                not parmed.residue.AminoAcidResidue.has(res.name) and res.name not in ['HSP', 'HSE', 'HSD']
+                or res.name in ['CYX', 'PRO', 'GLY']
+                or res.name == 'ALA' and self.INPUT['ala']['mutant'] == 'ALA'
+            ):
+                GMXMMPBSA_ERROR(f"Selecting residue {res.chain}:{res.name}:{res.number}{icode} can't be mutated. Please, "
+                                f"define a valid residue...")
+            com_mut_indices.append(residue_ref - 1)
+            part_indices.append(residue_ref.id_index - 1)
+
+        return com_mut_indices, next(iter(parts)), part_indices
+
+    def _assign_ter(self, structure=None):
+        structure = self.complex_str if structure is None else structure
+        for res in structure.residues:
+            # evident terminal
+            if len(res.name) == 4:
+                if res.name.startswith('N'):
+                    res.ter = 'N'  # ter is a boolean variable, but it is not used anyway
+                elif res.name.startswith('C'):
+                    res.ter = 'C'  # ter is a boolean variable, but it is not used anyway
+                else:
+                    res.ter = False
+            else:
+                atms_name = [at.name for at in res.atoms]
+                if {'OXT', 'OT1', 'OT2', 'O1', 'O2', 'OC1', 'OC2'} & set(atms_name):
+                    res.ter = 'C'  # ter is a boolean variable, but it is not used anyway
+                elif (('H3' in atms_name or 'HT3' in atms_name) and
+                      parmed.residue.AminoAcidResidue.has(res.name)  # exclude other residues with H3, for examples ligs
+                ):
+                    res.ter = 'N'  # ter is a boolean variable, but it is not used anyway
+                else:
+                    res.ter = False
+
+    def makeMutTop(self, wt_top, mut_index, pdb=False):
+        return super().makeMutTop(wt_top, mut_index, pdb=pdb)
+
+    def _makeMutTopSingle(self, wt_top, mut_index, pdb=False, copy=True):
+        # Share charge, atom-type and LJ-index assignment with gmx_MMPBSA.
+        return super()._makeMutTopSingle(wt_top, mut_index, pdb=pdb, copy=copy)
+
+    def cleanup_trajs(self):
+        # clear trajectory
+        if not self.INPUT['general']['solvated_trajectory']:
+            return
+        if self.explicit_waters:
+            self._cleanup_explicit_water_trajs()
+            return
+        logging.info('Cleaning normal complex trajectories...')
+        new_trajs = []
+
+        if self.INPUT['general']['netcdf']:
+            trj_suffix = 'nc'
+        else:
+            trj_suffix = 'mdcrd'
+        for i in range(len(self.FILES.complex_trajs)):
+
+            com_traj = Trajectory(self.FILES.complex_top, self.FILES.complex_trajs[i])
+            com_traj.Setup()
+            com_traj.Strip(f'!({"|".join(self.FILES.complex_mask)})')
+            com_traj.Outtraj(f'COM_traj_{i}.{trj_suffix}', filetype=self.INPUT['general']['netcdf'])
+            with elapsed_progress(f'Extracting complex trajectory {i + 1}/{len(self.FILES.complex_trajs)}'):
+                com_traj.Run(f'COM_traj_{i}_cpptraj.out')
+            new_trajs.append(f'COM_traj_{i}.{trj_suffix}')
+        self.FILES.complex_trajs = new_trajs
+
+        # clear trajectory
+        if self.FILES.receptor_trajs:
+            logging.info('Cleaning normal receptor trajectories...')
+            new_trajs = []
+            for i in range(len(self.FILES.receptor_trajs)):
+                rec_traj = Trajectory(self.FILES.receptor_top, self.FILES.receptor_trajs[i])
+                rec_traj.Setup()
+                rec_traj.Strip(f'!{self.FILES.receptor_mask}')
+                rec_traj.Outtraj(f'REC_traj_{i}.{trj_suffix}', filetype=self.INPUT['general']['netcdf'])
+                with elapsed_progress(f'Extracting receptor trajectory {i + 1}/{len(self.FILES.receptor_trajs)}'):
+                    rec_traj.Run(f'REC_traj_{i}_cpptraj.out')
+                new_trajs.append(f'REC_traj_{i}.{trj_suffix}')
+            self.FILES.receptor_trajs = new_trajs
+
+        if self.FILES.ligand_trajs:
+            logging.info('Cleaning normal ligand trajectories...')
+            new_trajs = []
+            for i in range(len(self.FILES.ligand_trajs)):
+                lig_traj = Trajectory(self.FILES.ligand_top, self.FILES.ligand_trajs[i])
+                lig_traj.Setup()
+                lig_traj.Strip(f'!{self.FILES.ligand_mask}')
+                lig_traj.Outtraj(f'LIG_traj_{i}.{trj_suffix}', filetype=self.INPUT['general']['netcdf'])
+                with elapsed_progress(f'Extracting ligand trajectory {i + 1}/{len(self.FILES.ligand_trajs)}'):
+                    lig_traj.Run(f'LIG_traj_{i}_cpptraj.out')
+                new_trajs.append(f'LIG_traj_{i}.{trj_suffix}')
+            self.FILES.ligand_trajs = new_trajs
+
+    def _cleanup_explicit_water_trajs(self):
+        logging.info('Selecting explicit receptor waters from AMBER complex trajectories...')
+        cpptraj = self.external_progs['cpptraj']
+        trajectories = list(self.FILES.complex_trajs)
+        source_traj = Trajectory(self.explicit_water_prmtop, trajectories, cpptraj)
+        startframe = self.INPUT['general']['startframe']
+        endframe = self.INPUT['general']['endframe']
+        interval = self.INPUT['general']['interval']
+
+        if len(trajectories) == 1:
+            trajin = f'trajin {trajectories[0]} {startframe} {endframe} {interval}\n'
+        else:
+            frame_ranges = self._global_frame_ranges(source_traj.traj_sizes, startframe, endframe, interval)
+            if not frame_ranges:
+                GMXMMPBSA_ERROR('No frames were selected across the explicit-water trajectories.')
+            logging.info('Applying global frame selection across %d concatenated AMBER trajectories.', len(trajectories))
+            trajin = ''.join(
+                f'trajin {trajectories[file_index]} {local_start} {local_end} {local_interval}\n'
+                for file_index, local_start, local_end, local_interval in frame_ranges
+            )
+
+        filtered = f'{self.FILES.prefix}COM_traj_0.mdcrd'
+        actions = list(self.explicit_water_actions)
+        actions[-1] += f' closestout {self.FILES.prefix}explicit_waters_closest_0.dat'
+        cpptraj_input = trajin + '\n'.join(actions) + f'\ntrajout {filtered} nobox\n'
+        with elapsed_progress('Selecting explicit waters for trajectory frames with cpptraj'):
+            with open(f'{self.FILES.prefix}explicit_waters_cpptraj_0.out', 'w') as output:
+                process = subprocess.Popen([cpptraj, self.explicit_water_prmtop], stdin=subprocess.PIPE,
+                                           stdout=output, stderr=subprocess.STDOUT)
+                process.communicate(cpptraj_input.encode())
+            if process.wait():
+                GMXMMPBSA_ERROR(
+                    f'{cpptraj} failed when selecting explicit waters from {", ".join(trajectories)}'
+                )
+        self.FILES.complex_trajs = [filtered]
+        self.FILES.explicit_waters_preselected = True
+
+    def check_structures(self, com_str, rec_str=None, lig_str=None):
+        logging.info('Checking structural consistency...')
+        with elapsed_progress('Complex structure validation'):
+            check_str(com_str)
+        with elapsed_progress('Receptor structure validation'):
+            check_str(rec_str, skip=True)
+        with elapsed_progress('Ligand structure validation'):
+            check_str(lig_str, skip=True)
+
+        if self.FILES.reference_structure:
+            logging.info('Assigning chain IDs and insertion codes to structure files according to the reference structure...')
+            with elapsed_progress('Reference structure validation'):
+                ref_str = check_str(self.FILES.reference_structure)
+            if len(ref_str.residues) != len(com_str.residues):
+                GMXMMPBSA_ERROR(f'The number of residues of the complex ({len(com_str.residues)}) and of the '
+                                f'reference structure ({len(ref_str.residues)}) are different. Please check that the '
+                                f'reference structure is correct')
+            for c, res in enumerate(ref_str.residues):
+                if com_str.residues[c].number != res.number or not residue_names_match(com_str.residues[c].name,
+                                                                                       res.name):
+                    GMXMMPBSA_ERROR('There is no match between the complex and the reference structure used. An '
+                                    f'attempt was made to assign the chain ID to "{com_str.residues[c].name}'
+                                    f':{com_str.residues[c].number}:{com_str.residues[c].insertion_code}" in the '
+                                    f'complex, but "{res.name}:{res.number}:{res.insertion_code}" was expected '
+                                    'based on the reference structure. Please check that the reference structure is '
+                                    'correct')
+                com_str.residues[c].chain = res.chain
+                com_str.residues[c].insertion_code = res.insertion_code
+                # update the chain and insertion code (https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/issues/354)
+                self.resl[c].chain = res.chain
+                self.resl[c].icode = res.insertion_code
+                i = self.resl[c].id_index - 1
+                if self.resl[c].is_receptor():
+                    rec_str.residues[i].chain = res.chain
+                    rec_str.residues[i].insertion_code = res.insertion_code
+                else:
+                    lig_str.residues[i].chain = res.chain
+                    lig_str.residues[i].insertion_code = res.insertion_code
+        else:
+            assign = False
+            if self.INPUT['general']['assign_chainID'] == 1:
+                assign = not com_str.residues[0].chain  # pretty simple
+                if assign:
+                    logging.info('Chain IDs not found; assigning chain IDs...')
+                else:
+                    logging.info('Chain IDs found; skipping chain-ID assignment...')
+            elif self.INPUT['general']['assign_chainID'] == 2:
+                assign = True
+                if com_str.residues[0].chain:
+                    logging.warning('Reassigning existing chain IDs as requested.')
+                else:
+                    logging.info('Assigning missing chain IDs as requested.')
+            elif self.INPUT['general']['assign_chainID'] == 0 and not com_str.residues[0].chain:
+                assign = True
+                logging.info('No reference structure or chain IDs were provided; assigning chain IDs automatically.')
+            if assign:
+                self._assign_chains_IDs(com_str, rec_str, lig_str)
+        # Save fixed complex structure for analysis and set it in FILES to save in info file
+        com_str.save(f'{self.FILES.prefix}COM_FIXED.pdb', 'pdb', True, renumber=False)
+        logging.info('')
+
+    def _assign_chains_IDs(self, com_str, rec_str, lig_str):
+        chains_ids = []
+        chain_by_num = False
+        chain_by_ter = False
+        previous_res_number = 0
+        curr_chain_id = 'A'
+        has_nucl = 0
+        for c, res in enumerate(com_str.residues):
+            if res.chain:
+                if res.chain != curr_chain_id:
+                    res.chain = curr_chain_id
+                    i = self.resl[c].id_index - 1
+                    if self.resl[c].is_receptor():
+                        rec_str.residues[i].chain = res.chain
+                    else:
+                        lig_str.residues[i].chain = res.chain
+                if res.chain not in chains_ids:
+                    chains_ids.append(res.chain)
+            else:
+                res.chain = curr_chain_id
+
+                i = self.resl[c].id_index - 1
+                if self.resl[c].is_receptor():
+                    rec_str.residues[i].chain = res.chain
+                else:
+                    lig_str.residues[i].chain = res.chain
+                if curr_chain_id not in chains_ids:
+                    chains_ids.append(curr_chain_id)
+                    # see if it is the end of chain
+            if res.number != previous_res_number + 1 and previous_res_number != 0:
+                chain_by_num = True
+            if chain_by_num and chain_by_ter:
+                chain_by_num = False
+                chain_by_ter = False
+                curr_chain_id = chains_letters[chains_letters.index(chains_ids[-1]) + 1]
+                res.chain = curr_chain_id
+
+                i = self.resl[c].id_index - 1
+                if self.resl[c].is_receptor():
+                    rec_str.residues[i].chain = res.chain
+                else:
+                    lig_str.residues[i].chain = res.chain
+                if res.chain not in chains_ids:
+                    chains_ids.append(res.chain)
+            elif chain_by_ter:
+                chain_by_ter = False
+            elif chain_by_num:
+                chain_by_num = False
+                curr_chain_id = chains_letters[chains_letters.index(chains_ids[-1]) + 1]
+                res.chain = curr_chain_id
+                i = self.resl[c].id_index - 1
+                if self.resl[c].is_receptor():
+                    rec_str.residues[i].chain = res.chain
+                else:
+                    lig_str.residues[i].chain = res.chain
+                if res.chain not in chains_ids:
+                    chains_ids.append(res.chain)
+            for atm in res.atoms:
+                if atm.name == 'OXT':  # only for protein
+                    res.ter = True
+                    chain_by_ter = True
+            if parmed.residue.RNAResidue.has(res.name) or parmed.residue.DNAResidue.has(res.name):
+                has_nucl += 1
+
+            previous_res_number = res.number
+        if has_nucl == 1:
+            logging.warning('This structure contains nucleotides. We recommend that you use the reference structure')
+
+    @staticmethod
+    def molstr(data):
+        if type(data) == str:
+            # data is a pdb file
+            pdb_file = data
+            try:
+                new_str = []
+                with open(pdb_file) as fo:
+                    fo = fo.readlines()
+                    for line in fo:
+                        if 'MODEL' in line or 'ENDMDL' in line:
+                            continue
+                        # check new charmm-gui format for Amber ff19SB (with N- and C- terminals)
+                        if 'ATOM' in line:
+                            resn = line[17:21].strip()
+                            if len(resn) == 4 and resn.startswith(('N', 'C')):
+                                line = f'{line[:17]}{resn[1:]} {line[21:]}'
+                        new_str.append(line)
+                with open(pdb_file, 'w') as fw:
+                    for x in new_str:
+                        fw.write(x)
+            except IOError as e:
+                GMXMMPBSA_ERROR(str(e))
+
+            structure = parmed.read_PDB(pdb_file)
+        else:
+            # data is Structure, AmberParm, ChamberParm or GromacsTopologyFile. This make a copy
+            structure = data.__copy__()
+            for c, at in enumerate(structure.atoms, start=1):
+                at.number = c
+        return structure
+
+    def _write_ff(self, ofile):
+        for ff in self.INPUT['general']['forcefields']:
+            ofile.write(f'source {ff}\n')
+        ofile.write('loadOff atomic_ions.lib\n')
+        ofile.write('loadamberparams {}\n'.format(ions_para_files[self.INPUT['general']['ions_parameters']]))
+        # check if it is a modified PBRadii
+        if self.INPUT['general']['PBRadii'] in [5, 6]:
+            ofile.write('set default PBRadii {}\n'.format(PBRadii[1]))
+        else:
+            ofile.write('set default PBRadii {}\n'.format(PBRadii[self.INPUT['general']['PBRadii']]))
+
+    def _set_com_order(self, REC, LIG):
+        result = []
+        l_idx = 0
+        r_idx = 0
+        for e in self.orderl:
+            if e in ['R', 'REC']:
+                result.append(REC[r_idx])
+                r_idx += 1
+            else:
+                result.append(LIG[l_idx])
+                l_idx += 1
+        return result

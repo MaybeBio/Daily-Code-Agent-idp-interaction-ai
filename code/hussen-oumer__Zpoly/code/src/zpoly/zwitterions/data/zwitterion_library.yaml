@@ -1,0 +1,1035 @@
+# rq-14c6b03b rq-b184f495 rq-32c147ad rq-9b2b9d78 rq-e283b2ae
+# Built-in zwitterion library for zpoly.
+# Single source of truth for docs/zwitterion_catalog.md (regenerate with
+# devtools/build_zwitterion_catalog.py). Schema: rqm/zwitterion_library.md.
+version: 1
+blocks:
+  polymerizable:
+    MA:
+      name: Methacrylate ester
+      smiles: C=C(C)C(=O)O[*:2]
+      smarts: '[CH2]=[CX3]([CH3])C(=O)O[CX4]'
+      notes: alpha-methyl; DMAPS/SBMA, MPC, CBMA
+    AE:
+      name: Acrylate ester
+      smiles: C=CC(=O)O[*:2]
+      smarts: '[CH2]=[CH1]C(=O)O[CX4]'
+      notes: no alpha-methyl; A3367
+    MAm:
+      name: Methacrylamide
+      smiles: C=C(C)C(=O)N[*:2]
+      smarts: '[CH2]=[CX3]([CH3])C(=O)[NH1][CX4]'
+      notes: hydrolysis-resistant; SPP, CBMAA
+    AAm:
+      name: Acrylamide
+      smiles: C=CC(=O)N[*:2]
+      smarts: '[CH2]=[CH1]C(=O)[NH1][CX4]'
+      notes: SBAA/A3361, CBAA
+    St:
+      name: 4-Vinylphenyl (styrenic)
+      smiles: C=Cc1ccc([*:2])cc1
+      smarts: '[CH2]=[CH1]c1ccc([CH2])cc1'
+      notes: used with a benzyl CH2 linker
+    V:
+      name: Vinyl on an aromatic cation
+      smiles: C=C[*:2]
+      smarts: '[CH2]=[CH1][c,n]'
+      notes: vinylpyridinium / N-vinylimidazolium; the cation ring is attached directly
+    Al:
+      name: Allyl (diallyl cyclopolymerization)
+      smiles: C=CC[*:2]
+      smarts: '[CH2]=[CH1][CH2][NX4+][CH2][CH1]=[CH2]'
+      notes: ring-forming backbone; NOT a simple vinyl addition
+  linker: {}
+  cation:
+    NMe2:
+      name: Dimethylammonium (quaternary)
+      smiles: '[*:1][N+](C)(C)[*:2]'
+      smarts: '[CH3][NX4+]([CH3])([CH2])[CH2]'
+      notes: DMAPS/SBMA, CBMA; most common
+    NEt2:
+      name: Diethylammonium (quaternary)
+      smiles: '[*:1][N+](CC)(CC)[*:2]'
+      smarts: '[CH3][CH2][NX4+]([CH2][CH3])([CH2])[CH2]'
+      notes: bulkier, more hydrophobic
+    Pyr:
+      name: Pyrrolidinium
+      smiles: '[*:1][N+]1([*:2])CCCC1'
+      smarts: '[NX4+]1[CH2][CH2][CH2][CH2]1'
+      notes: cyclic ammonium
+    Pip:
+      name: Piperidinium
+      smiles: '[*:1][N+]1([*:2])CCCCC1'
+      smarts: '[NX4+]1[CH2][CH2][CH2][CH2][CH2]1'
+      notes: cyclic ammonium
+    Mor:
+      name: Morpholinium
+      smiles: '[*:1][N+]1([*:2])CCOCC1'
+      smarts: '[NX4+]1[CH2][CH2]O[CH2][CH2]1'
+      notes: cyclic ammonium with ether O; more hydrophilic
+    NMeAl:
+      name: Methyl(allyl)ammonium
+      smiles: '[*:1][N+](C)(CC=C)[*:2]'
+      smarts: '[CH3][NX4+]([CH2][CH1]=[CH2])([CH2])[CH2]'
+      notes: second allyl arm of the diallyl monomer
+    Im:
+      name: Imidazolium (1,3-disubstituted)
+      smiles: '[*:1]n1cc[n+]([*:2])c1'
+      smarts: '[#6]n1cc[n+]([#6])c1'
+      notes: aromatic, delocalized +1
+    Py2:
+      name: Pyridinium (N-alkyl, 2-substituted)
+      smiles: '[*:1]c1cccc[n+]1[*:2]'
+      smarts: '[#6][n+]1c([#6])cccc1'
+      notes: from 2-vinylpyridine
+    Py4:
+      name: Pyridinium (N-alkyl, 4-substituted)
+      smiles: '[*:1]c1cc[n+]([*:2])cc1'
+      smarts: '[#6][n+]1ccc([#6])cc1'
+      notes: from 4-vinylpyridine
+    PBu2:
+      name: Dibutylphosphonium
+      smiles: '[*:1][P+](CCCC)(CCCC)[*:2]'
+      smarts: '[PX4+]'
+      notes: phosphonium betaines
+    SMe:
+      name: Methylsulfonium
+      smiles: '[*:1][S+](C)[*:2]'
+      smarts: '[SX3+]'
+      notes: rare
+    NMe3:
+      name: Trimethylammonium (terminal)
+      smiles: '[*:1][N+](C)(C)C'
+      smarts: '[CH3][NX4+]([CH3])([CH3])[CH2]'
+      notes: chain end; phosphorylcholine (MPC)
+    'NO':
+      name: Amine N-oxide (N+-O-, both charges)
+      smiles: '[*:1][N+](C)(C)[O-]'
+      smarts: '[NX4+][OX1-]'
+      notes: the whole zwitterion in one group; TMAO-like
+    NMePh:
+      name: Methyl(phenyl)ammonium
+      smiles: '[*:1][N+](C)(c1ccccc1)[*:2]'
+      smarts: '[CH3][NX4+](c)([CH2])[CH2]'
+      notes: ZB5; strongest synthesized ZB-ZB attraction
+    NPh2:
+      name: Diphenylammonium
+      smiles: '[*:1][N+](c1ccccc1)(c1ccccc1)[*:2]'
+      smarts: '[NX4+](c)(c)([CH2])[CH2]'
+      notes: M2
+    NBn2:
+      name: Dibenzylammonium
+      smiles: '[*:1][N+](Cc1ccccc1)(Cc1ccccc1)[*:2]'
+      smarts: '[NX4+]([CH2]c)([CH2]c)([CH2])[CH2]'
+      notes: from Schneider et al. M5 (that monomer is not in the library)
+    NMOM2:
+      name: Bis(methoxymethyl)ammonium
+      smiles: '[*:1][N+](COC)(COC)[*:2]'
+      smarts: '[NX4+]([CH2]O[CH3])([CH2]O[CH3])'
+      notes: M6
+    NMeDFE:
+      name: Methyl(2,2-difluoroethyl)ammonium
+      smiles: '[*:1][N+](C)(CC(F)F)[*:2]'
+      smarts: '[CH3][NX4+][CH2][CH1](F)F'
+      notes: M8
+    NMeMCM:
+      name: Methyl(methoxycarbonylmethyl)ammonium
+      smiles: '[*:1][N+](C)(CC(=O)OC)[*:2]'
+      smarts: '[CH3][NX4+][CH2]C(=O)O[CH3]'
+      notes: M9
+    NAcOM2:
+      name: Bis(acetoxymethyl)ammonium
+      smiles: '[*:1][N+](COC(C)=O)(COC(C)=O)[*:2]'
+      smarts: '[NX4+]([CH2]OC(=O)[CH3])[CH2]OC(=O)[CH3]'
+      notes: M10
+    NMCM2:
+      name: Bis(methoxycarbonylmethyl)ammonium
+      smiles: '[*:1][N+](CC(=O)OC)(CC(=O)OC)[*:2]'
+      smarts: '[NX4+]([CH2]C(=O)O[CH3])[CH2]C(=O)O[CH3]'
+      notes: M11
+    NMeAcOM:
+      name: Methyl(acetoxymethyl)ammonium
+      smiles: '[*:1][N+](C)(COC(C)=O)[*:2]'
+      smarts: '[CH3][NX4+][CH2]OC(=O)[CH3]'
+      notes: M13
+    NDFM2:
+      name: Bis(difluoromethyl)ammonium
+      smiles: '[*:1][N+](C(F)F)(C(F)F)[*:2]'
+      smarts: '[NX4+]([CH1](F)F)[CH1](F)F'
+      notes: M14
+    NH2:
+      name: Secondary ammonium (N+H2)
+      smiles: '[*:1][NH2+][*:2]'
+      smarts: '[NX4+;H2]'
+      notes: M17; protic, H-bond donor, pH-dependent
+    OxoPyr:
+      name: 2-Oxopyrrolidinium (lactam)
+      smiles: '[*:1][N+]1([*:2])CCCC1=O'
+      smarts: '[NX4+]1C(=O)[CH2][CH2][CH2]1'
+      notes: M7; hypothetical (computed only)
+    Phth:
+      name: Phthalimidium
+      smiles: '[*:1][N+]1([*:2])C(=O)c2ccccc2C1=O'
+      smarts: '[NX4+]1C(=O)c2ccccc2C1=O'
+      notes: M4; hypothetical (computed only)
+    ImQ:
+      name: 1,1-Disubstituted 1H-imidazolium (non-aromatic)
+      smiles: '[*:1][N+]1([*:2])C=CN=C1'
+      smarts: '[NX4+]1C=CN=C1'
+      notes: M12; hypothetical (computed only)
+  spacer:
+    C1:
+      name: Methylene, n=1
+      smiles: '[*:1]C[*:2]'
+      notes: carboxybetaine CB-1; benzyl linker of styrenic monomers
+    C2:
+      name: Ethylene, n=2
+      smiles: '[*:1]CC[*:2]'
+      notes: CBMA (CB-2), phosphorylcholine; O-CH2-CH2-N+ linker of ester monomers
+    C3:
+      name: Propylene, n=3
+      smiles: '[*:1]CCC[*:2]'
+      notes: standard sulfobetaine (propanesulfonate); NH-(CH2)3-N+ linker of amide monomers
+    C4:
+      name: Butylene, n=4
+      smiles: '[*:1]CCCC[*:2]'
+      notes: butanesulfonate (M3295)
+    C3OH:
+      name: 2-Hydroxypropylene
+      smiles: '[*:1]CC(O)C[*:2]'
+      notes: hydroxy-sulfobetaines; more hydrophilic
+  anion:
+    SO3:
+      name: Sulfonate
+      smiles: '[*:1]S(=O)(=O)[O-]'
+      smarts: '[CX4]S(=O)(=O)[O-]'
+      notes: sulfobetaines; strong acid, pH-independent
+    OSO3:
+      name: Sulfate
+      smiles: '[*:1]OS(=O)(=O)[O-]'
+      smarts: '[CX4]OS(=O)(=O)[O-]'
+      notes: sulfabetaines
+    COO:
+      name: Carboxylate
+      smiles: '[*:1]C(=O)[O-]'
+      smarts: '[CX4]C(=O)[O-]'
+      notes: carboxybetaines; protonates at low pH (pKa ~2-4.5)
+    PO3H:
+      name: Phosphonate (mono-anion)
+      smiles: '[*:1]P(=O)(O)[O-]'
+      smarts: '[CX4]P(=O)([OX2H1])[O-]'
+      notes: the di-anion (-2) forms at high pH
+    PO4i:
+      name: Phosphate diester (internal)
+      smiles: '[*:1]OP(=O)([O-])O[*:2]'
+      smarts: '[CH2]OP(=O)([O-])O[CH2]'
+      notes: 'inverted order: anion near backbone (MPC)'
+    PO4t:
+      name: Phosphate diester (terminal, methyl ester)
+      smiles: '[*:1]OP(=O)([O-])OC'
+      smarts: '[CX4]OP(=O)([O-])O[CH3]'
+      notes: choline phosphate (CP); R = methyl here, other alkyls are reported
+    NTf:
+      name: Triflyl-sulfonylimide
+      smiles: '[*:1][N-]S(=O)(=O)C(F)(F)F'
+      smarts: '[CX4][N-]S(=O)(=O)C(F)(F)F'
+      notes: from zwitterionic-liquid chemistry; delocalized, weakly coordinating
+    ArO:
+      name: Phenolate (on an aromatic ring)
+      smiles: '[*:1][O-]'
+      smarts: c[OX1-]
+      notes: M1; pH-dependent (pKa ~8-10)
+    ArCOO:
+      name: Aryl carboxylate (on an aromatic ring)
+      smiles: '[*:1]C(=O)[O-]'
+      smarts: cC(=O)[O-]
+      notes: M19; no spacer, the anion sits on the cation ring
+monomers:
+- name: DMAPS
+  aliases:
+  - SBMA
+  - SB
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl(3-sulfopropyl)ammonium'
+  family: Sulfobetaine
+  status: common
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C3
+  - SO3
+  parameters:
+    oplsaa: polybuilder:DMAPS
+  properties:
+    fmin_kbt: 0.47
+    fmin_kbt_error: 0.04
+- name: SBMA-C2
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl(2-sulfoethyl)ammonium'
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C2
+  - SO3
+- name: M3295
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl(4-sulfobutyl)ammonium'
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C4
+  - SO3
+  parameters:
+    oplsaa: polybuilder:M3295
+- name: A3367
+  aliases:
+  - SBA
+  full_name: '[2-(Acryloyloxy)ethyl]dimethyl(3-sulfopropyl)ammonium'
+  family: Sulfobetaine
+  status: common
+  blocks:
+  - AE
+  - C2
+  - NMe2
+  - C3
+  - SO3
+  parameters:
+    oplsaa: polybuilder:A3367
+- name: SPP
+  full_name: '[3-(Methacryloylamino)propyl]dimethyl(3-sulfopropyl)ammonium'
+  family: Sulfobetaine
+  status: common
+  blocks:
+  - MAm
+  - C3
+  - NMe2
+  - C3
+  - SO3
+- name: SBAA
+  aliases:
+  - A3361
+  - A3316
+  full_name: '[3-(Acryloylamino)propyl]dimethyl(3-sulfopropyl)ammonium'
+  family: Sulfobetaine
+  status: common
+  blocks:
+  - AAm
+  - C3
+  - NMe2
+  - C3
+  - SO3
+  parameters:
+    oplsaa: polybuilder:A3361
+- name: HSBMA
+  full_name: 3-[[2-(Methacryloyloxy)ethyl]dimethylammonio]-2-hydroxypropane-1-sulfonate
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C3OH
+  - SO3
+- name: SBMA-Et
+  full_name: '[2-(Methacryloyloxy)ethyl]diethyl(3-sulfopropyl)ammonium'
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NEt2
+  - C3
+  - SO3
+- name: SBMA-Pyr
+  full_name: 1-[2-(Methacryloyloxy)ethyl]-1-(3-sulfopropyl)pyrrolidinium
+  family: Sulfobetaine
+  status: combinatorial
+  blocks:
+  - MA
+  - C2
+  - Pyr
+  - C3
+  - SO3
+- name: SBMA-Pip
+  full_name: 1-[2-(Methacryloyloxy)ethyl]-1-(3-sulfopropyl)piperidinium
+  family: Sulfobetaine
+  status: combinatorial
+  blocks:
+  - MA
+  - C2
+  - Pip
+  - C3
+  - SO3
+- name: SBMA-Mor
+  full_name: 4-[2-(Methacryloyloxy)ethyl]-4-(3-sulfopropyl)morpholinium
+  family: Sulfobetaine
+  status: combinatorial
+  blocks:
+  - MA
+  - C2
+  - Mor
+  - C3
+  - SO3
+- name: SBVB
+  full_name: (4-Vinylbenzyl)dimethyl(3-sulfopropyl)ammonium
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - St
+  - C1
+  - NMe2
+  - C3
+  - SO3
+- name: SPV
+  aliases:
+  - 2-VPPS
+  full_name: 1-(3-Sulfopropyl)-2-vinylpyridinium
+  family: Sulfobetaine
+  status: common
+  blocks:
+  - V
+  - Py2
+  - C3
+  - SO3
+- name: 4-VPPS
+  full_name: 1-(3-Sulfopropyl)-4-vinylpyridinium
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - V
+  - Py4
+  - C3
+  - SO3
+- name: SPVI
+  aliases:
+  - VIPS
+  full_name: 1-Vinyl-3-(3-sulfopropyl)imidazolium
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - V
+  - Im
+  - C3
+  - SO3
+- name: SBVI
+  full_name: 1-Vinyl-3-(4-sulfobutyl)imidazolium
+  family: Sulfobetaine
+  status: specialty
+  blocks:
+  - V
+  - Im
+  - C4
+  - SO3
+- name: P-SB
+  full_name: (4-Vinylbenzyl)dibutyl(3-sulfopropyl)phosphonium
+  family: Sulfobetaine (phosphonium)
+  status: specialty
+  blocks:
+  - St
+  - C1
+  - PBu2
+  - C3
+  - SO3
+- name: S-SB
+  full_name: (4-Vinylbenzyl)methyl(3-sulfopropyl)sulfonium
+  family: Sulfobetaine (sulfonium)
+  status: combinatorial
+  blocks:
+  - St
+  - C1
+  - SMe
+  - C3
+  - SO3
+- name: DAMAPS
+  full_name: 3-(N,N-Diallyl-N-methylammonio)propane-1-sulfonate
+  family: Sulfobetaine (cyclopolymerizing)
+  status: specialty
+  blocks:
+  - Al
+  - NMeAl
+  - C3
+  - SO3
+- name: CBMA-1
+  aliases:
+  - CB
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl(carboxymethyl)ammonium'
+  family: Carboxybetaine
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C1
+  - COO
+  properties:
+    fmin_kbt: 0.12
+    fmin_kbt_error: 0.03
+- name: CBMA
+  aliases:
+  - CBMA-2
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl(2-carboxyethyl)ammonium'
+  family: Carboxybetaine
+  status: common
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C2
+  - COO
+- name: CBMA-3
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl(3-carboxypropyl)ammonium'
+  family: Carboxybetaine
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C3
+  - COO
+- name: CBA
+  full_name: '[2-(Acryloyloxy)ethyl]dimethyl(2-carboxyethyl)ammonium'
+  family: Carboxybetaine
+  status: specialty
+  blocks:
+  - AE
+  - C2
+  - NMe2
+  - C2
+  - COO
+- name: CBAA
+  full_name: 3-[(3-Acrylamidopropyl)dimethylammonio]propanoate
+  family: Carboxybetaine
+  status: common
+  blocks:
+  - AAm
+  - C3
+  - NMe2
+  - C2
+  - COO
+- name: CBMAA
+  full_name: 3-[(3-Methacrylamidopropyl)dimethylammonio]propanoate
+  family: Carboxybetaine
+  status: specialty
+  blocks:
+  - MAm
+  - C3
+  - NMe2
+  - C2
+  - COO
+- name: CBVI
+  full_name: 1-Vinyl-3-(carboxymethyl)imidazolium
+  family: Carboxybetaine
+  status: specialty
+  blocks:
+  - V
+  - Im
+  - C1
+  - COO
+- name: CBVB
+  full_name: (4-Vinylbenzyl)dimethyl(carboxymethyl)ammonium
+  family: Carboxybetaine
+  status: specialty
+  blocks:
+  - St
+  - C1
+  - NMe2
+  - C1
+  - COO
+- name: MPC
+  full_name: 2-Methacryloyloxyethyl phosphorylcholine
+  family: Phosphorylcholine (inverted)
+  status: common
+  blocks:
+  - MA
+  - C2
+  - PO4i
+  - C2
+  - NMe3
+  properties:
+    fmin_kbt: 0.62
+    fmin_kbt_error: 0.03
+- name: APC
+  full_name: 2-Acryloyloxyethyl phosphorylcholine
+  family: Phosphorylcholine (inverted)
+  status: specialty
+  blocks:
+  - AE
+  - C2
+  - PO4i
+  - C2
+  - NMe3
+- name: MCP
+  full_name: 2-(Methacryloyloxy)ethyl choline phosphate (methyl ester)
+  family: Choline phosphate
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C2
+  - PO4t
+- name: PBMA
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl(3-phosphonopropyl)ammonium'
+  family: Phosphonobetaine
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C3
+  - PO3H
+- name: ZB
+  full_name: 3-[[2-(Methacryloyloxy)ethyl]dimethylammonio]propyl sulfate
+  family: Sulfabetaine (ZB series)
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.03
+    fmin_kbt_error: 0.04
+- name: ZB2
+  full_name: 2-[[2-(Methacryloyloxy)ethyl]dimethylammonio]ethyl sulfate
+  family: Sulfabetaine (ZB series)
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C2
+  - OSO3
+  properties:
+    fmin_kbt: 1.25
+    fmin_kbt_error: 0.04
+- name: ZB3
+  full_name: 3-[[2-(Methacryloyloxy)ethyl]diethylammonio]propyl sulfate
+  family: Sulfabetaine (ZB series)
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NEt2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 0.94
+    fmin_kbt_error: 0.05
+- name: ZB4
+  full_name: 2-[4-[2-(Methacryloyloxy)ethyl]morpholinium-4-yl]ethyl sulfate
+  family: Sulfabetaine (ZB series)
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - Mor
+  - C2
+  - OSO3
+  notes: As synthesized (MEMA + ethylene sulfate, ethylene spacer). SI Table S1 draws a propylene spacer
+    instead; see ZB4-C3, which carries the F_min value.
+- name: ZB5
+  full_name: 3-[(2-(Methacryloyloxy)ethyl)(methyl)(phenyl)ammonio]propyl sulfate
+  family: Sulfabetaine (ZB series)
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - NMePh
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 2.77
+    fmin_kbt_error: 0.23
+- name: MAEDMAO
+  full_name: 2-(Dimethyl-oxido-ammonio)ethyl methacrylate (N-oxide)
+  family: Amine N-oxide
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - 'NO'
+- name: SIBMA
+  full_name: '[2-(Methacryloyloxy)ethyl]dimethyl[3-(triflylamido)propyl]ammonium'
+  family: Sulfonylimide betaine
+  status: combinatorial
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C3
+  - NTf
+- name: M1
+  full_name: 'M1: isoquinolinium cation, phenolate anion on the ring (no spacer)'
+  family: Isoquinolinium phenolate betaine
+  status: computed
+  smiles: C=C(C)C(=O)OCC[n+]1ccc2c([O-])cccc2c1
+  properties:
+    fmin_kbt: 4.6
+    fmin_kbt_error: 0.07
+- name: M2
+  full_name: 'M2: N-diphenyl'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NPh2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 3.57
+    fmin_kbt_error: 0.12
+- name: M3
+  full_name: 'M3: isoquinolinium; sulfate spacer on the C5 ring carbon'
+  family: Sulfabetaine (isoquinolinium)
+  status: computed
+  smiles: C=C(C)C(=O)OCC[n+]1ccc2c(CCCOS(=O)(=O)[O-])cccc2c1
+  properties:
+    fmin_kbt: 3.53
+    fmin_kbt_error: 0.12
+- name: M4
+  full_name: 'M4: phthalimidium'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - Phth
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 3.45
+    fmin_kbt_error: 0.19
+- name: M6
+  full_name: 'M6: N-bis(methoxymethyl)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NMOM2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 2.43
+    fmin_kbt_error: 0.14
+- name: M7
+  full_name: 'M7: 2-oxopyrrolidinium (lactam)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - OxoPyr
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.97
+    fmin_kbt_error: 0.12
+- name: M8
+  full_name: 'M8: N-methyl-N-(2,2-difluoroethyl)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NMeDFE
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.7
+    fmin_kbt_error: 0.04
+- name: M9
+  full_name: 'M9: N-methyl-N-(methoxycarbonylmethyl)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NMeMCM
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.54
+    fmin_kbt_error: 0.06
+- name: M10
+  full_name: 'M10: N-bis(acetoxymethyl)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NAcOM2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.5
+    fmin_kbt_error: 0.04
+- name: M11
+  full_name: 'M11: N-bis(methoxycarbonylmethyl)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NMCM2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.43
+    fmin_kbt_error: 0.11
+- name: ZB4-C3
+  full_name: ZB4 as drawn in SI Table S1 (propylene spacer)
+  family: Sulfabetaine (ZB series)
+  status: specialty
+  blocks:
+  - MA
+  - C2
+  - Mor
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.31
+    fmin_kbt_error: 0.06
+  notes: The SI synthesis text gives an ethylene spacer; see ZB4.
+- name: M12
+  full_name: 'M12: 1,1-disubstituted 1H-imidazolium (non-aromatic, as drawn)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - ImQ
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.25
+    fmin_kbt_error: 0.03
+- name: M13
+  full_name: 'M13: N-methyl-N-(acetoxymethyl)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NMeAcOM
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.19
+    fmin_kbt_error: 0.05
+- name: M14
+  full_name: 'M14: N-bis(difluoromethyl)'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NDFM2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 1.15
+    fmin_kbt_error: 0.06
+- name: M15
+  full_name: 'M15: methylene spacer'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NMe2
+  - C1
+  - OSO3
+  properties:
+    fmin_kbt: 1.03
+    fmin_kbt_error: 0.04
+- name: M16
+  full_name: 'M16: aromatic 1,3-imidazolium'
+  family: Sulfabetaine (imidazolium)
+  status: computed
+  smiles: C=C(C)C(=O)OCC[n+]1ccn(CCCOS(=O)(=O)[O-])c1
+  properties:
+    fmin_kbt: 0.81
+    fmin_kbt_error: 0.02
+- name: M17
+  full_name: 'M17: secondary ammonium N+H2'
+  family: Sulfabetaine (ZB series, computed)
+  status: computed
+  blocks:
+  - MA
+  - C2
+  - NH2
+  - C3
+  - OSO3
+  properties:
+    fmin_kbt: 0.74
+    fmin_kbt_error: 0.03
+- name: M18
+  full_name: 'M18: pyridinium; sulfate spacer on C4'
+  family: Sulfabetaine (pyridinium)
+  status: computed
+  smiles: C=C(C)C(=O)OCC[n+]1ccc(CCCOS(=O)(=O)[O-])cc1
+  properties:
+    fmin_kbt: 0.74
+    fmin_kbt_error: 0.02
+- name: M19
+  full_name: 'M19: pyridinium-4-carboxylate (no spacer)'
+  family: Pyridinium carboxylate betaine
+  status: computed
+  smiles: C=C(C)C(=O)OCC[n+]1ccc(C(=O)[O-])cc1
+  properties:
+    fmin_kbt: 0.63
+    fmin_kbt_error: 0.04
+comonomers:
+- name: NIPAM
+  full_name: N-Isopropylacrylamide
+  family: Neutral comonomer (acrylamide)
+  status: common
+  residue: NI
+  smiles: C=CC(=O)NC(C)C
+  notes: LCST-type neutral comonomer.
+- name: IBOA
+  full_name: Isobornyl acrylate
+  family: Neutral comonomer (acrylate)
+  status: specialty
+  residue: IB
+  smiles: C=CC(=O)OC1CC2CCC1(C)C2(C)C
+  notes: Hydrophobic neutral comonomer (1,7,7-trimethylbicyclo[2.2.1]heptan-2-yl ester; stereochemistry not specified).
+- name: VBD
+  aliases:
+  - DABCO
+  full_name: 1-(4-Vinylbenzyl)-4-propyl-1,4-diazoniabicyclo[2.2.2]octane
+  family: Cationic comonomer (DABCO)
+  status: specialty
+  residue: VB
+  smiles: C=Cc1ccc(C[N+]23CC[N+](CCC)(CC2)CC3)cc1
+  counterion: Cl-
+  notes: Dication (+2); polymerizes through the styrene, the DABCO cage is a pendant.
+- name: BVD
+  full_name: 1,4-Bis(4-vinylbenzyl)-1,4-diazoniabicyclo[2.2.2]octane
+  family: Cationic comonomer (DABCO)
+  status: specialty
+  residue: BV
+  smiles: C=Cc1ccc(C[N+]23CC[N+](Cc4ccc(C=C)cc4)(CC2)CC3)cc1
+  counterion: Cl-
+  notes: Dication (+2); one styrene polymerizes, the other stays as an unreacted vinyl pendant.
+small_molecules:
+- name: MIm-PS
+  full_name: 3-(1-Methylimidazolio)propane-1-sulfonate
+  family: Zwitterionic liquid / small zwitterion
+  status: specialty
+  smiles: Cn1cc[n+](CCCS(=O)(=O)[O-])c1
+- name: BIm-PS
+  full_name: 3-(1-Butylimidazolio)propane-1-sulfonate
+  family: Zwitterionic liquid / small zwitterion
+  status: specialty
+  smiles: CCCCn1cc[n+](CCCS(=O)(=O)[O-])c1
+- name: MIm-BS
+  full_name: 4-(1-Methylimidazolio)butane-1-sulfonate
+  family: Zwitterionic liquid / small zwitterion
+  status: specialty
+  smiles: Cn1cc[n+](CCCCS(=O)(=O)[O-])c1
+- name: NDSB-201
+  full_name: 3-(Pyridinio)propane-1-sulfonate
+  family: Zwitterionic liquid / small zwitterion
+  status: common
+  smiles: O=S(=O)([O-])CCC[n+]1ccccc1
+- name: NDSB-195
+  full_name: 3-(Ethyldimethylammonio)propane-1-sulfonate
+  family: Zwitterionic liquid / small zwitterion
+  status: common
+  smiles: CC[N+](C)(C)CCCS(=O)(=O)[O-]
+- name: NDSB-256
+  full_name: 3-(Benzyldimethylammonio)propane-1-sulfonate
+  family: Zwitterionic liquid / small zwitterion
+  status: common
+  smiles: C[N+](C)(Cc1ccccc1)CCCS(=O)(=O)[O-]
+- name: TEA-PS
+  full_name: 3-(Triethylammonio)propane-1-sulfonate
+  family: Zwitterionic liquid / small zwitterion
+  status: specialty
+  smiles: CC[N+](CC)(CC)CCCS(=O)(=O)[O-]
+- name: TMG
+  full_name: Glycine betaine (trimethylglycine)
+  family: Zwitterionic liquid / small zwitterion
+  status: common
+  smiles: C[N+](C)(C)CC(=O)[O-]
+  aliases:
+  - glycine betaine
+- name: TMAO
+  full_name: Trimethylamine N-oxide
+  family: Zwitterionic liquid / small zwitterion
+  status: common
+  smiles: C[N+](C)(C)[O-]
+- name: MePC
+  full_name: Methyl phosphorylcholine
+  family: Zwitterionic liquid / small zwitterion
+  status: specialty
+  smiles: COP(=O)([O-])OCC[N+](C)(C)C
+- name: MIm-C3NTf
+  full_name: 1-Methyl-3-[3-(triflylamido)propyl]imidazolium
+  family: Zwitterionic liquid / small zwitterion
+  status: specialty
+  smiles: Cn1cc[n+](CCC[N-]S(=O)(=O)C(F)(F)F)c1
+initiators:
+- name: KPS
+  aliases: [SO4, KSO4, K2S2O8, potassium persulfate]
+  full_name: Potassium persulfate (sulfate radical anion end groups)
+  head: '[*:1]OS(=O)(=O)[O-]'
+  tail: '[*:1]OS(=O)(=O)[O-]'
+  counterion: K+
+  notes: Each capped end carries -1 (O-SO3-). Use ends head/tail/both/none.
+  parameters:
+    oplsaa: polybuilder:KPS
+- name: APS
+  aliases: [ammonium persulfate]
+  full_name: Ammonium persulfate (sulfate radical anion end groups)
+  head: '[*:1]OS(=O)(=O)[O-]'
+  tail: '[*:1]OS(=O)(=O)[O-]'
+  counterion: NH4+
+  parameters:
+    oplsaa: polybuilder:APS
+- name: NaPS
+  aliases: [sodium persulfate]
+  full_name: Sodium persulfate (sulfate radical anion end groups)
+  head: '[*:1]OS(=O)(=O)[O-]'
+  tail: '[*:1]OS(=O)(=O)[O-]'
+  counterion: Na+
+- name: AIBA
+  aliases: [V-50]
+  full_name: 2,2'-Azobis(2-methylpropionamidine) dihydrochloride (2-amidinopropan-2-yl end groups)
+  head: '[*:1]C(C)(C)C(N)=[NH2+]'
+  tail: '[*:1]C(C)(C)C(N)=[NH2+]'
+  counterion: Cl-
+  notes: polybuilder's AIBA fragment omits the C(CH3)2 carbon; this entry uses the full radical.
+- name: AIBN
+  full_name: 2,2'-Azobis(2-methylpropionitrile) (2-cyanopropan-2-yl end groups)
+  head: '[*:1]C(C)(C)C#N'
+  tail: '[*:1]C(C)(C)C#N'
+- name: ACVA
+  aliases: [V-501]
+  full_name: 4,4'-Azobis(4-cyanovaleric acid) (4-cyanopentanoic acid end groups)
+  head: '[*:1]C(C)(CCC(=O)O)C#N'
+  tail: '[*:1]C(C)(CCC(=O)O)C#N'
+  notes: Carboxylic acid drawn neutral; it is deprotonated at neutral pH.
+- name: TBHP
+  full_name: tert-Butyl hydroperoxide (tert-butoxy end groups)
+  head: '[*:1]OC(C)(C)C'
+  tail: '[*:1]OC(C)(C)C'
+- name: H2O2
+  aliases: [hydroxyl]
+  full_name: Hydrogen peroxide (hydroxyl end groups)
+  head: '[*:1]O'
+  tail: '[*:1]O'
+- name: CPA
+  full_name: 4-Cyano-4-(phenylcarbonothioylthio)pentanoic acid (RAFT agent)
+  head: '[*:1]C(C)(CCC(=O)O)C#N'
+  tail: '[*:1]SC(=S)c1ccccc1'
+  notes: RAFT; head is the R group (cyanopentanoic acid), tail is the dithiobenzoate Z end.

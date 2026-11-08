@@ -1,0 +1,1002 @@
+% !TEX program = xelatex
+\documentclass[usenames,dvipsnames]{beamer}
+\usetheme{default}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{animate}
+\usepackage{xmpmulti}
+\usepackage{iftex}
+% FreeSans, like the figures. It needs XeLaTeX: under pdflatex the slides keep
+% beamer's Computer Modern.
+\ifXeTeX
+	\usefonttheme{professionalfonts}
+	\usepackage{mathspec}
+	\setsansfont{FreeSans}
+	\setmathsfont(Digits,Latin,Greek){FreeSans}
+	\setmathrm{FreeSans}
+\fi
+
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+\newcommand{\mc}{\mathcal}
+\newcommand{\mb}{\mathbb}
+\newcommand{\p}{\rho}
+\newcommand{\tb}{\textbf}
+\newcommand{\ft}[1]{\frametitle{\textcolor{black}{#1}}}
+
+\title{\textcolor{black}{\tb{On the precision of dynamic gene regulation}}}
+\author{
+	\centering
+	Tarek Tohme\\
+	\quad \\	Under the supervision of \\ 
+	\quad \\
+	Aleksandra Walczak and Thierry Mora
+}
+\date{November 9, 2026}
+
+\begin{document}
+	
+\begin{frame}[plain]
+    \maketitle
+    \begin{figure}
+    	\includegraphics[width=0.5\textwidth]{figures/logos}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+	\ft{}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene1/scene1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene2/scene2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Gene expression is regulated}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene3/scene3}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Overview of gene regulation}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene4/scene4_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Overview of gene regulation}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene4/scene4_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Overview of gene regulation}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene4/scene4_3}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Overview of gene regulation}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene5/scene5}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Expression levels are continuous ...}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Expression levels are continuous ...}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Expression levels are continuous ...}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_3}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{... but transcriptional control is noisy}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_4}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{... but transcriptional control is noisy}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_5}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{... but transcriptional control is noisy}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_6}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{... but transcriptional control is noisy}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_7}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{... but transcriptional control is noisy}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene6/scene6_8}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sensitive response to shallow concentration gradients}
+    \begin{figure}
+    	\includegraphics[width=0.8\textwidth]{figures/scene7/scene7}
+	\end{figure}	
+
+\end{frame}
+
+\begin{frame}
+	\ft{Precise sensing on a tight schedule}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene8/scene8_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Precise sensing on a tight schedule}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene8/scene8_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Precise sensing on a tight schedule}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene8/scene8_3}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Precise sensing on a tight schedule}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene8/scene8_4}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_1a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_1b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_1c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_1d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_1e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_1f}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_2a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_2b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Understanding the concentration sensitivity of promoters}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_2c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{A simple model of transcriptional control}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_3a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{A simple model of transcriptional control}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_3b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{A simple model of transcriptional control}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_3c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{A simple model of transcriptional control}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_3d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{A simple model of transcriptional control}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_3e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{A simple model of transcriptional control}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene11/scene11_3f}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene12/scene12a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene12/scene12b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene12/scene12c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene12/scene12d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene12/scene12e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene13/scene13_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene13/scene13_2}    
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene13/scene13_3}    
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\ft{Sequential hypothesis testing}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene13/scene13_4}    
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\ft{Fisher information rate and decision time}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene14/scene14a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Fisher information rate and decision time}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene14/scene14b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Fisher information rate and decision time}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene14/scene14c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Fisher information rate and decision time}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene14/scene14d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Fisher information rate and decision time}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene14/scene14e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The optimization problem}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene15/scene15a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The optimization problem}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene15/scene15b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The optimization problem}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene15/scene15c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Optimal promoters: two distinct regimes}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene16/scene16a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Optimal promoters: two distinct regimes}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene16/scene16b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Cooperative binding}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene17/scene17a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Cooperative binding}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene17/scene17b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Cooperative binding}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene17/scene17c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Cooperative binding}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene17/scene17d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Cooperative binding}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene17/scene17e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Cooperative binding}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene17/scene17f}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18f}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18g}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proofreading}
+	\quad \\
+    \begin{figure}
+    	\includegraphics[width=0.95\textwidth]{figures/scene18/scene18h}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Takeaways}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene19/scene19a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Takeaways}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene19/scene19b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Takeaways}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene19/scene19c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Transcriptional control by distal elements}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene20/scene20_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Transcriptional control by distal elements}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene20/scene20_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Transcriptional control by distal elements}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene20/scene20_3}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Transcriptional control through liquid phase separation?}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene21/scene21_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proteins condense on the surface of DNA}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene21/scene21_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Proteins condense on the surface of DNA}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene21/scene21_3}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Coupling condensation and polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene22/scene22a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Coupling condensation and polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene22/scene22b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Coupling condensation and polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene22/scene22c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Coupling condensation and polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene22/scene22d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Coupling condensation and polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene22/scene22e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Coupling condensation and polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene22/scene22f}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Coupling condensation and polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene23/scene23_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Polymer configuration depends sensitively on concentration}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene24/scene24a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Polymer configuration depends sensitively on concentration}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene24/scene24b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Continuous model of surface condensation}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene25/scene25_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The prewetting transition: varying surface attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene25/scene25_2a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The prewetting transition: varying surface attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene25/scene25_2b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The prewetting transition: varying surface attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene25/scene25_2c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The prewetting transition: varying surface attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene25/scene25_2d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{The prewetting transition: varying surface attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene25/scene25_2e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Quantifying sensitivity of local concentration}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene26/scene26_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Quantifying sensitivity of local concentration}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene26/scene26_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Rouse model of DNA}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene27/scene27a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Rouse model of DNA}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene27/scene27b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Rouse model of DNA}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene27/scene27c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Rouse model of DNA}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene27/scene27d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Rouse model of DNA}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene27/scene27e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Rouse model of DNA}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene27/scene27f}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Promoter-enhancer attraction}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene28/scene28a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Promoter-enhancer attraction}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene28/scene28b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Promoter-enhancer attraction}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene28/scene28c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Promoter-enhancer attraction}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene28/scene28d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Promoter-enhancer attraction}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene28/scene28e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Polymer + capillary attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene29/scene29_1a}		
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\ft{Polymer + capillary attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene29/scene29_1b}		
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\ft{Polymer + capillary attraction}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene29/scene29_1c}		
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\ft{Polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=0.9\textwidth]{figures/scene29/scene29_2}		
+	\end{figure}
+\end{frame}
+
+% scenes 28-29 go here (not rendered yet)
+
+\begin{frame}
+	\ft{Sensitivity from polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sensitivity from polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sensitivity from polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sensitivity from polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Sensitivity from polymer dynamics}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Total sensitivity}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30_2a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Total sensitivity}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30_2b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Total sensitivity}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene30/scene30_2c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Takeaways}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene31/scene31a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Takeaways}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene31/scene31b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Takeaways}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene31/scene31c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion: Cells are complicated}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene32/scene32_1}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion: Cells are complicated}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene32/scene32_2}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion: Transcriptional regulation is very precise}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene32/scene32_3}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_1a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_1b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_1c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_1d}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_1e}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_1f}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_1g}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_2a}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_2b}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Conclusion}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene33/scene33_2c}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Thanks.}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene34/scene34}    
+	\end{figure}	
+\end{frame}
+
+\begin{frame}
+	\ft{Thanks.}
+    \begin{figure}
+    	\includegraphics[width=\textwidth]{figures/scene35/scene35}    
+	\end{figure}	
+\end{frame}
+
+\end{document}

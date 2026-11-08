@@ -1,0 +1,76 @@
+# Built-in RESP charges (rqm/forcefield/builtin_charges.md), unscaled.
+# Source: the group's OPLS-AA topologies (12-mers, ionic groups scaled by 0.85): RESP of the
+# methacrylate/acrylate/acrylamide linker, the cation (N+ and its 4 carbons) and the anion (CH2-SO3-)
+# fragments; the backbone and the CH2 groups between them keep the force field's charges.
+# Atom names are the software's (the same in the F, R and E residues).
+version: 1
+monomers:
+  DMAPS:
+    scale_of_source: 0.85
+    atoms:
+      # linker
+      C4: 0.217000   # CD
+      O1: -0.291800   # OD2
+      O2: -0.242100   # OD1
+      C5: {charge: 0.193400, H: 0.061500}   # CE
+      # cation (unscaled from x0.85)
+      C6: {charge: -0.197600, H: 0.204200}   # C6
+      N1: 0.157300   # N1
+      C7: {charge: -0.401800, H: 0.204200}   # C4
+      C8: {charge: -0.401800, H: 0.204200}   # C5
+      C9: {charge: -0.197600, H: 0.204200}   # C1
+      # anion (unscaled from x0.85)
+      C11: {charge: -0.469100, H: 0.162500}   # C3
+      S1: 1.402200   # S1
+      O3: -0.752700   # O1
+      O4: -0.752700   # O2
+      O5: -0.752700   # O3
+  A3361:
+    scale_of_source: 0.85
+    atoms:
+      # linker
+      C6: -0.037300   # CD
+      O1: -0.267300   # OD1
+      N2: {charge: -0.043100, H: 0.178100}   # N2
+      C5: {charge: 0.099300, H: 0.034900}   # C7
+      # cation (unscaled from x0.85)
+      C3: {charge: -0.197600, H: 0.204200}   # C9
+      N1: 0.157300   # N1
+      C1: {charge: -0.401800, H: 0.204200}   # C4
+      C2: {charge: -0.401800, H: 0.204200}   # C5
+      C9: {charge: -0.197600, H: 0.204200}   # C1
+      # anion (unscaled from x0.85)
+      C11: {charge: -0.469100, H: 0.162500}   # C3
+      S1: 1.402200   # S1
+      O2: -0.752700   # O1
+      O3: -0.752700   # O2
+      O4: -0.752700   # O3
+  A3367:
+    scale_of_source: 0.85
+    atoms:
+      # linker
+      C8: 0.217000   # CD
+      O5: -0.291800   # OD2
+      O4: -0.242100   # OD1
+      C7: {charge: 0.193400, H: 0.061500}   # CE
+      # cation (unscaled from x0.85)
+      C6: {charge: -0.197600, H: 0.204200}   # C6
+      N1: 0.157300   # N1
+      C1: {charge: -0.401800, H: 0.204200}   # C4
+      C2: {charge: -0.401800, H: 0.204200}   # C5
+      C3: {charge: -0.197600, H: 0.204200}   # C1
+      # anion (unscaled from x0.85)
+      C5: {charge: -0.469100, H: 0.162500}   # C3
+      S1: 1.402200   # S1
+      O1: -0.752700   # O1
+      O2: -0.752700   # O2
+      O3: -0.752700   # O3
+initiators:
+  KPS:
+    scale_of_source: 0.85
+    atoms:  # SO4- end group (KPH and KPT): O1 is bonded to the chain
+      O1: -0.425168
+      S1: 0.700682
+      O2: -0.425168
+      O3: -0.425168
+      O4: -0.425168

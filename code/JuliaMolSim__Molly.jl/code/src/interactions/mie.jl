@@ -1,7 +1,8 @@
 export Mie
 
 @doc raw"""
-    Mie(; m, n, cutoff, use_neighbors, shortcut, σ_mixing, ϵ_mixing, weight_special)
+    Mie(; m, n, cutoff=NoCutoff(), use_neighbors=true, shortcut=Molly.LJZeroShortcut(),
+        σ_mixing=Molly.LorentzMixing(), ϵ_mixing=Molly.GeometricMixing(), weight_special=1)
 
 The Mie generalized interaction between two atoms.
 

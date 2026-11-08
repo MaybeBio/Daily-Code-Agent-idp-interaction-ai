@@ -1,0 +1,1794 @@
+#!/usr/bin/env python
+"""
+Functionality previously scattered across various different modules. 
+This holds all of the functionality for disorder and pLDDT prediction. 
+This includes batch and single sequence. 
+Device selection can be carried out from the predict function. 
+Output data type also from the predict function. 
+"""
+
+# general imports
+import functools
+import os
+import re
+from packaging import version as packaging_version
+import time
+import numpy as np
+import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+import gc
+
+# local imports
+from metapredict.backend.meta_tools import exceeds_max_length, valid_batch_size, valid_range, raise_exception_on_empty_sequence
+from metapredict.backend.data_structures import DisorderObject as _DisorderObject
+from metapredict.backend import domain_definition as _domain_definition
+from metapredict.backend.network_parameters import metapredict_networks, pplddt_networks
+from metapredict.parameters import DEFAULT_NETWORK, DEFAULT_NETWORK_PLDDT, MAX_CUDA_LENGTH, DEFAULT_BATCH_SIZE_BY_DEVICE
+from metapredict.backend import encode_sequence
+from metapredict.backend import architectures
+from metapredict.metapredict_exceptions import MetapredictError
+
+# ....................................................................................
+#
+def build_DisorderObject(s,
+                         disorder,
+                         disorder_threshold=0.5,
+                         minimum_IDR_size=12,
+                         minimum_folded_domain=50,
+                         gap_closure=10,
+                         override_folded_domain_minsize=False,
+                         use_slow = False, return_numpy=True):
+
+    """
+    Function which takes a sequence, a disorder profile, and some
+    settings and then builds out a DisorderObject from.
+
+    Parameters
+    ----------------
+    s : str
+        Amino acid string
+
+    disorder : np.array
+        Array of disordered scores from the prediction
+
+    disorder_threshold  : float
+        The threshold value used to define if a region is truly disordered or not. This 
+        threshold is applied by saying if a residue has a disorder score > $disorder_threshold
+        it might be in an IDR, although other constrains/analysis are required.
+
+    minimum_IDR_size : int
+        Value that defines the shortest possible IDR. Default is 12.
+
+    minimum_folded_domain : int 
+        Value used in the final stages where any 'gaps' < $minimum_folded_domain
+        are revaluated with a slightly less stringent disorder threshold. Note that,
+        in addition, gaps < 35 are evaluated with a threshold of 0.35*disorder_threshold
+        and gaps < 20 are evaluated with a threshold of 0.25*disorder_threshold. These
+        two lengthscales were decided based on the fact that coiled-coiled regions (which
+        are IDRs in isolation) often show up with reduced apparent disorder within IDRs,
+        and but can be as short as 20-30 residues. The minimum_folded_domain is used
+        based on the idea that it allows a 'shortest reasonable' folded domain to be 
+        identified. Default is 50.
+
+    gap_closure : int
+        Value that allow short gaps within two disorder or folded domains to be
+        folded in. This actually ends up being most important when disorder scores
+        are unsmoothed. Default is 10.
+
+    override_folded_domain_minsize : bool
+        By default this function includes a fail-safe check that assumes folded domains
+        really shouldn't be less than 35 or 20 residues. However, for some approaches we
+        may wish to over-ride these thresholds to match the passed minimum_folded_domain
+        value. If this flag is set to True this override occurs. This is generally not 
+        recommended unless you expect there to be well-defined sharp boundaries which could
+        define small (20-30) residue folded domains. Default = False.
+
+    disorder_threshold : float
+        Threshold value used for deliniating between disordered and
+        and ordered regions
+
+    use_slow : bool
+        Flag which, if selected, means we use the older Python-based implementation of
+        the domain decomposition algorithm used to excise IDRs from the linear
+        disorder profile.
+
+    return_numpy : bool
+        whether to reutrn np array or not
+
+    """
+
+    # extract out disordered domains                 
+    return_tuple = _domain_definition.get_domains(s, 
+                                                  disorder, 
+                                                  disorder_threshold=disorder_threshold,
+                                                  minimum_IDR_size=minimum_IDR_size, 
+                                                  minimum_folded_domain=minimum_folded_domain,
+                                                  gap_closure=gap_closure,
+                                                  override_folded_domain_minsize=override_folded_domain_minsize,
+                                                  use_python=use_slow)
+
+    ## assemble the IDRs and FD boundaries
+    IDRs = []                    
+    for local_idr in return_tuple[1]:
+        IDRs.append([local_idr[0], local_idr[1]])
+
+    FDs = []
+    for local_fd in return_tuple[2]:
+        FDs.append([local_fd[0], local_fd[1]])
+
+    # build an DisorderObject and return it!
+    return _DisorderObject(s, disorder, IDRs, FDs, return_numpy=return_numpy)
+
+
+# ....................................................................................
+#
+def size_filter(inseqs):
+    """
+    Helper function that breaks down sequences into groups
+    where all sequences are the same size.
+
+    Parameters
+    ---------------
+    inseqs : list
+        List of amino acid sequencs
+
+    Returns
+    ---------------
+    dict
+        Returns a dictionary where keys are sequence length and
+        values are a list of sequences where all seqs are same length    
+    """
+
+    retdict = {}
+
+    for s in inseqs:
+        if len(s) not in retdict:
+            retdict[len(s)] = []
+
+        retdict[len(s)].append(s)
+
+    return retdict
+
+
+# ....................................................................................
+#
+def unique_sequences_in_batch_order(sequences):
+    """
+    Return the unique sequences in the fixed order used to build batches:
+    longest first, with sequences of equal length in alphabetical order.
+
+    Which sequences share a batch changes the predicted scores very slightly
+    (around 1e-7, because the LSTM kernels compute differently for different
+    batch sizes). Deduplicating with set() alone gave an order that changed
+    from run to run, because Python randomises string hashing in every new
+    process, so batch predictions were not exactly repeatable. With this fixed
+    order the same set of sequences always produces exactly the same batches,
+    and so exactly the same scores, regardless of the order (or number of
+    duplicates) in which they were passed. Longest-first is also the order
+    torch.nn.utils.rnn.pack_padded_sequence requires (enforce_sorted=True).
+
+    Parameters
+    ---------------
+    sequences : iterable of str
+        Amino acid sequences, possibly containing duplicates.
+
+    Returns
+    ---------------
+    list of str
+        The unique sequences, longest first and alphabetical within a length.
+    """
+    return sorted(set(sequences), key=lambda seq: (-len(seq), seq))
+
+
+# ....................................................................................
+#
+def scores_to_rounded_list(scores):
+    """
+    Convert an array of scores to a list of Python floats rounded to 4 decimal
+    places.
+
+    This gives exactly the same values as ``[round(float(x), 4) for x in
+    scores]`` but is about 8 times faster, which matters when returning lists
+    for millions of residues. For 32-bit scores (what the networks produce)
+    the vectorized version is exact, not just close: a float32 value has 24
+    significant bits and 10**4 needs 14, so multiplying by 10**4 in float64 is
+    exact, and np.round's scale / round-half-to-even / unscale then lands on
+    the same 4-decimal value as Python's correctly rounded round().
+
+    Parameters
+    ---------------
+    scores : np.ndarray
+        Per-residue scores, of any shape (they are flattened).
+
+    Returns
+    ---------------
+    list of float
+        The scores rounded to 4 decimal places, as Python floats.
+    """
+    scores = np.asarray(scores)
+
+    # the exactness argument above only holds for 32-bit input, so anything
+    # else takes the (slower) per-value route
+    if scores.dtype != np.float32:
+        return [round(float(x), 4) for x in scores.ravel()]
+
+    return np.round(scores.astype(np.float64).ravel(), 4).tolist()
+
+# ....................................................................................
+#
+
+def mps_is_available():
+    '''
+    Helper that safely reports whether an Apple-silicon MPS backend is available.
+    torch.backends.mps only exists in PyTorch >= 1.12, so we guard with hasattr
+    to avoid an AttributeError on older builds.
+
+    Returns
+    ---------------
+    bool
+        True if the MPS backend is present and available, otherwise False.
+    '''
+    return hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
+
+
+def parse_device_name(use_device):
+    '''
+    Function to check that a device name is valid and put it in a standard
+    form, without checking whether that device is available. check_device()
+    uses this before it checks availability, and predict() and
+    predict_pLDDT() use it on its own for a single sequence, which always
+    runs on the cpu but should still reject a device name that is not valid.
+
+    Parameters
+    ---------------
+    use_device : int or str
+        Identifier for the device to be used for predictions.
+        Possible inputs: 'cpu', 'mps', 'cuda', 'cuda:int', or an int that corresponds to
+        the index of a specific cuda-enabled GPU. A string of digits (e.g. '0', which is
+        how the command-line tools pass a GPU index) is treated the same way as an int.
+        Strings are case-insensitive and surrounding whitespace is ignored.
+
+    Returns
+    ---------------
+    device_string : str
+        The device name in standard form: 'cpu', 'mps', 'cuda' or 'cuda:int'.
+
+    Raises
+    ---------------
+    MetapredictError
+        If use_device is not a valid device name.
+    '''
+    # bool is a subclass of int, so reject it explicitly rather than
+    # silently turning True into 'cuda:True'
+    if isinstance(use_device, bool):
+        raise MetapredictError(f'Invalid device {use_device!r}. Device can only be set to: None, a string equal to cpu, mps, cuda, or cuda:int, or an int that is the index of a specific CUDA-enabled GPU')
+
+    # if input is an int, make it a string and then do checks.
+    if isinstance(use_device, int)==True:
+        use_device=f'cuda:{use_device}'
+
+    # by now a valid device name must be a string
+    if isinstance(use_device, str)==False:
+        raise MetapredictError("Device can only be set to: None, a string equal to 'cpu', 'mps', 'cuda', 'cuda:int' where int is some positive integer, or an int that is equal to the index of a specific CUDA-enabled GPU")
+
+    # make use_device lowercase
+    use_device=use_device.lower().strip()
+
+    # the command-line tools pass a GPU index as a string (e.g. '0'), so
+    # treat an all-digit string the same way as an int GPU index
+    if use_device.isdigit():
+        use_device=f'cuda:{use_device}'
+
+    if use_device in ('cpu', 'mps'):
+        return use_device
+
+    if use_device.startswith('cuda'):
+        # make sure the device string is either 'cuda' or 'cuda:int' before
+        # checking availability, so typos like 'cuda0' get a clear message
+        pattern = r"^cuda(:\d+)?$"
+        if re.match(pattern, use_device)==None:
+            error_message = f'{use_device} was specified as the device, but it does not match the pattern of cuda or cuda:int where int is a positive integer.'
+            raise MetapredictError(error_message)
+        return use_device
+
+    raise MetapredictError(f"Invalid device '{use_device}'. Device can only be set to: None, a string equal to 'cpu', 'mps', 'cuda', 'cuda:int' where int is some positive integer, or an int that is equal to the index of a specific CUDA-enabled GPU")
+
+
+def check_device(use_device, default_device='gpu'):
+    '''
+    Function to check the device was correctly set.
+
+    Parameters
+    ---------------
+    use_device : int or str
+        Identifier for the device to be used for predictions.
+        Possible inputs: 'cpu', 'mps', 'cuda', 'cuda:int', or an int that corresponds to
+        the index of a specific cuda-enabled GPU. A string of digits (e.g. '0', which is
+        how the command-line tools pass a GPU index) is treated the same way as an int.
+        If 'cuda' is specified and
+        cuda.is_available() returns False, instead of falling back to CPU,
+        metapredict will raise an Exception so you know that you are not
+        using CUDA as you were expecting.
+        If 'mps' is specified and mps is not available, an exception will be raised.
+
+    default_device : str or list
+        The device to auto-select when use_device is None. Either a mode string
+        or an ordered list of devices to try. Options are:
+
+        - 'gpu' - prefer an available accelerator, checking cuda, then mps, then cpu.
+        - 'cuda' - use cuda if available, otherwise fall back to cpu.
+        - 'mps' - use mps if available, otherwise fall back to cpu.
+        - 'cpu' - always use cpu.
+        - an ordered list such as ['cuda', 'cpu', 'mps'] - try each device in
+          order and return the first one that is available. This is how the
+          per-network default device preferences are expressed.
+
+    Returns
+    ---------------
+    device_string : str
+        returns the device string as a string.
+    '''
+    # if use_device is None, auto-select based on the requested default.
+    if use_device==None:
+        # resolve the preference into an ordered list of devices to try
+        if isinstance(default_device, (list, tuple)):
+            device_order = list(default_device)
+        elif default_device == 'gpu':
+            device_order = ['cuda', 'mps', 'cpu']
+        elif default_device in ('cuda', 'mps', 'cpu'):
+            device_order = [default_device, 'cpu']
+        else:
+            raise MetapredictError("Default device must be 'gpu', 'cuda', 'mps', 'cpu', or an ordered list of these")
+
+        # return the first available device in the requested order
+        for dev in device_order:
+            if dev == 'cpu':
+                return 'cpu'
+            elif dev == 'cuda':
+                if torch.cuda.is_available():
+                    return 'cuda'
+            elif dev == 'mps':
+                if mps_is_available():
+                    return 'mps'
+            else:
+                raise MetapredictError(f"Invalid device '{dev}' in device order; must be one of 'cpu', 'cuda', 'mps'")
+        # nothing in the requested order was available -> fall back to cpu
+        return 'cpu'
+
+
+    else:
+        # check the device name first (this raises for an unrecognised name),
+        # then check that the named device is actually available
+        use_device = parse_device_name(use_device)
+
+        # if CPU specified, use CPU
+        if use_device=='cpu':
+            return use_device
+        elif use_device=='mps':
+            # check if mps is available.
+            if mps_is_available():
+                return use_device
+            else:
+                raise MetapredictError('mps was specified, but mps is not available. Be sure you are running a Mac with mps-supported GPUs and a Pytorch version with mps support (>=2.1)')
+        else:
+            # parse_device_name only returns 'cpu', 'mps', 'cuda' or 'cuda:int',
+            # so this is a cuda device. Make sure cuda is available.
+            if torch.cuda.is_available()==False:
+                error_message = f'{use_device} was specified as the device, but torch.cuda.is_available() returned False.'
+                raise MetapredictError(error_message)
+            if use_device == 'cuda':
+                return use_device
+            else:
+                # make sure there are enough devices such that it is possible that the specified device index works.
+                device_index = int(use_device.split(":")[1])
+                num_devices = torch.cuda.device_count()
+                if device_index >= num_devices:
+                    error_message = f'{use_device} was specified as the device, but there are only {num_devices} cuda-enabled GPUs available.\nRemember, GPU indices are 0-indexed, so cuda:0 is for the first GPU and so on.\nThe max device index you can use based on torch.cuda.device_count() is {num_devices-1}.'
+                    raise MetapredictError(error_message)
+                return use_device
+
+    # if we made it here, raise error
+    raise MetapredictError("There is a problem with the check_device function in metapredict/backend/predictor.py.\nPlease raise an issue because you shouldn't be able to see this message.")
+
+
+def resolve_batch_size(batch_size, device_string, network_params):
+    '''
+    Resolve the batch size to use for a prediction.
+
+    If ``batch_size`` is provided it is used as-is (it is validated separately by
+    meta_tools.valid_batch_size). Otherwise a default is resolved in the following
+    order, so the default can be both network- and device-dependent:
+
+      1. the network's own per-device default, network_params['device_batch_size']
+         (e.g. the memory-light V1/V2 networks use larger batches than V3);
+      2. the global per-device default, parameters.DEFAULT_BATCH_SIZE_BY_DEVICE
+         (used by networks that do not define their own, e.g. pLDDT);
+      3. the network's configured batch size, network_params['batch_size'].
+
+    Parameters
+    ---------------
+    batch_size : int or None
+        The user-supplied batch size, or None to use a network/device default.
+
+    device_string : str
+        The resolved device, e.g. 'cpu', 'mps', 'cuda' or 'cuda:0'.
+
+    network_params : dict
+        The network's parameter dictionary. Uses the optional 'device_batch_size'
+        mapping and the required 'batch_size' fallback.
+
+    Returns
+    ---------------
+    int
+        The batch size to use.
+    '''
+    if batch_size is not None:
+        return batch_size
+
+    # 'cuda:0' etc. -> 'cuda'
+    device_base = device_string.split(':')[0]
+
+    # 1. network-specific per-device default
+    per_network = network_params.get('device_batch_size', {})
+    if device_base in per_network:
+        return per_network[device_base]
+
+    # 2. global per-device default
+    if device_base in DEFAULT_BATCH_SIZE_BY_DEVICE:
+        return DEFAULT_BATCH_SIZE_BY_DEVICE[device_base]
+
+    # 3. the network's configured batch size
+    return network_params['batch_size']
+
+
+def take_care_of_version(version_input):
+    '''
+    Function to take care of the version to use when specifying
+    the network.
+
+    Parameters
+    ---------------
+    version_input : int or str
+        The version of the network to use.
+
+    Returns
+    ---------------
+    version : str
+        The version of the network to use.
+    '''
+    # make sure the version is a string
+    version_input=str(version_input)
+
+    # now convert over to what we need version to be. 
+    if version_input=='legacy':
+        version_input='V1'
+    
+    # if len version is 1, add a 'V' to the front. 
+    if len(version_input)==1:
+        version_input=f'V{version_input}'
+
+    # make version uppercase
+    version_input=version_input.upper()
+
+    return version_input
+
+
+
+# function to load model
+# A variable to store the loaded model
+loaded_models = {}
+
+# gets model. This lets us avoid iteratively loading the model
+# because it can check the global dictionary to see if the model
+# has already been loaded. 
+# if you don't do this, you start getting memory issues
+def get_model(model_name, params, predictor_path, device):
+    global loaded_models  # Ensure the dictionary is accessible across calls
+    
+    # Check if the model has already been loaded
+    if model_name in loaded_models:
+        return loaded_models[model_name]
+    
+    # If the model hasn't been loaded yet, load it
+    if not params['used_lightning']:
+        model = architectures.BRNN_MtM(
+            input_size=params['input_size'], 
+            hidden_size=params['hidden_size'], 
+            num_layers=params['num_layers'], 
+            num_classes=params['num_classes'], 
+            device=device
+        )
+        network = torch.load(predictor_path, map_location=device, weights_only=True)
+        model.load_state_dict(network)
+    else:
+        # networks trained with pytorch-lightning are stored as Lightning
+        # checkpoints, which we read with plain PyTorch (no Lightning needed)
+        model = architectures.BRNN_MtM_lightning.from_checkpoint(
+            predictor_path, map_location=device
+        )
+
+    # Store the loaded model in the dictionary using the model_name as key
+    loaded_models[model_name] = model
+    return model
+
+
+# ....................................................................................
+#
+def _without_tf32(func):
+    """
+    Decorator that runs func with cuDNN's TF32 mode switched off, then
+    restores whatever the caller had set.
+
+    On Ampere-or-newer NVIDIA GPUs, PyTorch lets cuDNN use TF32 by default.
+    TF32 keeps only ~3 significant digits in the LSTM matrix maths, which
+    shifted CUDA predictions away from CPU by up to ~1e-3 on disorder scores
+    and ~0.1 on the 0-100 pLDDT scale, by an amount that depends on which
+    sequences share a batch. With TF32 off, CUDA matches CPU to ~1e-4 on
+    pLDDT and ~1e-6 on disorder, and these networks run no slower.
+
+    allow_tf32 is a process-wide PyTorch setting, so the caller's value is
+    put back afterwards (even if prediction raises) to avoid changing the
+    behaviour of any other PyTorch code running in the same process.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        previous = torch.backends.cudnn.allow_tf32
+        torch.backends.cudnn.allow_tf32 = False
+        try:
+            return func(*args, **kwargs)
+        finally:
+            torch.backends.cudnn.allow_tf32 = previous
+    return wrapper
+
+
+# ....................................................................................
+
+@_without_tf32
+def predict(inputs,
+            version=DEFAULT_NETWORK,
+            use_device=None,
+            normalized=True,
+            round_values=True,
+            return_numpy=True,
+            return_domains=False,
+            disorder_threshold=None,
+            minimum_IDR_size=12,
+            minimum_folded_domain=50,
+            gap_closure=10,
+            override_folded_domain_minsize=False,
+            use_slow = False,
+            print_performance=False,
+            show_progress_bar = False,
+            force_disable_batch=False,
+            disable_pack_n_pad = False,
+            silence_warnings = False,
+            batch_size=None,
+            default_to_device = None):
+    """
+    Batch mode predictor which takes advantage of PyTorch
+    parallelization such that whether it's on a GPU or a
+    CPU, predictions for a set of sequences are performed
+    rapidly.
+
+    Parameters
+    ----------
+    inputs : string list or dictionary
+        An individual sequence or a collection of sequences
+        that are presented either as a list of sequences or
+        a dictionary of key-value pairs where values are sequences.
+
+    version : string
+        The network to use for prediction. Default is DEFAULT_NETWORK,
+        which is defined at the top of /parameters.
+        Options currently include V1, V2, or V3. 
+
+    use_device : int or str 
+        Identifier for the device to be used for predictions. 
+        Possible inputs: 'cpu', 'mps', 'cuda', or an int that corresponds to
+        the index of a specific cuda-enabled GPU. If 'cuda' is specified and
+        cuda.is_available() returns False, instead of falling back to CPU, 
+        metapredict will raise an Exception so you know that you are not
+        using CUDA as you were expecting.
+        Default: None
+        When set to None, the first available device in the network's
+        device order is used (see default_to_device): V1 and V2 try cuda,
+        then cpu, then mps, while V3 tries cuda, then mps, then cpu.
+        If you set the value to be an int, we will use cuda:int as the device
+        where int is the int you specify. The GPU numbering is 0 indexed, so 0
+        corresponds to the first GPU and so on. Only specify this if you
+        know which GPU you want to use.
+        A single sequence (passed as a string) is always predicted on the
+        cpu. The device name is still checked, so an unrecognised name
+        raises an exception, but the device does not need to be available.
+        MPS (Apple Silicon GPUs) is available in every PyTorch version
+        metapredict supports (2.3 or later).
+
+    normalized : bool
+        Whether or not to normalize disorder values to between 0 and 1.
+        Default : True
+
+    round_values : bool
+        Whether to round the values to 4 decimal places.
+        Default : True
+
+    return_numpy : bool
+        Whether to return a numpy array or a list for single predictions.
+        Default : True
+
+    return_domains : bool
+        Flag which, if set to true, means we return DisorderObject
+        objects instead of simply the disorder scores. These
+        domain objects include the boundaries between IDRs and 
+        folded domains, the disorder scores, and the individual
+        sequences for IDRs and folded domains. This adds a small
+        amount of overhead to the prediction, but typically only
+        increase prediction time by 10-15%.
+    
+    disorder_threshold : float
+        Used only if return_domains = True.
+        Default is set to None because there are different threshold
+        values depending on the network (V1 = 0.42, V2 = 0.5, V3 = 0.5).
+        You can override this value.
+
+    minimum_IDR_size : int
+        Used only if return_domains = True.
+
+        Defines the smallest possible IDR. This is a hard limit - 
+        i.e. we CANNOT get IDRs smaller than this. Default = 12.
+
+
+    minimum_folded_domain : int
+        Used only if return_domains = True.
+
+        Defines where we expect the limit of small folded domains 
+        to be. This is NOT a hard limit and functions to modulate
+        the removal of large gaps (i.e. gaps less than this size 
+        are treated less strictly). Note that, in addition, 
+        gaps < 35 are evaluated with a threshold of 
+        0.35*disorder_threshold and gaps < 20 are evaluated with 
+        a threshold of 0.25*disorder_threshold. These two 
+        lengthscales were decided based on the fact that 
+        coiled-coiled regions (which are IDRs in isolation) 
+        often show up with reduced apparent disorder within IDRs, 
+        and but can be as short as 20-30 residues. 
+        The folded_domain_threshold is used based on the 
+        idea that it allows a 'shortest reasonable' folded domain 
+        to be identified. Default=50.
+
+    gap_closure : int
+        Used only if return_domains = True.
+
+        Defines the largest gap that would be 'closed'. Gaps here 
+        refer to a scenario in which you have two groups of 
+        disordered residues separated by a 'gap' of un-disordered 
+        residues. In general large gap sizes will favour larger 
+        contiguous IDRs. It's worth noting that gap_closure becomes 
+        relevant only when minimum_IDR_size becomes very small
+        (i.e. < 5) because really gaps emerge when the smoothed 
+        disorder fit is "noisy", but when smoothed gaps
+        are increasingly rare. Default=10.
+
+    override_folded_domain_minsize : bool
+        By default this function includes a fail-safe check that
+        assumes folded domains really shouldn't be less than 
+        35 or 20 residues. However, for some approaches we may 
+        wish to over-ride these thresholds to match the passed 
+        minimum_folded_domain value. If this flag is set to 
+        True this override occurs. This is generally not 
+        recommended unless you expect there to be well-defined 
+        sharp boundaries which could define small (20-30) 
+        residue folded domains. This is not provided as an option 
+        in the normal predict_disorder_domains for metapredict. 
+        Default = False. 
+
+    use_slow : bool
+        Flag which, if passed, means we force a Python 
+        implementation of our domain decomposition algorithm 
+        instead of the MUCH faster Cython/C implementation. 
+        Useful for debugging. Default = False
+                
+    print_performance : bool
+        Flag which means the function prints the time taken 
+        for the two stages in the prediction algorithm. Again 
+        useful for profiling and debugging. Default = False
+
+    show_progress_bar : bool
+        Flag which, if set to True, means a progress bar is printed as 
+        predictions are made, while if False no progress bar is printed.
+        Default = False
+
+    force_disable_batch : bool
+        Whether to override any use of batch predictions and predict
+        sequences individually.
+        Default = False
+
+    disable_pack_n_pad : bool
+        Whether to disable the use of pack_n_pad in the prediction
+        algorithm. This is useful for debugging and profiling. Also gives
+        us a way for people to use older versions of torch. 
+        Default = False
+
+    silence_warnings : bool
+        whether to silence warnings such as the one about compatibility
+        to use pack-n-pad due to torch version restrictions. 
+
+    batch_size : int or None
+        Number of sequences processed per forward pass during batch prediction.
+        Must be a power of two and >= 32 (e.g. 32, 64, 128, 256, 512, 1024), or
+        None to use a per-network, per-device default (see network_parameters).
+        Batch size only affects speed and memory, not the predicted values;
+        larger batches are typically faster on a GPU/MPS. Default = None.
+
+    default_to_device : str, list or None
+        Overrides how the device is auto-selected when use_device is None.
+        Default = None, which uses the per-network device preference defined in
+        network_parameters (the small V1/V2 disorder networks prefer cpu over
+        mps, since cpu is faster for them, while V3 prefers mps). Can instead be
+        set to 'gpu' (cuda -> mps -> cpu), 'cuda', 'mps', 'cpu', or an explicit
+        ordered list of devices to try; the first available device in the chosen
+        order is used, otherwise cpu.
+
+    Returns
+    -------------
+    DisorderObject, numpy.ndarray, list or dict
+
+        IF RETURN DOMAINS == FALSE: this function returns either
+        a list or a dictionary.
+    
+        If a list was provided as input, the function returns a list
+        of the same length as the input list, where each element is 
+        itself a sublist where element 0 = sequence and element 1 is
+        a numpy array of disorder scores. The order of the return list
+        matches the order of the input list.
+
+        If a dictionary was provided as input, the function returns
+        a dictionary, where the same input keys map to values which are
+        lists of 2 elements, where element 0 = sequence and element 1 is
+        a numpy array of disorder scores.
+
+        IF RETURN DOMAINS == TRUE: this function returns either a list
+        or a dictionary.
+
+        If a list was provided as input, the function returns a list
+        of the same length as the input list, where each element is 
+        a DisorderObject. The order of the return list matches
+        the order of the input list.
+
+        If a dictionary was provided as input, the function returns
+        a dictionary, where the same input keys map to a DisorderObject
+        that corresponds to the input dictionary sequence.
+
+    Raises
+    ------
+    MetapredictError
+        An exception is raised if the requested network is not one of the available options.
+    """
+    ##
+    ## FIGURE OUT WHAT NETWORK WE ARE USING
+    ##
+    ## ....................................................................................
+
+    # normalize such that user can input v#, V#, or # to specify the version
+    version = take_care_of_version(version)
+
+    # make list of possible network inputs
+    possible_networks=['legacy']
+    for cur_net in metapredict_networks.keys():
+        possible_networks.append(cur_net)
+        possible_networks.append(cur_net[-1])  
+
+    # make sure version is in the metapredict networks. 
+    if version not in metapredict_networks:
+        raise MetapredictError(f'Network {version} not available. Valid inputs to choose a network are {possible_networks}')
+    else:
+        net = metapredict_networks[version]
+
+    # figure out some stuff.
+    if disorder_threshold is None:
+        disorder_threshold = net['parameters']['disorder_threshold']
+
+    # the threshold is only used when building DisorderObjects; in that case it
+    # must be a number in [0, 1] (a string threshold would otherwise crash, or be
+    # silently mis-compared, inside the domain decomposition)
+    if return_domains:
+        valid_range(disorder_threshold, 0.0, 1.0)
+
+    # load and setup the network (same code as used by the non-batch version)
+    PATH = os.path.dirname(os.path.realpath(__file__))
+    predictor_path = f"{PATH}/networks/{net['weights']}"
+    # get params
+    params=net['parameters']
+
+    # validate any user-supplied batch size. Batch size only affects how sequences
+    # are grouped for the forward pass, not the predicted scores. The value that is
+    # actually used (effective_batch_size) is resolved below, once the device is
+    # known, since the default batch size depends on the device.
+    valid_batch_size(batch_size)
+
+    # make sure none of the sequences are empty
+    raise_exception_on_empty_sequence(inputs)
+
+    ##
+    ## FIGURE OUT WHERE WE ARE DOING THE PREDICTIONS
+    ##
+    ## ....................................................................................    
+
+    # if a single sequence, just use cpu. Using GPU for a single sequence would be silly.
+    # The device name is still checked (but not whether it is available), so a
+    # name that is not valid raises here instead of being silently ignored.
+    if isinstance(inputs, str)==True:
+        if use_device is not None:
+            parse_device_name(use_device)
+        device_string='cpu'
+    else:
+        # resolve the auto-select preference: an explicit default_to_device wins,
+        # otherwise use this network's per-network device order (falling back to
+        # the generic gpu order for any network that does not define one).
+        if default_to_device is not None:
+            _device_pref = default_to_device
+        else:
+            _device_pref = params.get('device_order', ['cuda', 'mps', 'cpu'])
+        device_string = check_device(use_device, default_device=_device_pref)
+
+    # check if using gpu, specifically cuda
+    if 'cuda' in device_string:
+        if exceeds_max_length(inputs, max_length=MAX_CUDA_LENGTH):
+            raise MetapredictError(f'One of the input sequences is too long to run on GPU. The max length for a sequence on a CUDA GPU is {MAX_CUDA_LENGTH}.\nPlease use CPU if you want to run sequences longer than 65535 amino acids.')
+
+    # set device
+    device=torch.device(device_string)
+
+    # resolve the batch size to use now that the device is known (an explicit
+    # batch_size wins; otherwise use the network/device-dependent default)
+    effective_batch_size = resolve_batch_size(batch_size, device_string, params)
+
+    # see if we need to mess with packing / padding
+    if disable_pack_n_pad==False:
+        if packaging_version.parse(torch.__version__) < packaging_version.parse("1.11.0"):
+            disable_pack_n_pad=True
+            # only warn if user hasn't turned off warning. 
+            if silence_warnings==False:
+                print('Pytorch version is <= 1.11.0. Disabling pack-n-pad functionality. This might slow down predictions.')
+
+    ##
+    ## LOAD IN THE NETWORK
+    ##
+    ## ....................................................................................    
+
+    # load model
+    model = get_model(model_name=f'disorder_{version}', 
+                        params=params, 
+                        predictor_path=predictor_path, 
+                        device=device)
+
+    # set to eval mode
+    model.eval()
+
+    # make sure network is on correct device. 
+    model.to(device)
+        
+    ##
+    ## START PREDICTIONS
+    ##
+    ## .................................................................................... 
+
+    # now we can start up the predictions. 
+    # if a single prediction, we can just ignore the batch stuff. 
+    if isinstance(inputs, str)==True:
+        # if we want to print the performance, start tracking time per prediction. 
+        if print_performance:
+            start_time = time.time()        
+        
+        # encode the sequence
+        seq_vector = encode_sequence.one_hot(inputs)    
+        seq_vector = seq_vector.to(device)
+        seq_vector = seq_vector.view(1, len(seq_vector), -1)
+
+        # get output values from the seq_vector based on the network (brnn_network)
+        with torch.no_grad():
+            outputs = model(seq_vector.float()).detach().cpu().numpy()[0]
+
+        # Take care of rounding and normalization
+        if normalized == True and round_values==True:
+            outputs=np.round(np.clip(outputs, a_min=0, a_max=1),4)
+        elif normalized==True and round_values==False:
+            outputs=np.clip(outputs, a_min=0, a_max=1)
+        elif normalized==False and round_values==True:
+            outputs=np.round(outputs, 4)
+        # if both ==False, we don't need to do anything. 
+        
+        # make list if user wants a list instead of a np.array
+        if return_numpy==False:
+            if round_values==True:
+                # need to round again because the np.round doesn't 
+                # keep the rounded values when we convert to list. 
+                outputs = scores_to_rounded_list(outputs)
+            else:
+                # otherwise just return the flattened array as a list. 
+                outputs=outputs.flatten().tolist()
+
+        else:
+            # if we want a numpy array, we need to make sure it's a 1D array
+            outputs=outputs.flatten()
+
+        # print performance
+        if print_performance:
+            end_time = time.time()
+            print(f"Time taken for prediction on {device}: {end_time - start_time} seconds") 
+
+
+        # see if need to build disorder_domsins
+        if return_domains:
+            outputs= build_DisorderObject(inputs, outputs,
+                                            disorder_threshold=disorder_threshold,
+                                            minimum_IDR_size=minimum_IDR_size,
+                                            minimum_folded_domain=minimum_folded_domain,
+                                            gap_closure=gap_closure,
+                                            override_folded_domain_minsize=override_folded_domain_minsize,
+                                            use_slow=use_slow,
+                                            return_numpy=return_numpy)
+        # return the output
+        return outputs
+
+    else:
+        # otherwise we need to do batch predictions. 
+        ## Prepare data by generate a list (sequence_list)
+        ## which contains non-redundant sequences 
+        ##   
+        if isinstance(inputs, dict):
+            mode = 'dictionary'
+            seq2id = {}
+            for k in inputs:
+                s = inputs[k]
+                if s not in seq2id:
+                    seq2id[s] = [k]
+                else:
+                    seq2id[s].append(k)
+            sequence_list = unique_sequences_in_batch_order(seq2id.keys())
+        elif isinstance(inputs, list):
+            mode = 'list'
+            sequence_list = unique_sequences_in_batch_order(inputs)
+        else:
+            raise Exception('Invalid data type passed - expect a single sequence or a list or dictionary of sequences')
+
+        # if we want to print the performance, start tracking time per prediction. 
+        if print_performance:
+            start_time = time.time()   
+
+        # initialize the return dictionary that maps sequence to
+        # disorder profile
+        pred_dict = {}
+
+        # check if we are disabling batch predictions. If we are, we need to
+        # do all predictions individually
+        if force_disable_batch==True:
+            # see if a progress bar is wanted
+            if show_progress_bar:
+                pbar = tqdm(total=len(sequence_list))
+            # iterate through sequence list
+            for seq in sequence_list:
+                # encode the sequence
+                seq_vector = encode_sequence.one_hot(seq)
+                seq_vector = seq_vector.to(device)
+                seq_vector = seq_vector.view(1, len(seq_vector), -1)
+
+                # get output values from the seq_vector based on the network (brnn_network)
+                with torch.no_grad():
+                    outputs = model(seq_vector.float()).detach().cpu().numpy()[0].flatten()
+
+                # Take care of rounding and normalization
+                if normalized == True and round_values==True:
+                    outputs=np.round(np.clip(outputs, a_min=0, a_max=1),4)
+                elif normalized==True and round_values==False:
+                    outputs=np.clip(outputs, a_min=0, a_max=1)
+                elif normalized==False and round_values==True:
+                    outputs=np.round(outputs, 4)
+                # if both ==False, we don't need to do anything. 
+                
+                # make list if user wants a list instead of a np.array
+                if return_numpy==False:
+                    if round_values==True:
+                        # need to round again because the np.round doesn't 
+                        # keep the rounded values when we convert to list. 
+                        outputs = scores_to_rounded_list(outputs)
+                    else:
+                        # otherwise just return the flattened array as a list. 
+                        outputs=outputs.flatten().tolist()
+
+                # add to dict
+                pred_dict[seq]=outputs
+                # update progress bar one sequence at a time (tqdm itself limits
+                # how often the bar is redrawn, so this is cheap)
+                if show_progress_bar:
+                    pbar.update(1)
+
+        else:         
+            # if we are disabling pack-n-pad functionalitity...
+            if disable_pack_n_pad==True:
+                # build a dictionary where keys are sequence length
+                # and values is a list of sequences of that exact length
+                size_filtered =  size_filter(sequence_list)
+                
+                # set progress bar info
+                if show_progress_bar:
+                    pbar = tqdm(total=len(size_filtered))
+
+                # iterate through local size
+                for local_size in size_filtered:
+                    local_seqs = size_filtered[local_size]
+                    # load the data
+                    seq_loader = DataLoader(local_seqs, batch_size=effective_batch_size, shuffle=False)
+
+                    # iterate through batches in seq_loader
+                    for batch in seq_loader:
+                        # Pad the sequence vector to have the same length as the longest sequence in the batch
+                        seqs_padded = torch.nn.utils.rnn.pad_sequence([encode_sequence.one_hot(seq).float() for seq in batch], batch_first=True)
+                        seqs_padded = seqs_padded.to(device)
+
+                        # Forward pass, then send to CPU for numpy rounding / normalization
+                        with torch.no_grad():
+                            outputs = model.forward(seqs_padded).detach().cpu().numpy()
+                        
+                        # Save predictions
+                        for j, seq in enumerate(batch):
+                            if normalized==True and round_values==True:
+                                prediction=np.squeeze(np.round(np.clip(outputs[j][0:len(seq)], a_min=0, a_max=1),4))
+                            elif normalized==True and round_values==False:
+                                prediction=np.squeeze(np.clip(outputs[j][0:len(seq)], a_min=0, a_max=1))
+                            elif normalized==False and round_values==True:
+                                prediction=np.squeeze(np.round(outputs[j][0:len(seq)], 4))
+                            else:
+                                prediction=np.squeeze(outputs[j][0:len(seq)])
+
+                            # make list if user wants a list instead of a np.array
+                            if return_numpy==False:
+                                if round_values==True:
+                                    # need to round again because the np.round doesn't 
+                                    # keep the rounded values when we convert to list. 
+                                    prediction = scores_to_rounded_list(prediction)
+                                else:
+                                    # otherwise just return the flattened array as a list. 
+                                    prediction=prediction.flatten().tolist()
+
+                            # see if we need to make prediction a list
+                            pred_dict[seq] = prediction
+                    
+                    # update the progress bar
+                    if show_progress_bar:
+                        pbar.update(1)
+            else:
+                # sequence_list is already longest-first (see
+                # unique_sequences_in_batch_order), which keeps padding to a
+                # minimum and is the order pack_padded_sequence requires
+                # we will be using pack-n-pad.
+                # load seqs into DataLoader
+                seq_loader = DataLoader(sequence_list, batch_size=effective_batch_size, shuffle=False)
+                num_batches=len(seq_loader)
+                
+                # set progress bar info if we are going to display it. 
+                # have to do this differently because you can't iterate over DataLoader
+                # and get tqdm to update. 
+                if show_progress_bar:
+                    pbar = tqdm(total=num_batches)
+
+                # iterate through each batch
+                for batch in seq_loader:
+                    # Pad the sequence vector to have the same length as the longest sequence in the batch
+                    seqs_padded = torch.nn.utils.rnn.pad_sequence([encode_sequence.one_hot(seq).float() for seq in batch], batch_first=True)
+                    lengths = [len(seq) for seq in batch]
+
+                    # pack padded sequences
+                    packed_seqs = torch.nn.utils.rnn.pack_padded_sequence(seqs_padded, lengths, batch_first=True, enforce_sorted=True)
+                    
+                    # move packed seqs to device. 
+                    packed_seqs = packed_seqs.to(device)
+
+                    # lstm forward pass.
+                    with torch.no_grad():
+                        outputs, _ = model.lstm(packed_seqs)
+
+                    # unpack the packed sequence
+                    outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
+
+                    # get final outputs by calling fc.
+                    if params['used_lightning']==False:
+                        outputs = model.fc(outputs)
+                    else:
+                        outputs = model.layer_norm(outputs)
+                        for layer in model.linear_layers:
+                            outputs = layer(outputs)
+                    
+                    # move to cpu
+                    outputs = outputs.detach().cpu().numpy()
+
+                    # clean up / normalize
+                    if normalized == True and round_values==True:
+                        outputs=np.round(np.clip(outputs, a_min=0, a_max=1),4)
+                    elif normalized==True and round_values==False:
+                        outputs=np.clip(outputs, a_min=0, a_max=1)
+                    elif normalized==False and round_values==True:
+                        outputs=np.round(outputs, 4)                
+                    
+                    # get individual seqs ignoring padded parts. 
+                    for seq_num, length in enumerate(lengths):
+                        curoutput=outputs[seq_num][0:length].flatten()
+                        seq = batch[seq_num]
+                    
+                        # make list if user wants a list instead of a np.array
+                        if return_numpy==False:
+                            if round_values==True:
+                                # need to round again because the np.round doesn't 
+                                # keep the rounded values when we convert to list. 
+                                curoutput = scores_to_rounded_list(curoutput)
+                            else:
+                                # otherwise just return the flattened array as a list. 
+                                curoutput=curoutput.flatten().tolist()
+
+                        # add to dict
+                        pred_dict[seq]=curoutput
+
+                    # update progress bar
+                    if show_progress_bar:
+                        pbar.update(1)
+
+        # close pbar
+        if show_progress_bar:
+            pbar.close()
+
+        # if printing performance
+        if print_performance:
+            end_time = time.time()
+            print(f"\nTime taken for predictions on {device}: {end_time - start_time} seconds") 
+        
+
+        ##
+        ## PREDICTION DONE
+        ##
+        ## ....................................................................................
+
+        # if we've requested IDR domains
+        if return_domains:
+
+            # we're going to first build a dictionary to map sequence to DisorderObject - this ensures
+            # we only build one DO per sequence, even if we have multiple repetitve sequences
+            seq2DisorderObject = {}
+
+            # for each sequence in the prediction dictionary. Note this loop may take a second...
+            start_time = time.time()
+            for s in pred_dict:
+                seq2DisorderObject[s] = build_DisorderObject(s,
+                                                             pred_dict[s],
+                                                             disorder_threshold=disorder_threshold,
+                                                             minimum_IDR_size=minimum_IDR_size, 
+                                                             minimum_folded_domain=minimum_folded_domain,
+                                                             gap_closure=gap_closure,
+                                                             override_folded_domain_minsize=override_folded_domain_minsize,
+                                                             use_slow=use_slow, return_numpy=return_numpy)
+
+            end_time = time.time()
+            if print_performance:
+                print(f"Time taken for domain decomposition: {end_time - start_time} seconds")
+
+            # finally, if we passed in a dictionary then return a dictionary with the same
+            # ID mapping (even if two IDs map to the same sequence)
+            if mode == 'dictionary':
+                return_dict = {}
+                for s in seq2id:
+                    # for each ID associated with that sequence, assign the disorder object
+                    for seq_id in seq2id[s]:
+                        return_dict[seq_id] = seq2DisorderObject[s]
+                return return_dict
+
+            # and if we passed a list return a list in the same order it came in, even if
+            # there are duplicates
+            elif mode == 'list':
+                return_list = []
+                for s in inputs:
+                    return_list.append(seq2DisorderObject[s])
+                return return_list
+            else:
+                raise Exception('How did we get here? What did we do wrong? Is this the darkest timeline? Probably')
+
+        # just return scores with no domains
+        else:
+            if mode == 'dictionary':
+                return_dict = {}
+                for s in seq2id:
+                    for seq_id in seq2id[s]:
+                        return_dict[seq_id] = [s, pred_dict[s]]                
+                return return_dict
+            elif mode == 'list':
+                return_list = []
+                for s in inputs:
+                    return_list.append([s, pred_dict[s]])
+                return return_list
+            else:
+                raise Exception('How did we get here? What did we do wrong? Is this the darkest timeline? Definitely')
+
+
+
+# ....................................................................................
+
+@_without_tf32
+def predict_pLDDT(inputs,
+            version=DEFAULT_NETWORK_PLDDT,
+            return_decimals=False,
+            use_device=None,
+            normalized=True,
+            round_values=True,
+            return_numpy=True,
+            print_performance=False,
+            show_progress_bar = False,
+            force_disable_batch=False,
+            disable_pack_n_pad = False,
+            silence_warnings = False,
+            return_as_disorder_score=False,
+            plddt_base=0.35,
+            plddt_top=0.95,
+            batch_size=None,
+            default_to_device = None):
+    """
+    Batch mode predictor which takes advantage of PyTorch
+    parallelization such that whether it's on a GPU or a 
+    CPU, predictions for a set of sequences are performed
+    rapidly.
+
+    Parameters
+    ----------
+    inputs : string list or dictionary
+        An individual sequence or a collection of sequences 
+        that are presented either as a list of sequences or 
+        a dictionary of key-value pairs where values are sequences.
+
+    version : string
+        The network to use for prediction. Default is DEFAULT_NETWORK_PLDDT,
+        which is defined at the top of /parameters.
+        Options currently include V1 or V2. V1 is the version used
+        to make legacy metapredict and is from 'alphaPredict'. V2 
+        is a new network made much more recently. 
+
+    return_decimals : bool
+        Originally trained to get values from 0 to 1. If set to True, you will get 
+        values in their original form. If True, will multiply by 100 such that you get
+        scores representative of actual pLDDT scores. 
+        Default is False. 
+
+    use_device : int or str 
+        Identifier for the device to be used for predictions. 
+        Possible inputs: 'cpu', 'mps', 'cuda', or an int that corresponds to
+        the index of a specific cuda-enabled GPU. If 'cuda' is specified and
+        cuda.is_available() returns False, instead of falling back to CPU, 
+        metapredict will raise an Exception so you know that you are not
+        using CUDA as you were expecting. 
+        Default: None
+        When set to None, the first available device is used, trying
+        cuda, then mps, then cpu (see default_to_device).
+        If you set the value to be an int, we will use cuda:int as the device
+        where int is the int you specify. The GPU numbering is 0 indexed, so 0
+        corresponds to the first GPU and so on. Only specify this if you
+        know which GPU you want to use.
+        A single sequence (passed as a string) is always predicted on the
+        cpu. The device name is still checked, so an unrecognised name
+        raises an exception, but the device does not need to be available.
+        MPS (Apple Silicon GPUs) is available in every PyTorch version
+        metapredict supports (2.3 or later).
+
+    normalized : bool
+        Whether or not to normalize disorder values to between 0 and 1. 
+        Default : True
+    
+    round_values : bool
+        Whether to round the values to 4 decimal places. 
+        Default : True
+
+    return_numpy : bool
+        Whether to return a numpy array or a list for single predictions. 
+        Default : True    
+                
+    print_performance : bool
+        Flag which means the function prints the time taken 
+        for the two stages in the prediction algorithm. Again 
+        useful for profiling and debugging. Default = False
+
+    show_progress_bar : bool
+        Flag which, if set to True, means a progress bar is printed as 
+        predictions are made, while if False no progress bar is printed.
+        Default = False
+
+    force_disable_batch : bool
+        Whether to override any use of batch predictions and predict
+        sequences individually.
+        Default = False
+
+    disable_pack_n_pad : bool
+        Whether to disable the use of pack_n_pad in the prediction
+        algorithm. This is useful for debugging and profiling. Also gives
+        us a way for people to use older versions of torch. 
+        Default = False
+
+    silence_warnings : bool
+        whether to silence warnings such as the one about compatibility
+        to use pack-n-pad due to torch version restrictions. 
+
+    return_as_disorder_score : bool
+        Whether to return as a disorder score.
+        This basically inverts the score as a decimal and normalizes it between 0.35 
+        as the lowest value and 0.95 as the highest. 
+
+    plddt_base : float
+        the lowest value plddt can be when converting it to a disorder score
+        Default=0.35
+
+    plddt_top : float
+        the highest value plddt can be when converting it to a disorder score
+        Default=0.95
+
+    batch_size : int or None
+        Number of sequences processed per forward pass during batch prediction.
+        Must be a power of two and >= 32 (e.g. 32, 64, 128, 256, 512, 1024), or
+        None to use a per-network, per-device default (see network_parameters).
+        Batch size only affects speed and memory, not the predicted values;
+        larger batches are typically faster on a GPU/MPS. Default = None.
+
+    default_to_device : str, list or None
+        Overrides how the device is auto-selected when use_device is None.
+        Default = None, which tries cuda, then mps, then cpu (the pLDDT
+        networks do not define their own device order in network_parameters).
+        Can instead be set to 'gpu' (cuda -> mps -> cpu), 'cuda', 'mps', 'cpu', or an explicit
+        ordered list of devices to try; the first available device in the chosen
+        order is used, otherwise cpu.
+
+    Returns
+    -------------
+    dict or list
+
+        This function returns either a list or a dictionary.
+
+        If a list was provided as input, the function returns a list
+        of the same length as the input list, where each element is
+        itself a sublist where element 0 = sequence and element 1 is
+        a numpy array of pLDDT scores. The order of the return list
+        matches the order of the input list.
+
+        If a dictionary was provided as input, the function returns
+        a dictionary, where the same input keys map to values which are
+        lists of 2 elements, where element 0 = sequence and element 1 is
+        a numpy array of pLDDT scores.
+
+    Raises
+    ------
+    MetapredictError
+        An exception is raised if the requested network is not one of the available options.
+    """
+    ##
+    ## FIGURE OUT WHAT NETWORK WE ARE USING
+    ##
+    ## ....................................................................................
+    # normalize such that user can input v#, V#, or # to specify the version
+    version = take_care_of_version(version)
+
+    # make list of possible network inputs
+    possible_networks=[]
+    for cur_net in pplddt_networks.keys():
+        possible_networks.append(cur_net)
+        possible_networks.append(cur_net[-1])
+
+    # make sure version in the known plddt networks
+    if version not in pplddt_networks:
+        raise MetapredictError(f'Network {version} not available. Valid inputs to choose a network are {possible_networks}')
+    else:
+        net = pplddt_networks[version]
+
+    # load and setup the network (same code as used by the non-batch version)
+    PATH = os.path.dirname(os.path.realpath(__file__))
+    predictor_path = f"{PATH}/ppLDDT/networks/{net['weights']}"
+    # get params
+    params=net['parameters']
+
+    # validate any user-supplied batch size. Batch size only affects how sequences
+    # are grouped for the forward pass, not the predicted scores. The value that is
+    # actually used (effective_batch_size) is resolved below, once the device is
+    # known, since the default batch size depends on the device.
+    valid_batch_size(batch_size)
+
+    # make sure none of the sequences are empty
+    raise_exception_on_empty_sequence(inputs)
+
+    # make sure that we set return_decimals to True if we are doing disorder prediction using plddt scores
+    if return_as_disorder_score==True:
+        return_decimals=True
+
+    # see if we are return pLDDT values or raw decimal values.
+    if return_decimals==True:
+        if version=='V1':
+            multiplier=0.01
+        else:
+            multiplier=1
+        max_val_clipped=1
+    else:
+        if version=='V1':
+            multiplier=1
+        else:
+            multiplier=100
+        max_val_clipped=100       
+
+    ##
+    ## FIGURE OUT WHERE WE ARE DOING THE PREDICTIONS
+    ##
+    ## ....................................................................................    
+
+    # if a single sequence, just use cpu. Using GPU for a single sequence would be silly.
+    # The device name is still checked (but not whether it is available), so a
+    # name that is not valid raises here instead of being silently ignored.
+    if isinstance(inputs, str)==True:
+        if use_device is not None:
+            parse_device_name(use_device)
+        device_string='cpu'
+    else:
+        # resolve the auto-select preference: an explicit default_to_device wins,
+        # otherwise use this network's per-network device order (falling back to
+        # the generic gpu order for any network that does not define one).
+        if default_to_device is not None:
+            _device_pref = default_to_device
+        else:
+            _device_pref = params.get('device_order', ['cuda', 'mps', 'cpu'])
+        device_string = check_device(use_device, default_device=_device_pref)
+
+    # check if using gpu, specifically cuda
+    if 'cuda' in device_string:
+        if exceeds_max_length(inputs, max_length=MAX_CUDA_LENGTH):
+            raise MetapredictError(f'One of the input sequences is too long to run on GPU. The max length for a sequence on a CUDA GPU is {MAX_CUDA_LENGTH}.\nPlease use CPU if you want to run sequences longer than {MAX_CUDA_LENGTH} amino acids.')
+
+    # set device
+    device=torch.device(device_string)
+
+    # resolve the batch size to use now that the device is known (an explicit
+    # batch_size wins; otherwise use the network/device-dependent default)
+    effective_batch_size = resolve_batch_size(batch_size, device_string, params)
+
+    # see if we need to mess with packing / padding
+    if disable_pack_n_pad==False:
+        if packaging_version.parse(torch.__version__) < packaging_version.parse("1.11.0"):
+            disable_pack_n_pad=True
+            # only warn if user hasn't turned off warning. 
+            if silence_warnings==False:
+                print('Pytorch version is <= 1.11.0. Disabling pack-n-pad functionality. This might slow down predictions.')
+
+
+    ##
+    ## LOAD IN THE NETWORK
+    ##
+    ## ....................................................................................    
+
+    # load network. We do this differently depending on if we used
+    # pytorch or pytorch-lightning to make the network. 
+    model = get_model(model_name=f'pLDDT_{version}', 
+                    params=params, 
+                    predictor_path=predictor_path, 
+                    device=device)
+
+    # set to eval mode
+    model.eval()
+
+    # make sure network is on correct device. 
+    model.to(device)
+        
+    ##
+    ## START PREDICTIONS
+    ##
+    ## .................................................................................... 
+
+    # now we can start up the predictions. 
+    # if a single prediction, we can just ignore the batch stuff. 
+    if isinstance(inputs, str)==True:
+        # if we want to print the performance, start tracking time per prediction. 
+        if print_performance:
+            start_time = time.time()        
+        
+        # encode the sequence
+        seq_vector = encode_sequence.one_hot(inputs)
+        seq_vector = seq_vector.to(device)
+        seq_vector = seq_vector.view(1, len(seq_vector), -1)
+
+        # get output values from the seq_vector based on the network (brnn_network)
+        with torch.no_grad():
+            outputs = model(seq_vector.float()).detach().cpu().numpy()[0]*multiplier
+
+        # convert to disorder score if needed. 
+        if return_as_disorder_score==True:
+            # this normalizes so the pLDDT score ends up being renormalized
+            # to be between 0 and 1, converted into an effective disorder score
+            outputs = outputs-plddt_base
+            outputs = outputs*(1/(plddt_top-plddt_base))
+            # means value of 1 = disordered and 0 is disordered
+            outputs = 1-outputs 
+
+        # Take care of rounding and normalization
+        if normalized == True and round_values==True:
+            outputs=np.round(np.clip(outputs, a_min=0, a_max=max_val_clipped),4)
+        elif normalized==True and round_values==False:
+            outputs=np.clip(outputs, a_min=0, a_max=max_val_clipped)
+        elif normalized==False and round_values==True:
+            outputs=np.round(outputs, 4)
+
+        # make list if user wants a list instead of a np.array
+        if return_numpy==False:
+            if round_values==True:
+                # need to round again because the np.round doesn't 
+                # keep the rounded values when we convert to list. 
+                outputs = scores_to_rounded_list(outputs)
+            else:
+                # otherwise just return the flattened array as a list. 
+                outputs=outputs.flatten().tolist()
+        else:
+            # if we want a numpy array, we need to make sure it's a 1D array
+            outputs=outputs.flatten()
+
+        # print performance
+        if print_performance:
+            end_time = time.time()
+            print(f"Time taken for prediction on {device}: {end_time - start_time} seconds") 
+
+        # return the output
+        return outputs
+
+    else:
+        # otherwise we need to do batch predictions. 
+        ## Prepare data by generate a list (sequence_list)
+        ## which contains non-redundant sequences 
+        ##   
+        if isinstance(inputs, dict):
+            mode = 'dictionary'
+            seq2id = {}
+            for k in inputs:
+                s = inputs[k]
+                if s not in seq2id:
+                    seq2id[s] = [k]
+                else:
+                    seq2id[s].append(k)
+            sequence_list = unique_sequences_in_batch_order(seq2id.keys())
+        elif isinstance(inputs, list):
+            mode = 'list'
+            sequence_list = unique_sequences_in_batch_order(inputs)
+        else:
+            raise Exception('Invalid data type passed - expect a single sequence or a list or dictionary of sequences')
+
+        # if we want to print the performance, start tracking time per prediction. 
+        if print_performance:
+            start_time = time.time()   
+
+        # initialize the return dictionary that maps sequence to
+        # disorder profile
+        pred_dict = {}
+
+        # check if we are disabling batch predictions. If we are, we need to
+        # do all predictions individually
+        if force_disable_batch==True:
+            # see if a progress bar is wanted
+            if show_progress_bar:
+                pbar = tqdm(total=len(sequence_list))
+            # iterate through sequence list
+            for seq in sequence_list:
+                # encode the sequence
+                seq_vector = encode_sequence.one_hot(seq)
+                seq_vector = seq_vector.to(device)
+                seq_vector = seq_vector.view(1, len(seq_vector), -1)
+
+                # get output values from the seq_vector based on the network (brnn_network)
+                with torch.no_grad():
+                    outputs = model(seq_vector.float()).detach().cpu().numpy()[0].flatten()*multiplier
+
+                # convert to disorder score if needed. 
+                if return_as_disorder_score==True:
+                    # this normalizes so the pLDDT score ends up being renormalized
+                    # to be between 0 and 1, converted into an effective disorder score
+                    outputs = outputs-plddt_base
+                    outputs = outputs*(1/(plddt_top-plddt_base))
+                    # means value of 1 = disordered and 0 is disordered
+                    outputs = 1-outputs 
+
+                # Take care of rounding and normalization
+                if normalized == True and round_values==True:
+                    outputs=np.round(np.clip(outputs, a_min=0, a_max=max_val_clipped),4)
+                elif normalized==True and round_values==False:
+                    outputs=np.clip(outputs, a_min=0, a_max=max_val_clipped)
+                elif normalized==False and round_values==True:
+                    outputs=np.round(outputs, 4)
+                # if both ==False, we don't need to do anything. 
+                
+                # make list if user wants a list instead of a np.array
+                if return_numpy==False:
+                    if round_values==True:
+                        # need to round again because the np.round doesn't 
+                        # keep the rounded values when we convert to list. 
+                        outputs = scores_to_rounded_list(outputs)
+                    else:
+                        # otherwise just return the flattened array as a list. 
+                        outputs=outputs.flatten().tolist()
+
+                # add to dict
+                pred_dict[seq]=outputs
+                # update progress bar one sequence at a time (tqdm itself limits
+                # how often the bar is redrawn, so this is cheap)
+                if show_progress_bar:
+                    pbar.update(1)
+
+        else:         
+            # if we are disabling pack-n-pad functionalitity...
+            if disable_pack_n_pad==True:
+                # build a dictionary where keys are sequence length
+                # and values is a list of sequences of that exact length
+                size_filtered =  size_filter(sequence_list)
+                
+                # set progress bar info
+                if show_progress_bar:
+                    pbar = tqdm(total=len(size_filtered))
+
+                # iterate through local size
+                for local_size in size_filtered:
+                    local_seqs = size_filtered[local_size]
+                    # load the data
+                    seq_loader = DataLoader(local_seqs, batch_size=effective_batch_size, shuffle=False)
+
+                    # iterate through batches in seq_loader
+                    for batch in seq_loader:
+                        # Pad the sequence vector to have the same length as the longest sequence in the batch
+                        seqs_padded = torch.nn.utils.rnn.pad_sequence([encode_sequence.one_hot(seq).float() for seq in batch], batch_first=True)
+                        seqs_padded = seqs_padded.to(device)
+
+                        # Forward pass, then send to CPU for numpy rounding / normalization
+                        with torch.no_grad():
+                            outputs = model.forward(seqs_padded).detach().cpu().numpy()*multiplier
+
+                        # convert to disorder score if needed. 
+                        if return_as_disorder_score==True:
+                            # this normalizes so the pLDDT score ends up being renormalized
+                            # to be between 0 and 1, converted into an effective disorder score
+                            outputs = outputs-plddt_base
+                            outputs = outputs*(1/(plddt_top-plddt_base))
+                            # means value of 1 = disordered and 0 is disordered
+                            outputs = 1-outputs                         
+
+                        # Save predictions
+                        for j, seq in enumerate(batch):
+                            if normalized==True and round_values==True:
+                                prediction=np.squeeze(np.round(np.clip(outputs[j][0:len(seq)], a_min=0, a_max=max_val_clipped),4))
+                            elif normalized==True and round_values==False:
+                                prediction=np.squeeze(np.clip(outputs[j][0:len(seq)], a_min=0, a_max=max_val_clipped))
+                            elif normalized==False and round_values==True:
+                                prediction=np.squeeze(np.round(outputs[j][0:len(seq)], 4))
+                            else:
+                                prediction=np.squeeze(outputs[j][0:len(seq)])
+
+                            # make list if user wants a list instead of a np.array
+                            if return_numpy==False:
+                                if round_values==True:
+                                    # need to round again because the np.round doesn't 
+                                    # keep the rounded values when we convert to list. 
+                                    prediction = scores_to_rounded_list(prediction)
+                                else:
+                                    # otherwise just return the flattened array as a list. 
+                                    prediction=prediction.flatten().tolist()
+
+                            # see if we need to make prediction a list
+                            pred_dict[seq] = prediction
+                    
+                    # update the progress bar
+                    if show_progress_bar:
+                        pbar.update(1)
+            else:
+                # sequence_list is already longest-first (see
+                # unique_sequences_in_batch_order), which keeps padding to a
+                # minimum and is the order pack_padded_sequence requires
+                # we will be using pack-n-pad.
+                # load seqs into DataLoader
+                seq_loader = DataLoader(sequence_list, batch_size=effective_batch_size, shuffle=False)
+                num_batches=len(seq_loader)
+                
+                # set progress bar info if we are going to display it. 
+                # have to do this differently because you can't iterate over DataLoader
+                # and get tqdm to update. 
+                if show_progress_bar:
+                    pbar = tqdm(total=num_batches)
+
+                # iterate through each batch
+                for batch in seq_loader:
+                    # Pad the sequence vector to have the same length as the longest sequence in the batch
+                    seqs_padded = torch.nn.utils.rnn.pad_sequence([encode_sequence.one_hot(seq).float() for seq in batch], batch_first=True)
+                    lengths = [len(seq) for seq in batch]
+
+                    # pack padded sequences
+                    packed_seqs = torch.nn.utils.rnn.pack_padded_sequence(seqs_padded, lengths, batch_first=True, enforce_sorted=True)
+                    
+                    # move packed seqs to device. 
+                    packed_seqs = packed_seqs.to(device)
+
+                    # lstm forward pass.
+                    with torch.no_grad():
+                        outputs, _ = model.lstm(packed_seqs)
+
+                    # unpack the packed sequence
+                    outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
+
+                    # get final outputs by calling fc.
+                    if params['used_lightning']==False:
+                        outputs = model.fc(outputs)
+                    else:
+                        outputs = model.layer_norm(outputs)
+                        for layer in model.linear_layers:
+                            outputs = layer(outputs)
+                    
+                    # move to cpu
+                    outputs = outputs.detach().cpu().numpy()*multiplier
+
+                    # convert to disorder score if needed. 
+                    if return_as_disorder_score==True:
+                        # this normalizes so the pLDDT score ends up being renormalized
+                        # to be between 0 and 1, converted into an effective disorder score
+                        outputs = outputs-plddt_base
+                        outputs = outputs*(1/(plddt_top-plddt_base))
+                        # means value of 1 = disordered and 0 is disordered
+                        outputs = 1-outputs 
+
+                    # clean up / normalize
+                    if normalized == True and round_values==True:
+                        outputs=np.round(np.clip(outputs, a_min=0, a_max=max_val_clipped),4)
+                    elif normalized==True and round_values==False:
+                        outputs=np.clip(outputs, a_min=0, a_max=max_val_clipped)
+                    elif normalized==False and round_values==True:
+                        outputs=np.round(outputs, 4)                
+                    
+                    # get individual seqs ignoring padded parts. 
+                    for seq_num, length in enumerate(lengths):
+                        curoutput=outputs[seq_num][0:length].flatten()
+                        seq = batch[seq_num]
+                    
+                        # make list if user wants a list instead of a np.array
+                        if return_numpy==False:
+                            if round_values==True:
+                                # need to round again because the np.round doesn't 
+                                # keep the rounded values when we convert to list. 
+                                curoutput = scores_to_rounded_list(curoutput)
+                            else:
+                                # otherwise just return the flattened array as a list. 
+                                curoutput=curoutput.flatten().tolist()
+
+                        # add to dict
+                        
+                        pred_dict[seq]=curoutput
+
+                    # update progress bar
+                    if show_progress_bar:
+                        pbar.update(1)
+
+        # close pbar
+        if show_progress_bar:
+            pbar.close()
+
+        # if printing performance
+        if print_performance:
+            end_time = time.time()
+            print(f"\nTime taken for predictions on {device}: {end_time - start_time} seconds") 
+        
+        ##
+        ## PREDICTION DONE
+        ##
+        ## ....................................................................................
+
+        # return scores
+        if mode == 'dictionary':
+            return_dict = {}
+            for s in seq2id:
+                for seq_id in seq2id[s]:
+                    return_dict[seq_id] = [s, pred_dict[s]]                
+            return return_dict
+        elif mode == 'list':
+            return_list = []
+            for s in inputs:
+                return_list.append([s, pred_dict[s]])
+            return return_list
+        else:
+            raise Exception('How did we get here? What did we do wrong? Is this the darkest timeline? Definitely')
+
+            

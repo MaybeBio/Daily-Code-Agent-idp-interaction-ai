@@ -20,6 +20,8 @@ while the predictions are computed; they are cached in paper/cache/ (--refresh r
                               amplitude A, + that input's example P(Rg) over the reference chain's
     fig23_shape_from_sequence same <Rg>, different distributions: validation pairs with equal MD <Rg>, back to back
     fig24_val_nu              the network's exponent nu vs. the one fitted to each protein's MD frames (validation)
+    fig25_family_heads        output families on one recipe (results/family_heads.csv): validation NLL, sticky W1, W1 vs. size
+    fig26_starling_shape      shape only, network vs STARLING on the benchmark (runs/starling/benchmark/)
 """
 import argparse
 import json
@@ -35,7 +37,7 @@ import pandas as pd
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 import idprg  # noqa: E402,F401  (float64 in JAX)
-from idprg import closed_form as CF, data, descriptors, distribution as D, metrics, network  # noqa: E402
+from idprg import closed_form as CF, data, descriptors, distribution as D, mdfit, metrics, network  # noqa: E402
 
 import matplotlib  # noqa: E402
 matplotlib.use("Agg")
@@ -44,7 +46,7 @@ import matplotlib.ticker  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 from matplotlib.text import Text  # noqa: E402
-from scipy.stats import wasserstein_distance  # noqa: E402
+from scipy.stats import spearmanr, wasserstein_distance  # noqa: E402
 
 OUT = HERE / "figures"
 CACHE = HERE / "cache" / "collected.pkl"
@@ -729,7 +731,193 @@ def fig23(val, frames):
     return out
 
 
-FIGS = ("fig0", "fig0b", "fig1", "fig2", "fig4", "fig13", "fig15", "fig20", "fig21", "fig23", "fig24")
+def fig25():
+    """Output families on one recipe: validation NLL, sticky-split W1, and sticky-split W1 against network size."""
+    d = pd.read_csv(HERE.parent / "results" / "family_heads.csv")
+
+    def stat(h, w, dp, s, col):
+        g = d[(d["head"] == h) & (d.width == w) & (d.depth == dp) & (d.set == s)][col]
+        return float(g.mean()), float(g.std(ddof=1))
+
+    mix, two = dict(color=MODEL, marker="o"), dict(color=BURGUNDY, marker="s")
+    rows = [("run20", 512, 3, "K = 3, moment loss, 512×3 (8)", mix, False, 7.4), ("mix3", 512, 3, "K = 3, 512×3 (8)", mix, True, 6.4),
+            ("mix3", 512, 2, "K = 3 (8)", mix, True, 5.4), ("mix2", 512, 2, "K = 2 (5)", mix, True, 4.4),
+            ("mix1", 512, 2, "K = 1 (2)", mix, True, 3.4), ("free4", 512, 2, "independent exponents (4)", two, True, 2),
+            ("freeA", 512, 2, "tied ν, free A (3)", two, True, 1), ("law2", 512, 2, "tied ν, A from law (2)", two, True, 0)]
+    fig, (a, b, c) = plt.subplots(1, 3, figsize=(COL2, 2.35), layout="constrained", width_ratios=[1, 1, 1.12])
+    b.sharey(a)
+    for ax, s, col, xl in ((a, "val", "nll", "validation NLL"), (b, "sticky", "w1_mean_pct", "sticky $W_1$, mean (% of $\\langle R_g\\rangle$)")):
+        ax.axvline(stat("law2", 512, 2, s, col)[0], color=INK2, lw=0.6, ls=(0, (2, 2)), zorder=0)
+        for h, w, dp, _, st, filled, y in rows:
+            m, sd = stat(h, w, dp, s, col)
+            ax.errorbar(m, y, xerr=sd, color=st["color"], lw=0.9, capsize=0, zorder=2)
+            ax.plot(m, y, ls="", ms=4.5, marker=st["marker"], mec=st["color"], mfc=st["color"] if filled else "white", mew=0.9, zorder=3)
+        ax.set_xlabel(xl)
+        ax.spines["left"].set_visible(False); ax.tick_params(axis="y", length=0)
+    a.set_yticks([r[6] for r in rows], [r[3] for r in rows]); a.tick_params(axis="y", labelcolor=INK)
+    a.set_ylim(-0.6, 8.0)
+    a.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(4)); a.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.3f"))
+    plt.setp(b.get_yticklabels(), visible=False)
+
+    sizes = [(64, 2), (128, 2), (512, 2), (512, 3)]
+    for h, st, lab in (("mix3", mix, "K = 3"), ("law2", two, "tied ν, A from law")):
+        x = [int(d[(d["head"] == h) & (d.width == w) & (d.depth == dp)].n_parameters.iloc[0]) for w, dp in sizes]
+        m, sd = zip(*(stat(h, w, dp, "sticky", "w1_mean_pct") for w, dp in sizes))
+        c.errorbar(x, m, yerr=sd, color=st["color"], lw=1.1, capsize=0, marker=st["marker"], ms=4.5, label=lab)
+    for (w, dp), xv, ha in zip(sizes, [5100, 18500, 290000, 480000], ("center", "center", "right", "left")):
+        c.text(xv, 4.75, f"{w}×{dp}", fontsize=6.5, color=INK2, ha=ha, va="bottom")
+    c.set_xscale("log"); c.set_xlim(3e3, 1e6); c.set_ylim(4.6, 14.5)
+    c.set_xlabel("network parameters"); c.set_ylabel("sticky $W_1$, mean (% of $\\langle R_g\\rangle$)")
+    c.legend(loc="upper right", handlelength=1.6)
+    panel_label(a, "a", x=-0.02, y=1.0); panel_label(b, "b", x=-0.02, y=1.0); panel_label(c, "c", x=-0.02, y=1.0)
+    save(fig, "fig25_family_heads", tight=False)
+
+    def row(h, w, dp):
+        return {s: {col: dict(zip(("mean", "sd"), stat(h, w, dp, s, col))) for col in ("nll", "mean_err_pct", "w1_mean_pct")}
+                for s in ("val", "length", "sticky")}
+    return {f"{h}_{w}x{dp}": row(h, w, dp) for h, w, dp in [r[:3] for r in rows] + [("mix3", 128, 2), ("mix3", 64, 2), ("law2", 128, 2), ("law2", 64, 2), ("law2", 512, 3)]}
+
+
+# ── fig26: shape against STARLING ─────────────────────────────────────────────
+STARLING = HERE.parent / "runs" / "starling" / "benchmark"
+SHAPE_U = (np.arange(20000) + 0.5) / 20000
+
+
+def _shape_stats(x, N):
+    """Shape statistics of a sample over its own mean: spread and the compact and extended populations at this length."""
+    x = x / x.mean()
+    tc, te = D.population_bounds(N)
+    return dict(cv=x.std(ddof=1), pc=np.mean(x < tc), pe=np.mean(x > te))
+
+
+def fig26(real):
+    """Shape only, network vs STARLING (trained on Mpipi-GG): every distribution over its own mean. (a) sd / mean, (b)
+    P_c, (c) P_e (D.population_bounds), each against STARLING and, for scale, HPS1, with the sampling noise of the
+    x axis as a band; (d-g) the proteins at the 25th, 50th, 75th percentiles and the largest shape W1 (score_shape.py's
+    shape_w1.csv). The text's nu comes from experiments/starling/fit_nu.py, fitted as fig24 does for MD."""
+    samples = np.load(STARLING / "rg_samples.npz")
+    t = pd.read_csv(STARLING / "shape_w1.csv").set_index("name")
+    fits = pd.read_csv(STARLING / "nu_fits.csv").set_index("name")
+    run = pd.read_csv(STARLING / "summary.csv")
+    cfg = json.loads((STARLING / "run_config.json").read_text())
+    ok = run[run.status == "ok"]
+    rows = {r["name"]: r for r in real if r["name"] in samples.files}
+    names = list(rows)
+    t = t.loc[names]
+    check = max(abs(100 * np.mean(np.abs(np.sort(samples[n])[(SHAPE_U * 2000).astype(int)] / samples[n].mean() - D.quantiles(SHAPE_U, *rows[n]["p"]) / rows[n]["mean"])) - t.w1_net_starling[n]) for n in names)
+    assert check < 1e-6, f"cached predictions do not reproduce shape_w1.csv ({check})"
+
+    rng = np.random.default_rng(2026)
+    def block_se(x, N, length=20, n=100):                # the HPS1 frames are correlated, so resample blocks of them
+        k = int(np.ceil(len(x) / length))
+        return pd.DataFrame([_shape_stats(np.concatenate([x[i:i + length] for i in rng.integers(0, len(x) - length + 1, k)])[:len(x)], N) for _ in range(n)]).std(ddof=1)
+    table = []
+    for n in names:
+        r, x, h = rows[n], np.asarray(samples[n], float), rows[n]["frames"]
+        tc, te = D.population_bounds(r["length"])
+        star, hps1 = _shape_stats(x, r["length"]), _shape_stats(h, r["length"])
+        se = pd.DataFrame([_shape_stats(rng.choice(x, len(x)), r["length"]) for _ in range(200)]).std(ddof=1)
+        se_h = block_se(h, r["length"])
+        table.append(dict(name=n, cv_net=float(t.cv_net[n]), pc_net=float(D.cdf(tc * r["mean"], *r["p"])), pe_net=1 - float(D.cdf(te * r["mean"], *r["p"])),
+                          nu_net=r["p"][2], nu_hps1=float(D.nu_of(mdfit.fit_free(h / h.mean())[2])), nu_star=fits.nu[n],
+                          **{f"{k}_star": v for k, v in star.items()}, **{f"{k}_hps1": v for k, v in hps1.items()},
+                          **{f"{k}_se_star": se[k] for k in se.index}, **{f"{k}_se_hps1": se_h[k] for k in se_h.index}))
+    q = pd.DataFrame(table).set_index("name")
+    t = t[["N", "family", "w1_net_starling", "floor_net_starling", "floor_net_starling_p95", "w1_baseline_starling", "skew_net", "skew_starling"]].join(q)
+
+    inside = t[t.N >= 20]
+    a1, rest = inside[inside.family == "A1_LCD"], inside[inside.family != "A1_LCD"]
+    rho = lambda d, a, b: float(spearmanr(d[a], d[b]).statistic)
+    boot_of = lambda d: (lambda g: [pd.concat([g[i] for i in rng.integers(len(g), size=len(g))]) for _ in range(2000)])([g for _, g in d.groupby("family")])
+    boot, boot_rest, boot_all = boot_of(inside), boot_of(rest), boot_of(t)
+    ci = lambda b, f: [float(v) for v in np.percentile([f(g) for g in b], [2.5, 97.5])]
+    band = {k: 1.96 * float(inside[f"{k}_se_star"].median()) for k in ("cv", "pc", "pe")}
+
+    def stats(k):
+        n_, s_, h_, w = f"{k}_net", f"{k}_star", f"{k}_hps1", band[k]
+        inb = lambda d, x: float(100 * ((d[n_] - d[x]).abs() <= w).mean())
+        return dict(rho=rho(inside, n_, s_), rho_ci=ci(boot, lambda g: rho(g, n_, s_)), mae=float((inside[n_] - inside[s_]).abs().mean()), rho_hps1=rho(inside, n_, h_), mae_hps1=float((inside[n_] - inside[h_]).abs().mean()),
+                    rho_rest=rho(rest, n_, s_), band=w, se_star=float(inside[f"{k}_se_star"].median()), se_hps1=float(inside[f"{k}_se_hps1"].median()),
+                    noise_ceiling_rho=float(np.mean([spearmanr(inside[n_], inside[n_] + rng.normal(0, inside[f"{k}_se_star"])).statistic for _ in range(200)])), in_band_pct=inb(inside, s_), in_band_hps1_pct=inb(inside, h_))
+    res = {k: stats(k) for k in ("cv", "pc", "pe")}
+
+    fig = plt.figure(figsize=(COL2, 4.7), layout="constrained")
+    outer = fig.add_gridspec(2, 1, height_ratios=[1.3, 1])
+    top_row, bottom = outer[0].subgridspec(1, 3), outer[1].subgridspec(1, 4)
+    a, b, c = [fig.add_subplot(top_row[0, i]) for i in range(3)]
+    hist_axes = [fig.add_subplot(bottom[0, i]) for i in range(4)]
+
+    def scatter(ax, k, lim, ticks, xl, yl, name, spot):
+        n_, s_, h_, w = f"{k}_net", f"{k}_star", f"{k}_hps1", band[k]
+        assert t[[n_, s_, h_]].min().min() > lim[0] and t[[n_, s_, h_]].max().max() < lim[1], f"a point falls outside panel {k}"
+        ins = t.N >= 20
+        ax.fill_between(lim, np.array(lim) - w, np.array(lim) + w, color="#d9d8d3", alpha=0.75, linewidth=0, zorder=0)
+        ax.plot(lim, lim, color=INK2, lw=0.6, ls=(0, (4, 3)), zorder=1)
+        ax.scatter(t[h_][ins], t[n_][ins], s=8, marker="^", color=MOSS, alpha=0.75, linewidths=0, zorder=2)
+        ax.scatter(t[h_][~ins], t[n_][~ins], s=8, marker="^", facecolor="white", edgecolor=MOSS, linewidth=0.6, zorder=2)
+        ax.scatter(t[s_][ins], t[n_][ins], s=9, color=MODEL, alpha=0.7, linewidths=0, zorder=3)
+        ax.scatter(t[s_][~ins], t[n_][~ins], s=9, facecolor="white", edgecolor=MODEL, linewidth=0.6, zorder=3)
+        ax.set_xlim(lim); ax.set_ylim(lim); ax.set_aspect("equal", adjustable="box")
+        ax.set_xticks(ticks); ax.set_yticks(ticks); ax.set_xlabel(xl); ax.set_ylabel(yl)
+        ax.set_title(name, loc="left", pad=3, fontsize=7.5)
+        st = res[k]; tx, ty, ha, va = spot
+        ax.text(tx, ty, rf"STARLING $\rho$ {st['rho']:.2f}, MAE {st['mae']:.3f}" + "\n" + rf"HPS1 $\rho$ {st['rho_hps1']:.2f}, MAE {st['mae_hps1']:.3f}" + "\n" + rf"noise band $\pm${w:.3f}",
+                transform=ax.transAxes, ha=ha, va=va, fontsize=5.8, linespacing=1.3, zorder=5)
+
+    scatter(a, "cv", (0.08, 0.25), [0.10, 0.15, 0.20, 0.25], r"reference $\sigma/\langle R_g\rangle$", r"network $\sigma/\langle R_g\rangle$", "spread", (0.97, 0.03, "right", "bottom"))
+    scatter(b, "pc", (0.0, 0.13), [0, 0.05, 0.10], "reference", "network", r"compact: $P_c=P(R_g<t_c\langle R_g\rangle)$", (0.03, 0.97, "left", "top"))
+    scatter(c, "pe", (0.0, 0.11), [0, 0.05, 0.10], "reference", "network", r"extended: $P_e=P(R_g>t_e\langle R_g\rangle)$", (0.03, 0.97, "left", "top"))
+    mark = lambda **k: Line2D([], [], ls="", ms=3, **k)
+    c.legend(handles=[mark(marker="o", color=MODEL, label="STARLING"), mark(marker="^", color=MOSS, label="HPS1"), mark(marker="o", mfc="white", mec=INK2, label="N < 20")],
+             loc="lower right", handletextpad=0.1, borderaxespad=0, labelspacing=0.15, fontsize=6)
+
+    o = t.w1_net_starling.sort_values()
+    x = np.linspace(0.4, 2.2, 400); bins = np.linspace(0.4, 2.2, 46)
+    picked, top = [], 0.0
+    for ax, pc in zip(hist_axes, (25, 50, 75, 100)):
+        n = o.index[int(round(pc / 100 * (len(o) - 1)))]
+        r, smp = rows[n], samples[n]
+        ax.hist(smp / smp.mean(), bins=bins, density=True, color=MODEL, alpha=0.45, histtype="stepfilled", linewidth=0, zorder=1)
+        ax.plot(x, pdf(x * r["mean"], r["p"]) * r["mean"], zorder=2, **NET_STYLE)
+        for th in D.population_bounds(r["length"]):
+            ax.axvline(th, color=INK2, lw=0.5, ls=":", zorder=3)
+        ax.set_xlim(0.4, 2.2); ax.set_title(display_name(n).replace("chloroplastic calvin cycle protein", "chloroplastic Calvin\ncycle protein"), loc="left", pad=3, fontsize=6.5, linespacing=1.05)
+        rank = f"largest of {len(o)}" if pc == 100 else f"{pc}th percentile"
+        ax.text(0.97, 0.95, f"N = {int(t.N[n])}\n{rank}\n$W_1$ = {o[n]:.2f}%", transform=ax.transAxes, ha="right", va="top", fontsize=5.8, color=INK2, linespacing=1.3)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(4)); ax.yaxis.set_major_locator(plt.MaxNLocator(4))
+        ax.set_xlabel(r"$R_g/\langle R_g\rangle$")
+        top = max(top, ax.get_ylim()[1])
+        picked.append(dict(percentile=pc, name=n, N=int(t.N[n]), w1_pct=float(o[n])))
+    for ax in hist_axes:
+        ax.set_ylim(0, top * 1.05)
+    hist_axes[0].set_ylabel("probability density")
+    fig.legend(handles=[Patch(facecolor=MODEL, alpha=0.45, label="STARLING"), Line2D([], [], label="network prediction", **NET_STYLE), Line2D([], [], color=INK2, lw=0.5, ls=":", label=r"$t_c$ and $t_e$")],
+               loc="outside lower center", ncol=3, handlelength=1.5, columnspacing=1.6, fontsize=6.5)
+    for ax, letter in zip([a, b, c] + hist_axes, "abcdefg"):
+        panel_label(ax, letter, x=-0.12 if letter in "abc" else -0.1, y=1.03)
+    save(fig, "fig26_starling_shape", tight=False)
+
+    secs = float(ok.seconds.sum())
+    return dict(
+        n=len(names), n_families=int(t.family.nunique()), n_inside=len(inside), n_a1=len(a1),
+        not_sampled=run[run.status != "ok"].name.tolist(), not_sampled_N=int(run[run.status != "ok"].N.iloc[0]), examples=picked,
+        shape_pct=dict(median=float(t.w1_net_starling.median()), p90=float(t.w1_net_starling.quantile(.9)), max=float(t.w1_net_starling.max()), floor=float(t.floor_net_starling.median()),
+                       above_floor=float(100 * (t.w1_net_starling > t.floor_net_starling_p95).mean()), shared=float(t.w1_baseline_starling.median()), ci=ci(boot_all, lambda g: g.w1_net_starling.median())),
+        width_pct=float(np.median([100 * np.mean(np.abs(samples[n] / samples[n].mean() - 1)) for n in names])),
+        beats_shared=int((t.w1_net_starling < t.w1_baseline_starling).sum()),
+        mean_rg={k: dict(mae_nm=float((x_ - y_).abs().mean()), bias_nm=float((x_ - y_).mean()), err_pct=float(100 * ((x_ - y_) / y_).abs().mean()), r=float(np.corrcoef(x_, y_)[0, 1]))
+                 for k, x_, y_ in (("starling_hps1", ok.rg_mean_nm, ok.hps1_rg_nm), ("mpipi_hps1", ok.mpipi_gg_rg_nm, ok.hps1_rg_nm), ("starling_mpipi", ok.rg_mean_nm, ok.mpipi_gg_rg_nm), ("starling_saxs", ok.rg_mean_nm, ok.saxs_rg_nm), ("mpipi_saxs", ok.mpipi_gg_rg_nm, ok.saxs_rg_nm), ("hps1_saxs", ok.hps1_rg_nm, ok.saxs_rg_nm))},
+        cv=res["cv"], pc=res["pc"], pe=res["pe"],
+        median_pct=dict(cv_star=float(100 * inside.cv_star.median()), cv_net=float(100 * inside.cv_net.median()), pc_star=float(100 * inside.pc_star.median()), pc_net=float(100 * inside.pc_net.median()),
+                        pe_star=float(100 * inside.pe_star.median()), pe_net=float(100 * inside.pe_net.median())),
+        tails_vs_spread_rho=dict(pc=rho(inside, "pc_star", "cv_star"), pe=rho(inside, "pe_star", "cv_star")),
+        nu=dict(rho=rho(inside, "nu_star", "nu_net"), rho_ci=ci(boot, lambda g: rho(g, "nu_star", "nu_net")), rho_rest=rho(rest, "nu_star", "nu_net"), rho_rest_ci=ci(boot_rest, lambda g: rho(g, "nu_star", "nu_net")), rho_hps1=rho(inside, "nu_hps1", "nu_net"),
+                a1_star=float(a1.nu_star.median()), a1_net=float(a1.nu_net.median()), a1_skew_star=float(a1.skew_starling.median()), a1_skew_net=float(a1.skew_net.median())),
+        run=dict(seconds=secs, hours=int(secs // 3600), minutes=int(round((secs % 3600) / 60)), conformations=int(cfg["conformations"]), steps=int(cfg["steps"]), batch=int(cfg["requested_batch_size"]),
+                 gpu=cfg["gpu"], version=cfg["starling_version"]))
+
+
+FIGS = ("fig0", "fig0b", "fig1", "fig2", "fig4", "fig13", "fig15", "fig20", "fig21", "fig23", "fig24", "fig25", "fig26")
 
 
 def main():
@@ -759,6 +947,8 @@ def main():
     if want("fig21"): m["fig21"] = fig21(train)
     if want("fig23"): m["fig23"] = fig23(val, frames)
     if want("fig24"): m["fig24"] = fig24(val)
+    if want("fig25"): m["fig25"] = fig25()
+    if want("fig26"): m["fig26"] = fig26(real)
     mpath.write_text(json.dumps(m, indent=1, default=float))
     print(f"[fig] metrics -> {mpath}")
 

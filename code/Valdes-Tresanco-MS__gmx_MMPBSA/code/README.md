@@ -1,0 +1,58 @@
+[![Python](https://img.shields.io/badge/Python-v3.x-blue)]()
+[![Pypi](https://img.shields.io/pypi/v/gmx-MMPBSA)](https://pypi.org/project/gmx-MMPBSA/)
+[![Downloads](https://pepy.tech/badge/gmx-mmpbsa)](https://pepy.tech/project/gmx-mmpbsa)
+[![DOI](https://img.shields.io/badge/DOI-10.1021%2Facs.jctc.1c00645-blue)](https://pubs.acs.org/doi/10.1021/acs.jctc.1c00645)
+
+[![Help forum](https://img.shields.io/badge/Docs-Getting_Started-blue)](https://valdes-tresanco-ms.github.io/gmx_MMPBSA/dev/getting-started/)
+[![Help forum](https://img.shields.io/badge/Help_forum-Google_group-blue)](https://groups.google.com/g/gmx_mmpbsa)
+[![Issue tracking](https://img.shields.io/badge/Issue_tracking-GitHub-blue)](https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/issues)
+
+[![Support](https://img.shields.io/badge/Support-JetBrains-brightgreen)](https://www.jetbrains.com/?from=gmx_MMPBSA)
+
+
+# Welcome to gmx_MMPBSA!
+gmx_MMPBSA is a tool based on AMBER's MMPBSA.py for end-state free-energy calculations with GROMACS files.
+The 1.7.0 release was validated with GROMACS `>=2022,<2027` and AmberTools `>=24.8,<27`; these are the
+tested and recommended conda ranges, not hard runtime limits for the external programs. At runtime, gmx_MMPBSA
+uses AmberTools executables available in the active environment and locates GROMACS from `PATH` or the `gmx_path`
+input variable. Other installed versions can work when their executables and the selected input/topology workflow are
+compatible. See the [compatibility guide](https://valdes-tresanco-ms.github.io/gmx_MMPBSA/dev/compatibility/) for tested representatives and known restrictions.
+
+**Please see the documentation [here](https://valdes-tresanco-ms.github.io/gmx_MMPBSA/dev/getting-started)**
+
+## Cite us
+
+<a href="https://www.scimagojr.com/journalsearch.php?q=5100155074&amp;tip=sid&amp;exact=no" title="SCImago Journal 
+&amp; Country Rank"><img border="0" align="right" src="https://www.scimagojr.com/journal_img.php?id=5100155074" 
+alt="SCImago Journal &amp; Country Rank"  /></a>
+
+Valdés-Tresanco, M.S., Valdés-Tresanco, M.E., Valiente, P.A. and Moreno E. **gmx_MMPBSA: A New Tool to Perform 
+End-State Free Energy Calculations with GROMACS**. _Journal of Chemical Theory and Computation_, 2021 17 (10), 6281-6291
+https://pubs.acs.org/doi/10.1021/acs.jctc.1c00645
+
+Please also consider citing MMPBSA.py's paper:
+
+Bill R. Miller, T. Dwight McGee, Jason M. Swails, Nadine Homeyer, Holger Gohlke, and Adrian E. Roitberg. **MMPBSA.py: 
+An Efficient Program for End-State Free Energy Calculations**. _Journal of Chemical Theory and Computation_, 2012 8 
+(9), 3314-3321. https://pubs.acs.org/doi/10.1021/ct300418h
+
+Please, visit [Cite gmx_MMPBSA](https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/blob/HEAD/docs/cite_us.md) page for more information on how to cite gmx_MMPBSA and the programs/methods implemented in it.
+
+---------------------------------------
+
+Authors:
+- [Mario S. Valdés-Tresanco](https://www.researchgate.net/profile/Mario-Valdes-Tresanco-2), PhD. _University of Medellin, Colombia_
+- [Mario E. Valdés-Tresanco](https://www.researchgate.net/profile/Mario-Valdes-Tresanco), PhD. _University of Calgary, Canada._
+- [Pedro Alberto Valiente](https://www.researchgate.net/profile/Pedro-Valiente), PhD. _University of Toronto, Canada_
+- [Ernesto Moreno Frías](https://www.researchgate.net/profile/Ernesto-Moreno-Frias), PhD. _University of Medellin, Colombia_
+
+---------------------------------------
+
+Acknowledgements:
+- First of all, to Amber and GROMACS developers. Without their incredible and hard work, gmx_MMPBSA would not exist.
+- Jason Swails (Amber developer and [ParmEd](https://github.com/ParmEd/ParmEd) principal developer) for his continuous support on ParmEd issues.
+- Dr. Hymavathi Veeravarapu for helping with the [introductory video](https://www.youtube.com/watch?v=_2mYeffqFIo) for gmx_MMPBSA.
+- To the Open Source license of the [JetBrains](https://www.jetbrains.com) programs.
+- To all researchers who help improve gmx_MMPBSA with comments, feedback, and bug reports.
+
+---------------------------------------

@@ -1070,8 +1070,11 @@ end
                     for i in 1:n_atoms
                 ], AT)
 
+                # The lists are reused on the schedule of n_steps, which some of the tests
+                #   rely on
                 finder = GPUCellListNeighborFinder(
                     dist_cutoff=cutoff,
+                    auto_update=false,
                     n_steps=10,
                     max_neighbors=max_neighbors,
                     output=output,
@@ -1373,7 +1376,7 @@ end
                 for (n_atoms, boundary) in (
                             (300, CubicBoundary(4.0f0)),
                             (400, CubicBoundary(SVector(4.5f0, 3.2f0, 6.1f0))),
-                            (200, CubicBoundary(3.0f0)),
+                            (200, CubicBoundary(3.0001f0)),
                             (300, TriclinicBoundary(SVector(
                                 SVector{3,Float32}(4.0, 0.0, 0.0),
                                 SVector{3,Float32}(0.4, 4.2, 0.0),
@@ -1415,7 +1418,8 @@ end
                     nf_ref = DistanceNeighborFinder(
                         eligible=to_device(eligible, AT),
                         special=to_device(special, AT),
-                        dist_cutoff=1.0f0,
+                        dist_cutoff=nextfloat(1.0f0 +
+                                             16 * eps(Float32) * opnorm(hcat(bv...), Inf)),
                     )
 
                     # Coordinates outside the box should give the same neighbors,
@@ -2608,6 +2612,23 @@ end
 
         AtomsCalculators.Testing.test_potential_energy(ab_sys, calc)
         AtomsCalculators.Testing.test_forces(ab_sys, calc)
+    end
+
+    # The allocating methods generated for a general interaction give forces like those of
+    #   the system, since the interaction has no units of its own
+    mb_sys = System(
+        atoms=[Atom(mass=1.0u"g/mol") for _ in 1:2],
+        coords=[SVector(-0.5, 1.5)u"nm", SVector(0.6, 0.0)u"nm"],
+        boundary=RectangularBoundary(Inf*u"nm"),
+        general_inters=(MullerBrown(),),
+    )
+    mb = only(mb_sys.general_inters)
+    fs_mb = forces(mb_sys)
+    for fs_ac in (AtomsCalculators.forces(mb_sys, mb),
+                  AtomsCalculators.calculate(AtomsCalculators.Forces(), mb_sys, mb).forces,
+                  AtomsCalculators.energy_forces(mb_sys, mb).forces)
+        @test typeof(fs_ac) == typeof(fs_mb)
+        @test all(isapprox.(fs_ac, fs_mb))
     end
 end
 

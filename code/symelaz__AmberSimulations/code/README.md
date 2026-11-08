@@ -138,7 +138,10 @@ Edit those copies (`step4.*_equilibration.inp`, `step5_production.inp`) for a sp
 
 * Ensure the **PDB file is pre-optimized** (missing hydrogens may be added automatically).
 * Simulations require the **same GPU and CUDA version** if using checkpoint files.
-* OpenMM v7.7 is required.
+* OpenMM v7.7 was used for this but you can also try with newer versions of OpenMM.
+* Systems with multiple chains are being renumbered by Amber with consecutive numbers You need to rename and renumber the different chains after md are finished to go back to your original chain/resid numbering.
+* Funky ligands might fail to be parameterized by Amber automatically.
+* Very large biological systems might fail to be parameterized by Amber. And for Membrane systems I also recommend to go with CHARMM force-field. DNA however is being handled better by Amber.
 * Step5 production runs are controlled by the `.inp` file parameters (`dt`, `nstout`, `Target_ns`).
 * Disulfide bonds are not detected automatically.
 * GAFF2 ligands have not been validated with TIP4P-D water.

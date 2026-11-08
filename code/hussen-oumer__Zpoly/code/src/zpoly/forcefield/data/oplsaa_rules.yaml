@@ -1,0 +1,43 @@
+# Starter OPLS-AA typing rules for zpoly (spec: rqm/forcefield/oplsaa.md).
+# rq-11b0641d
+# "Confirmed" rules use types from the group's polybuilder OPLS-AA residues. "Standard" rules use
+# standard OPLS-AA numbers and carry `expect` keywords that are checked against your oplsaa.ff's
+# atomtypes.atp, so a wrong number stops the run. Add or override rules in your own file
+# (--opls-rules FILE); user rules are tried first. The FIRST atom of each SMARTS gets the type, and
+# the first matching rule wins, so specific groups come before generic ones.
+version: 1
+rules:
+  - {name: sulfonate/sulfate S, smarts: "[SX4](=O)(=O)[O-]", type: opls_493}
+  - {name: sulfate ester O (KPS attachment), smarts: "[OX2]([#6])[SX4]", type: opls_467}
+  - {name: sulfonate/sulfate O, smarts: "[OX1]~[SX4]", type: opls_494}
+  - {name: phosphate diester P, smarts: "[PX4](=O)([O-])([OX2])[OX2]", type: opls_440, expect: [PO4, phosph]}
+  - {name: phosphate terminal O, smarts: "[OX1]~[PX4]", type: opls_441, expect: [PO4, phosph]}
+  - {name: phosphate ester O, smarts: "[OX2]([#6])[PX4]", type: opls_442, expect: [PO4, phosph]}
+  - {name: quaternary ammonium N+, smarts: "[NX4+;H0]", type: opls_103}
+  - {name: carboxylate C, smarts: "[CX3](=O)[O-]", type: opls_271, expect: [carboxyl, COO]}
+  - {name: carboxylate O, smarts: "[OX1]~[CX3]~[OX1]", type: opls_272, expect: [carboxyl, COO]}
+  - {name: ester carbonyl C, smarts: "[CX3](=O)[OX2][#6]", type: opls_465}
+  - {name: ester C=O oxygen, smarts: "[OX1]=[CX3][OX2][#6]", type: opls_466}
+  - {name: ester -O-, smarts: "[OX2]([CX3]=O)[#6]", type: opls_467}
+  - {name: ester alkoxy C (O-CH2/O-CH), smarts: "[CX4;H2,H1][OX2][CX3]=O", type: opls_490}
+  - {name: amide C, smarts: "[CX3](=O)[NX3]", type: opls_235}
+  - {name: amide O, smarts: "[OX1]=[CX3][NX3]", type: opls_236}
+  - {name: amide N-H, smarts: "[NX3;H1][CX3]=O", type: opls_238}
+  - {name: H on amide N, smarts: "[#1][NX3][CX3]=O", type: opls_241}
+  - {name: alcohol O, smarts: "[OX2;H1][CX4]", type: opls_154, expect: [alcohol]}
+  - {name: H on alcohol O, smarts: "[#1][OX2;H1][CX4]", type: opls_155, expect: [alcohol]}
+  - {name: dialkyl ether O, smarts: "[OX2]([CX4])[CX4]", type: opls_180, expect: [ether]}
+  - {name: benzene-ring C, smarts: "[c;$(c1ccccc1)]", type: opls_145, expect: [benzene, aromatic]}
+  - {name: H on benzene-ring C, smarts: "[#1][c;$(c1ccccc1)]", type: opls_146, expect: [benzene, aromatic]}
+  - {name: alkene =CH2, smarts: "[CX3;H2]=[CX3]", type: opls_143, expect: [alkene]}
+  - {name: alkene =CH-, smarts: "[CX3;H1]=[CX3]", type: opls_142, expect: [alkene]}
+  - {name: H on alkene C, smarts: "[#1][CX3]=[CX3]", type: opls_144, expect: [alkene]}
+  - {name: alkyl CH3, smarts: "[CX4;H3]", type: opls_135}
+  - {name: alkyl CH2, smarts: "[CX4;H2]", type: opls_136}
+  - {name: alkyl CH, smarts: "[CX4;H1]", type: opls_137}
+  - {name: quaternary C, smarts: "[CX4;H0]", type: opls_139}
+  - {name: H on carbon, smarts: "[#1][#6]", type: opls_140}
+impropers:
+  - {name: carbonyl centre, smarts: "[CX3](=O)", define: improper_O_C_X_Y}
+  - {name: amide N centre, smarts: "[NX3;H1][CX3]=O", define: improper_Z_N_X_Y}
+  - {name: benzene-ring C centre, smarts: "[c;$(c1ccccc1)]", define: improper_Z_CA_X_Y}

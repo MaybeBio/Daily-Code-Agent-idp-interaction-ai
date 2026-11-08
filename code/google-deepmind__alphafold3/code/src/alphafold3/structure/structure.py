@@ -25,8 +25,9 @@ import dataclasses
 import datetime
 import enum
 import functools
+import inspect
 import itertools
-from typing import Any, ClassVar, Final, Literal, NamedTuple, Self, TypeAlias, TypeVar
+from typing import Any, ClassVar, Final, Literal, NamedTuple, Self, TypeAlias, TypeVar, cast
 
 from alphafold3.constants import atom_types
 from alphafold3.constants import chemical_components
@@ -122,6 +123,7 @@ ATOM_FIELDS: Final[Mapping[str, str]] = {
     'atom_occupancy': 'occupancy',
     'atom_key': 'key',
 }
+
 
 # Fields in structure.
 ARRAY_FIELDS = frozenset({
@@ -1315,7 +1317,7 @@ class Structure(table.Database):
       self,
       *,
       include_unresolved: bool = False,
-      **changes: np.ndarray,
+      **changes: np.ndarray | Sequence[Any],
   ) -> Self:
     """Like copy_and_update but changes are arrays of length num_residues.
 
@@ -1333,7 +1335,7 @@ class Structure(table.Database):
         include values for all residues, or only those that are resolved.
       **changes: kwargs corresponding to atom array fields, e.g. atom_x or
         atom_b_factor, but with length num_residues rather than num_atoms. Note
-        that changing atom_key this way is is not supported.
+        that changing atom_key this way is not supported.
 
     Returns:
       A new `Structure` with all fields other than those specified as kwargs
@@ -1341,41 +1343,47 @@ class Structure(table.Database):
       scattered across the atom arrays and then used to overwrite these
       fields for the returned structure.
     """
-    if not all(c in set(ATOM_FIELDS) - {'atom_key'} for c in changes):
+    if not changes.keys() <= self._UPDATABLE_ATOM_FIELDS:
       raise ValueError(
           'Changes must only be to atom fields, got changes to'
           f' {changes.keys()}'
       )
+    if not changes:
+      return self
 
-    num_residues = self.num_residues(count_unresolved=include_unresolved)
-
+    target_keys = (
+        self.residues_table.key
+        if include_unresolved
+        else self.present_residues.key
+    )
+    num_residues = target_keys.size
+    res_array_by_field: dict[str, np.ndarray] = {}
     for field_name, new_values in changes.items():
-      if len(new_values) != num_residues:
+      col_dtype = self._atoms.get_column(ATOM_FIELDS[field_name]).dtype
+      arr = np.asarray(new_values)
+      if col_dtype == object and (
+          arr.size == 0
+          or np.issubdtype(arr.dtype, np.str_)
+          or isinstance(arr.dtype, np.dtypes.StringDType)
+      ):
+        arr = arr.astype(object)
+      if arr.ndim != 1:
         raise ValueError(
-            f'{field_name} array of length {len(new_values)} does not match '
+            f'{field_name} must be 1D with shape ({num_residues},), got '
+            f'{arr.shape}.'
+        )
+      if arr.shape[0] != num_residues:
+        raise ValueError(
+            f'{field_name} array of length {arr.shape[0]} does not match '
             f'{num_residues=} - is include_unresolved set correctly?'
         )
+      res_array_by_field[field_name] = arr
 
-    # We cannot assume that atom_table.res_keys are the relevant indices of the
-    # residue table.
-
-    # Therefore we need to construct a map from res_key to the new values and
-    # update the atoms_table with that.
-    if include_unresolved:
-      target_keys = self.residues_table.key
-    else:
-      target_keys = self.present_residues.key
-
-    new_atom_columns = {}
-    for field_name, new_values in changes.items():
-      value_by_key = dict(zip(target_keys, new_values, strict=True))
-      # pylint: disable=cell-var-from-loop
-      new_atom_columns[field_name] = np.vectorize(lambda x: value_by_key[x])(
-          self.atoms_table.res_key
-      )
-      # pylint: enable=cell-var-from-loop
-
-    return self.copy_and_update_atoms(**new_atom_columns)
+    res_indices = indexing.index_of(self.atoms_table.res_key, target_keys)
+    return self.copy_and_update_atoms(**{
+        field_name: res_arr[res_indices]
+        for field_name, res_arr in res_array_by_field.items()
+    })
 
   def copy_and_update_globals(
       self,
@@ -1448,6 +1456,14 @@ class Structure(table.Database):
         ),
     )
     return self.copy_and_update(atoms=new_atoms)
+
+  _UPDATABLE_ATOM_FIELDS: ClassVar[frozenset[str]] = frozenset(
+      param
+      for param, info in inspect.signature(
+          copy_and_update_atoms
+      ).parameters.items()
+      if info.kind == inspect.Parameter.KEYWORD_ONLY
+  )
 
   def copy_and_update_residues(
       self,
@@ -1989,25 +2005,31 @@ class Structure(table.Database):
       drop_terminal_oxygens: bool = False,
   ) -> Self:
     """Drops atoms that are not in the CCD for the given residue type."""
-
-    # We don't remove any atoms in UNL, as it has no standard atoms.
-    def _keep(atom_index: int) -> bool:
-      atom_name = self._atoms.name[atom_index]
-      res_name = self._residues.name[
-          self._residues.index_by_key[self._atoms.res_key[atom_index]]
-      ]
-      if drop_unk and res_name in residue_names.UNKNOWN_TYPES:
-        return False
-      else:
-        return (
-            (not drop_non_ccd and not ccd.get(res_name))
-            or atom_name in struc_chem_comps.get_res_atom_names(ccd, res_name)
-            or res_name == residue_names.UNL
+    if not self.num_atoms:
+      standard_atom_mask = np.zeros(0, dtype=bool)
+    else:
+      res_names = self._residues.apply_array_to_column(
+          'name', self._atoms.res_key
+      )
+      standard_atom_mask = np.ones(self.num_atoms, dtype=bool)
+      for res_name in set(res_names.tolist()):
+        res_mask = (
+            np.equal(res_names, np.asarray(None, dtype=object))
+            if res_name is None
+            else (res_names == res_name)
         )
-
-    standard_atom_mask = np.array(
-        [_keep(atom_i) for atom_i in range(self.num_atoms)], dtype=bool
-    )
+        if drop_unk and res_name in residue_names.UNKNOWN_TYPES:
+          standard_atom_mask[res_mask] = False
+        # We don't remove any atoms in UNL, as it has no standard atoms.
+        elif res_name != residue_names.UNL and (
+            drop_non_ccd or ccd.get(res_name)
+        ):
+          allowed = struc_chem_comps.get_res_atom_names(ccd, res_name)
+          standard_atom_mask[res_mask] = (
+              membership.isin(self._atoms.name[res_mask], allowed)
+              if allowed
+              else False
+          )
     standard_atoms = self.filter(mask=standard_atom_mask)
     if drop_terminal_oxygens:
       standard_atoms = standard_atoms.without_terminal_oxygens()
@@ -3360,7 +3382,12 @@ def concat(
     )
 
   if assign_unique_chain_ids:
-    strucs = _assign_unique_chain_ids(strucs)
+    strucs = _assign_unique_chain_ids(
+        s.copy_and_update_globals(bioassembly_data=None)
+        if s.bioassembly_data is not None
+        else s
+        for s in strucs
+    )
 
   chemical_components_data = {}
   seen_label_chain_ids = set()
@@ -3377,18 +3404,17 @@ def concat(
     if struc.chemical_components_data is not None:
       chemical_components_data.update(struc.chemical_components_data.chem_comp)
 
-  concatted_struc = table.concat_databases(strucs)
-  name = name if name is not None else '_'.join(s.name for s in strucs)
+  concatted_tables = table.concat_tables(strucs)
+  chains = cast(structure_tables.Chains, concatted_tables['chains'])
   # Chain IDs (label and author) are fixed at this point, fix also entity IDs.
   if assign_unique_chain_ids or assign_unique_entity_ids:
-    numeric_ids = np.arange(1, concatted_struc.num_chains + 1)
-    entity_id = np.char.mod('%d', numeric_ids).astype(object)
-    chains = concatted_struc.chains_table.copy_and_update(entity_id=entity_id)
-  else:
-    chains = concatted_struc.chains_table
+    entity_id = np.array(
+        [f'{i}' for i in range(1, chains.size + 1)], dtype=object
+    )
+    chains = chains.copy_and_update(entity_id=entity_id)
 
-  return concatted_struc.copy_and_update(
-      name=name,
+  return Structure(
+      name=name if name is not None else '_'.join(s.name for s in strucs),
       release_date=None,
       resolution=None,
       structure_method=None,
@@ -3399,7 +3425,10 @@ def concat(
           else None
       ),
       chains=chains,
-      skip_validation=True,  # Already validated by table.concat_databases.
+      residues=cast(structure_tables.Residues, concatted_tables['residues']),
+      atoms=cast(structure_tables.Atoms, concatted_tables['atoms']),
+      bonds=cast(structure_tables.Bonds, concatted_tables['bonds']),
+      skip_validation=True,
   )
 
 

@@ -1,0 +1,15 @@
+name: latticepy_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.8
+  - pip
+  - pandas<=2.2.2
+  - matplotlib<=3.9.2
+  - numpy<=2.1.0
+  - plotly<=5.23.0
+  - networkx<=3.3
+  - pip:
+    - git+https://github.com/sohitmiglani/LatticePy

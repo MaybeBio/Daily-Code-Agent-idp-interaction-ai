@@ -70,7 +70,7 @@ function setup_progress(n_steps, show_progress)
             n_steps;
             enabled=true,
             showspeed=true,
-            desc="Simulating:",
+            desc="Simulating: ",
             color=:green,
             barglyphs=BarGlyphs('|', '█', ['▁', '▂', '▃', '▄', '▅', '▆', '▇'], ' ', '|'),
         )
@@ -383,15 +383,14 @@ threads.
             break
         end
 
+        trial_states = map(save_trial_state, values(sys.general_inters))
         coords_copy .= sys.coords
         sys.coords .+= hn .* F ./ max_force
         sys.coords .= wrap_coords.(sys.coords, (sys.boundary,))
         place_virtual_sites!(sys; n_threads=n_threads)
 
-        neighbors_copy = neighbors
         neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
                                     n_threads=n_threads)
-        neighbors_rebuilt = (neighbors !== neighbors_copy)
         E_trial = minimizer_potential_energy(sys, neighbors, step_n, buffers, sis,
                                              n_threads, strictness)
         if E_trial < E
@@ -401,11 +400,10 @@ threads.
                     E_trial, " - max force ", max_force, " - accepted")
         else
             sys.coords .= coords_copy
-            if neighbors_rebuilt
-                # The previous list can not be reused since a neighbor finder may have
-                #   reused the buffers behind it for the list just found
-                neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, true;
-                                           n_threads=n_threads)
+            # The list given may be a trial list built in the buffers of the previous one
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
+            for (inter, snapshot) in zip(values(sys.general_inters), trial_states)
+                restore_trial_state!(sys, inter, snapshot)
             end
             hn = hn / 5
             println(sim.log_stream, "Step ", step_n, " - potential energy ",
@@ -758,18 +756,23 @@ end
             g_dot_p = -sum_dot(F, p)
         end
 
+        trial_states = map(save_trial_state, values(sys.general_inters))
         coords_prev .= sys.coords
         neighbors_prev = neighbors
         E_prev = E
         alpha = one(T)
         accepted = false
         n_ls = 0
+        # A neighbor finder that tracks displacements checks the last list it built, which
+        #   is likely still valid for the next trial coordinates
+        tracks = tracks_displacements(sys.neighbor_finder)
         for ls_i in 1:sim.max_line_search_steps
             n_ls = ls_i
             ls_i > 1 && (alpha *= backtrack_factor)
             sys.coords .= wrap_coords.(coords_prev .+ alpha .* p, (sys.boundary,))
             place_virtual_sites!(sys; n_threads=n_threads)
-            neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors_prev, step_n;
+            neighbors = find_neighbors(sys, sys.neighbor_finder,
+                                       (tracks ? neighbors : neighbors_prev), step_n;
                                        n_threads=n_threads)
             E_trial = minimizer_potential_energy(sys, neighbors, step_n, buffers, sis,
                                                  n_threads, strictness)
@@ -801,11 +804,12 @@ end
         else
             # The forces still correspond to the restored coordinates
             sys.coords .= coords_prev
-            if neighbors !== neighbors_prev
-                # The previous list can not be reused since a neighbor finder may have
-                #   reused the buffers behind it for a trial list
-                neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, true;
-                                           n_threads=n_threads)
+            # The previous list can not be reused since a neighbor finder may have
+            #   reused the buffers behind it for a trial list, so the last trial list is
+            #   checked or rebuilt
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
+            for (inter, snapshot) in zip(values(sys.general_inters), trial_states)
+                restore_trial_state!(sys, inter, snapshot)
             end
             n_hist = 0
         end
@@ -924,6 +928,8 @@ constraint_virial_integrator_factor(sim::VelocityVerlet) = 2
         sys.coords .= wrap_coords.(sys.coords, (sys.boundary,))
         place_virtual_sites!(sys; n_threads=n_threads)
 
+        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                   n_threads=n_threads)
         forces!(forces_t_dt, sys, neighbors, step_n, buffers, Val(needs_vir_step);
                 n_threads=n_threads, visit_state=true, strictness=strictness)
         accels_t_dt .= calc_accels.(forces_t_dt, masses(sys))
@@ -958,9 +964,8 @@ constraint_virial_integrator_factor(sim::VelocityVerlet) = 2
             pressure_kin_tensor_valid ? pressure_kin_tensor : nothing; n_threads=n_threads,
             rng=rng)
 
-        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, recompute_forces;
-                                   n_threads=n_threads)
         if recompute_forces
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
             recompute_forces_after_coupling!(forces_t_dt, sys, neighbors, buffers, step_n,
                                              needs_vir_step, n_threads, strictness)
             forces_t, forces_t_dt = forces_t_dt, forces_t
@@ -1103,6 +1108,8 @@ constraint_virial_integrator_factor(sim::DPDVelocityVerlet) = 2
             apply_velocity_constraints!(sys; context=vel_context, n_threads=n_threads,
                                         strictness=strictness)
         end
+        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                   n_threads=n_threads)
         forces!(forces_t_dt, sys, neighbors, step_n, buffers, Val(needs_vir_step);
                 n_threads=n_threads, visit_state=true, strictness=strictness)
         accels_t_dt .= calc_accels.(forces_t_dt, masses(sys))
@@ -1137,9 +1144,8 @@ constraint_virial_integrator_factor(sim::DPDVelocityVerlet) = 2
             pressure_kin_tensor_valid ? pressure_kin_tensor : nothing; n_threads=n_threads,
             rng=rng)
 
-        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, recompute_forces;
-                                   n_threads=n_threads)
         if recompute_forces
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
             recompute_forces_after_coupling!(forces_t_dt, sys, neighbors, buffers, step_n,
                                              needs_vir_step, n_threads, strictness)
             forces_t, forces_t_dt = forces_t_dt, forces_t
@@ -1254,17 +1260,21 @@ end
 
         sys.coords .= wrap_coords.(sys.coords, (sys.boundary,))
         place_virtual_sites!(sys; n_threads=n_threads)
+        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                   n_threads=n_threads)
 
         # Remove drift after the step velocity is finalized and before
         #   coupling/loggers observe the state
         if !iszero(sim.remove_CM_motion) && step_n % sim.remove_CM_motion == 0
             remove_CM_motion!(sys)
         end
+
         recompute_forces = apply_coupling!(sys, buffers, sim.coupling, sim, neighbors, step_n;
                                            n_threads=n_threads, rng=rng, strictness=strictness)
 
-        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, recompute_forces;
-                                   n_threads=n_threads)
+        if recompute_forces
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
+        end
 
         apply_loggers!(sys, neighbors, step_n, buffers, run_loggers; n_threads=n_threads,
                        strictness=strictness, current_forces=forces_t)
@@ -1516,6 +1526,8 @@ end
         end
         sys.coords .= wrap_coords.(sys.coords, (sys.boundary,))
         place_virtual_sites!(sys; n_threads=n_threads)
+        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                   n_threads=n_threads)
 
         if !iszero(sim.remove_CM_motion) && step_n % sim.remove_CM_motion == 0
             remove_CM_motion!(sys)
@@ -1524,8 +1536,9 @@ end
         recompute_forces = apply_coupling!(sys, buffers, sim.coupling, sim, neighbors, step_n;
                                            n_threads=n_threads, rng=rng, strictness=strictness)
 
-        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, recompute_forces;
-                                   n_threads=n_threads)
+        if recompute_forces
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
+        end
 
         apply_loggers!(sys, neighbors, step_n, buffers, run_loggers; n_threads=n_threads,
                        strictness=strictness, current_forces=forces_t)
@@ -1556,6 +1569,10 @@ For more information on the sampling properties of splitting schemes, see
 Not compatible with constraints, will print a warning and continue
 without applying constraints.
 Not compatible with virial calculation.
+
+Whenever **A** steps have moved the atoms since the neighbors were last found, the
+neighbors are found on the schedule of the neighbor finder before the forces are next
+calculated and at the end of the step.
 
 # Arguments
 - `dt::S`: the time step of the simulation.
@@ -1669,10 +1686,20 @@ end
 
     progress = setup_progress(n_steps, show_progress)
     for step_n in (init_step + 1):(init_step + n_steps)
+        # Whether the coordinates have changed since the neighbors were last found
+        coords_moved = false
         for (j, op) in enumerate(splitting_ops)
             if op == 'A'
                 A_step!(sys, effective_dts[j], n_threads)
+                coords_moved = true
             elseif op == 'B'
+                # The neighbors are found after the coordinates are updated and before the
+                #   forces are calculated, as for the other simulators
+                if force_computation_steps[j] && coords_moved
+                    neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                               n_threads=n_threads)
+                    coords_moved = false
+                end
                 B_step!(
                     sys,
                     forces_t,
@@ -1706,8 +1733,10 @@ end
             remove_CM_motion!(sys)
         end
 
-        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
-                                   n_threads=n_threads)
+        if coords_moved
+            neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                       n_threads=n_threads)
+        end
 
         apply_loggers!(sys, neighbors, step_n, buffers, run_loggers;
                        n_threads=n_threads, strictness=strictness)
@@ -1834,24 +1863,108 @@ end
     return sys
 end
 
-"""
+@doc raw"""
     NoseHoover(; <keyword arguments>)
 
-The Nosé-Hoover integrator, a NVT simulator that extends velocity Verlet to control the
-temperature of the system.
+The Nosé-Hoover chain integrator, an NVT simulator that couples the system to a chain of
+thermostats.
 
-See [Evans and Holian 1985](https://doi.org/10.1063/1.449071).
-The current implementation is limited to ergodic systems.
+This follows the `NoseHooverIntegrator` in OpenMM, which uses the "middle" leapfrog scheme
+of [Zhang et al. 2019](https://doi.org/10.1021/acs.jpca.9b02771) with the Nosé-Hoover chain
+of [Martyna et al. 1992](https://doi.org/10.1063/1.463940) propagated using the multiple
+time step and Yoshida-Suzuki factorization of
+[Martyna et al. 1996](https://doi.org/10.1080/00268979600100761).
+As with [`Langevin`](@ref), the velocities are stored as in leapfrog, offset by half a
+time step behind the positions.
 
-ζ, the thermostat friction variable, is reset on each call to [`simulate!`](@ref).
-This means that two calls to [`simulate!`](@ref) will not be the same as one longer call.
-Not compatible with constraints, will print a warning and continue
-without applying constraints.
+The equations of motion for a chain of ``M`` thermostats are
+```math
+\begin{aligned}
+\dot{\bf{r}}_i &= \bf{v}_i \\
+\dot{\bf{v}}_i &= \frac{\bf{F}_i}{m_i} - v_{\xi_1} \bf{v}_i \\
+\dot{\xi}_j &= v_{\xi_j} \\
+\dot{v}_{\xi_j} &= G_j - v_{\xi_j} v_{\xi_{j+1}} \quad (j < M) \\
+\dot{v}_{\xi_M} &= G_M
+\end{aligned}
+```
+where the forces on the thermostats are
+```math
+G_1 = \frac{1}{Q_1} \left( \sum_i m_i \bf{v}_i^2 - N_\mathrm{df} k T \right), \qquad
+G_j = \frac{1}{Q_j} \left( Q_{j-1} v_{\xi_{j-1}}^2 - k T \right) \quad (j > 1)
+```
+and the thermostat masses are ``Q_1 = N_\mathrm{df} k T \tau^2`` and ``Q_j = k T \tau^2``
+for ``j > 1``.
+``T`` is the target temperature, ``\tau`` is `damping` and ``N_\mathrm{df}`` is the number
+of degrees of freedom of the system, which accounts for constraints and the removal of
+center of mass motion.
+``\tau`` is the inverse of the collision frequency used by OpenMM and ``\tau_T / 2\pi``
+for the oscillation period ``\tau_T`` used by GROMACS.
+
+Each time step ``\Delta t`` consists of
+```math
+\begin{aligned}
+\bf{v}_i &\leftarrow \bf{v}_i + \frac{\bf{F}_i}{m_i} \Delta t \\
+\bf{r}_i &\leftarrow \bf{r}_i + \bf{v}_i \frac{\Delta t}{2} \\
+\bf{v}_i &\leftarrow s \bf{v}_i \\
+\bf{r}_i &\leftarrow \bf{r}_i + \bf{v}_i \frac{\Delta t}{2}
+\end{aligned}
+```
+with the forces calculated at the start of the step.
+If there are constraints, velocity constraints are applied after the first update and
+position constraints after the last update, with the velocities corrected by the
+constrained displacement divided by ``\Delta t``.
+The velocity scale factor ``s`` is found by propagating the chain over ``\Delta t`` in
+`n_mts` multiple time steps, each split into `n_yoshida_suzuki` steps of length
+``\delta = w_k \Delta t / n_\mathrm{mts}`` with Yoshida-Suzuki weights ``w_k``.
+Starting from ``s = 1``, each of these steps is
+```math
+\begin{aligned}
+v_{\xi_M} &\leftarrow v_{\xi_M} + \frac{\delta}{2} G_M \\
+v_{\xi_j} &\leftarrow v_{\xi_j} e^{-\delta v_{\xi_{j+1}} / 2} +
+    \frac{\delta}{2} G_j e^{-\delta v_{\xi_{j+1}} / 4} \quad (j = M - 1, \ldots, 1) \\
+s &\leftarrow s e^{-\delta v_{\xi_1}} \\
+\xi_j &\leftarrow \xi_j + \delta v_{\xi_j} \quad (j = 1, \ldots, M) \\
+v_{\xi_j} &\leftarrow v_{\xi_j} e^{-\delta v_{\xi_{j+1}} / 2} +
+    \frac{\delta}{2} G_j e^{-\delta v_{\xi_{j+1}} / 4} \quad (j = 1, \ldots, M - 1) \\
+v_{\xi_M} &\leftarrow v_{\xi_M} + \frac{\delta}{2} G_M
+\end{aligned}
+```
+where the kinetic energy in ``G_1`` is that of the velocities after the first position
+update scaled by ``s^2``, ``G_1`` is updated after ``s`` and each ``G_{j+1}`` is updated
+after ``v_{\xi_j}``.
+The chain is not propagated if the kinetic energy is close to zero.
+
+The quantity
+```math
+H = \sum_i \frac{1}{2} m_i \bf{v}_i^2 + V(\bf{r}) +
+    \sum_{j=1}^M \frac{1}{2} Q_j v_{\xi_j}^2 + N_\mathrm{df} k T \xi_1 +
+    \sum_{j=2}^M k T \xi_j
+```
+is conserved, apart from the error arising from the finite time step, if no coupling is
+used.
+The thermostat terms are the heat bath energy.
+The following keyword arguments are given to the loggers each step and can be used
+in a [`GeneralObservableLogger`](@ref), for example to log ``H``:
+- `current_forces`: the forces used to update the velocities during the step.
+- `heat_bath_energy`: the heat bath energy, in the energy units of the system.
+- `thermostat_positions`: a vector of the thermostat positions ``\xi_j``.
+- `thermostat_velocities`: a vector of the thermostat velocities ``v_{\xi_j}``, as numbers
+    in the inverse time units of `dt`.
+The vectors are modified during the simulation so should be copied if stored.
+
+The thermostat positions and velocities start at zero on each call to
+[`simulate!`](@ref), so two calls to [`simulate!`](@ref) are not the same as one longer
+call.
 
 # Arguments
 - `dt::T`: the time step of the simulation.
 - `temperature::K`: the equilibrium temperature of the simulation.
-- `damping::D=100*dt`: the temperature damping time scale.
+- `damping::D=100*dt`: the time scale ``\tau`` of the coupling to the thermostats.
+- `chain_length::Integer=3`: the number of thermostats in the chain ``M``.
+- `n_mts::Integer=3`: the number of multiple time steps used to propagate the chain
+    over each time step.
+- `n_yoshida_suzuki::Integer=7`: the number of Yoshida-Suzuki steps used for each
+    multiple time step, 1, 3, 5 or 7.
 - `coupling::C=nothing`: the coupling which applies during the simulation.
 - `remove_CM_motion=1`: remove the center of mass motion every this number of steps,
     set to `false` or `0` to not remove center of mass motion.
@@ -1860,20 +1973,241 @@ struct NoseHoover{T, K, D, C}
     dt::T
     temperature::K
     damping::D
+    chain_length::Int
+    n_mts::Int
+    n_yoshida_suzuki::Int
     coupling::C
     remove_CM_motion::Int
 end
 
-function NoseHoover(; dt, temperature, damping=100*dt, coupling=nothing, remove_CM_motion=1)
-    return NoseHoover(dt, temperature, damping, coupling, Int(remove_CM_motion))
+function NoseHoover(; dt, temperature, damping=100*dt, chain_length::Integer=3,
+                    n_mts::Integer=3, n_yoshida_suzuki::Integer=7, coupling=nothing,
+                    remove_CM_motion=1)
+    if temperature <= zero(temperature)
+        throw(ArgumentError("temperature must be positive, found $temperature"))
+    end
+    if damping <= zero(damping)
+        throw(ArgumentError("damping must be positive, found $damping"))
+    end
+    if chain_length < 1
+        throw(ArgumentError("chain_length must be at least 1, found $chain_length"))
+    end
+    if n_mts < 1
+        throw(ArgumentError("n_mts must be at least 1, found $n_mts"))
+    end
+    if !(n_yoshida_suzuki in (1, 3, 5, 7))
+        throw(ArgumentError("n_yoshida_suzuki must be 1, 3, 5 or 7, found " *
+                            "$n_yoshida_suzuki"))
+    end
+    return NoseHoover(dt, temperature, damping, Int(chain_length), Int(n_mts),
+                      Int(n_yoshida_suzuki), coupling, Int(remove_CM_motion))
 end
 
-# Not inlined to work with Enzyme
-@noinline function kinetic_energy_velocities(masses, velocities)
-    return sum(masses .* sum.(abs2, velocities)) / 2
+# The weights of the Yoshida-Suzuki factorization, as in OpenMM
+function yoshida_suzuki_weights(::Type{T}, n::Integer) where T
+    if n == 1
+        return T[1]
+    elseif n == 3
+        return T[0.828981543588751, -0.657963087177502, 0.828981543588751]
+    elseif n == 5
+        return T[0.2967324292201065, 0.2967324292201065, -0.186929716880426,
+                 0.2967324292201065, 0.2967324292201065]
+    elseif n == 7
+        return T[0.784513610477560, 0.235573213359357, -1.17767998417887, 1.31518632068391,
+                 -1.17767998417887, 0.235573213359357, 0.784513610477560]
+    else
+        throw(ArgumentError("n_yoshida_suzuki must be 1, 3, 5 or 7, found $n"))
+    end
 end
 
-@inline function simulate!(sys,
+# The mass of thermostat j divided by the mass of thermostat j + 1
+nose_hoover_mass_ratio(j::Integer, n_dof::Integer, ::Type{T}) where {T} =
+                                                            (j == 1 ? T(n_dof) : one(T))
+
+# Propagate a Nosé-Hoover chain over the time step dt and return the factor by which to
+#   scale the velocities
+# ke_ratio is the kinetic energy divided by its target value, 2K / (N_df kT), and ω2 is the
+#   inverse square of the damping time, with times as numbers in the same units
+function propagate_nose_hoover_chain!(chain_pos, chain_vel, chain_force, ke_ratio,
+                                      n_dof::Integer, ω2, dt, n_mts::Integer, ys_weights)
+    T = eltype(chain_vel)
+    ke_ratio = T(ke_ratio)
+    # Skip if the kinetic energy is below 5e-9 kT, close to the 1e-8 kJ/mol cutoff in
+    #   OpenMM at room temperature, as there is nothing to scale
+    if n_dof * ke_ratio < T(1e-8)
+        return one(T)
+    end
+    M = length(chain_vel)
+    scale = one(T)
+    chain_force[1] = ω2 * (ke_ratio - 1)
+    for j in 1:(M - 1)
+        chain_force[j + 1] = nose_hoover_mass_ratio(j, n_dof, T) * chain_vel[j]^2 - ω2
+    end
+    for _ in 1:n_mts
+        for w in ys_weights
+            wdt = w * dt / n_mts
+            chain_vel[M] += wdt * chain_force[M] / 2
+            for j in (M - 1):-1:1
+                aa = exp(-wdt * chain_vel[j + 1] / 4)
+                chain_vel[j] = aa * (aa * chain_vel[j] + wdt * chain_force[j] / 2)
+            end
+            scale *= exp(-wdt * chain_vel[1])
+            for j in 1:M
+                chain_pos[j] += wdt * chain_vel[j]
+            end
+            chain_force[1] = ω2 * (scale^2 * ke_ratio - 1)
+            for j in 1:(M - 1)
+                aa = exp(-wdt * chain_vel[j + 1] / 4)
+                chain_vel[j] = aa * (aa * chain_vel[j] + wdt * chain_force[j] / 2)
+                mass_ratio = nose_hoover_mass_ratio(j, n_dof, T)
+                chain_force[j + 1] = mass_ratio * chain_vel[j]^2 - ω2
+            end
+            chain_vel[M] += wdt * chain_force[M] / 2
+        end
+    end
+    return scale
+end
+
+# The heat bath energy of a Nosé-Hoover chain divided by kT
+function nose_hoover_heat_bath_energy(chain_pos, chain_vel, n_dof::Integer, ω2)
+    T = eltype(chain_vel)
+    e = zero(T)
+    for j in eachindex(chain_pos, chain_vel)
+        prefac = (j == 1 ? T(n_dof) : one(T))
+        e += prefac * (chain_vel[j]^2 / (2 * ω2) + chain_pos[j])
+    end
+    return e
+end
+
+# The state of the thermostat chain during a simulation, with times as numbers in the
+#   units of dt
+# On the GPU the chain is propagated on the device to avoid synchronizing every step, and
+#   the host arrays are copies for the loggers that are updated when required
+# The chain uses the high precision float type on the host and the system float type on
+#   the GPU, where Float64 operations in a single thread can be slow
+struct NoseHooverChainState{FT, V, W, H, S}
+    positions::V
+    velocities::V
+    forces::V
+    ys_weights::W
+    positions_host::H
+    velocities_host::H
+    vel_scale::S
+    n_dof::Int
+    n_mts::Int
+    dt::FT
+    ω2::FT
+    ke_ratio_factor::FT
+end
+
+nose_hoover_float_type(::System{<:Any, <:Any, T, TH}) where {T, TH} = TH
+nose_hoover_float_type(::System{<:Any, <:AbstractGPUArray, T, TH}) where {T, TH} = T
+
+nose_hoover_storage(x, sys) = x
+nose_hoover_storage(x, sys::System{<:Any, AT}) where {AT <: AbstractGPUArray} =
+                                                                to_device(copy(x), AT)
+
+nose_hoover_vel_scale(sys) = nothing
+nose_hoover_vel_scale(sys::System{<:Any, AT, T}) where {AT <: AbstractGPUArray, T} =
+                                                                to_device(ones(T, 1), AT)
+
+function NoseHooverChainState(sys, sim::NoseHoover)
+    FT = nose_hoover_float_type(sys)
+    n_dof = sys.df
+    kT = sys.k * sim.temperature
+    # Converts the sum of m * v^2 into the ratio of the kinetic energy to its target value
+    ke_ratio_factor = FT(uconvert(NoUnits, oneunit(eltype(masses(sys))) *
+                                  oneunit(eltype(eltype(sys.velocities)))^2 / (n_dof * kT)))
+    positions_host = zeros(FT, sim.chain_length)
+    velocities_host = zeros(FT, sim.chain_length)
+    ys_weights = yoshida_suzuki_weights(FT, sim.n_yoshida_suzuki)
+    return NoseHooverChainState(
+        nose_hoover_storage(positions_host, sys),
+        nose_hoover_storage(velocities_host, sys),
+        nose_hoover_storage(zeros(FT, sim.chain_length), sys),
+        nose_hoover_storage(ys_weights, sys),
+        positions_host,
+        velocities_host,
+        nose_hoover_vel_scale(sys),
+        n_dof,
+        sim.n_mts,
+        FT(ustrip(sim.dt)),
+        inv(FT(ustrip(unit(sim.dt), sim.damping)))^2,
+        ke_ratio_factor,
+    )
+end
+
+# Scale the velocities using the thermostat chain and update the coordinates by half a
+#   time step
+function nose_hoover_scale_and_drift!(sys::System{<:Any, <:Any, T, TH}, chain,
+                                      dt_div2) where {T, TH}
+    ke_ratio = sum_mass_vel_sq(masses(sys), sys.velocities, TH) * chain.ke_ratio_factor
+    vel_scale = propagate_nose_hoover_chain!(chain.positions, chain.velocities, chain.forces,
+                                             ke_ratio, chain.n_dof, chain.ω2, chain.dt,
+                                             chain.n_mts, chain.ys_weights)
+    sys.velocities .*= T(vel_scale)
+    sys.coords .= muladd.(dt_div2, sys.velocities, sys.coords)
+    return sys
+end
+
+function nose_hoover_scale_and_drift!(sys::System{<:Any, <:AbstractGPUArray, T, TH},
+                                      chain, dt_div2) where {T, TH}
+    # The kinetic energy stays on the device
+    twice_ke = mapreduce(MassVelSq{TH}(), +, masses(sys), sys.velocities; dims=1,
+                         init=zero(TH))
+    backend = get_backend(sys.velocities)
+    kernel_chain! = nose_hoover_chain_kernel!(backend, 1)
+    kernel_chain!(chain.vel_scale, chain.positions, chain.velocities, chain.forces, twice_ke,
+                  chain.ys_weights, chain.ke_ratio_factor, chain.n_dof, chain.ω2, chain.dt,
+                  chain.n_mts; ndrange=1)
+    kernel_scale! = nose_hoover_scale_drift_kernel!(backend)
+    kernel_scale!(sys.coords, sys.velocities, chain.vel_scale, dt_div2;
+                  ndrange=length(sys.velocities))
+    return sys
+end
+
+@kernel function nose_hoover_chain_kernel!(vel_scale, chain_pos, chain_vel, chain_force,
+                                           @Const(twice_ke), ys_weights, ke_ratio_factor,
+                                           n_dof, ω2, dt, n_mts)
+    i = @index(Global, Linear)
+    @inbounds if i == 1
+        ke_ratio = convert(eltype(chain_vel), twice_ke[1]) * ke_ratio_factor
+        vel_scale[1] = propagate_nose_hoover_chain!(chain_pos, chain_vel, chain_force,
+                                                    ke_ratio, n_dof, ω2, dt, n_mts,
+                                                    ys_weights)
+    end
+end
+
+@kernel function nose_hoover_scale_drift_kernel!(coords, velocities, @Const(vel_scale),
+                                                 dt_div2)
+    i = @index(Global, Linear)
+    @inbounds if i <= length(velocities)
+        v = velocities[i] * vel_scale[1]
+        velocities[i] = v
+        coords[i] = muladd(dt_div2, v, coords[i])
+    end
+end
+
+# The heat bath energy, with the chain state copied to the host arrays if required
+function nose_hoover_heat_bath_energy!(chain::NoseHooverChainState, kT_energy)
+    if chain.positions !== chain.positions_host
+        copyto!(chain.positions_host, chain.positions)
+        copyto!(chain.velocities_host, chain.velocities)
+    end
+    return nose_hoover_heat_bath_energy(chain.positions_host, chain.velocities_host,
+                                        chain.n_dof, chain.ω2) * kT_energy
+end
+
+# On the host the heat bath energy is cheap so it is always calculated, on the GPU the
+#   chain state is only copied to the host when a logger may run
+nose_hoover_logger_values_needed(sys, step_n, run_loggers) = true
+
+function nose_hoover_logger_values_needed(sys::System{<:Any, <:AbstractGPUArray}, step_n,
+                                          run_loggers)
+    return any_logger_may_log_on_step(sys.loggers, step_n, run_loggers)
+end
+
+@inline function simulate!(sys::System{<:Any, <:Any, T, TH},
                            sim::NoseHoover,
                            n_steps_or_time;
                            n_threads::Integer=Threads.nthreads(),
@@ -1883,12 +2217,12 @@ end
                            show_progress=default_show_progress(),
                            check_nans=default_check_nans(sys, sim),
                            rng=Random.default_rng(),
-                           strictness=default_strictness())
+                           strictness=default_strictness()) where {T, TH}
     check_simulate_inputs(init_step, run_loggers, strictness)
-    if length(sys.constraints) > 0
-        err_str = "NoseHoover is not compatible with constraints, " *
-                  "constraints will be ignored"
-        report_issue(err_str, strictness)
+    n_dof = sys.df
+    if n_dof < 1
+        throw(ArgumentError("NoseHoover requires a system with at least one degree of " *
+                            "freedom, found $n_dof"))
     end
     n_steps = calc_n_steps(n_steps_or_time, sim.dt)
     needs_vir, needs_vir_steps = needs_virial_schedule(sim.coupling, sys.loggers, run_loggers)
@@ -1897,16 +2231,38 @@ end
     init_step == 0 && !iszero(sim.remove_CM_motion) && remove_CM_motion!(sys)
     neighbors = find_neighbors(sys, sys.neighbor_finder, nothing, init_step, true;
                                n_threads=n_threads)
-    forces_t, forces_t_dt = zero_forces(sys), zero_forces(sys)
-    buffers = init_buffers!(sys, n_threads)
-    forces!(forces_t, sys, neighbors, init_step, buffers, Val(true); n_threads=n_threads,
-            visit_state=true, strictness=strictness)
+    forces_t = zero_forces(sys)
     accels_t = calc_accels.(forces_t, masses(sys))
-    accels_t_dt = zero(accels_t)
-    apply_loggers!(sys, neighbors, init_step, buffers, run_loggers == true; n_threads=n_threads,
-                   strictness=strictness, current_forces=forces_t)
-    v_half = zero(sys.velocities)
-    zeta = zero(inv(sim.dt))
+    buffers = init_buffers!(sys, n_threads)
+
+    chain = NoseHooverChainState(sys, sim)
+    kT_energy = TH(ustrip(sys.energy_units, sys.k * sim.temperature)) * sys.energy_units
+    heat_bath_energy = zero(kT_energy)
+
+    needs_vir_init = needs_virial_on_step(needs_vir, needs_vir_steps, init_step)
+    if needs_vir_init
+        forces!(forces_t, sys, neighbors, init_step, buffers, Val(true); n_threads=n_threads,
+                visit_state=true, strictness=strictness)
+        accels_t .= calc_accels.(forces_t, masses(sys))
+        merge_initial_constraint_virial!(buffers, sys, init_step, true, accels_t;
+                                         n_threads=n_threads, strictness=strictness)
+        apply_loggers!(sys, neighbors, init_step, buffers, run_loggers == true;
+                       n_threads=n_threads, strictness=strictness, current_forces=forces_t,
+                       heat_bath_energy=heat_bath_energy,
+                       thermostat_positions=chain.positions_host,
+                       thermostat_velocities=chain.velocities_host)
+    else
+        apply_loggers!(sys, neighbors, init_step, buffers, run_loggers == true;
+                       n_threads=n_threads, strictness=strictness,
+                       heat_bath_energy=heat_bath_energy,
+                       thermostat_positions=chain.positions_host,
+                       thermostat_velocities=chain.velocities_host)
+    end
+    using_constraints = (length(sys.constraints) > 0)
+    if using_constraints
+        cons_coord_storage = zero(sys.coords)
+        cons_vel_storage = zero(sys.velocities)
+    end
     dt_div2 = sim.dt / 2
     check_nan_labels = ("coordinates", "velocities", "forces", "accelerations")
     check_nans && check_array_nans((sys.coords, sys.velocities, forces_t, accels_t),
@@ -1915,47 +2271,54 @@ end
     progress = setup_progress(n_steps, show_progress)
     for step_n in (init_step + 1):(init_step + n_steps)
         needs_vir_step = needs_virial_on_step(needs_vir, needs_vir_steps, step_n)
-        v_half .= sys.velocities .+ (accels_t .- (sys.velocities .* zeta)) .* dt_div2
+        forces!(forces_t, sys, neighbors, step_n, buffers, Val(needs_vir_step);
+                n_threads=n_threads, visit_state=true, strictness=strictness)
+        accels_t .= calc_accels.(forces_t, masses(sys))
 
-        sys.coords .+= v_half .* sim.dt
+        sys.velocities .+= accels_t .* sim.dt
+        if using_constraints
+            prepare_constraint_virial!(buffers, sys, step_n, needs_vir_step)
+            vel_context = velocity_constraint_context(buffers, sys, step_n, sim.dt,
+                                                      needs_vir_step, sim)
+            apply_velocity_constraints!(sys; context=vel_context, n_threads=n_threads,
+                                        strictness=strictness)
+            cons_coord_storage .= sys.coords
+        end
+        sys.coords .= muladd.(dt_div2, sys.velocities, sys.coords)
+
+        nose_hoover_scale_and_drift!(sys, chain, dt_div2)
+        if using_constraints
+            pos_context = position_constraint_context(buffers, sys, step_n, sim.dt,
+                                                      needs_vir_step, sim)
+            apply_position_constraints!(sys, cons_coord_storage, cons_vel_storage, sim.dt;
+                                        context=pos_context, n_threads=n_threads,
+                                        strictness=strictness)
+            merge_constraint_virial_if_needed!(buffers, sys, step_n, needs_vir_step)
+        end
         sys.coords .= wrap_coords.(sys.coords, (sys.boundary,))
         place_virtual_sites!(sys; n_threads=n_threads)
+        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                   n_threads=n_threads)
 
-        zeta_half = zeta + (sim.dt / (2 * (sim.damping^2))) *
-                        ((temperature(sys; kin_tensor=buffers.kin_tensor) / sim.temperature) - 1)
-        KE_half = kinetic_energy_velocities(masses(sys), v_half)
-        T_half = uconvert(unit(sim.temperature), 2 * KE_half / (sys.df * sys.k))
-        zeta = zeta_half + (sim.dt / (2 * (sim.damping^2))) * ((T_half / sim.temperature) - 1)
-
-        forces!(forces_t_dt, sys, neighbors, step_n, buffers, Val(needs_vir_step);
-                n_threads=n_threads, visit_state=true, strictness=strictness)
-        accels_t_dt .= calc_accels.(forces_t_dt, masses(sys))
-
-        sys.velocities .= (v_half .+ accels_t_dt .* dt_div2) ./
-                          (1 + (zeta * dt_div2))
-
-        # Remove drift after the Nose-Hoover velocity update and before
-        # coupling/loggers observe the state.
         if !iszero(sim.remove_CM_motion) && step_n % sim.remove_CM_motion == 0
             remove_CM_motion!(sys)
         end
+
         recompute_forces = apply_coupling!(sys, buffers, sim.coupling, sim, neighbors, step_n;
                                            n_threads=n_threads, rng=rng, strictness=strictness)
 
-        neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, recompute_forces;
-                                    n_threads=n_threads)
-        if recompute_forces # Recomputed after coupling, so not a new visit
-            forces!(forces_t_dt, sys, neighbors, step_n, buffers, Val(needs_vir_step);
-                    n_threads=n_threads, strictness=strictness)
-            forces_t, forces_t_dt = forces_t_dt, forces_t
-            accels_t .= calc_accels.(forces_t, masses(sys))
-        else
-            forces_t, forces_t_dt = forces_t_dt, forces_t
-            accels_t, accels_t_dt = accels_t_dt, accels_t
+        if recompute_forces
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
         end
 
+        if nose_hoover_logger_values_needed(sys, step_n, run_loggers)
+            heat_bath_energy = nose_hoover_heat_bath_energy!(chain, kT_energy)
+        end
         apply_loggers!(sys, neighbors, step_n, buffers, run_loggers; n_threads=n_threads,
-                       strictness=strictness, current_forces=forces_t)
+                       strictness=strictness, current_forces=forces_t,
+                       heat_bath_energy=heat_bath_energy,
+                       thermostat_positions=chain.positions_host,
+                       thermostat_velocities=chain.velocities_host)
         check_nans && check_array_nans((sys.coords, sys.velocities, forces_t, accels_t),
                                        check_nan_labels, step_n)
         if shortcut_sim(shortcut, sys, buffers, neighbors, step_n; n_threads=n_threads,
@@ -1990,6 +2353,16 @@ be 1.
 When simulating, `n_steps` is the number of outer steps.
 Coupling, removing the center of mass motion and running loggers applies per outer time step.
 
+With `inner_step_neighbors=false` and a neighbor finder with `auto_update=true`, the
+neighbors are checked before every force calculation that uses them at coordinates that
+have changed since they were last checked, and rebuilt if needed.
+With a neighbor finder with `auto_update=false`, the neighbors are found once per outer
+step on the schedule of the neighbor finder, after the coordinates are updated and before
+the interactions evaluated once per outer step.
+Interactions evaluated more often then use these neighbors throughout the next outer
+step, so if any pairwise interactions are evaluated more than once per outer step the
+neighbor finder should use a skin sufficient to cover atomic motion over an outer step.
+
 # Arguments
 - `dt::T`: the outer time step of the simulation.
 - `pi_fractions`: the number of times each pairwise interaction is evaluated per outer
@@ -2003,7 +2376,7 @@ Coupling, removing the center of mass motion and running loggers applies per out
     set to `false` or `0` to not remove center of mass motion.
 - `inner_step_neighbors=false`: whether to force recomputation of the neighbors at every
     inner step, useful when force calculation is slow compared to neighbor finding. If used,
-    the `n_steps` argument of the neighbor finder is ignored.
+    the `auto_update` and `n_steps` arguments of the neighbor finder are ignored.
 """
 struct MTSIntegrator{NF, NP, NS, NG, S, C} <: AbstractMTSIntegrator{NF, NP, NS, NG}
     ordered_fractions::NTuple{NF, Int}
@@ -2038,6 +2411,16 @@ be 1.
 When simulating, `n_steps` is the number of outer steps.
 Coupling, removing the center of mass motion and running loggers applies per outer time step.
 
+With `inner_step_neighbors=false` and a neighbor finder with `auto_update=true`, the
+neighbors are checked before every force calculation that uses them at coordinates that
+have changed since they were last checked, and rebuilt if needed.
+With a neighbor finder with `auto_update=false`, the neighbors are found once per outer
+step on the schedule of the neighbor finder, after the coordinates are updated and before
+the interactions evaluated once per outer step.
+Interactions evaluated more often then use these neighbors throughout the next outer
+step, so if any pairwise interactions are evaluated more than once per outer step the
+neighbor finder should use a skin sufficient to cover atomic motion over an outer step.
+
 # Arguments
 - `dt::T`: the outer time step of the simulation.
 - `temperature::K`: the equilibrium temperature of the simulation.
@@ -2053,7 +2436,7 @@ Coupling, removing the center of mass motion and running loggers applies per out
     set to `false` or `0` to not remove center of mass motion.
 - `inner_step_neighbors=false`: whether to force recomputation of the neighbors at every
     inner step, useful when force calculation is slow compared to neighbor finding. If used,
-    the `n_steps` argument of the neighbor finder is ignored.
+    the `auto_update` and `n_steps` arguments of the neighbor finder are ignored.
 """
 struct MTSLangevinIntegrator{NF, NP, NS, NG, S, K, F, C, T} <: AbstractMTSIntegrator{NF, NP, NS, NG}
     ordered_fractions::NTuple{NF, Int}
@@ -2159,28 +2542,42 @@ function mts_coordinate_update!(sys, noise, sim::MTSLangevinIntegrator, dt_frac_
     return sys
 end
 
-# Recalculate the neighbors during the inner steps of an MTS integrator if required
-function mts_find_neighbors(sys, buffers, neighbors, step_n, n_threads)
-    invalidate_cached_neighbors!(buffers, sys.neighbor_finder)
-    return find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, true;
-                          n_threads=n_threads)
+# Find the neighbors before the forces of a level of an MTS integrator are calculated,
+#   when the neighbor finder tracks displacements, the coordinates have moved since the
+#   neighbors were last found and the interactions of the level use the neighbor list
+function mts_level_neighbors(sys, neighbors, step_n, n_threads, coords_moved, level_nl)
+    if level_nl && coords_moved[]
+        coords_moved[] = false
+        return find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                              n_threads=n_threads)
+    end
+    return neighbors
 end
 
 # Can modify sys, forces_t, accels_t, buffers, noise, cons_coord_storage and cons_vel_storage
-# Returns the neighbors, which are updated during the substeps if inner_step_neighbors is true
+# Returns the neighbors, which are updated at every inner step if inner_step_neighbors is true
+#   and otherwise once at the outer level, unless the neighbor finder tracks displacements
+#   in which case they are checked before every force calculation that uses them
+# `coords_moved` is whether the coordinates have moved since the neighbors were last found
+#   by a neighbor finder that tracks displacements
 function mts_substeps!(sys, forces_t, accels_t, buffers, noise, cons_coord_storage,
                        cons_vel_storage, sim, ordered_fractions, fraction_inters, neighbors,
                        dt, step_n, n_threads, rng, using_constraints, n_parent_substeps,
-                       strictness, inner_step_neighbors, recompute_forces_in)
+                       strictness, inner_step_neighbors, recompute_forces_in,
+                       coords_moved=Ref(false))
     n_substeps = first(ordered_fractions)
     n_steps_per_parent_step = n_substeps ÷ n_parent_substeps
     pis, sis, gis = first(fraction_inters)
     dt_frac_x = dt / n_substeps
     dt_frac_v = dt_frac_x / 2
     recompute_forces = recompute_forces_in
+    tracks = !inner_step_neighbors && tracks_displacements(sys.neighbor_finder)
+    level_nl = tracks && uses_neighbor_list(pis, gis)
 
     for substep_n in 1:n_steps_per_parent_step
         if recompute_forces
+            neighbors = mts_level_neighbors(sys, neighbors, step_n, n_threads, coords_moved,
+                                            level_nl)
             forces!(forces_t, sys, neighbors, step_n, buffers, Val(false); n_threads=n_threads,
                     pairwise_inters=pis, specific_inter_lists=sis, general_inters=gis,
                     visit_state=true, strictness=strictness)
@@ -2202,7 +2599,10 @@ function mts_substeps!(sys, forces_t, accels_t, buffers, noise, cons_coord_stora
             sys.coords .= wrap_coords.(sys.coords, (sys.boundary,))
             place_virtual_sites!(sys; n_threads=n_threads)
             if inner_step_neighbors
-                neighbors = mts_find_neighbors(sys, buffers, neighbors, step_n, n_threads)
+                neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n, true;
+                                           n_threads=n_threads)
+            elseif tracks
+                coords_moved[] = true
             end
         else
             neighbors = mts_substeps!(sys, forces_t, accels_t, buffers, noise,
@@ -2210,9 +2610,17 @@ function mts_substeps!(sys, forces_t, accels_t, buffers, noise, cons_coord_stora
                                       Base.tail(ordered_fractions),
                                       Base.tail(fraction_inters), neighbors, dt, step_n,
                                       n_threads, rng, using_constraints, n_substeps,
-                                      strictness, inner_step_neighbors, true)
+                                      strictness, inner_step_neighbors, true, coords_moved)
         end
 
+        # The outer level runs once per step after all the coordinate updates, so without
+        #   inner step neighbors they are found here on the schedule of the neighbor finder
+        if n_substeps == 1 && !inner_step_neighbors && !tracks
+            neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                       n_threads=n_threads)
+        end
+        neighbors = mts_level_neighbors(sys, neighbors, step_n, n_threads, coords_moved,
+                                        level_nl)
         forces!(forces_t, sys, neighbors, step_n, buffers, Val(false); n_threads=n_threads,
                 pairwise_inters=pis, specific_inter_lists=sis, general_inters=gis,
                 visit_state=true, strictness=strictness)
@@ -2275,6 +2683,9 @@ mts_initialize_noise(sys, ::MTSLangevinIntegrator) = zero(sys.velocities)
     end
     fraction_inters = mts_interaction_groups(sys, sim)
     recompute_forces = true # Forces re-used between steps
+    # Whether the coordinates have moved since the neighbors were last found, for a neighbor
+    #   finder that tracks displacements
+    coords_moved = Ref(false)
     check_nan_labels = ("coordinates", "velocities", "forces", "accelerations")
     check_nans && check_array_nans((sys.coords, sys.velocities, forces_t, accels_t),
                                    check_nan_labels, init_step)
@@ -2285,9 +2696,17 @@ mts_initialize_noise(sys, ::MTSLangevinIntegrator) = zero(sys.velocities)
                                   cons_coord_storage, cons_vel_storage, sim,
                                   sim.ordered_fractions, fraction_inters, neighbors, sim.dt,
                                   step_n, n_threads, rng, using_constraints, 1, strictness,
-                                  sim.inner_step_neighbors, recompute_forces)
+                                  sim.inner_step_neighbors, recompute_forces, coords_moved)
         if using_constraints
             apply_velocity_constraints!(sys; n_threads=n_threads, strictness=strictness)
+        end
+        # The neighbors are checked at the final coordinates if no force calculation since
+        #   the last coordinate update used them, so that the virial, the coupling and the
+        #   loggers see a valid list
+        if coords_moved[]
+            coords_moved[] = false
+            neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                       n_threads=n_threads)
         end
 
         needs_vir_step = needs_virial_on_step(needs_vir, needs_vir_steps, step_n)
@@ -2308,15 +2727,10 @@ mts_initialize_noise(sys, ::MTSLangevinIntegrator) = zero(sys.velocities)
         end
         recompute_forces = apply_coupling!(sys, buffers, sim.coupling, sim, neighbors, step_n;
                                            n_threads=n_threads, rng=rng, strictness=strictness)
-        if sim.inner_step_neighbors
-            # The neighbors are up to date from the substeps, so they only need to be
-            #   recalculated if the coupling changed the coordinates
-            if recompute_forces
-                neighbors = mts_find_neighbors(sys, buffers, neighbors, step_n, n_threads)
-            end
-        else
-            neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n,
-                                       recompute_forces; n_threads=n_threads)
+        # The neighbors are up to date from the substeps, so they only need to be
+        #   recalculated if the coupling changed the coordinates
+        if recompute_forces
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
         end
 
         apply_loggers!(sys, neighbors, step_n, buffers, run_loggers; n_threads=n_threads,
@@ -2901,11 +3315,18 @@ end
 
     progress = setup_progress(n_steps, show_progress)
     for step_n in (init_step + 1):(init_step + n_steps)
+        trial_states = map(save_trial_state, values(sys.general_inters))
         coords_old .= sys.coords
         sim.trial_moves(sys; sim.trial_args...) # Changes the coordinates of the system
         sys.coords .= wrap_coords.(sys.coords, (sys.boundary,))
         place_virtual_sites!(sys; n_threads=n_threads)
-        neighbors = find_neighbors(sys, sys.neighbor_finder; n_threads=n_threads)
+        if tracks_displacements(sys.neighbor_finder)
+            # Only rebuilt if the trial move could invalidate the list
+            neighbors = find_neighbors(sys, sys.neighbor_finder, neighbors, step_n;
+                                       n_threads=n_threads)
+        else
+            neighbors = find_neighbors(sys, sys.neighbor_finder; n_threads=n_threads)
+        end
         E_new = potential_energy(sys, neighbors, step_n, buffers; n_threads=n_threads,
                                  strictness=strictness)
 
@@ -2918,6 +3339,10 @@ end
             E_old = E_new
         else
             sys.coords .= coords_old
+            neighbors = refind_neighbors(sys, neighbors, step_n; n_threads=n_threads)
+            for (inter, snapshot) in zip(values(sys.general_inters), trial_states)
+                restore_trial_state!(sys, inter, snapshot)
+            end
             apply_loggers!(sys, neighbors, step_n, nothing, run_loggers; n_threads=n_threads,
                            strictness=strictness, current_potential_energy=E_old, success=false,
                            energy_rate=(E_old / (sys.k * sim.temperature)))

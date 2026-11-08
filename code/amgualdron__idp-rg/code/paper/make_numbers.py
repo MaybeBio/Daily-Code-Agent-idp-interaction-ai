@@ -12,6 +12,8 @@ Keys (all listed in numbers.tex, grouped by source):
                   as <model>.<set>.<metric>, set = val, test, length, sticky, benchmark (closed form also cv)
     <model>.<set>.by.<group>.<metric>   per-protein breakdowns of val and test: N bins, CE bins, compact / not compact
     abl.*         results/ablations.csv; rows not yet run are "--" and abl.complete is "no"
+    fam.*         results/family_heads.csv, fam.<head>_<width>x<depth>.<set>.<metric> (mean over seeds, .sd.<metric> the
+                  seed sd), and results/family_heads_exponents.json as fam.exp.<set>.*
     cethr.*       results/ce_threshold_cv.csv, the choice of the CE-threshold slope c1
     agree.*       the methods table: mean absolute difference in <R_g> on the benchmark between every method (the two
                   released models, data/benchmark_methods.csv, HPS1) and SAXS / each simulation, plain and per family
@@ -75,6 +77,25 @@ def fmt(key, v):
     if isinstance(v, (int, np.integer)) or ((leaf == "n" or leaf.startswith("n_")) and float(v).is_integer()):
         return f"{int(v):,}".replace(",", "{,}")
     v = float(v)
+    if key.startswith("fam."):                                       # rounded to what three seeds resolve on each set
+        p = key.split(".")
+        if p[1] == "exp":
+            return f"{v:.3f}" if "seed_sd" in leaf or leaf == "freeA_nu_abs" else f"{v:.2f}"
+        if leaf.startswith("nll"):
+            s = f"{v:.{dict(val=4, length=3, sticky=2)[p[2]]}f}"
+        elif leaf.startswith("dnll"):
+            s = f"{v:.1f}"
+        elif leaf.startswith("dw1") or leaf == "exkurt_mae":
+            s = f"{v:.2f}"
+        elif leaf == "skew_mae":
+            s = f"{v:.3f}"
+        else:
+            s = f"{v:.2f}" if p[2] == "val" and leaf != "std_err_pct" else f"{v:.1f}"
+        return s.replace("-", "\\ensuremath{-}", 1) if s.startswith("-") else s
+    if key.startswith("fig.fig26.") and ("rho" in key or key.endswith("noise_ceiling_rho")):
+        return f"{v:.2f}".replace("-", "\\ensuremath{-}", 1)
+    if key.startswith(("fig.fig26.cv.", "fig.fig26.pc.", "fig.fig26.pe.", "fig.fig26.nu.")) and "pct" not in key:
+        return f"{v:.3f}".replace("-", "\\ensuremath{-}", 1)
     if "bias" in leaf:
         s = f"{abs(v):.2f}" if abs(v) < 10 else f"{abs(v):.1f}"
         return ("\\ensuremath{+}" if v >= 0 else "\\ensuremath{-}") + s
@@ -313,6 +334,20 @@ def collect():
     N["abl.complete"] = bool(complete)
     N["abl.n_done"], N["abl.n_total"] = sum(1 for mdl, x, s in rows if ((a.model == mdl) & (a.ablation == x)
                                                                        & (a.set == s)).any()), len(rows)
+
+    # output-family comparison (one network per row of results/family_heads.csv; made in the research repo)
+    fh = pd.read_csv(RESULTS / "family_heads.csv")
+    fh_cols = [c for c in fh if c not in ("head", "width", "depth", "set", "seed", "n", "n_compact", "n_parameters")]
+    for (h, w, dp, s), g in fh.groupby(["head", "width", "depth", "set"]):
+        k = f"fam.{h}_{w}x{dp}.{s}"
+        N[f"{k}.n_seeds"], N[f"{k}.n_parameters"], N[f"{k}.n"] = len(g), int(g.n_parameters.iloc[0]), int(g.n.iloc[0])
+        for c in fh_cols:
+            N[f"{k}.{c}"] = float(g[c].mean())
+            if c in ("nll", "mean_err_pct", "std_err_pct", "w1_mean_pct"):
+                N[f"{k}.sd.{c}"] = float(g[c].std(ddof=1))
+    for s, e in json.loads((RESULTS / "family_heads_exponents.json").read_text()).items():
+        for c, v in e.items():
+            N[f"fam.exp.{s}.{c}"] = v
 
     # figures
     def flat(prefix, v):

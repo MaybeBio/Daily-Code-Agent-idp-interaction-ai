@@ -30,6 +30,7 @@ export
     read_frame!
 
 @public pairwise_uses_velocity,
+    evaluate_before_pairwise,
     from_device,
     to_device
 
@@ -50,6 +51,18 @@ An alias for NBodyInteraction{2}.
 Custom pairwise interactions should subtype this.
 """
 const PairwiseInteraction = NBodyInteraction{2}
+
+"""
+    evaluate_before_pairwise(inter)
+
+Whether a general interaction is evaluated before pairwise and specific interactions
+when calculating the potential energy and forces.
+
+This is `false` by default, meaning that general interactions are calculated afterwards.
+Custom general interactions should implement this function to return `true` if
+they change the state such that it affects subsequent interactions (e.g. atomic charges).
+"""
+evaluate_before_pairwise(inter) = false
 
 """
     from_device(arr)
@@ -820,7 +833,21 @@ The first `n` entries of `list` are the `(i, j, special)` pairs, see
 mutable struct NeighborList{T}
     n::Int # Number of neighbors in list (n <= length(list))
     list::T
+    # Not used, but makes the object take more than 128 bytes. CellListMap.jl fills a
+    #   list for each task, which are allocated next to each other and have `n` changed
+    #   for every pair. When two of them shared a 128 byte block of memory, which the
+    #   cache of Intel CPUs fetches together, the cores slowed each other down.
+    padding::NTuple{15, Int}
+
+    function NeighborList{T}(n, list,
+                             padding::NTuple{15, Int}=ntuple(_ -> 0, Val(15))) where T
+        return new{T}(n, list, padding)
+    end
 end
+
+NeighborList(n, list::T, padding...) where {T} = NeighborList{T}(n, list, padding...)
+
+Base.show(io::IO, nl::NeighborList) = print(io, typeof(nl), "(", nl.n, ", ", nl.list, ")")
 
 NeighborList() = NeighborList{Vector{Tuple{Int32, Int32, Bool}}}(0, [])
 

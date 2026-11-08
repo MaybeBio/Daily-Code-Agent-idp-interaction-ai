@@ -29,15 +29,17 @@ This README is the practical entry point; those docs are the detailed record.
 
 ## What's actually in here
 
-Three distinct capabilities, backed by different models, invoked through two
+Four distinct capabilities, backed by different models, invoked through three
 Claude Code skills (`.claude/skills/design/SKILL.md` for A/B,
-`.claude/skills/epitope_guided_design/SKILL.md` for C):
+`.claude/skills/epitope_guided_design/SKILL.md` for C,
+`.claude/skills/design_ranking/SKILL.md` for D):
 
 | Capability | Question it answers | Backend(s) | Typical runtime |
 |---|---|---|---|
 | **A. Cofolding** | "If protein X and Y/this small molecule/this nucleic acid are put together, what structure do they form, and how confident is that prediction?" | Boltz-2, OpenFold3 | 1–3 min |
 | **B. Binder design** | "Generate novel antibody candidates that might bind target X" | BoltzGen | tens of minutes to hours |
-| **C. Epitope-guided binder design** | "Generate novel antibody candidates that bind target X **at a specific, model-predicted epitope**, not wherever BoltzGen's own sampling happens to land" | BoltzGen + Model A epitope predictor (`experiments/epitope_prediction/`) | epitope prediction: seconds; design: same as B |
+| **C. Epitope-guided binder design** | "Generate novel antibody candidates that bind target X **at a specific, model-predicted epitope**, not wherever BoltzGen's own sampling happens to land" | BoltzGen + an epitope predictor (`experiments/epitope_prediction/`; whether Model A or Model D is the production default is an open question — see that folder's README §2.7) | epitope prediction: seconds; design: same as B |
+| **D. Design ranking / down-selection** | "Given a finished campaign of hundreds–60,000 designs, which diverse, plausible shortlist should go to a wet lab?" — cluster for diversity, gate on plausibility (ipTM + filter_rmsd), rank by free metrics. An *existence filter*, not a binding ranker, because [six experiments](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/PLAN.md#111-the-headline) found no metric ranks designs by binding. | none (reuses each campaign's own metrics CSV) | seconds, no GPU |
 
 These are genuinely different problems. (A) evaluates a *given* pair — you
 supply both sides. (B) *generates* something new — you supply only the
@@ -51,6 +53,64 @@ count and results). A prior session
 in this project initially conflated A and B ("design an antibody against
 lysozyme" could mean either), so this README keeps all three clearly
 separate throughout.
+
+### What this project has learned about its own pipeline
+
+Everything above runs. Whether the *output* can be trusted is a separate question, and
+most of the recent work has gone into answering it. The headline results, each with a
+reproducible script and a null control:
+
+- **ipTM — the metric the whole funnel is gated on — performs at chance on the
+  comparison a design campaign actually makes.** Ranking candidates against *one*
+  target, it scores 14/28 on a paired benchmark of binding-retained vs binding-destroyed
+  mutants. [EXPERIMENT_01](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_01_iptm_calibration.md),
+  [_02](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_02_alternative_metrics.md),
+  [_03](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_03_within_antigen_ranking.md).
+- **One metric beat it on one question, and then failed everywhere else.** Rosetta's
+  `packstat` scored 23/28 (p=0.0005, survives Bonferroni) at telling a binding-*retained*
+  point mutant from a binding-*destroyed* one. But that was the ceiling, not a foothold:
+  it ranks graded affinity at ρ=+0.058 — *below* its own null
+  ([EXPERIMENT_04](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_04_packstat_transfer.md),
+  1,201 core-hours) — and on 1,096 **real designs** it is at chance (AUC 0.508, below
+  its null) and worse than chance on a second target
+  ([EXPERIMENT_05](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_05_design_transfer.md)).
+  The 23/28 was specific to point mutants of near-native crystal backbones; it does not
+  survive the backbone being designed. `packstat` is wired into nothing.
+- **On real designs the one usable signal is ipTM — but of structure, not binding.**
+  ipTM (free) best-separates self-consistent designs from wrecked ones (AUC 0.708),
+  while the expensive Rosetta metrics add nothing over it. That is EXPERIMENT_01's
+  finding confirmed from the other side: ipTM measures whether a credible structure can
+  be modelled, which is not whether it binds.
+- **The two benchmarks do not agree about which metrics work** — rank agreement
+  **ρ = +0.087** across eight shared metrics, with the best on one near-worst on the
+  other. Two metrics beat the null on both, which is exactly what chance predicts
+  (expected 1.88, observed 2, p=0.71). So the conclusion is not "the correlations were
+  low" but **no metric survives a change of question**, and the remedy of picking a
+  better existing scalar is closed. Both `ipTM` and `packstat` detect *whether a
+  credible interface exists* and neither ranks *how good one is* — the pipeline has been
+  selecting on interface existence while we believed it was selecting on quality.
+  [Conclusions](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/PLAN.md#11-conclusions--what-five-experiments-established).
+- **The overturning check was run, and the metric is not the lever.** AbBiBench
+  publishes ProteinMPNN ρ≈0.30 on this affinity data where our best column is +0.141, so
+  we scored the stronger published model (ProteinMPNN) on our own structures
+  ([EXPERIMENT_06](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_06_proteinmpnn_transfer.md)).
+  It reproduced ESM-IF1's weak result (+0.097, below ESM-IF1's +0.111) and came nowhere
+  near 0.30 — so swapping scorers buys nothing, and the gap to the published number is
+  the structures or the scoring protocol, not the metric. (A native-backbone arm would
+  separate those two; our structures are predicted per-complex backbones.)
+- **Nothing in this stack was ever trained on antibodies.** `antibody-anything` and
+  `nanobody-anything` are byte-identical config dicts, no checkpoint differs by
+  modality, and no BoltzGen training config mentions antibodies — while the same configs
+  *do* upweight nucleotides and ligands. See [IMPROVE_DESIGN.md](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/IMPROVE_DESIGN.md) §1.
+- **Our campaigns are 20–1,000× under-sampled.** BoltzGen's own protocol generates
+  60,000 designs and advances 15; ours run 50–3,000. Measured joint-pass yield here is
+  ~0.2%, which makes their funnel arithmetic work out exactly — and means a 50-design
+  campaign *cannot* produce a passing design. IMPROVE_DESIGN.md §2.
+- **Benchmark data needs checking every time.** Four separate label/provenance traps
+  were found in one source while building these benchmarks; each would have produced a
+  confidently wrong result. See the warning in `databases/asd/README.md`.
+
+Read [IMPROVE_DESIGN.md](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/IMPROVE_DESIGN.md) for the active plan and what is open.
 
 Two more Claude Code skills support the underlying training data C depends on
 (not a design capability themselves):
@@ -78,7 +138,7 @@ python3 scripts/run_design.py \
 # Skill B — generate novel antibodies against a target, starting from
 # nothing but a sequence (predicts the target's structure first, then
 # designs against that prediction — see "How antibody design works" below)
-python3 scripts/design_binder.py --target-id P09758 --name my_target
+python3 scripts/design_binder.py --target-id <UNIPROT_ID> --name my_target
 # ^ validates and prints the launch command; add --launch to run immediately
 
 # Skill B, alternative — if you already have a real (experimental)
@@ -502,8 +562,7 @@ when one doesn't, not as a strictly-better default.
            path:
                - ../../boltzgen_examples/repo/example/fab_scaffolds/adalimumab.6cr1.yaml
                - ../../boltzgen_examples/repo/example/fab_scaffolds/belimumab.5y9k.yaml
-               # ... (see data/designs/hel_antibody/hel.yaml or
-               #      data/designs/trop2_antibody/trop2.yaml in this repo
+               # ... (see data/designs/hel_antibody/hel.yaml in this repo
                #      for the full 14-scaffold list used so far — or let
                #      design_binder.py generate this for you automatically)
    ```
@@ -551,21 +610,20 @@ biology benchmark target). 50 designs → top candidate `hel_18`:
 "the pipeline works as intended" result, as expected for a well-behaved
 benchmark target with no real drug-discovery difficulty.
 
-**Target: human TROP2 / TACSTD2** (PDB `7E5N`, an active oncology antigen
-— the target of two approved antibody-drug conjugates, sacituzumab
-govitecan and datopotamab deruxtecan). 50 designs → top candidate
-`trop2_36`: `design_to_target_iptm=0.44`, `filter_rmsd=2.60`, 7 predicted
+**Target A** (a real oncology antigen; identity withheld, as this was an
+actual design campaign). 50 designs → top candidate `target_a_36`:
+`design_to_target_iptm=0.44`, `filter_rmsd=2.60`, 7 predicted
 H-bonds, but **20 liability violations flagged**. Substantially lower
-confidence than the HEL run — consistent with TROP2 being a harder, more
+confidence than the HEL run — consistent with Target A being a harder, more
 realistic target than a benchmark protein. This is the expected pattern:
 don't be surprised or alarmed when a real target scores worse than a
 textbook one; that's the campaign correctly reflecting real difficulty,
 not a broken pipeline.
 
-`trop2_36`'s heavy and light chains (`full_sequence_1`/`full_sequence_2`
+`target_a_36`'s heavy and light chains (`full_sequence_1`/`full_sequence_2`
 in the metrics CSV) were then independently cross-validated by chaining
 into Skill A — cofolding the designed antibody (both chains, as a real
-Fab) against TROP2 from scratch via Boltz-2 and OpenFold3, neither of
+Fab) against Target A from scratch via Boltz-2 and OpenFold3, neither of
 which was involved in scoring the original design:
 
 | Source | ptm | ipTM |
@@ -597,24 +655,31 @@ co_folding/
 │   ├── design/SKILL.md               # Skill A/B, cofolding + antibody/binder design
 │   ├── database/SKILL.md              # create/recreate databases/
 │   ├── splits/SKILL.md                 # build databases/splits/
-│   └── epitope_guided_design/SKILL.md   # predict + steer via binding_types conditioning
+│   ├── epitope_guided_design/SKILL.md   # predict epitope + steer via binding_types conditioning
+│   └── design_ranking/SKILL.md          # Skill D: down-select a campaign into a diverse plausible shortlist
 ├── src/                        # shallow clones, editable-installed — real source, not opaque pip packages
 │   ├── boltz/  openfold3/  protenix/  boltzgen/
 ├── weights/                    # permanent model weights (not a cache — see above)
 │   ├── boltz2/  openfold3/  protenix/  protenix_root/  boltzgen/
-├── .venvs/                     # one isolated venv per backend (+ data-fetch, epitope-prediction, mmseqs2)
+├── .venvs/                     # one isolated venv per backend (+ data-fetch, epitope-prediction,
+│                                  #   epiformer, germinal, antifold, mmseqs2 — antifold pins torch==2.3.1
+│                                  #   and MUST stay isolated; see scripts/setup_env.py ISOLATED_TOOLS)
 ├── configs/examples/            # minimal example JobSpecs, used by the smoke test
 ├── data/
 │   ├── designs/                 # every run_design.py / boltzgen run output lands here
 │   └── boltzgen_examples/        # sparse clone of BoltzGen's example/ dir — Fab/nanobody scaffolds
 ├── databases/                   # local antibody-design database (see database skill)
 │   ├── src/                       # fetch code for every source, reproducible on a new machine
-│   ├── splits/                     # leak-free train/dev/test splits (see splits skill)
+│   ├── splits/                     # leak-free train/dev/test splits (README.md has the method + the rule)
 │   └── sabdab/  aacdb/  ab_bind/  andd/  abdesign_db/  asd/
 ├── experiments/
-│   └── epitope_prediction/         # epitope model + binding_types steering (see epitope_guided_design skill)
-│       ├── PLAN.md                    # methodology, model comparison, downstream steering results
-│       ├── data/  model/  eval/  steering/
+│   ├── epitope_prediction/         # epitope model + binding_types steering (see epitope_guided_design skill)
+│   │   ├── PLAN.md                    # methodology, model comparison, downstream steering results
+│   │   ├── data/  model/  eval/  steering/
+│   ├── scoring_calibration/        # can any metric rank designs? EXPERIMENT_01-03 + analysis scripts
+│   ├── finetuning/                 # putting binding knowledge into weights (IMPROVE_DESIGN §6.3)
+│   ├── germinal_comparison/        # paused at milestone 1 of 7
+│   └── reports/                    # benchmark reports, JSON sidecars
 └── scripts/
     ├── _common.py                # shared paths/helpers (REPO_ROOT, WEIGHTS_DIR, venv_bin(), ...)
     ├── setup_env.py                # one-time environment setup for all four backends
@@ -647,7 +712,7 @@ one modality shape each, without a general agent-callable tool wrapper.
 |---|---|---|---|
 | **OpenFold3** | Cofolding (primary) | ✅ Works cleanly, no workarounds | Apache 2.0 |
 | **Boltz-2** | Cofolding (fast/secondary) | ✅ Works with 2 documented flags (`--num_workers 0`, `--no_kernels`) | MIT |
-| **Protenix** | Cofolding (would-be tertiary) | ❌ **Blocked** — sm_121 has no compatible kernel for at least one op; not usable for anything until an aarch64-Blackwell torch build exists | Apache 2.0 |
+| **Protenix** | Cofolding (would-be tertiary) | ❌ **Blocked**, but a fix is now known — the failure is a plain `F.linear` bf16 GEMM against a torch build shipping sm_120 SASS with no PTX, and a nightly exposing `compute_120` was verified to run the failing ops. Needs the venv-scoped torch upgrade in `experiments/germinal_comparison/PLAN.md` §2a to be applied and re-smoke-tested | Apache 2.0 |
 | **BoltzGen** | De novo antibody/binder design | ✅ Works with 1 documented flag (`--num_workers 0`) | MIT |
 | AlphaFold3 | (reference only, not used) | N/A — not installed | Weights: CC-BY-NC-SA, bars commercial use |
 | RFantibody | (considered, not used) | N/A — assumes CUDA 11.8 + DGL, open aarch64 wheel bugs; BoltzGen chosen instead as lower-risk | MIT (inference); training code exclusively licensed to Xaira Therapeutics |
@@ -684,7 +749,7 @@ completed pipeline stages aren't redone.
 to your job — this machine may have other GPU processes running (a local
 LLM server, a desktop compositor, etc.) that can be mistaken for your job's
 progress if you're not filtering to the specific PID(s) you launched. This
-mistake actually happened during this project's own TROP2 campaign: an
+mistake actually happened during this project's own Target A campaign: an
 unrelated `llama-server` process sitting on 32GB was mistaken for a stalled
 BoltzGen run for several hours. Always filter to your own tracked PID(s)
 specifically.

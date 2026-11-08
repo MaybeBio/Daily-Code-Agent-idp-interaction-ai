@@ -1709,6 +1709,58 @@ class StructureTest(test_utils.StructureTestCase):
             atom_b_factor=np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
         )
 
+  def test_copy_and_update_from_res_arrays_empty_changes(self):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A', 'A'], dtype=object),
+        res_id=np.array([1, 1], dtype=np.int32),
+        atom_name=np.array(['N', 'CA'], dtype=object),
+    )
+    self.assertIs(struc.copy_and_update_from_res_arrays(), struc)
+
+  @parameterized.parameters(
+      dict(atom_name=['CA', 'CB']),
+      dict(atom_name=np.array(['CA', 'CB'], dtype='<U2')),
+      dict(atom_name=np.array(['CA', 'CB'], dtype=np.dtypes.StringDType())),
+  )
+  def test_copy_and_update_from_res_arrays_string_columns(self, atom_name):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A', 'A', 'B'], dtype=object),
+        res_id=np.array([1, 1, 2], dtype=np.int32),
+        atom_name=np.array(['N', 'CA', 'C'], dtype=object),
+    )
+    updated = struc.copy_and_update_from_res_arrays(atom_name=atom_name)
+    self.assertEqual(updated.atom_name.dtype, object)
+    np.testing.assert_array_equal(
+        updated.atom_name, np.array(['CA', 'CA', 'CB'], dtype=object)
+    )
+
+  def test_copy_and_update_from_res_arrays_empty_structure(self):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A'], dtype=object),
+        res_id=np.array([1], dtype=np.int32),
+        atom_name=np.array(['CA'], dtype=object),
+    ).filter(np.array([False]))
+    updated = struc.copy_and_update_from_res_arrays(
+        atom_name=[], atom_b_factor=[]
+    )
+    self.assertEqual(updated.num_atoms, 0)
+    self.assertEqual(updated.atom_name.dtype, object)
+
+  @parameterized.parameters(
+      dict(changes=dict(atom_name='CA')),
+      dict(changes=dict(atom_b_factor=np.array(1.0))),
+      dict(changes=dict(atom_x=np.zeros((2, 3)))),
+      dict(changes=dict(atom_key=np.array([0, 1]))),
+  )
+  def test_copy_and_update_from_res_arrays_invalid_inputs(self, changes):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A', 'B'], dtype=object),
+        res_id=np.array([1, 2], dtype=np.int32),
+        atom_name=np.array(['N', 'CA'], dtype=object),
+    )
+    with self.assertRaises(ValueError):
+      struc.copy_and_update_from_res_arrays(**changes)
+
   @parameterized.parameters([True, False])
   def test_add_bonds(self, with_preexisting_bonds):
     if with_preexisting_bonds:
@@ -3978,6 +4030,8 @@ class StructureTest(test_utils.StructureTestCase):
           )
 
     with self.subTest('global_fields'):
+      self.assertIsNotNone(strucs[0].bioassembly_data)
+      self.assertIsNone(strucs[1].bioassembly_data)
       self.assertIsNone(concatted.release_date)
       self.assertIsNone(concatted.resolution)
       self.assertIsNone(concatted.structure_method)
@@ -4002,6 +4056,14 @@ class StructureTest(test_utils.StructureTestCase):
       self.assertEqual(
           cif['_atom_site.label_asym_id'], cif['_atom_site.auth_asym_id']
       )
+
+  def test_concat_single_structure_reuses_atom_and_bond_tables(self):
+    struc = structure.from_mmcif(test_utils.read_test_cif_file('2pv7'))
+    concatted = structure.concat([struc])
+    self.assertIsNotNone(struc.bioassembly_data)
+    self.assertIsNone(concatted.bioassembly_data)
+    self.assertIs(concatted.atoms_table, struc.atoms_table)
+    self.assertIs(concatted.bonds, struc.bonds)
 
   def test_enumerate_atoms(self):
     struc = self.make_test_structure(
@@ -4476,6 +4538,30 @@ class StructureTest(test_utils.StructureTestCase):
         ),
     )
 
+  def test_drop_non_standard_atoms_sparse_res_keys(self):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A', 'A', 'B', 'B'], dtype=object),
+        res_id=np.array([1, 1, 1, 1], dtype=np.int32),
+        res_name=np.array(['ALA', 'ALA', 'UNK', 'UNK'], dtype=object),
+        atom_name=np.array(['CA', 'BAD', 'CA', 'CB'], dtype=object),
+    )
+    sparse_res = struc.residues_table.copy_and_update(
+        key=np.array([10_000, 200_000], dtype=np.int64)
+    )
+    sparse_atoms = struc.atoms_table.copy_and_update(
+        res_key=np.array([10_000, 10_000, 200_000, 200_000], dtype=np.int64)
+    )
+    sparse = struc.copy_and_update(
+        residues=sparse_res, atoms=sparse_atoms, skip_validation=True
+    )
+    filtered = sparse.drop_non_standard_atoms(
+        ccd=chemical_components.Ccd(), drop_unk=True, drop_non_ccd=True
+    )
+    self.assertNotIn('index_by_key', filtered.residues_table.__dict__)
+    np.testing.assert_array_equal(
+        filtered.atom_name, np.array(['CA'], dtype=object)
+    )
+
   def test_chain_boundaries_empty_structure(self):
     struc = structure_lib.make_empty_structure()
     struc = struc.copy_and_update(
@@ -4759,6 +4845,31 @@ class StructureTest(test_utils.StructureTestCase):
     self.assertLen(empty_split, 1)
     self.assertEqual(empty_split[0].num_chains, 0)
     self.assertEqual(empty_split[0].num_atoms, 0)
+
+  def test_drop_non_standard_atoms_empty_structure_returns_copy(self):
+    empty = structure.make_empty_structure()
+    filtered = empty.drop_non_standard_atoms(
+        ccd=chemical_components.Ccd(), drop_unk=True, drop_non_ccd=True
+    )
+    self.assertIsNot(filtered, empty)
+    self.assertEqual(filtered.num_atoms, 0)
+
+  def test_drop_non_standard_atoms_none_res_name(self):
+    struc = self.make_test_structure(
+        chain_id=np.array(['A', 'A'], dtype=object),
+        res_id=np.array([1, 2], dtype=np.int32),
+        res_name=np.array(['ALA', None], dtype=object),
+        atom_name=np.array(['CA', 'CA'], dtype=object),
+    )
+    ccd = chemical_components.Ccd()
+    kept = struc.drop_non_standard_atoms(
+        ccd=ccd, drop_unk=True, drop_non_ccd=False
+    )
+    np.testing.assert_array_equal(
+        kept.res_name, np.array(['ALA', None], dtype=object)
+    )
+    with self.assertRaises(ValueError):
+      struc.drop_non_standard_atoms(ccd=ccd, drop_unk=True, drop_non_ccd=True)
 
   def test_split_by_chain_intra_and_inter_chain_bonds(self):
     with_bonds = structure.Structure(

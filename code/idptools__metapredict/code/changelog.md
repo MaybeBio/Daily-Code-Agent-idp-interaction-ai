@@ -1,0 +1,321 @@
+## Changelog
+This section is a log of recent changes to metapredict. My hope is that as I make changes, this section helps you understand why they were made and whether they will break any of your current workflows. The first major changes were made in the 0.56 release, so tracking starts there. Reasons are not provided for bug fixes because the reason can be assumed to be fixing the bug...
+
+#### V3.1.0 (Oct. 2026)
+Version 3.1.0 is a "major" update that adds new functionality, bug fixes, and performance improvements.
+
+Changes:
+
+* Automatic device selection is now chosen per network. When you don't specify a device, each disorder network picks the hardware that is actually fastest for it: the small V1 and V2 networks prefer CPU over Apple Silicon MPS (they are faster on CPU), while the larger V3 network prefers MPS. A CUDA GPU is always used first when available. This fixes a slowdown where the tiny legacy networks ran much slower on MPS than on CPU. You can still pin any device with `device=` (single-sequence predictions continue to run on CPU). Note that CPU and GPU results can differ very slightly due to floating-point differences, so set `device='cpu'` if you need bit-for-bit reproducible scores.
+
+* Added a `batch_size` option to `predict_disorder()`, `predict_pLDDT()`, `predict_disorder_batch()`, `predict_disorder_fasta()`, `predict_pLDDT_fasta()` and `predict_disorder_caid()`, and a matching `-b`/`--batch-size` option to `metapredict-predict-disorder`, `metapredict-predict-idrs`, `metapredict-predict-pLDDT` and `metapredict-caid` (their `--help` lists each network's default batch size on each device). This controls how many sequences are processed per forward pass and can be tuned for your hardware — larger batches are typically much faster on a GPU/MPS. It must be a power of two and at least 32. Changing the batch size mainly affects speed and memory; because floating-point rounding depends on which sequences share a batch, scores can differ very slightly between batch sizes (up to ~1e-6 for disorder, ~3e-4 for pLDDT on the 0-100 scale), which occasionally changes the fourth decimal place of a rounded score.
+
+* Default batch sizes are now selected per network and per device (used when you don't pass `batch_size`): 256 sequences on CPU and CUDA GPUs and 512 on Apple Silicon (MPS), except pLDDT V1 on CPU, which uses 32. This substantially speeds up batch prediction for V1 and V2, where the previous small default left things badly underutilized. This increases the memory footprint (V1 and V2 batch sizes were previously fixed at 32; now they default to 256, or 512 on MPS), but if memory is an issue, you can tune the footprint with the `batch_size` option. The new FAQ page in the documentation shows how memory use scales with batch size and sequence length.
+
+* Added `predict_disorder_stream()`, a streaming version of `predict_disorder()` for FASTA files that are too large to fit in memory. It reads the file lazily, predicts sequences in chunks (so batch-mode speed is retained), and yields `(header, prediction)` results one sequence at a time, keeping peak memory bounded by the chunk size rather than by the size of the file. This makes it possible to predict disorder for files with tens or hundreds of millions of sequences on a normal machine. This feature relies on `protfasta`'s streaming reader (added in `protfasta` 0.1.19). Every record is yielded, including records that share a header, and a record with no sequence raises an error that names it. The default `chunk_size` is 20,000 sequences, which on an Apple-silicon GPU streamed 1.5x faster than 5,000 for little extra memory.
+
+* Speed up per-residue sequence encoding used for every prediction by fully vectorizing it and encoding sequences directly as 32-bit floats (instead of 64-bit floats). This also removes an incompatibility that could prevent predictions from running on the MPS (Apple Silicon) backend.
+
+* Fixed a bug where `predict_disorder_domains()` and the related domain functions raised a `TypeError` when the compiled Cython domain-decomposition module was not available for the current environment (for example, in a development install or under a mismatched Python version). metapredict now falls back to the equivalent pure-Python implementation and prints a single warning, so domain prediction works everywhere. Recompiling the Cython module restores full speed.
+
+* Fixed a crash in the graphing functions when a list of colors was passed to `shaded_region_color` without also passing `shaded_regions`.
+
+* Fixed the `split_fasta()` helper, which previously failed on every call.
+
+* `pytorch_lightning` is no longer a dependency: the V3 and pLDDT V2 checkpoints are read with plain PyTorch via the new `BRNN_MtM_lightning.from_checkpoint()` (identical predictions, `import metapredict` ~1/3 faster).
+
+* Returning scores as lists (`return_numpy=False`, used by the FASTA functions and command-line tools) is faster: the rounding is now vectorized (about 8x faster for that step) and gives exactly the same values.
+
+* Batch predictions are exactly reproducible: sequences are batched in a fixed order (longest first, then alphabetical) instead of one that changed every session (scores shift only at ~1e-7).
+
+* Predictions on NVIDIA GPUs now match CPU much more closely. On Ampere-or-newer NVIDIA GPUs (e.g. RTX 30xx/A-series and later), PyTorch lets cuDNN use TF32 by default, a reduced-precision mode that keeps only ~3 significant digits in the network's matrix maths. This shifted CUDA predictions away from CPU by up to ~1e-3 on disorder scores and ~0.1 on pLDDT scores (0-100 scale), by an amount that depended on which sequences were batched together. metapredict now switches TF32 off while it predicts, so CUDA matches CPU to ~1e-4 on pLDDT and ~1e-6 on disorder; we measured no loss of speed for these networks. Because TF32 is a process-wide PyTorch setting, metapredict restores your own setting as soon as each prediction finishes, so any other PyTorch code you run in the same session is unaffected. CPU and Apple Silicon (MPS) predictions are unchanged.
+
+* Prebuilt wheels, including the compiled Cython extension, for Linux (x86_64, aarch64), macOS (Apple silicon), and Windows (64-bit) on Python 3.9–3.14, built by `.github/workflows/wheels.yml`, which installs every wheel and checks its compiled extension with the new `devtools/check_cython_extension.py`. CI (`.github/workflows/ci.yml`) now also runs on Windows and fails if the extension doesn't load.
+
+* Minimum `protfasta` is now 0.1.25, which raises an error for FASTA records with no sequence rather than silently dropping them.
+
+* Bug fixes:
+  - `disable_pack_n_pad=True` with `normalized=False, round_values=True` rounded to whole numbers instead of 4 decimal places.
+  - `override_folded_domain_minsize` was ignored by every `return_domains=True` path, and `predict_disorder_batch()` also ignored `normalized`.
+  - CLI `-d 0` (a GPU index) raised an internal error; unrecognized devices now give a clear error.
+  - `metapredict-graph-disorder --disorder-threshold` always crashed, and `metapredict-predict-idrs --threshold` only worked with the compiled Cython module. Thresholds must now be numbers in [0, 1] when domains are requested.
+  - `predict_pLDDT()` now enforces the CUDA maximum sequence length (65535), like `predict_disorder()`.
+  - Empty sequences in a list or dict raise a `MetapredictError` naming them, instead of an opaque PyTorch error.
+  - Batch `predict_pLDDT(..., return_numpy=False)` returned `np.float32` values instead of floats.
+  - `DisorderObject.meta` was only sometimes set; it is now always an alias of `.disorder`.
+  - The length-mismatch error in `predict_disorder_domains_from_external_scores()` was hidden behind a generic message.
+  - `print_performance()` raised `NameError` on a bad version and rejected `'legacy'` and integer versions. `MetapredictError` can now also be imported directly from `metapredict`.
+  - The progress bar was wrong with `force_disable_batch=True`, and the short-sequence domain notice is now one warning instead of a line printed per sequence.
+  - `metapredict-caid` / `predict_disorder_caid()` named each output file after the raw FASTA header, so any header containing `|` (every UniProt header) gave a file name that can't exist on Windows, and `/` failed everywhere. Characters that aren't allowed in file names are now replaced with `_` (the header inside the file is unchanged), and headers that would share a file name raise an error instead of overwriting each other.
+  - Three test fixture files were named after a UniProt header containing `|`, which made `git clone` and `pip install` fail on Windows. They are renamed, and a new test checks that every file in the package has a name Windows accepts. This addresses [issue 21](https://github.com/idptools/metapredict/issues/21).
+  - Predicting a single sequence (passed as a string) silently ignored `device`, so a misspelled device name went unnoticed. The device name is now checked (an unrecognized name raises a `MetapredictError`); single sequences still run on the CPU, and the device doesn't need to be available.
+  - Several command-line tools printed a Python traceback instead of a clear error: an invalid `--mode` or `-v`, an out-of-range `--threshold` / `--disorder-threshold`, an unavailable device in `metapredict-predict-pLDDT` and `metapredict-predict-idrs`, a missing input file or an invalid residue in the graphing tools and `metapredict-caid`, and an unknown accession or name (or a sequence that can't be graphed) in `metapredict-uniprot` and `metapredict-name`. `metapredict-predict-idrs --mode shephard-domains-uniprot` also left a half-written file when a header had no `|`; headers are now checked before anything is written. These errors, and the FASTA tools' existing error messages, are now a one-line message on stderr with a non-zero exit status.
+  - A FASTA file with no sequences (or one where `--invalid-sequence-action remove` removed them all) silently produced empty output; the command-line tools now stop with an error and don't write anything.
+  - The `--help` text of `metapredict-predict-disorder -o` and `metapredict-graph-pLDDT -o` gave the wrong default output names, and several tools' help text had typos.
+  - `metapredict-predict-idrs` and `metapredict-predict-pLDDT` kept going after a missing input file, `metapredict-predict-idrs` didn't close its SHEPHARD output files, and `metapredict-uniprot -o` printed the wrong output path.
+
+* Packaging: `metapredict/analysis` (now including `creating_V2_and_V3_scores.py`) and test output are no longer shipped; the extension builds without NumPy deprecation warnings; the CLI scripts also run with `python -m`.
+
+* Test suite and tox:
+  - tox environments now run the tests against the wheel they build and install. Previously pytest imported the uncompiled source tree, so the compiled Cython extension was never tested. Each environment also checks the extension first (`devtools/check_cython_extension.py`).
+  - `tox -m python` runs the suite on every supported Python (3.9–3.14).
+  - New `linux` environment: `tox -e linux [-- <tox args>]` runs any tox environment inside an isolated Linux container (Docker), so Linux can be tested from a Mac. Your working tree is copied in read-only, PyTorch is CPU-only, and `METAPREDICT_DOCKER_PLATFORM=linux/amd64` selects x86_64 (`devtools/linux/Dockerfile`, `devtools/linux/run_tox_in_docker.sh`).
+  - tox passes `UV_TORCH_BACKEND` through, so `UV_TORCH_BACKEND=cpu` (no GPU) or `UV_TORCH_BACKEND=auto` (CUDA build matching the NVIDIA driver) chooses which PyTorch is tested on Linux.
+  - tox only needs pip: `pip install tox` is enough, as tox installs the tox-uv plugin (and with it uv) itself.
+  - Removed the pytorch_lightning version sweep and its constraint files.
+  - The CLI tests, which were excluded by `pytest.ini` and out of date, run again. They now check the tools' output against the Python API and run the checkout's code via `python -m`, not whatever copy is installed.
+  - The suite no longer deletes files from an `output/` folder relative to wherever pytest is launched; it only uses `metapredict/tests/output`.
+  - New regression tests (`test_bug_regressions.py`, plus new streaming tests) cover the fixes above.
+  - `README.md` now explains in detail how to run the tests with tox on macOS and Linux (including CUDA and Docker), and `devtools/README.md` is updated to match.
+
+* metapredict now supports Python 3.9 through 3.14 and declares minimum versions for its major dependencies: PyTorch 2.3 or later (the oldest PyTorch release compatible with NumPy 2.x; earlier PyTorch was built against NumPy 1.x and fails to import under NumPy 2.x), NumPy 2.0 or later, and scipy 1.13 or later (the oldest scipy compatible with NumPy 2.x). Building from source now requires Cython 3.0 or later. (`cython`, which is only needed to build metapredict, is no longer listed as a runtime dependency.) The packaging and continuous-integration setup was also modernized: SPDX license metadata, GitHub Actions in place of Travis CI, removal of obsolete configuration, and uv-based harnesses for testing across Python, PyTorch, scipy, NumPy and Cython versions locally.
+
+* Documentation overhaul: corrected a number of inaccuracies across the Python API and command-line docs (broken examples, incorrect defaults and parameter names, and several undocumented functions and options), and added status badges and a clickable citation to the README; the CSV output format (header, sequence, scores), what a from-source install needs, and how to run the tests are now documented, the command-line docs note that a GPU index such as `-d 0` works, and the V3 network's built-in description no longer calls it unreleased. A new FAQ page explains how metapredict works (what the scores mean, which network to use, how IDRs are found, what predicted pLDDT means), answers common questions about inputs and results (non-standard residues, sequence length limits, why scores can differ slightly, speed and citing), and explains how much memory predictions need and how that scales with batch size and sequence length, with measured numbers for every network on CPU and GPU. Every user-facing function, option and command-line flag is now documented, and the docstrings behind the API reference were corrected (wrong defaults, parameters that didn't exist, and the old one-size-fits-all device order).
+
+
+#### V3.0.2 (May 2026)
+Changes:
+
+* Updated `metapredict-caid` and CAID output logic: The default IDR/folded domain binarization now uses an algorithmic approach to decompose IDRs and folded domains, rather than a strict per-residue cutoff. This provides more biologically meaningful domain assignments and better reflects the underlying disorder/folded state segmentation.
+
+
+#### V3.0.1 (November 2024)
+Changes:
+
+* Fixed bug that caused memory issues when running many predictions.
+
+
+#### V3.0 (November 2024)
+Changes:
+
+* Made the default pLDDT prediction network V2
+
+* Removed alphaPredict as a dependency
+
+* Made the default disorder prediction network V3
+
+* Updated user-facing pLDDT predictions to allow specification of pLDDT network
+
+* Added compatibility for doing batch predictions of pLDDT
+
+* Added new pLDDT prediction network (V2)
+
+* Overhaul of backend to accomadate pytorch-lightning architecture
+
+* Massive change to how predictor is implemented. You can now do batch prediction on CPU, GPU (CUDA), or Mac GPU (MPS) for V1 (legacy), V2, and V3. 
+
+* Update to user-facing docs to make changes of setting 'legacy=True' to specifying "version='V#'" when using different version of metapredict.
+
+* Update to metapredict-uniprot to work with new version of getSequence. Allows for getting different protein isoforms if specified. 
+
+* Update to how networks used in metapredict are tracked. Now everything needs to be added to /backend/network_parameters.py to maintain compatibility between old and future networks. 
+
+* Reimplementation of pack-n-pad. Due to larger batch size in V3 network, it will likely be more useful to have fewer batches by using packing and padding instead of size collection under some scenarios. 
+
+#### V2.65 (October 2024)
+Changes:
+
+* Changed tag to 2.65. Yep, that's it. Necessary to get a clean build up to Pypi.
+
+#### V2.64 (October 2024)
+Changes:
+
+* Changed over to use pyproject.toml
+* Removed max Python version of 3.12
+* Changed alphaPredict to use 1.2 to get rid of Torch warning
+
+#### V2.63 (November 2023)
+Changes:
+
+* Changed max version of Python compatibility to 3.11 because of issues in 3.12
+
+* Changed line 207 in /backend/meta_predict_disorder.py from *output_values.append(round(float(i), 4))* to *output_values.append(round(float(i[0]), 4))* to git rid of Numpy deprecation warning when using Numpy 1.25 or later. Adding to change log in case this causes mayhem, but is passing all tests and additional local tests at this time so should be OK. 
+
+
+#### V2.62 (metapredict V2-FF) (July 2023)
+Changes:
+
+* Made sure predictions used `torch.no_grad()`
+
+* Removed torch dependency on < 2.0.
+
+* Bug fix: When running `metapredict-predict-idrs` using `--mode shephard-domains` and `--mode shephard-domains-uniprot` in the 2.6 update, we accidentally return the start index of each IDR as the 0th indexed position, but SHEPHARD uses 1-index inclusive indexing. This has now been fixed.
+
+* Bug fix: We discovered that when using torch 1.13.0 pack-n-pad (which is not the default and must be specifically requested) can lead to some small numerical inaccuracies in disorder predictions (<0.01). The reason this can be problematic is that it MAY alter the boundary between a disordered and folded domain when compared to the single iterative analysis. This issue is fixed in torch 2.0.1 and as such we now internally require torch 2.0.1 if pack-n-pad is going to be used, otherwise we fall back to size-collect. Note that this approach avoids a hard dependency on torch 2.0.1. To be clear, using pack-n-pad is currently impossible from the command line and would require someone to explicitly have requested it from the API.
+
+#### V2.61 (metapredict V2-FF) (July 2023)
+Changes:
+
+
+* Renamed batch algorithms from mode 1 and mode 2 to size-collect and pack-n-pad.
+
+* Default batch mode is always `size-collect` which in most cases is faster and is always available. You can force `pack-n-pad`
+
+#### V2.6 (metapredict V2-FF) (May 2023)
+Changes:
+
+* V2.6 represents an update of metapredict to a version we refer to as metapredict V2-FF. V2-F22 provides a dramatic improvement in prediction performance when `batch_mode()` is used. On CPUs, this provides a 5-20x improvement in performance. On GPUs, this enables proteome-wide prediction in seconds. 
+
+* Removed explicit multicore support and replaced with implicit parallelization in via `batch_predict()`.
+
+* `batch_predict()` is now called in non-legacy predict for `predict_disorder_fasta()`, and can also be called via a `predict_disorder_batch()` which can take either a list or dictionary of sequences. 
+
+* From command-line tools, `metapredict-predict-idrs`, and `metapredict-predict-disorder` will also use batch mode if legacy=False (default), which as well as being much faster now provide a status bar.
+
+* Note that this update adds `tqdm` as a dependency for metapredict
+
+
+#### V2.5 (March 2023)
+Changes:
+
+* Added the first multicore support to metapredict. Currently limited to metapredict-predict-disorder functionality.
+
+
+#### V2.4.3
+Changes:
+
+* Updated the default names for `metapredict-predict-idrs` so that the FASTA output file is now called `idrs.fasta` instead of the inappropriate `shephard_idrs.tsv`.
+* Added link to the new batch-mode Google Colab notebook!
+
+#### V2.4.2 
+Changes:
+
+* Merged pull request from @FriedLabJHU to make f-strings more Pythonic. Thanks!!
+* Changed `return_normalized` keyword to `normalized` in `meta.predict_pLDDT()` for consistency with other functions
+* Added sanity check in case a passed sequence is an empty string (h/t Broder Schmidt)
+* Added docs for the mode keyword in `meta.percent_disorder()`, so this is actually obvious to understand (h/t Broder Schmidt)
+* Added several additional tests and updated the docs
+
+#### V2.4.1
+Changes:
+
+* Some minor bug fixes and updates to code 
+
+#### V2.3 
+Changes:
+
+* Merged pull request from @FriedLabJHU to fix keyword name `cutoff` to `disorder_threshold` in `meta.percent_disorder()`. Thanks!!
+
+* Added the `mode` keyword into `meta.percent_disorder()` so disorder can be predicted in terms of what percentage of residues fall within IDRs, as well as what percent are above some fixed threshold.
+
+#### V2.2
+
+Changes: 
+Fixed bug in metapredict-name command that could result in the organism name being named twice in the title of the graph.
+
+#### V2.1
+
+Changes:
+Added functionality to graph the disorder of a protein by specifying its common name using the *metapredict-name* command.
+
+
+#### V2.0
+
+Changes:
+Massive update to the network behind metapredict to improve accuracy. Implementation of code to keep the original network accessible to users. Changes to predict_disorder_domain functions where a DisorderObject is no returned and access to values are used by calling properties from the generated object. Graphing functionality updated to accommodate new cutoff value for the new network at 0.5. If the original metapredict network is used, then the cutoff value automatically resets to the original value of 0.3. Tests updated. Added metapredict-predict-idrs command to the command line. Added ability to predict disorder domains from python using external scores.
+
+
+#### V1.51
+
+Changes:
+Updated to require V1.0 of alphaPredict for pLDDT scores. This improves accuracy from over 9% per residue to about 8% per residue for pLDDT score predictions. Documentation was updated for this change.
+
+
+#### V1.5
+
+Changes:
+Fixed bug causing some functions to fail when getting sequences from Uniprot.
+Added information on citing metapredict because the final publication went live.
+
+
+#### V1.4
+
+Change:
+For clarity, previous functions that used the term 'confidence' such as *graph_confidence_uniprot()* were changed to use the term pLDDT rather than confidence. This is to clarify that the confidence scores are AlphaFold2 pLDDT confidence scores and not scores to reflect the confidence that the user should have in the metapredict disorder prediction. For command-line usage where confidence scores are optional (such as metapredict-graph-disorder), when a *-c* or *--confidence* flag used to be used, now a *-p* or *--pLDDT* flag is used to graph confidence scores. This is similarly reflected in Python where now you must use *pLDDT_scores=True* instead of *confidence_scores=True*.
+
+#### V1.3
+
+Change:
+Added functionality to generate predicted AlphaFold2 pLDDT confidence scores. Can get scores or generate graphs from Python or command-line. Can also generate graphs with both predicted disorder and predicted pLDDT confidence scores. Also added functionality to predict disorder domains using scores from a different disorder predictor. 
+
+#### V1.2
+
+Change:
+Major update. Changed some basic functionality. Made it such that you don't need to specify to save (for disorder prediction values or graphs). Rather, if a file path is specified, the files will be saved. Updated graphing functionality to allow for specifying the disorder cutoff line and to allow users to highlight various regions of the graph. Changed import such that you can now just use import metapredict as meta in Python (as opposed to import metapredict and then from metapredict import meta). Lots of backend changes to make metapredict more stable. Added additional testing. Updated documentation. Standardized file reading/writing. Made it so user can specify file type of saved graphs. Added backend meta_tools.py to handle the busywork. Changed version numbering for networks. Updated code to avoid OMPLIB issue (known bug in previous versions). Updated all command-line tools to match backend code.
+
+#### V1.1
+
+Change:
+Fixed some bugs.
+
+#### V1.0
+
+Change:
+Added functionality to generate graphs using a Uniprot ID as the input from command line. Added functionality to predict disorder domains. Added functionality to predict/graph disorder and predict disorder domains using a Uniprot ID from Python. Updated tests to include testing new functionality.
+
+
+#### V0.61
+
+Change:
+Added functionality to predict or graph a disordered sequence from the command line by directly inputting the sequence. This can only do one sequence at a time and does not save the disorder values or graph. It is meant to provide a very quick and easy way to check something out.
+
+#### V0.60
+
+Change:
+Added functionality to specify the horizontal lines that appear across the graphs rather than only having the option of having the dashed lines appear at intervals of 0.2. This functionality is in both Python and the command line.
+
+#### V0.58
+
+Change:
+Updated the network with a newly trained network (using the same dataset as the original) that is slightly more accurate.
+
+Reason:
+I am always trying to find ways to make metapredict more accurate. When I manage to make the predictor better, I will update it.
+
+#### V0.57
+
+Change:
+Bug fix that could result in prediction values to six decimal places in some scenarios
+
+Change:
+Changed titles for graphs generated by ``metapredict-graph-disorder`` to be 14 characters instead of 10. This is reflected in the title graph and the saved files.
+
+Reason:
+The 10 character save file was occasionally the same for multiple proteins. This resulted in the inability to discern which protein corresponded to which graph and could result in overwriting previously generated graphs. The 14 characters should be long enough to keep unique names for all proteins being analyzed.
+
+Change:
+Fixed bug that could result in crashing due to short fasta headers.
+
+
+#### V0.56
+
+Change:
+Number of decimals in predictions was reduced from 6 to 3.
+
+Reason:
+It is not necessary to have accuracy out to 6 decimal places.
+
+Change:
+Added functionality to use . to specify current directory from command line.
+
+Reason:
+Improve functionality.
+
+Change:
+-DPI flag changed to -dpi in command line graphing function
+
+Reason:
+It was annoying to have to do all caps for this flag.
+
+Change:
+The ``predict-disorder`` command is now ``metapredict-predict-disorder`` and the ``graph-disorder`` command is now ``metapredict-graph-disorder``
+
+Reason:
+This will help users be able to use auto complete functionality from the command line using tab to pull up the graph or predict disorder commands while only having to remember metapredict.
+
+Change:
+The output for `.csv` files will now have a comma space between each value instead of just a comma.
+
+Reason:
+Improve readability.
+

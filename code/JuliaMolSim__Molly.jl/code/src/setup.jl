@@ -11,8 +11,8 @@ export
     add_position_restraints
 
 """
-    place_atoms(n_atoms, boundary; min_dist=nothing, max_attempts=100,
-                rng=Random.default_rng())
+    place_atoms(n_atoms, boundary; min_dist=zero(Molly.length_type(boundary)),
+                max_attempts=100, rng=Random.default_rng())
 
 Generate random coordinates.
 
@@ -64,8 +64,9 @@ function place_atoms(n_atoms::Integer,
 end
 
 """
-    place_diatomics(n_molecules, boundary, bond_length; min_dist=nothing,
-                    max_attempts=100, aligned=false, rng=Random.default_rng())
+    place_diatomics(n_molecules, boundary, bond_length;
+                    min_dist=zero(Molly.length_type(boundary)), max_attempts=100,
+                    aligned=false, rng=Random.default_rng())
 
 Generate random diatomic molecule coordinates.
 
@@ -487,8 +488,11 @@ Each residue is matched to a residue template of the force field, and a
     `Float64` by default, or `float_type` on backends that do not support
     `Float64` such as Metal.
 - `dist_cutoff=1.0u"nm"`: cutoff distance for the non-bonded interactions.
-- `dist_buffer=0.2u"nm"`: distance added to `dist_cutoff` when calculating
-    classical neighbor lists every few steps.
+- `dist_buffer=nothing`: distance added to `dist_cutoff` when calculating
+    neighbor lists. When `neighbor_finder_auto_update=true` this only affects
+    performance and is chosen based on the neighbour finder type, when that is
+    `false` this needs to be selected to avoid atoms crossing the buffer distance
+    and defaults to 0.2u"nm".
 - `constraints=:none`: which constraints to apply during the simulation, options
     are `:none`, `:hbonds` (bonds involving hydrogen), `:allbonds` (all bonds)
     and `:hangles` (all bonds plus H-X-H and H-O-X angles). Note that not all options
@@ -513,8 +517,7 @@ Each residue is matched to a residue template of the force field, and a
 - `dispersion_correction=nothing`: whether to use the long-range dispersion correction,
     [`LJDispersionCorrection`](@ref), or [`DExpDispersionCorrection`](@ref) for a double
     exponential force field. Defaults to the force field setting, which defaults to `true`
-    for Lennard-Jones and `false` for the double exponential, as in OpenMM. Other `lj_cutoff`
-    values need `dispersion_correction=false`.
+    for Lennard-Jones and `false` for double exponential.
 - `hydrogen_mass=false`: if set to a number or unitful value (e.g. `2` or `2u"g/mol"`)
     then hydrogens are given the specified mass, which is transferred from the
     atom they are bonded to. This is applied before constraints are generated.
@@ -526,9 +529,14 @@ Each residue is matched to a residue template of the force field, and a
     [`GPUCellListNeighborFinder`](@ref) on non-CUDA compatible GPUs, falling back to
     [`DistanceNeighborFinder`](@ref) there when the box is too small for a cell list.
     `Nothing`, the type of `nothing`, gives a system with no neighbor finder.
-- `neighbor_finder_n_steps=10`: the number of steps between neighbor finder
-    updates. Can be tuned along with `dist_buffer` to ensure that particles
-    do not cross the buffer distance during the update interval.
+- `neighbor_finder_auto_update=true`: whether the neighbor finder rebuilds the
+    neighbor list only when the atoms have moved far enough since the last rebuild
+    that a pair within `dist_cutoff` could be missing from it, given the buffer
+    distance `dist_buffer`. If `true`, `neighbor_finder_n_steps` is ignored.
+- `neighbor_finder_n_steps=10`: with `neighbor_finder_auto_update=false`, the
+    number of steps between neighbor finder updates. Can be tuned along with
+    `dist_buffer` to ensure that particles do not cross the buffer distance during
+    the update interval.
 - `launch_config=CUDALaunchConfig()`: stored CUDA launch overrides for this
     system. Ignored on CPU and non-CUDA GPU backends.
 - `autotune_launch=true`: whether to autotune CUDA launch parameters at the end
@@ -564,7 +572,7 @@ function System(coord_file::AbstractString,
                 float_type=(array_type <: AbstractGPUArray ? Float32 : Float64),
                 float_type_high=default_float_type_high(array_type, float_type),
                 dist_cutoff=add_units(1.0, u"nm", units),
-                dist_buffer=add_units(0.2, u"nm", units),
+                dist_buffer=nothing,
                 constraints=:none,
                 rigid_water::Bool=false,
                 constraint_algorithm=SetupLINCS(),
@@ -574,6 +582,7 @@ function System(coord_file::AbstractString,
                 hydrogen_mass::Union{Bool, Number}=false,
                 center_coords::Bool=true,
                 neighbor_finder_type=nothing,
+                neighbor_finder_auto_update::Bool=true,
                 neighbor_finder_n_steps::Integer=10,
                 launch_config=CUDALaunchConfig(),
                 autotune_launch::Bool=true,
@@ -598,7 +607,7 @@ function System(coord_file::AbstractString,
     if dist_cutoff <= zero(dist_cutoff)
         throw(ArgumentError("dist_cutoff ($dist_cutoff) should be positive"))
     end
-    if dist_buffer < zero(dist_buffer)
+    if !isnothing(dist_buffer) && dist_buffer < zero(dist_buffer)
         throw(ArgumentError("dist_buffer ($dist_buffer) should not be less than zero"))
     end
     if !(constraints in (:none, :hbonds, :allbonds, :hangles))
@@ -693,7 +702,6 @@ function System(coord_file::AbstractString,
                             "PolynomialCutoff, found $lj_cutoff; pass " *
                             "dispersion_correction=false to use this cutoff without it"))
     end
-    dist_neighbors = dist_cutoff + dist_buffer
     T, TH = float_type, float_type_high
     if units
         E  = typeof(zero(T) * u"kJ * mol^-1")
@@ -1205,8 +1213,9 @@ function System(coord_file::AbstractString,
                   angles_il, tors_il, imps_il, tors_pad, imps_pad, htors_il, cmaps_il, cmaps_maps,
                   lj_exceptions_σ, lj_exceptions_ϵ, σs_14, ϵs_14, separate_lj14, eligible, special,
                   units, dist_cutoff, constraints, rigid_water, coul_method, lj_cutoff,
-                  neighbor_finder_type, neighbor_finder_n_steps, implicit_solvent,
-                  grad_safe, dist_neighbors, weight_14_lj, weight_14_coulomb, disp_corr,
+                  neighbor_finder_type, neighbor_finder_auto_update,
+                  neighbor_finder_n_steps, implicit_solvent,
+                  grad_safe, dist_buffer, weight_14_lj, weight_14_coulomb, disp_corr,
                   hydrogen_mass, strictness, launch_config, autotune_launch,
                   constraint_algorithm, n_threads)
 end
@@ -1436,8 +1445,8 @@ function System(T, TH, AT, atoms, coords, boundary, velocities, atoms_data, virt
                 impropers, torsion_inters_pad, improper_inters_pad, htors_il, cmaps_il, cmaps_maps,
                 lj_exceptions_σ, lj_exceptions_ϵ, σs_14, ϵs_14, separate_lj14, eligible, special,
                 units, dist_cutoff, constraints_type, rigid_water, nonbonded_method, lj_cutoff,
-                neighbor_finder_type, neighbor_finder_n_steps,
-                implicit_solvent, grad_safe, dist_neighbors, weight_14_lj,
+                neighbor_finder_type, neighbor_finder_auto_update, neighbor_finder_n_steps,
+                implicit_solvent, grad_safe, dist_buffer, weight_14_lj,
                 weight_14_coulomb, dispersion_correction,
                 hydrogen_mass, strictness, launch_config, autotune_launch, constraint_algorithm,
                 n_threads)
@@ -1653,46 +1662,58 @@ function System(T, TH, AT, atoms, coords, boundary, velocities, atoms_data, virt
     pairwise_inters = (lj, coul)
     specific_inter_lists = tuple(specific_inter_array...)
 
+    # Used in branch
+    dist_neighbors_gpucl = T(calc_dist_neighbors(dist_cutoff, dist_buffer, units,
+                                        neighbor_finder_auto_update, GPUCellListNeighborFinder))
     if neighbor_finder_type === Nothing
         neighbor_finder = nothing
     elseif neighbor_finder_type in (nothing, GPUNeighborFinder) && uses_gpu_neighbor_finder(AT) && !grad_safe
+        dist_neighbors = T(calc_dist_neighbors(dist_cutoff, dist_buffer, units,
+                                        neighbor_finder_auto_update, GPUNeighborFinder))
         excluded_pairs, special_pairs = dense_masks_to_pair_lists(eligible, special)
         neighbor_finder = GPUNeighborFinder(
             n_atoms=size(eligible, 1),
             # GPUNeighborFinder reuses Morton ordering and tile metadata across
             # `n_steps`, so its search radius needs the same buffer as the other
             # neighbor finders
-            dist_cutoff=T(dist_neighbors),
+            dist_cutoff=dist_neighbors,
             excluded_pairs=excluded_pairs,
             special_pairs=special_pairs,
+            auto_update=neighbor_finder_auto_update,
             n_steps=neighbor_finder_n_steps,
             array_type=AT,
             strictness=strictness,
         )
     elseif neighbor_finder_type in (nothing, GPUCellListNeighborFinder) &&
-                AT <: AbstractGPUArray && gpu_cell_list_suitable(boundary, dist_neighbors)
+                AT <: AbstractGPUArray && gpu_cell_list_suitable(boundary, dist_neighbors_gpucl)
         neighbor_finder = GPUCellListNeighborFinder(
+            dist_cutoff=dist_neighbors_gpucl,
             eligible=eligible,
             special=special,
+            auto_update=neighbor_finder_auto_update,
             n_steps=neighbor_finder_n_steps,
-            dist_cutoff=T(dist_neighbors),
             array_type=AT,
             ragged=false,
             strictness=strictness,
         )
     elseif neighbor_finder_type in (nothing, DistanceNeighborFinder) &&
                 (AT <: AbstractGPUArray || has_infinite_boundary(boundary))
+        dist_neighbors = T(calc_dist_neighbors(dist_cutoff, dist_buffer, units,
+                                        neighbor_finder_auto_update, DistanceNeighborFinder))
         neighbor_finder = DistanceNeighborFinder(
+            dist_cutoff=dist_neighbors,
             eligible=eligible,
             special=special,
+            auto_update=neighbor_finder_auto_update,
             n_steps=neighbor_finder_n_steps,
-            dist_cutoff=T(dist_neighbors),
             array_type=AT,
             strictness=strictness,
         )
     elseif neighbor_finder_type in (nothing, CellListMapNeighborFinder) && !(AT <: AbstractGPUArray)
         # CellListMap requires the cell list cutoff to fit twice in the box
         min_box_side = minimum(box_sides(boundary))
+        dist_neighbors = T(calc_dist_neighbors(dist_cutoff, dist_buffer, units,
+                                        neighbor_finder_auto_update, CellListMapNeighborFinder))
         if !has_infinite_boundary(boundary) && min_box_side < (2 * dist_neighbors)
             throw(ArgumentError("the minimum box side ($min_box_side) is less than " *
                     "2 * (dist_cutoff + dist_buffer) ($(2 * dist_neighbors)), which " *
@@ -1701,20 +1722,24 @@ function System(T, TH, AT, atoms, coords, boundary, velocities, atoms_data, virt
                     "neighbor_finder_type=DistanceNeighborFinder."))
         end
         neighbor_finder = CellListMapNeighborFinder(
+            dist_cutoff=dist_neighbors,
+            boundary=boundary,
             eligible=eligible,
             special=special,
+            auto_update=neighbor_finder_auto_update,
             n_steps=neighbor_finder_n_steps,
             x0=coords,
-            boundary=boundary,
-            dist_cutoff=T(dist_neighbors),
             strictness=strictness,
         )
     else
-        neighbor_finder = neighbor_finder_type(
+        dist_neighbors = T(calc_dist_neighbors(dist_cutoff, dist_buffer, units,
+                                        neighbor_finder_auto_update, neighbor_finder_type))
+        neighbor_finder = neighbor_finder_type(;
+            dist_cutoff=dist_neighbors,
             eligible=to_device(eligible, AT),
             special=to_device(special, AT),
+            auto_update=neighbor_finder_auto_update,
             n_steps=neighbor_finder_n_steps,
-            dist_cutoff=T(dist_neighbors),
         )
     end
 

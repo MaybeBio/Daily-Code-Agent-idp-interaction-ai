@@ -13,7 +13,9 @@ export
     LennardJones14Scaled
 
 @doc raw"""
-    LennardJones(; cutoff, use_neighbors, shortcut, σ_mixing, ϵ_mixing, weight_special)
+    LennardJones(; cutoff=NoCutoff(), use_neighbors=true, shortcut=Molly.LJZeroShortcut(),
+                 σ_mixing=Molly.LorentzMixing(), ϵ_mixing=Molly.GeometricMixing(),
+                 weight_special=1)
 
 The Lennard-Jones 6-12 interaction between two atoms.
 
@@ -135,8 +137,8 @@ function pairwise_pe(::LennardJones, r, (σ2, ϵ))
 end
 
 @doc raw"""
-    LJDispersionCorrection(atoms, cutoff, σ_mixing=LorentzMixing(),
-                           ϵ_mixing=GeometricMixing())
+    LJDispersionCorrection(atoms, cutoff, σ_mixing=Molly.LorentzMixing(),
+                           ϵ_mixing=Molly.GeometricMixing())
 
 The long-range dispersion correction for the [`LennardJones`](@ref) interaction.
 
@@ -442,6 +444,8 @@ AtomsCalculators.@generate_interface function AtomsCalculators.forces!(
     return fs
 end
 
+AtomsCalculators.zero_forces(sys::System, ::LJDispersionCorrection) = zero_forces(sys)
+
 @doc raw"""
     LJDispersionCorrectionλ(atoms, cutoff, λ_mix, σ_mix, ϵ_mix; scheduler)
 
@@ -586,6 +590,8 @@ AtomsCalculators.@generate_interface function AtomsCalculators.forces!(
     return fs
 end
 
+AtomsCalculators.zero_forces(sys::System, ::LJDispersionCorrectionλ) = zero_forces(sys)
+
 @inline function overlap_pe_lj_softcore_beutler(dr, energy_units, C12, C6, λ, σ6_shift)
     if iszero_value(σ6_shift)
         return zero_pairwise_energy(dr, energy_units)
@@ -639,14 +645,16 @@ end
 end
 
 @doc raw"""
-    LennardJonesScaled(; cutoff, use_neighbors, shortcut, σ_mixing, ϵ_mixing, λ_mixing,
-                       scheduler, weight_special)
+    LennardJonesScaled(; cutoff=NoCutoff(), use_neighbors=true,
+                       shortcut=Molly.LJZeroShortcut(), σ_mixing=Molly.LorentzMixing(),
+                       ϵ_mixing=Molly.GeometricMixing(), λ_mixing=Molly.MinimumMixing(),
+                       scheduler=Molly.DefaultLambdaScheduler(), weight_special=1)
 
 The Lennard-Jones 6-12 interaction between two atoms scaled by λ without a soft core, the λ
 version of [`LennardJones`](@ref).
 
 [`AbsoluteFESystem`](@ref) and [`RelativeFESystem`](@ref) convert each
-[`LennardJones`](@ref) to this type with `LJsoftcore=:scaled`.
+[`LennardJones`](@ref) to this type with `lj_softcore=:scaled`.
 The potential energy is defined as
 ```math
 V(r_{ij}) = 4\lambda\varepsilon_{ij} \left[\left(\frac{\sigma_{ij}}{r_{ij}}\right)^{12} - \left(\frac{\sigma_{ij}}{r_{ij}}\right)^{6}\right]
@@ -789,15 +797,19 @@ function pairwise_pe(::LennardJonesScaled, r, (σ2, ϵ))
 end
 
 @doc raw"""
-    LennardJonesSoftCoreBeutler(; cutoff, α, use_neighbors, shortcut, σ_mixing,
-                                ϵ_mixing, λ_mixing, scheduler, weight_special)
+    LennardJonesSoftCoreBeutler(; cutoff=NoCutoff(), α=0.3, use_neighbors=true,
+                                shortcut=Molly.LJZeroShortcut(),
+                                σ_mixing=Molly.LorentzMixing(),
+                                ϵ_mixing=Molly.GeometricMixing(),
+                                λ_mixing=Molly.MinimumMixing(),
+                                scheduler=Molly.DefaultLambdaScheduler(), weight_special=1)
 
 The Lennard-Jones 6-12 interaction between two atoms with a soft core, used for
 the appearing and disappearing of atoms.
 
 See [Beutler et al. 1994](https://doi.org/10.1016/0009-2614(94)00397-1).
 [`AbsoluteFESystem`](@ref) and [`RelativeFESystem`](@ref) convert each
-[`LennardJones`](@ref) to this type with `LJsoftcore=:beutler`.
+[`LennardJones`](@ref) to this type with `lj_softcore=:beutler`.
 The potential energy is defined as
 ```math
 V(r_{ij}) = \lambda \left(\frac{C^{(12)}}{r_{LJ}^{12}} - \frac{C^{(6)}}{r_{LJ}^{6}}\right)
@@ -1022,15 +1034,19 @@ function pairwise_pe(::LennardJonesSoftCoreBeutler, r, (C12, C6, σ6_shift, λ):
 end
 
 @doc raw"""
-    LennardJonesSoftCoreGapsys(; cutoff, α, use_neighbors, shortcut, σ_mixing,
-                               ϵ_mixing, λ_mixing, scheduler, weight_special)
+    LennardJonesSoftCoreGapsys(; cutoff=NoCutoff(), α=0.85, use_neighbors=true,
+                               shortcut=Molly.LJZeroShortcut(),
+                               σ_mixing=Molly.LorentzMixing(),
+                               ϵ_mixing=Molly.GeometricMixing(),
+                               λ_mixing=Molly.MinimumMixing(),
+                               scheduler=Molly.DefaultLambdaScheduler(), weight_special=1)
 
 The Lennard-Jones 6-12 interaction between two atoms with a soft core potential, used for
 the appearing and disappearing of atoms.
 
 See [Gapsys et al. 2012](https://doi.org/10.1021/ct300220p).
 [`AbsoluteFESystem`](@ref) and [`RelativeFESystem`](@ref) convert each
-[`LennardJones`](@ref) to this type with `LJsoftcore=:gapsys`.
+[`LennardJones`](@ref) to this type with `lj_softcore=:gapsys`.
 The potential energy is defined as
 ```math
 V(r_{ij}) = \left\{ \begin{array}{cl}
@@ -1266,8 +1282,9 @@ end
 end
 
 @doc raw"""
-    AshbaughHatch(; cutoff, use_neighbors, shortcut, σ_mixing, ϵ_mixing,
-                  λ_mixing, weight_special)
+    AshbaughHatch(; cutoff=NoCutoff(), use_neighbors=true, shortcut=Molly.LJZeroShortcut(),
+                  σ_mixing=Molly.LorentzMixing(), ϵ_mixing=Molly.LorentzMixing(),
+                  λ_mixing=Molly.LorentzMixing(), weight_special=1)
 
 The Ashbaugh-Hatch potential (``V_{\text{AH}}``) is a modified Lennard-Jones
 (``V_{\text{LJ}}``) 6-12 interaction between two atoms.
@@ -1489,11 +1506,12 @@ end
 end
 
 @doc raw"""
-    LennardJones14Scaled(; σ14_mixed, ϵ14_mixed, weight_14, λ_mixing, scheduler)
+    LennardJones14Scaled(; σ14_mixed, ϵ14_mixed, weight_14, λ_mixing=Molly.MinimumMixing(),
+                         scheduler=Molly.DefaultLambdaScheduler())
 
 The 1-4 Lennard-Jones interaction of a pair of atoms scaled by λ without a soft core, the λ
 version of [`LennardJones14`](@ref), which [`AbsoluteFESystem`](@ref) and
-[`RelativeFESystem`](@ref) convert to this type with `LJsoftcore=:scaled`.
+[`RelativeFESystem`](@ref) convert to this type with `lj_softcore=:scaled`.
 
 Force fields that give the 1-4 pairs their own σ and ϵ, such as CHARMM, keep them in a
 [`LennardJones14`](@ref) list rather than in the pairwise Lennard-Jones. The energy and the force
@@ -1583,11 +1601,13 @@ end
 end
 
 @doc raw"""
-    LennardJones14SoftCoreBeutler(; σ14_mixed, ϵ14_mixed, weight_14, α, λ_mixing, scheduler)
+    LennardJones14SoftCoreBeutler(; σ14_mixed, ϵ14_mixed, weight_14, α=0.5,
+                                  λ_mixing=Molly.MinimumMixing(),
+                                  scheduler=Molly.DefaultLambdaScheduler())
 
 The 1-4 Lennard-Jones interaction of a pair of atoms with a Beutler soft core, the λ version of
 [`LennardJones14`](@ref), which [`AbsoluteFESystem`](@ref) and [`RelativeFESystem`](@ref)
-convert to this type with `LJsoftcore=:beutler`.
+convert to this type with `lj_softcore=:beutler`.
 
 Force fields that give the 1-4 pairs their own σ and ϵ, such as CHARMM, keep them in a
 [`LennardJones14`](@ref) list rather than in the pairwise Lennard-Jones. The energy and the force
@@ -1706,11 +1726,13 @@ end
 end
 
 @doc raw"""
-    LennardJones14SoftCoreGapsys(; σ14_mixed, ϵ14_mixed, weight_14, α, λ_mixing, scheduler)
+    LennardJones14SoftCoreGapsys(; σ14_mixed, ϵ14_mixed, weight_14, α=0.85,
+                                 λ_mixing=Molly.MinimumMixing(),
+                                 scheduler=Molly.DefaultLambdaScheduler())
 
 The 1-4 Lennard-Jones interaction of a pair of atoms with a Gapsys soft core, the λ version of
 [`LennardJones14`](@ref), which [`AbsoluteFESystem`](@ref) and [`RelativeFESystem`](@ref)
-convert to this type with `LJsoftcore=:gapsys`.
+convert to this type with `lj_softcore=:gapsys`.
 
 Force fields that give the 1-4 pairs their own σ and ϵ, such as CHARMM, keep them in a
 [`LennardJones14`](@ref) list rather than in the pairwise Lennard-Jones. The energy and the force

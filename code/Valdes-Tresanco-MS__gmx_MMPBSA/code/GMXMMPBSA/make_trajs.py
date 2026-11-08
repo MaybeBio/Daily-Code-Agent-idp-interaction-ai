@@ -1,0 +1,857 @@
+"""
+This module contains classes and such that are responsible for generating
+trajectories for MM/PBSA based on input, starting trajectories. It will
+strip trajectories and output the ones that will be used for the calculations.
+Needed for proper operation of gmx_MMPBSA
+
+Methods:
+         make_trajectories(INPUT, FILES, size): Makes all of the non-mutant
+            trajectories needed for the calculation, as well as all dummy
+            files (i.e. restarts and PDBs)
+
+         make_mutant_trajectories(INPUT, FILES, rank): Mutates the trajectories
+
+Classes:
+         Trajectory: Class for manipulating Amber trajectories through cpptraj
+"""
+
+# ##############################################################################
+#                           GPLv3 LICENSE INFO                                 #
+#                                                                              #
+#  Copyright (C) 2020  Mario S. Valdés-Tresanco and Mario E. Valdés-Tresanco   #
+#  Copyright (C) 2014  Jason Swails, Bill Miller III, and Dwight McGee         #
+#                                                                              #
+#   Project: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA                  #
+#                                                                              #
+#   This program is free software; you can redistribute it and/or modify it    #
+#  under the terms of the GNU General Public License version 3 as published    #
+#  by the Free Software Foundation.                                            #
+#                                                                              #
+#  This program is distributed in the hope that it will be useful, but         #
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY  #
+#  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License    #
+#  for more details.                                                           #
+# ##############################################################################
+
+import logging
+import shutil
+import subprocess
+import tempfile
+from warnings import warn
+from GMXMMPBSA.exceptions import (TrajError, MMPBSA_Error, InternalError, MutantResError)
+from GMXMMPBSA.membrane import (calculate_parameters, diagnostic_paths, needs_automatic_parameters,
+                                parse_atom_names, read_extracted_coordinates, write_diagnostics)
+from pathlib import Path
+
+strip_mask = ':WAT,SOL,TIP3P,TIP3,TP3,TIPS3P,TIP3o,TIP4P,TIP4PEW,T4E,TIP4PD,TIP5P,SPC,SPCE,OPC,' \
+             'Cl*,CIO,Cs+,IB,K*,Li+,MG*,Na+,Rb+,CS,RB,NA,F,CL'
+
+
+def warn_concatenated_complex_trajectories(trajectory_files, option='-ct', label='complex'):
+    """Warn that multiple files for one system are pooled as one trajectory."""
+    if len(trajectory_files) > 1:
+        logging.warning(
+            'Multiple %s trajectories were supplied with %s. They are treated as one concatenated '
+            'trajectory in the order given; startframe, endframe, and interval apply to the combined frame '
+            'stream. Reported statistics are pooled over those frames and are not independent-replica statistics.',
+            label, option
+        )
+
+
+def _make_membrane_trajectory(FILES, cpptraj, trjconv, output_dir):
+    """Create a trajectory view of the original, unstripped ``-ct`` files.
+
+    The energy trajectory is built from the selected dry complex topology, so
+    it may not contain membrane lipids. Automatic membrane detection must use
+    the original trajectory and its full atom-name topology instead.
+    """
+    source_trajs = getattr(FILES, 'original_complex_trajs', None)
+    source_structure = getattr(FILES, 'complex_tpr', None)
+    if not source_trajs or not source_structure:
+        return Trajectory(FILES.complex_prmtop, FILES.complex_trajs, cpptraj)
+
+    source_structure = Path(source_structure)
+    if source_structure.suffix.lower() == '.pdb':
+        membrane_structure = source_structure
+    else:
+        if trjconv is None:
+            raise MMPBSA_Error(
+                'Automatic membrane parameters require a GROMACS trjconv executable when -cs is not a PDB.'
+            )
+        membrane_structure = Path(output_dir) / 'membrane_structure.pdb'
+        command = list(trjconv) + [
+            '-f', str(source_trajs[0]), '-s', str(source_structure),
+            '-o', str(membrane_structure), '-dump', '0'
+        ]
+        logging.debug('Creating full membrane topology for automatic detection: %s', ' '.join(command))
+        process = subprocess.Popen(command, stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output, _ = process.communicate(b'System\n')
+        if process.returncode:
+            raise MMPBSA_Error(
+                'GROMACS trjconv failed while preparing the full topology for automatic membrane parameters:\n'
+                + output.decode(errors='replace')
+            )
+
+    return Trajectory(str(membrane_structure), source_trajs, cpptraj)
+
+
+def make_trajectories(INPUT, FILES, size, cpptraj, pre, trjconv=None):
+    """
+    This function creates the necessary trajectory files, and creates thread-
+    specific trajectories for parallel calculations
+    """
+
+    stability = FILES.stability
+
+    # File suffix is dependent on file type
+    if INPUT['general']['netcdf']:
+        trj_suffix = 'nc'
+    else:
+        trj_suffix = 'mdcrd'
+
+    # Make sure we set up for a solvated topology; image, strip solvent, etc.
+    # if FILES.solvated_prmtop:
+    #    traj = Trajectory(FILES.solvated_prmtop, FILES.complex_trajs, cpptraj)
+    #    traj.Setup(INPUT['startframe'], INPUT['endframe'], INPUT['interval'])
+    #    if not stability:
+    #       traj.Image()
+    #    traj.StripSolvent(strip_mask)
+    # # If we do not have a solvated topology...
+    # else:
+    #    print FILES.complex_prmtop, FILES.complex_trajs, cpptraj
+
+    warn_concatenated_complex_trajectories(FILES.complex_trajs)
+    traj = Trajectory(FILES.complex_prmtop, FILES.complex_trajs, cpptraj)
+    if getattr(FILES, 'explicit_waters_preselected', False):
+        traj.Setup(1, traj.total_frames, 1)
+    else:
+        traj.Setup(INPUT['general']['startframe'], INPUT['general']['endframe'], INPUT['general']['interval'])
+    # RMS fit
+    traj.rms('!(%s)' % strip_mask)
+
+    membrane_tmpdir = None
+    membrane_atoms = None
+    membrane_traj = None
+    if needs_automatic_parameters(INPUT):
+        membrane_atoms = parse_atom_names(INPUT['pb']['membrane_atoms'])
+        membrane_tmpdir = Path(tempfile.mkdtemp(prefix='.GMXMMPBSA_membrane_'))
+        membrane_traj = _make_membrane_trajectory(
+            FILES, cpptraj, trjconv, membrane_tmpdir
+        )
+        if getattr(FILES, 'explicit_waters_preselected', False):
+            membrane_traj.Setup(1, membrane_traj.total_frames, 1)
+        else:
+            membrane_traj.Setup(INPUT['general']['startframe'], INPUT['general']['endframe'],
+                                INPUT['general']['interval'])
+        membrane_traj.ExtractMembraneAtoms(membrane_atoms, membrane_tmpdir)
+
+    com_frames = int(traj.processed_frames)
+    rec_frames = 0
+    lig_frames = 0
+    num_frames_nmode = 0
+
+    # Sanity check. MPI launches a fixed-size world, but the selected trajectory
+    # may contain fewer frames than ranks. Use only ranks that can receive work.
+    if traj.processed_frames < 1:
+        raise MMPBSA_Error('No frames selected for calculation!')
+    if traj.processed_frames < size:
+        logging.warning(
+            'Only %d frame(s) were selected for calculation; using %d of %d MPI ranks.',
+            traj.processed_frames, traj.processed_frames, size
+        )
+        size = traj.processed_frames
+
+    # We now know how many frames we have in total, so make a list that lists the
+    # number of frames found for each rank, and assign extra frames incrementally
+    frames_per_rank = traj.processed_frames // size
+    extras = traj.processed_frames - frames_per_rank * size
+    frame_count = [frames_per_rank for i in range(size)]
+    for i in range(size):
+        if i < extras: frame_count[i] += 1
+
+    # Dump our complex trajectories
+    if INPUT['general']['full_traj'] or INPUT['general']['qh_entropy']:
+        traj.Outtraj(pre + 'complex.%s' % trj_suffix, filetype=INPUT['general']['netcdf'])
+    traj.Outtraj(pre + 'complex.pdb', frames='1', filetype='pdb')
+    traj.Outtraj(pre + 'dummycomplex.inpcrd', frames='1', filetype='restart')
+
+    # Now dump thread-specific trajectories
+    last_frame = 1
+    for i in range(size):
+        frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+        traj.Outtraj(pre + 'complex.%s.%d' % (trj_suffix, i),
+                     frames=frame_string, filetype=INPUT['general']['netcdf'])
+        # TODO: include pbsa.cuda and PBDelphi, which require PQR trajectory output.
+        if INPUT['gbnsr6']['gbnsr6run']:
+            temp_dir = Path(f"{pre}inpcrd_{i}")
+            temp_dir.mkdir()
+            traj.Outtraj(f"{pre}inpcrd_{i}/{pre}complex.inpcrd", frames=frame_string, filetype='restart',
+                         options=['keepext'])
+        last_frame += frame_count[i]
+
+    # Now create the receptor/ligand trajectories if we're taking them from
+    # the complex trajectory
+
+    if not stability and not FILES.receptor_trajs:
+        traj.Strip(INPUT['general']['ligand_mask'])
+        if INPUT['general']['full_traj'] or INPUT['general']['qh_entropy']:
+            traj.Outtraj(pre + 'receptor.%s' % trj_suffix, filetype=INPUT['general']['netcdf'])
+        traj.Outtraj(pre + 'receptor.pdb', frames='1', filetype='pdb')
+        traj.Outtraj(pre + 'dummyreceptor.inpcrd', frames='1', filetype='restart')
+        last_frame = 1
+        for i in range(size):
+            frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+            traj.Outtraj(pre + 'receptor.%s.%d' % (trj_suffix, i),
+                         frames=frame_string, filetype=INPUT['general']['netcdf'])
+            # FIXME: include pbsa.cuda and PBDelphi, which require PQR trajectory output.
+            if INPUT['gbnsr6']['gbnsr6run']:
+                traj.Outtraj(f"{pre}inpcrd_{i}/{pre}receptor.inpcrd", frames=frame_string, filetype='restart',
+                             options=['keepext'])
+
+            last_frame += frame_count[i]
+        traj.Unstrip(restrip_solvent=True)
+        traj.rms('!(%s)' % strip_mask)
+        rec_frames = com_frames
+
+    if not stability and not FILES.ligand_trajs:
+        traj.Strip(INPUT['general']['receptor_mask'])
+        if INPUT['general']['full_traj'] or INPUT['general']['qh_entropy']:
+            traj.Outtraj(pre + 'ligand.%s' % trj_suffix, filetype=INPUT['general']['netcdf'])
+        traj.Outtraj(pre + 'ligand.pdb', frames='1', filetype='pdb')
+        traj.Outtraj(pre + 'dummyligand.inpcrd', frames='1', filetype='restart')
+        last_frame = 1
+        for i in range(size):
+            frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+            traj.Outtraj(pre + 'ligand.%s.%d' % (trj_suffix, i),
+                         frames=frame_string, filetype=INPUT['general']['netcdf'])
+            # FIXME: include pbsa.cuda and PBDelphi, which require PQR trajectory output.
+            if INPUT['gbnsr6']['gbnsr6run']:
+                traj.Outtraj(f"{pre}inpcrd_{i}/{pre}ligand.inpcrd", frames=frame_string, filetype='restart',
+                             options=['keepext'])
+
+            last_frame += frame_count[i]
+        traj.Unstrip(restrip_solvent=True)
+        traj.rms('!(%s)' % strip_mask)
+        lig_frames = com_frames
+
+    # Run cpptraj to get the trajectory
+    try:
+        traj.Run(pre + 'normal_traj_cpptraj.out')
+        if membrane_tmpdir is not None:
+            membrane_traj.Run(pre + 'membrane_parameters_cpptraj.out')
+            frame_coordinates = read_extracted_coordinates(membrane_tmpdir, membrane_atoms)
+            center_setting = INPUT['pb']['mctrdz']
+            thickness_setting = INPUT['pb']['mthick']
+            center, thickness, frame_diagnostics = calculate_parameters(
+                frame_coordinates, center_setting, thickness_setting
+            )
+            if center_setting == 'automatic':
+                INPUT['pb']['mctrdz'] = center
+            if thickness_setting == 'automatic':
+                INPUT['pb']['mthick'] = thickness
+            csv_path, png_path = diagnostic_paths(pre)
+            write_diagnostics(
+                frame_diagnostics, csv_path, png_path, membrane_atoms,
+                center_setting, thickness_setting, center, thickness,
+                frame_coordinates=frame_coordinates,
+            )
+            logging.info(
+                'Membrane parameters from -ct (%s): center=%.3f A, thickness=%.1f A',
+                ';'.join(membrane_atoms), INPUT['pb']['mctrdz'], INPUT['pb']['mthick']
+            )
+            logging.info('Retained membrane diagnostics: %s and %s', csv_path, png_path)
+    finally:
+        if membrane_tmpdir is not None:
+            shutil.rmtree(membrane_tmpdir, ignore_errors=True)
+
+    # Go back and do the receptor and ligand if we used a multiple
+    # trajectory approach
+    if not stability and FILES.receptor_trajs:
+        # Different actions depending on solvation...
+        # if FILES.solvated_receptor_prmtop:
+        #    rectraj = Trajectory(FILES.solvated_receptor_prmtop,
+        #                         FILES.receptor_trajs, cpptraj)
+        #    rectraj.Setup(INPUT['startframe'],INPUT['endframe'],INPUT['interval'])
+        #    rectraj.StripSolvent(strip_mask)
+        # else:
+        warn_concatenated_complex_trajectories(FILES.receptor_trajs, option='-rt', label='receptor')
+        rectraj = Trajectory(FILES.receptor_prmtop, FILES.receptor_trajs, cpptraj)
+        rectraj.Setup(INPUT['general']['startframe'], INPUT['general']['endframe'], INPUT['general']['interval'])
+        rec_frames = int(rectraj.processed_frames)
+        rectraj.rms('!(%s)' % strip_mask)
+        if INPUT['general']['full_traj'] or INPUT['general']['qh_entropy']:
+            rectraj.Outtraj(pre + 'receptor.%s' % trj_suffix,
+                            filetype=INPUT['general']['netcdf'])
+        rectraj.Outtraj(pre + 'receptor.pdb', frames='1', filetype='pdb')
+        rectraj.Outtraj(pre + 'dummyreceptor.inpcrd', frames='1',
+                        filetype='restart')
+
+        # Now do the same split-up of workload as we did for complex, but don't
+        # assume the same number of frames as we had for the complex
+        if rectraj.processed_frames < size:
+            raise MMPBSA_Error('Too many procs for receptor snapshots')
+        frames_per_rank = rectraj.processed_frames // size
+        extras = rectraj.processed_frames - frames_per_rank * size
+        frame_count = [frames_per_rank for i in range(size)]
+        for i in range(size):
+            if i < extras: frame_count[i] += 1
+        last_frame = 1
+        for i in range(size):
+            frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+            rectraj.Outtraj(pre + 'receptor.%s.%d' % (trj_suffix, i),
+                            frames=frame_string, filetype=INPUT['general']['netcdf'])
+            # FIXME: include pbsa.cuda and PBDelphi, which require PQR trajectory output.
+            if INPUT['gbnsr6']['gbnsr6run']:
+                rectraj.Outtraj(f"{pre}inpcrd_{i}/{pre}receptor.inpcrd", frames=frame_string, filetype='restart',
+                             options=['keepext'])
+            last_frame += frame_count[i]
+
+        rectraj.Run(pre + 'receptor_traj_cpptraj.out')
+
+    # end if not stability and FILES.receptor_trajs
+
+    if not stability and FILES.ligand_trajs:
+        # Different actions depending on solvation...
+        # if FILES.solvated_ligand_prmtop:
+        #    ligtraj = Trajectory(FILES.solvated_ligand_prmtop,
+        #                         FILES.ligand_trajs, cpptraj)
+        #    ligtraj.Setup(INPUT['startframe'],INPUT['endframe'],INPUT['interval'])
+        #    ligtraj.StripSolvent(strip_mask)
+        # else:
+        warn_concatenated_complex_trajectories(FILES.ligand_trajs, option='-lt', label='ligand')
+        ligtraj = Trajectory(FILES.ligand_prmtop, FILES.ligand_trajs, cpptraj)
+        ligtraj.Setup(INPUT['general']['startframe'], INPUT['general']['endframe'], INPUT['general']['interval'])
+        lig_frames = int(ligtraj.processed_frames)
+        ligtraj.rms('!(%s)' % strip_mask)
+        ligtraj.Outtraj(pre + 'ligand.%s' % trj_suffix, filetype=INPUT['general']['netcdf'])
+        ligtraj.Outtraj(pre + 'ligand.pdb', frames='1', filetype='pdb')
+        ligtraj.Outtraj(pre + 'dummyligand.inpcrd', frames='1',
+                        filetype='restart')
+
+        # Now do the same split-up of workload as we did for complex, but don't
+        # assume the same number of frames as we had for the complex
+        if ligtraj.processed_frames < size:
+            raise MMPBSA_Error('Too many procs for ligand snapshots')
+        frames_per_rank = ligtraj.processed_frames // size
+        extras = ligtraj.processed_frames - frames_per_rank * size
+        frame_count = [frames_per_rank for i in range(size)]
+        for i in range(size):
+            if i < extras: frame_count[i] += 1
+        last_frame = 1
+        for i in range(size):
+            frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+            ligtraj.Outtraj(pre + 'ligand.%s.%d' % (trj_suffix, i),
+                            frames=frame_string, filetype=INPUT['general']['netcdf'])
+            # FIXME: include pbsa.cuda and PBDelphi, which require PQR trajectory output.
+            if INPUT['gbnsr6']['gbnsr6run']:
+                ligtraj.Outtraj(f"{pre}inpcrd_{i}/{pre}ligand.inpcrd", frames=frame_string, filetype='restart',
+                             options=['keepext'])
+            last_frame += frame_count[i]
+
+        ligtraj.Run(pre + 'ligand_traj_cpptraj.out')
+
+    # end if not stability and FILES.ligand_trajs
+
+    # Now make the nmode trajectories
+    if INPUT['nmode']['nmoderun']:
+        nmtraj = Trajectory(FILES.complex_prmtop, [pre + 'complex.%s.%d' %
+                                                   (trj_suffix, i) for i in range(size)], cpptraj)
+        nmtraj.Setup(INPUT['nmode']['nmstartframe'], INPUT['nmode']['nmendframe'], INPUT['nmode']['nminterval'])
+
+        num_frames_nmode = int(nmtraj.processed_frames)
+
+        # Now split up the complex trajectory by thread
+        if nmtraj.processed_frames < size:
+            raise MMPBSA_Error('More processors than complex nmode frames!')
+
+        frames_per_rank = nmtraj.processed_frames // size
+        extras = nmtraj.processed_frames - frames_per_rank * size
+        frame_count = [frames_per_rank for i in range(size)]
+        for i in range(size):
+            if i < extras: frame_count[i] += 1
+        last_frame = 1
+        for i in range(size):
+            frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+            nmtraj.Outtraj(pre + 'complex_nm.%s.%d' % (trj_suffix, i),
+                           frames=frame_string, filetype=INPUT['general']['netcdf'])
+            last_frame += frame_count[i]
+
+        nmtraj.Run(pre + 'com_nm_traj_cpptraj.out')
+
+        if not stability:
+            nmtraj = Trajectory(FILES.receptor_prmtop, [pre + 'receptor.%s.%d' %
+                                                        (trj_suffix, i) for i in range(size)], cpptraj)
+            nmtraj.Setup(INPUT['nmode']['nmstartframe'], INPUT['nmode']['nmendframe'], INPUT['nmode']['nminterval'])
+            # Now split up the complex trajectory by thread
+            if nmtraj.processed_frames < size:
+                raise MMPBSA_Error('More processors than receptor nmode frames!')
+
+            frames_per_rank = nmtraj.processed_frames // size
+            extras = nmtraj.processed_frames - frames_per_rank * size
+            frame_count = [frames_per_rank for i in range(size)]
+            for i in range(size):
+                if i < extras: frame_count[i] += 1
+            last_frame = 1
+            for i in range(size):
+                frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+                nmtraj.Outtraj(pre + 'receptor_nm.%s.%d' % (trj_suffix, i),
+                               frames=frame_string, filetype=INPUT['general']['netcdf'])
+                last_frame += frame_count[i]
+
+            nmtraj.Run(pre + 'rec_nm_traj_cpptraj.out')
+
+            nmtraj = Trajectory(FILES.ligand_prmtop, [pre + 'ligand.%s.%d' %
+                                                      (trj_suffix, i) for i in range(size)], cpptraj)
+            nmtraj.Setup(INPUT['nmode']['nmstartframe'], INPUT['nmode']['nmendframe'], INPUT['nmode']['nminterval'])
+            # Now split up the complex trajectory by thread
+            if nmtraj.processed_frames < size:
+                raise MMPBSA_Error('More processors than ligand nmode frames!')
+
+            frames_per_rank = nmtraj.processed_frames // size
+            extras = nmtraj.processed_frames - frames_per_rank * size
+            frame_count = [frames_per_rank for i in range(size)]
+            for i in range(size):
+                if i < extras: frame_count[i] += 1
+            last_frame = 1
+            for i in range(size):
+                frame_string = '%d-%d' % (last_frame, last_frame + frame_count[i] - 1)
+                nmtraj.Outtraj(pre + 'ligand_nm.%s.%d' % (trj_suffix, i),
+                               frames=frame_string, filetype=INPUT['general']['netcdf'])
+                last_frame += frame_count[i]
+
+            nmtraj.Run(pre + 'lig_nm_traj_cpptraj.out')
+
+        # end if not stability
+
+    # end if INPUT['nmode']['nmoderun']
+    return com_frames, rec_frames, lig_frames, num_frames_nmode, size
+
+
+def make_mutant_trajectories(INPUT, FILES, rank, cpptraj, norm_sys, mut_sys, pre):
+    """ Mutates given trajectories and outputs dummy files for mutants """
+    from GMXMMPBSA.alamdcrd import MutantMdcrd, GlyMutantMdcrd
+    import shutil
+    if not INPUT['ala']['alarun']: return None, None
+
+    stability = FILES.stability
+
+    if INPUT['general']['netcdf']:
+        trj_suffix = 'nc'
+        raise TypeError('Alanine/Glycine scanning requires ASCII trajectories (netcdf=0)')
+    else:
+        trj_suffix = 'mdcrd'
+
+    if (
+        not stability
+        and (
+            FILES.ligand_prmtop != FILES.mutant_ligand_prmtop
+            or FILES.receptor_prmtop == FILES.mutant_receptor_prmtop
+        )
+        and (
+            FILES.ligand_prmtop == FILES.mutant_ligand_prmtop
+            or FILES.receptor_prmtop != FILES.mutant_receptor_prmtop
+        )
+    ):
+        raise MMPBSA_Error('Alanine/Glycine scanning supports one mutated component at a time; '
+                           'mixed receptor/ligand composite mutations are not supported')
+
+    master = rank == 0
+    # FIXME: create folders for mutants
+
+    # Have each rank mutate our rank's normal complex trajectory
+    def make_mutant_traj(path, normal_topology, mutant_topology):
+        try:
+            return MutantMdcrd(path, normal_topology, mutant_topology)
+        except MutantResError:
+            return GlyMutantMdcrd(path, normal_topology, mutant_topology)
+
+    com_mut = make_mutant_traj(pre + 'complex.%s.%d' % (trj_suffix, rank),
+                               norm_sys.complex_prmtop, mut_sys.complex_prmtop)
+    com_mut.MutateTraj(pre + 'mutant_complex.%s.%d' % (trj_suffix, rank))
+
+    # Have each rank mutate our rank's normal receptor or ligand trajectory
+    # and copy the normal one to the mutant if the mutated residue is *not*
+    # present in there
+    if not stability:
+        if FILES.receptor_prmtop != FILES.mutant_receptor_prmtop:
+            rec_mut = make_mutant_traj(pre + 'receptor.%s.%d' % (trj_suffix, rank),
+                                       norm_sys.receptor_prmtop, mut_sys.receptor_prmtop)
+            rec_mut.MutateTraj(pre + 'mutant_receptor.%s.%d' % (trj_suffix, rank))
+            shutil.copyfile(pre + 'ligand.%s.%d' % (trj_suffix, rank),
+                            pre + 'mutant_ligand.%s.%d' % (trj_suffix, rank))
+
+        elif FILES.ligand_prmtop != FILES.mutant_ligand_prmtop:
+            lig_mut = make_mutant_traj(pre + 'ligand.%s.%d' % (trj_suffix, rank),
+                                       norm_sys.ligand_prmtop, mut_sys.ligand_prmtop)
+            lig_mut.MutateTraj(pre + 'mutant_ligand.%s.%d' % (trj_suffix, rank))
+            shutil.copyfile(pre + 'receptor.%s.%d' % (trj_suffix, rank),
+                            pre + 'mutant_receptor.%s.%d' % (trj_suffix, rank))
+
+    if INPUT['gbnsr6']['gbnsr6run']:
+        temp_dir = Path(f"{pre}inpcrd_{rank}")
+        if not temp_dir.exists():
+            temp_dir.mkdir()
+        com_traj = Trajectory(FILES.mutant_complex_prmtop, f"{pre}mutant_complex.{trj_suffix}.{rank}", cpptraj)
+        com_traj.Setup()
+        com_traj.Outtraj(f"{pre}inpcrd_{rank}/{pre}mutant_complex.inpcrd", filetype='restart', options=['keepext'])
+        com_traj.Run(pre + 'commutant_gbnsr6_traj_cpptraj.out')
+
+        if not stability:
+            # receptor
+            rec_traj = Trajectory(FILES.mutant_receptor_prmtop, f"{pre}mutant_receptor.{trj_suffix}.{rank}", cpptraj)
+            rec_traj.Setup()
+            rec_traj.Outtraj(f"{pre}inpcrd_{rank}/{pre}mutant_receptor.inpcrd", filetype='restart', options=['keepext'])
+            rec_traj.Run(pre + 'recmutant_gbnsr6_traj_cpptraj.out')
+            # ligand
+            lig_traj = Trajectory(FILES.mutant_ligand_prmtop, f"{pre}mutant_ligand.{trj_suffix}.{rank}", cpptraj)
+            lig_traj.Setup()
+            lig_traj.Outtraj(f"{pre}inpcrd_{rank}/{pre}mutant_ligand.inpcrd", filetype='restart', options=['keepext'])
+            lig_traj.Run(pre + 'ligmutant_gbnsr6_traj_cpptraj.out')
+
+    # Have our master dump out dummy files
+    if master:
+        com_traj = Trajectory(FILES.mutant_complex_prmtop, pre + 'mutant_complex.%s.0' % trj_suffix, cpptraj)
+        com_traj.Setup(1, 1, 1)
+        com_traj.Outtraj(pre + 'mutant_complex.pdb', frames='1', filetype='pdb')
+        com_traj.Outtraj(pre + 'mutant_dummycomplex.inpcrd', frames='1', filetype='restart')
+        com_traj.Run(pre + 'mutant_complex_cpptraj.out')
+        if not stability:
+            rec_traj = Trajectory(FILES.mutant_receptor_prmtop, pre + 'mutant_receptor.%s.0' % trj_suffix, cpptraj)
+            rec_traj.Setup(1, 1, 1)
+            rec_traj.Outtraj(pre + 'mutant_receptor.pdb', frames='1', filetype='pdb')
+            rec_traj.Outtraj(pre + 'mutant_dummyreceptor.inpcrd', frames='1', filetype='restart')
+            rec_traj.Run(pre + 'mutant_receptor_cpptraj.out')
+
+            lig_traj = Trajectory(FILES.mutant_ligand_prmtop, pre + 'mutant_ligand.%s.0' % trj_suffix, cpptraj)
+            lig_traj.Setup(1, 1, 1)
+            lig_traj.Outtraj(pre + 'mutant_ligand.pdb', frames='1', filetype='pdb')
+            lig_traj.Outtraj(pre + 'mutant_dummyligand.inpcrd', frames='1', filetype='restart')
+            lig_traj.Run(pre + 'mutant_ligand_cpptraj.out')
+
+    # Mutate our nmode trajectories if need be
+    if INPUT['nmode']['nmoderun']:
+        com_mut = make_mutant_traj(pre + 'complex_nm.%s.%d' % (trj_suffix, rank),
+                                   norm_sys.complex_prmtop, mut_sys.complex_prmtop)
+        com_mut.MutateTraj(pre + 'mutant_complex_nm.%s.%d' % (trj_suffix, rank))
+        if not stability and FILES.receptor_prmtop != FILES.mutant_receptor_prmtop:
+            rec_mut = make_mutant_traj(pre + 'receptor_nm.%s.%d' % (trj_suffix, rank),
+                                       norm_sys.receptor_prmtop, mut_sys.receptor_prmtop)
+            rec_mut.MutateTraj(pre + 'mutant_receptor_nm.%s.%d' %
+                               (trj_suffix, rank))
+            shutil.copyfile(pre + 'ligand_nm.%s.%d' % (trj_suffix, rank),
+                            pre + 'mutant_ligand_nm.%s.%d' % (trj_suffix, rank))
+
+        if not stability and FILES.ligand_prmtop != FILES.mutant_ligand_prmtop:
+            lig_mut = make_mutant_traj(pre + 'ligand_nm.%s.%d' % (trj_suffix, rank),
+                                       norm_sys.ligand_prmtop, mut_sys.ligand_prmtop)
+            lig_mut.MutateTraj(pre + 'mutant_ligand_nm.%s.%d' %
+                               (trj_suffix, rank))
+            shutil.copyfile(pre + 'receptor_nm.%s.%d' % (trj_suffix, rank),
+                            pre + 'mutant_receptor_nm.%s.%d' % (trj_suffix, rank))
+
+    # If we're doing a quasi-harmonic approximation we need the full com traj
+    if (INPUT['general']['full_traj'] or INPUT['general']['qh_entropy']) and master:
+        com_mut = make_mutant_traj(pre + 'complex.%s' % trj_suffix,
+                                   norm_sys.complex_prmtop, mut_sys.complex_prmtop)
+        com_mut.MutateTraj(pre + 'mutant_complex.%s' % trj_suffix)
+
+    return str(com_mut), com_mut.mutres
+
+
+class Trajectory(object):
+    """ Base Trajectory class:
+        Methods: __init__(prmtop, traj_files)
+                 Setup(startframe, endframe, interval)
+                 Query()
+                 Image()
+                 Strip(mask)
+                 StripSolvent(strip_mask)
+                 Unstrip(restrip_solvent=True)
+                 Outtraj(fname, startframe, endframe, interval, filetype, nobox)
+                 Run(output)
+
+        The way this class is typically used is initializing it by giving it a
+        list of trajectory files. It will then automatically run Query to make
+        sure that all trajectory files are valid, and it counts how many frames
+        are present in each trajectory. Then you can strip the solvent (this
+        just tags what is the solvent in case you want to re-strip it after every
+        Unstrip() command). Then, add masks to strip out. Then, you can run with
+        the current actions via the Run() routine. Typical sequence:
+
+        trajsystem = Trajectory(solvated_prmtop, mdcrds)
+        trajsystem.Setup(startframe, endframe, interval)
+        trajsystem.Image()
+        trajsystem.StripSolvent(strip_mask)
+        trajsystem.Strip(receptor_mask)
+        trajsystem.Outtraj('_MMPBSA_ligand.mdcrd', filetype=INPUT['netcdf'])
+        trajsystem.Unstrip(restrip_solvent=True)
+        trajsystem.Strip(ligand_mask)
+        trajsystem.Outtraj('_MMPBSA_receptor.mdcrd', filetype=INPUT['netcdf'])
+        trajsystem.Run('_MMPBSA_create_trajectories.out')
+    """
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def __init__(self, prmtop, traj_files, cpptraj='cpptraj'):
+        """ Sets up a basic trajectory """
+
+        # Make sure we have a list or string, and force it to be a list
+        if isinstance(traj_files, list):
+            self.traj_files = traj_files
+        elif isinstance(traj_files, tuple):
+            self.traj_files = list(traj_files)
+        else:
+            self.traj_files = [str(traj_files)]
+
+        self.prmtop = prmtop
+
+        # Find cpptraj
+        self.exe = cpptraj
+
+        self.strip_solvent = False
+
+        self.Query()
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def Setup(self, startframe=1, endframe=9999999, interval=1):
+        """ Finds the program and clears the queue and other attributes assigned
+            during other function calls
+        """
+
+        self.strip_solvent = False
+        orig_endframe = endframe
+        orig_startframe = startframe
+
+        # Delete the stripmask, but make its non-existence non-fatal, since it
+        # won't exist unless Setup is called a second time.
+
+        try:
+            del self.stripmask
+        except AttributeError:
+            pass
+
+        self.actions = []
+
+        # Catch stupid choices
+        if startframe > endframe:
+            raise TrajError('Cannot have startframe (%d) > endframe (%d)' %
+                            (startframe, endframe))
+
+        if startframe < 0:
+            raise TrajError('Startframe (%d) < 0' % startframe)
+
+        if interval <= 0:
+            raise TrajError('Interval (%d) <= 0' % interval)
+
+        if startframe > self.total_frames:
+            raise TrajError('start frame (%d) > total frames (%d)' %
+                            (startframe, self.total_frames))
+
+        # Bring endframe down if it's > the total number of frames
+
+        endframe = min(endframe, self.total_frames)
+
+        self.analyzed_frames = int((endframe - startframe) / interval) + 1
+
+        # If we have an interval != 1, then it's possible that the endframe that
+        # the user set is not the actual one that will be used. To make things
+        # simpler, I will adjust the endframe to what is *actually* used
+
+        endframe = startframe + interval * int((endframe - startframe) // interval)
+
+        # Set up start and end arrays (for each trajectory)
+
+        traj_starts = [-1 for i in range(len(self.traj_files))]
+        traj_ends = [0 for i in range(len(self.traj_files))]
+
+        # Now determine where each trajectory starts and ends
+
+        for i in range(len(self.traj_files)):
+
+            # skip over any trajectories that lie entirely before startframe
+
+            if startframe > self.traj_sizes[i]:
+                traj_starts[i] = -1  # this will tell us to skip this traj file
+                startframe -= self.traj_sizes[i]
+                continue
+
+            # Now we start at our startframe
+
+            traj_starts[i] = startframe
+
+            # Now we figure out our last frame, adjusting for interval
+
+            last_frame = startframe + interval * int((self.traj_sizes[i]
+                                                      - startframe) / interval)
+
+            traj_ends[i] = min(endframe, last_frame, self.traj_sizes[i])
+
+            # Now determine our new start frame for the next trajectory. First
+            # we need to know how many frames are left over at the end of the
+            # last frame, and subtract those from the interval to determine
+            # where our next trajectory should start from. Also move our endframe
+            # down, but only by our last_frame! (since the last couple frames in
+            # our trajectory file could be leftover due to interval > 1)
+
+            startframe = interval + last_frame - self.traj_sizes[i]
+
+            endframe -= last_frame
+
+            if endframe < self.traj_sizes[i]:
+                break  # we're done now
+
+        # end for i len(traj_files)
+
+        # We now have to trajin each of the analyzed trajectories
+
+        for i in range(len(self.traj_files)):
+            if traj_starts[i] < 0: continue  # skip -1's
+
+            self.actions.append('trajin %s %d %d %d' % (self.traj_files[i],
+                                                        traj_starts[i], traj_ends[i], interval))
+
+        self.actions.append('noprogress')  # quash the progress bar
+
+        self.processed_frames = self.analyzed_frames
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def StripSolvent(self, stripmask):
+        """ Strips the solvent """
+        self.stripmask = stripmask
+        self.strip_solvent = True
+        self.Strip(stripmask)
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def Query(self):
+        """ Finds out how many frames are in the given traj files """
+        from subprocess import Popen, PIPE
+        import re
+
+        framere = re.compile(r'Frames: (\d+)')
+
+        self.traj_sizes = []
+
+        # Determine how many frames are in each trajectory of the list
+
+        for traj in self.traj_files:
+
+            process = Popen([self.exe, '-p', str(self.prmtop), '-y', traj, '-tl'],
+                            stdin=PIPE, stdout=PIPE)
+
+            (output, error) = process.communicate(b'')
+
+            if process.wait():  # if it quits with return code != 0
+                raise TrajError('%s failed when querying %s' % (self.exe, traj))
+
+            output = output.decode()
+
+            # Now parse the output to find out how many frames are there. We are
+            # looking for "Coordinate processing will occur on x frames."
+
+            num_frames = framere.findall(output)
+            if len(num_frames) < 1:
+                raise TrajError('Could not find number of frames in ' + traj)
+            elif len(num_frames) > 1:
+                raise RuntimeError('Unexpected output from cpptraj. Has format '
+                                   'changed?')
+            self.traj_sizes.append(int(num_frames[0]))
+
+        # end for traj in self.traj_files
+
+        self.total_frames = sum(self.traj_sizes)
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def Image(self):
+        """ Images the trajectories """
+        from parmed.amber import LoadParm
+
+        solvated_prmtop = LoadParm(self.prmtop)
+
+        ifbox = solvated_prmtop.ptr('ifbox')
+        if ifbox == 0:
+            warn('Solvated topology %s has IFBOX == 0' % ifbox)
+
+        self.actions.append('autoimage')
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def rms(self, mask):
+        """ Does an RMS fit around a specific mask """
+        self.actions.append('rmsd %s mass first' % mask)
+
+    def ExtractMembraneAtoms(self, atom_names, output_dir):
+        """Extract selected atom-name coordinates from every selected frame."""
+        for atom_name in atom_names:
+            output = Path(output_dir) / f'{atom_name}.pdb'
+            self.actions.append(f'mask @{atom_name} maskpdb {output}')
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def Strip(self, mask):
+        """ Strips a mask from the coordinates. """
+        if mask is None or len(str(mask).strip()) == 0:
+            raise InternalError('Cannot pass no mask to Strip!')
+        self.actions.append('strip %s' % mask)
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def Unstrip(self, restrip_solvent=True):
+        """ Returns to unstripped state """
+        self.actions.append('unstrip')
+        if self.strip_solvent and restrip_solvent:
+            self.actions.append('strip %s' % self.stripmask)
+
+    # -#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+    def Run(self, output_file=None):
+        """ Runs cpptraj to actually create the files """
+        from sys import stdout as sys_stdout
+        from subprocess import Popen, PIPE
+
+        # Accept output_file as both a file object and string object
+        own_handle = False
+        if output_file is None:
+            stdout = sys_stdout
+        else:
+            try:
+                stdout = open(output_file, 'w')
+                own_handle = True
+            except TypeError:
+                stdout = output_file
+
+        # Now it's time to run the program
+
+        try:
+            input_string = ''
+            for action in self.actions:
+                input_string += action.strip() + '\n'
+
+            process = Popen([self.exe, self.prmtop], stdout=stdout, stdin=PIPE)
+
+            process.communicate(input_string.encode())
+
+            if process.wait():
+                raise TrajError('Error running %s' % self.exe)
+        finally:
+            if own_handle: stdout.close()
+
+
+    def Outtraj(self, filename, frames=None, filetype='', nobox='nobox', options=None):
+        """ This adds an outtraj command to the action stack, and you can specify
+            the type of trajectory file to output (such as restart/pdb for input
+            files, etc.)
+        """
+        if not frames: frames = '1-%d' % self.total_frames
+        if options:
+            self.actions.append(
+                f"outtraj {filename} {filetype} onlyframes {frames} {nobox} {' '.join(options)}"
+            )
+        else:
+            self.actions.append(
+                f"outtraj {filename} {filetype} onlyframes {frames} {nobox}"
+            )

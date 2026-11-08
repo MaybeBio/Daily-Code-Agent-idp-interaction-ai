@@ -1,8 +1,8 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/google-deepmind/alphafold3
-- 快照日期: 2026-11-01
-- 快照 commit: [`55630cea7533`](https://github.com/google-deepmind/alphafold3/commit/55630cea75335c97da84f85d783ee9daec1b8088)
+- 快照日期: 2026-11-08
+- 快照 commit: [`37e3c57fe123`](https://github.com/google-deepmind/alphafold3/commit/37e3c57fe123fc51f6d96236320b8b657afb11ac)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
 ## 保留 (228 个文件, 2.9 MB)
@@ -14,7 +14,7 @@
 | 构建/配置 | 5 | 287.2 KB |
 | README | 1 | 12.9 KB |
 
-按后缀: `.py` 143 (2.0 MB)、`.md` 21 (340.7 KB)、`.lock` 1 (274.8 KB)、`.cc` 22 (218.3 KB)、`.h` 21 (42.1 KB)、`.pyi` 11 (21.8 KB)、`无后缀` 1 (11.1 KB)、`.sh` 4 (10.4 KB)、`CMakeLists.txt` 1 (4.9 KB)、`Dockerfile` 1 (4.8 KB)、`pyproject.toml` 1 (1.6 KB)、`.yaml` 1 (1016 B)
+按后缀: `.py` 143 (2.0 MB)、`.md` 21 (340.7 KB)、`.lock` 1 (274.8 KB)、`.cc` 22 (220.1 KB)、`.h` 21 (42.1 KB)、`.pyi` 11 (22.2 KB)、`无后缀` 1 (11.1 KB)、`.sh` 4 (10.4 KB)、`CMakeLists.txt` 1 (4.9 KB)、`Dockerfile` 1 (4.8 KB)、`pyproject.toml` 1 (1.6 KB)、`.yaml` 1 (1016 B)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 

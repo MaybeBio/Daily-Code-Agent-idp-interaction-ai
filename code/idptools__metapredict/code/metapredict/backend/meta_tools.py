@@ -1,0 +1,713 @@
+# various tools for checks and formatting
+
+import re
+import os
+import numbers
+import numpy as np
+import protfasta
+
+# local imports
+from metapredict.metapredict_exceptions import MetapredictError
+from metapredict.backend.network_parameters import metapredict_networks, pplddt_networks
+
+# when reporting empty sequences in an error message, list at most this many
+# offending keys/positions so the message stays readable for large inputs
+MAX_REPORTED_EMPTY_SEQUENCES = 10
+
+# Characters that cannot appear in a file name on Windows (and, in the case of
+# '/', on any platform), plus ASCII control characters. See
+# https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+INVALID_FILENAME_CHARACTERS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+# Device names Windows reserves, which can't be used as a file name with any
+# extension (same source as above)
+WINDOWS_RESERVED_NAMES = {'CON', 'PRN', 'AUX', 'NUL',
+                          *(f'COM{i}' for i in range(1, 10)),
+                          *(f'LPT{i}' for i in range(1, 10))}
+
+
+def valid_range(inval, minval, maxval):
+    """
+    Function that raises an exception if a value is not a number or falls
+    outside of the closed interval [minval, maxval].
+
+    Parameters
+    ------------
+    inval : float
+        The value to check.
+
+    minval : float
+        Smallest allowed value.
+
+    maxval : float
+        Largest allowed value.
+
+    Returns
+    ---------
+    None
+        No return value, but raises MetapredictError if the value is invalid.
+
+    Raises
+    ---------
+    MetapredictError
+        If inval is not a real number (a string such as '0.5' passed from a
+        command-line flag is rejected here rather than crashing a comparison
+        later on) or if inval is outside [minval, maxval].
+    """
+    # bool is a subclass of int, so exclude it explicitly
+    if isinstance(inval, bool) or not isinstance(inval, numbers.Real):
+        raise MetapredictError(f'Value {inval!r} must be a number between {minval} and {maxval}')
+
+    if inval < minval or inval > maxval:
+        raise MetapredictError(f'Value {inval:1.3f} is outside of range [{minval:1.3f}, {maxval:1.3f}]')
+
+
+def valid_batch_size(batch_size):
+    """
+    Validate a user-supplied batch size for batch prediction.
+
+    A valid batch size is a power of two that is greater than or equal to 32
+    (i.e. 32, 64, 128, 256, 512, 1024, ...). ``None`` is also accepted and means
+    "use the default batch size defined for the network".
+
+    Parameters
+    ----------
+    batch_size : int or None
+        The batch size to validate.
+
+    Returns
+    -------
+    None
+        Returns nothing; raises if the value is invalid.
+
+    Raises
+    ------
+    MetapredictError
+        If ``batch_size`` is not ``None`` and is not a power-of-two integer >= 32.
+    """
+    if batch_size is None:
+        return
+
+    # bool is a subclass of int, so exclude it explicitly
+    if isinstance(batch_size, bool) or not isinstance(batch_size, int):
+        raise MetapredictError(
+            f'batch_size must be an integer power of two >= 32 (e.g. 32, 64, 128, '
+            f'256, 512, 1024), or None to use the network default. Got {batch_size!r}')
+
+    if batch_size < 32 or (batch_size & (batch_size - 1)) != 0:
+        raise MetapredictError(
+            f'batch_size must be a power of two >= 32 (e.g. 32, 64, 128, 256, 512, '
+            f'1024). Got {batch_size}')
+
+
+def write_csv(input_dict, output_file):
+    """
+    Function that writes the scores in an input dictionary out to a standardized CVS file format.
+
+    Parameters
+    -----------
+    input_dict : dict
+        Dictionary where keys are headers/identifiers and values is a list of per-residue
+        disorder score
+
+    output_file : str
+        Location and filename for the output file. Assumes .csv is provided.
+
+    Returns
+    --------
+    None
+        No return value, but writes a .csv file to disk
+
+
+    """
+
+    # try and open the file and throw exception if anything goes wrong
+    try:
+        fh = open(output_file, 'w')
+    except Exception:
+        raise MetapredictError(f'Unable to write to file destination {output_file:s}')
+
+    # for each entry
+    for idx in input_dict:
+
+        # important otherwise commmas in FASTA headers render the CSV file unreadable!
+        no_comma = idx.replace(',', ' ')
+        fh.write(f'{no_comma:s}')
+
+        # for each score write
+        for score in input_dict[idx]:
+            # remove any brackets
+            score=str(score)
+            score = score.replace('[', '')
+            score = score.replace(']', '')
+            fh.write(f', {score}')
+        fh.write(f'\n')
+
+    fh.close()
+
+
+def valid_shaded_region(shaded_regions, n_res):
+    """
+    Function that ensures that the passed shaded region are readable and make sense.
+
+    Parameters
+    ------------
+    shaded_regions : list of lists
+        A list of lists, where sub-elements are of length 2 and contain start and end
+        values for regions to be shaded. Assumes that sanity checking on positions has
+        already been done. Default is None, but if there were specific regions you wanted
+        to highlight this might, for example, look like shaded_regions=[[1,10],[40,50]], 
+        which would shade between 1 and 10 and then between 40 and 50. This can be useful
+        to either highlight specific IDRs or specific folded domains
+
+    Returns
+    ---------
+    None 
+        No return type but will raise various possible exceptions in a structured way if
+        the shaded regions info is not parseable
+
+    Raises
+    --------
+    MetapredictError
+
+    """
+
+    if shaded_regions is None:
+        return
+
+    # check shaded regions make sense:
+    try:
+        for b in shaded_regions:
+
+            if b[0] < 1 or b[0] > n_res + 1:
+                raise MetapredictError(f'Invalid start position in shaded_regions: {b[0]}')
+
+            if b[1] < 1 or b[1] > n_res + 1:
+                raise MetapredictError(f'Invalid end position in shaded_regions: {b[0]}')
+
+    except Exception as e:
+        raise MetapredictError(f'Error in parsing shaded_regions - full error below\n\n{str(e):s}')
+
+
+def validate_options(option, valid_list):
+    """
+    Function that raises an exception if $option is not found in $valid_list.
+
+    Parameters
+    ----------
+    option : str
+        Option that has been passed
+
+    valid_list : str
+        List of strings which we expect $option to be one of
+
+    Returns
+    ---------
+    None 
+        No return type by riases MetapredictError if option not found in valid_list
+
+
+    """
+    if option not in valid_list:
+        raise MetapredictError(f"Expected one of {str(valid_list):s} but only option passed was {option:s}")
+
+
+def sanitize_filename(input_filename):
+    """
+    Function that removes characters from a putative filename which might be problematic
+    for filesystems.
+
+    Parameters
+    ------------
+    input_filename : str
+        Proposed filename
+
+    Returns
+    ---------
+    str
+        Returns a string with the nicely formatted filename
+
+    """
+
+    # this regular expression replace every character not equal to a
+    # WORD character (i.e. alphanumeric or underscore) with a space
+    s = re.sub(r'\W+', '_', input_filename)
+    return s
+
+
+def get_binary_prediction(confidence_value, cutoff_value):
+    '''
+    function to turn a disorder sore into a binary classification
+    where 1 is disordered and 0 is not disordered
+
+    Parameters 
+    -----------
+    confidence_value : float
+        The disorder confidence score as a float
+
+    cutoff_value : float
+        The value to use to decide whether to assign a confidence score
+        with a 1 (disordered) or a 0 (not disordered). Assigns a 1 when
+        the confidence_value > cutoff_value
+
+    Returns
+    -------
+    binary_prediction : Int
+        Returns a binary prediction
+
+    '''
+    if confidence_value >= cutoff_value:
+        return 1
+    else:
+        return 0
+
+
+
+
+
+def split_fasta(fasta_list, number_splits):
+    '''
+    function to split the dict returned from
+    a fasta file read in by protfasta to make
+    a specific number of dictionaries with
+    approximately equal numbers of proteins. 
+
+    Parameters
+    -----------
+    protfasta_fasta_list : list
+        List of amino acid sequences
+
+    number_splits : int
+        Number of lists to split this list into 
+
+    Returns
+    -----------
+    list
+        Returns a list where each sublist within
+        the list contains either the same number
+        number of sequences or +/- 1 number of 
+        sequences to all other lists, and there
+        are number_splits sublists in the main
+        return list.
+          
+    '''
+    
+    # Calculate the number of protein sequences per sublist
+    seqs_per_sublist = len(fasta_list) // number_splits
+
+    # also count remainder
+    remainder = len(fasta_list) % number_splits
+
+    # Create the sublists
+    sublists = []
+    start = 0
+    for i in range(number_splits):
+
+        # note: saying 1 if 1 < remainder else 0 means we distribute
+        # the remainder evenly across the sublists
+        sublist_size = seqs_per_sublist + (1 if i < remainder else 0)
+
+        # create a sublist between start and sublist_size position
+        sublist = fasta_list[start:start+sublist_size]
+        sublists.append(sublist)
+        start = start + sublist_size
+
+    # sanity check - good to be sure!
+    if np.sum([len(s) for s in sublists]) != len(fasta_list):
+        raise Exception('splitting of fasta file did not get all proteins')
+
+    return sublists
+
+
+def append_to_file(outpath, idrs, mode):
+    # Open file to append to.
+    fh = open(outpath, 'a')
+    # depending on mode...
+    # dict to hold vals...
+    return_dictionary = {}
+    if mode == 'fasta':
+        # for each sequence
+        for s in idrs:
+            # d is IDR start and end positions
+            for d in idrs[s][2]:
+                return_dictionary[f'{s:s} IDR_START={d[0]:d} IDR_END={d[1]:d}'] =  d[2]
+        # write out fasta. Use append functionality. Protfasta closes the file for us.
+        protfasta.write_fasta(return_dictionary, outpath, append_to_fasta=True)
+
+    elif mode == 'shephard-domains':
+        for s in idrs:
+            # d is IDR start and end positions
+            for d in idrs[s][2]:
+                # note need +1 for shephard format
+                start = d[0]+1
+                end = d[1]
+                fh.write(f'{s}\t{start}\t{end}\tIDR\n')
+        # close file handle.
+        fh.close()
+
+    elif mode == 'shephard-domains-uniprot':
+        for s in idrs:
+            # d is IDR start and end positions
+            for d in idrs[s][2]:
+                uid = s.split('|')[1]
+                start = d[0]+1
+                end = d[1]
+                fh.write(f'{uid}\t{start}\t{end}\tIDR\n')
+        # close file handle.
+        fh.close()
+
+    else:
+        raise Exception('no mode specified!')
+
+                
+
+# ..........................................................................................
+#
+def raise_exception_on_zero_length(s):
+    """
+    Function that raises an exception if the passed argument is of 
+    length 0. Works for anything where len() can be applied.
+        
+    Parameters
+    ------------
+    s : iterable
+        Variable for which len(x) can be applied.
+
+    Returns
+    ----------
+    None
+
+    Raises
+    ---------
+    If this first argument in the decorated function is len() == 0
+    then MetapredictError is raised.
+
+    """
+    if len(s) == 0:        
+        if isinstance(s, str):
+            raise MetapredictError('Error: Passed string is length 0')
+
+        elif isinstance(s, list):
+            raise MetapredictError('Error: Passed list is length 0')
+        else:
+            raise MetapredictError('Error: Passed iterable type is length 0')
+
+
+# ..........................................................................................
+#
+def raise_exception_on_empty_sequence(inputs):
+    """
+    Function that raises an exception if any sequence passed for prediction
+    is an empty string. Without this check an empty sequence inside a list or
+    dictionary fails deep inside PyTorch with an error that doesn't say which
+    input caused it.
+
+    Parameters
+    ------------
+    inputs : str, list, or dict
+        The sequence(s) passed for prediction: a single sequence, a list of
+        sequences, or a dictionary mapping names to sequences. Any other type
+        is ignored here (the predictor raises its own error for those).
+
+    Returns
+    ----------
+    None
+
+    Raises
+    ---------
+    MetapredictError
+        If any sequence is length 0. For list input the error reports the
+        offending positions, and for dictionary input the offending keys.
+    """
+    if isinstance(inputs, str):
+        if len(inputs) == 0:
+            raise MetapredictError('Error: Passed sequence is length 0')
+
+    elif isinstance(inputs, dict):
+        empty_keys = [k for k in inputs if len(inputs[k]) == 0]
+        if len(empty_keys) > 0:
+            raise MetapredictError(f'Error: {len(empty_keys)} sequence(s) in the passed dictionary are length 0. First offending key(s): {empty_keys[:MAX_REPORTED_EMPTY_SEQUENCES]}')
+
+    elif isinstance(inputs, list):
+        empty_positions = [i for i, s in enumerate(inputs) if len(s) == 0]
+        if len(empty_positions) > 0:
+            raise MetapredictError(f'Error: {len(empty_positions)} sequence(s) in the passed list are length 0. First offending position(s) (0-indexed): {empty_positions[:MAX_REPORTED_EMPTY_SEQUENCES]}')
+
+
+def valid_version(version_specified, prediction_type):
+    '''
+    Function to handle version specified by the user. 
+    To make things less annoying, you can input the version
+    as v1, v2, v3, or just 1, 2, 3. This function will
+    return the version as a string.
+
+    Parameters
+    ----------
+    version_specified : str or int
+        Version specified by the user
+
+    prediction_type : str
+        The type of prediction being made
+        options are 'disorder' or 'pLDDT'    
+
+    Returns
+    -------
+    str
+        Returns the version as a string
+
+    '''
+    # make sure we are checking a valid network. Make lowercase because pLDDT is annoying. 
+    if prediction_type.lower() == 'disorder':
+        valid_networks = list(metapredict_networks.keys())
+    elif prediction_type.lower() == 'plddt':
+        valid_networks = list(pplddt_networks.keys())
+    else:
+        raise MetapredictError('Invalid prediction type specified. Options are disorder or pLDDT.')
+
+    # make sure that you only get an int or a string as the input for version_specified.
+    if isinstance(version_specified, int):
+        # if is an int, convert to string
+        version = str(version_specified)
+    elif isinstance(version_specified, str):
+        # if is a string, leave it as is
+        version = version_specified
+    else:
+        # if not either, raise exception
+        raise MetapredictError('Version must be an integer or a string')
+
+    # now we can take care of formatting. We have a string that could be 'v1', 'V1', or '1' (for example)
+    if len(version)==1:
+        # if the length is 1, then we need to add a 'v' to the start
+        version = 'V'+version
+
+    # now make sure is uppercase.
+    version = version.upper()
+
+    # now see if it's in the valid networks. 
+    if version not in valid_networks:
+        raise MetapredictError(f'Invalid network specified. Options are {valid_networks}')
+    else:
+        return version
+
+
+
+def caid_output_filename(entry_id):
+    """
+    Return the file name used for an entry's CAID output file.
+
+    The file is named after the entry ID (normally the FASTA header), so that
+    files are easy to match back to entries. FASTA headers often contain
+    characters that can't be used in file names, most commonly the '|' in
+    every UniProt header, which is not allowed on Windows (and '/' isn't
+    allowed anywhere). Those characters are replaced with '_'. Only the file
+    name changes: the header written inside the file is the original ID.
+
+    Parameters
+    ----------
+    entry_id : str
+        The entry ID, typically a FASTA header. A leading '>' is ignored.
+
+    Returns
+    -------
+    str
+        A file name, ending in '.caid', that is valid on Windows, macOS and
+        Linux.
+
+    Raises
+    ------
+    MetapredictError
+        If nothing usable is left of the entry ID (e.g. it is empty).
+    """
+    name = entry_id[1:] if entry_id.startswith('>') else entry_id
+
+    # characters not allowed in file names on Windows (or anywhere, for '/')
+    name = INVALID_FILENAME_CHARACTERS.sub('_', name)
+
+    # Windows silently drops trailing dots and spaces from file names
+    name = name.rstrip(' .')
+
+    if not name:
+        raise MetapredictError(f'Cannot make a CAID output file name from entry ID {entry_id!r}')
+
+    # Windows device names such as CON or NUL can't be used as file names,
+    # even with an extension
+    if name.split('.')[0].upper() in WINDOWS_RESERVED_NAMES:
+        name = name + '_'
+
+    return name + '.caid'
+
+
+def write_caid_format(input_dict, output_path, version, use_fixed_cutoff=None):
+    '''
+    Function that takes in a dictionary and outputs a file in the format as 
+    specified by IDPcentrail Critical Assessment of Intrinsic protein Disorder
+    (CAID). The format is as follows: the output is a plain text file where the
+    prediction has an entry header >entry_id, similar to the beginning of a
+    .fasta file. Every line following the entry_id contains tab-separated columns
+    ordered as follows - 1) residue number, 2) residue name, 3) confidence score,
+    4) binary classification where 1 = disordered and 0 = not disordered.
+
+    Example (from idpcentral.org/caid)::
+
+        >P04637
+        1    M    0.892    1
+        2    E    0.813    1
+
+    Parameters
+    ----------
+    input_dict : dict
+        If ``use_fixed_cutoff`` is None, this should map entry_id (str) to a
+        DisorderObject (exposing ``.sequence``, ``.disorder`` and
+        ``.disordered_domain_boundaries`` -- a list of [start, end) Python
+        indexed boundaries marking IDRs). The IDR boundaries are used to
+        assign the per-residue binary classification.
+
+        If ``use_fixed_cutoff`` is a float, this should map entry_id (str) to
+        a 2-element list/tuple where element 0 is the sequence (str) and
+        element 1 is the per-residue disorder scores (list/array of floats).
+
+    output_path : str
+        the path where to save each generated file. The function will save a file
+        for each entry in the input_dict. The file will be saved in the format
+        entry_id.caid, with any characters that aren't allowed in file names
+        (such as the '|' in UniProt headers) replaced by '_'; see
+        caid_output_filename(). The header inside each file is the original
+        entry_id.
+
+    version : str
+        The version of the network used to make the predictions. Options are 'v1', 'v2', 'v3'
+
+    use_fixed_cutoff : float or None
+        If None (default) the binary CAID classification is taken from the
+        DisorderObject IDR boundaries (1 inside an IDR, 0 outside). If a float
+        between 0 and 1 is supplied, the classification is instead set by
+        thresholding the per-residue disorder score against this cutoff
+        (score >= cutoff -> 1).
+
+    Returns
+    -------
+    None
+        Does not return anything to the user. Writes a file saved to either
+        the current directory or to a specified file path.
+
+    Raises
+    ------
+    MetapredictError
+        If two entry IDs would be written to the same file name (checked
+        before anything is written, so no output is silently overwritten).
+
+    '''
+
+    # first make a list of all of the keys in the dict
+    entry_ids = list(input_dict.keys())
+
+    # work out every output file name up front, and refuse to continue if two
+    # entries would share a file (one would silently overwrite the other)
+    filename_for_id = {}
+    ids_for_filename = {}
+    for entry_id in entry_ids:
+        filename = caid_output_filename(entry_id)
+        filename_for_id[entry_id] = filename
+        ids_for_filename.setdefault(filename, []).append(entry_id)
+    clashes = {name: ids for name, ids in ids_for_filename.items() if len(ids) > 1}
+    if clashes:
+        example_name, example_ids = next(iter(clashes.items()))
+        raise MetapredictError(f'{len(clashes)} CAID output file name(s) would be shared by more than one entry, '
+                               f'e.g. {example_ids} would all be written to {example_name}. '
+                               f'Please make the entry IDs (FASTA headers) distinct.')
+
+    # Ensure output_path exists and is a directory
+    if not os.path.exists(output_path):
+        try:
+            os.makedirs(output_path, exist_ok=True)
+        except Exception as e:
+            raise MetapredictError(f'Could not create output directory {output_path}: {e}')
+    elif not os.path.isdir(output_path):
+        raise MetapredictError(f'Please specify output_path as a directory to save generated files. {output_path} is not a valid directory.')
+
+    version=valid_version(version, prediction_type='disorder')
+
+    # validate the fixed cutoff if one was provided
+    if use_fixed_cutoff is not None:
+        valid_range(use_fixed_cutoff, 0.0, 1.0)
+
+    # now iterate through the dict and write one file per sequence. 
+    for ids in entry_ids:
+        cur_id = ids
+        if cur_id[0] != '>':
+            write_cur_id_header = '>'+cur_id
+        else:
+            write_cur_id_header = cur_id
+
+        entry = input_dict[cur_id]
+
+        if use_fixed_cutoff is None:
+            # domain-based binary classification using DisorderObject
+            cur_sequence = entry.sequence
+            cur_scores = entry.disorder
+
+            # build a per-residue binary mask from the IDR domain boundaries
+            # (boundaries are half-open Python-indexed [start, end) intervals).
+            cur_binary_mask = [0] * len(cur_sequence)
+            for boundary in entry.disordered_domain_boundaries:
+                start, end = boundary[0], boundary[1]
+                for i in range(start, end):
+                    cur_binary_mask[i] = 1
+        else:
+            # threshold-based binary classification using raw scores.
+            cur_sequence = entry[0]
+            cur_scores = entry[1]
+            cur_binary_mask = [
+                get_binary_prediction(s, cutoff_value=use_fixed_cutoff)
+                for s in cur_scores
+            ]
+
+        # open the file to write to
+        with open(os.path.join(output_path, filename_for_id[cur_id]), 'w') as current_output:
+
+            # write entry id
+            current_output.write(f'{write_cur_id_header}\n')
+
+            # for each residue write the position, residue, score, and classification
+            for res_and_score_index in range(0, len(cur_sequence)):
+                cur_residue = cur_sequence[res_and_score_index]
+                cur_score = cur_scores[res_and_score_index]
+                cur_binary = cur_binary_mask[res_and_score_index]
+                write_score=str(round(float(cur_score),3))
+                if len(write_score) < 5:
+                    for i in range(0, 5-len(write_score)):
+                        write_score=write_score+'0'
+
+                # write as tsv the caid formatted info
+                current_output.write(f'{res_and_score_index+1}\t{cur_residue}\t{write_score}\t{cur_binary}\n')
+
+# check max length
+def exceeds_max_length(data, max_length=65535):
+    """
+    Recursively checks if a string, any element in a list, or any value in a dictionary
+    exceeds the given maximum length.
+
+    Parameters
+    ----------
+    data : str, list, dict, or any
+        The input data to check. Can be a string, list, or dictionary.
+    max_length : int, optional
+        The maximum allowed length (default is 65535 characters).
+
+    Returns
+    -------
+    bool
+        True if any string exceeds the max_length, False otherwise.
+    """
+    if isinstance(data, str):
+        # Check if the string exceeds the max length
+        return len(data) > max_length
+    elif isinstance(data, list):
+        # Check each element in the list
+        return any(exceeds_max_length(item, max_length) for item in data)
+    elif isinstance(data, dict):
+        # Check each value in the dictionary
+        return any(exceeds_max_length(value, max_length) for value in data.values())
+    else:
+        # If not a string, list, or dict, it's not something we need to check
+        return False

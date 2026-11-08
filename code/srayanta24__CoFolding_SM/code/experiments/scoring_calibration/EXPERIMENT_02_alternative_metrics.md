@@ -7,6 +7,54 @@ does not track binding affinity. This asks the obvious next question: does anyth
 
 Everything here reuses EXPERIMENT_01's structures. No new structure prediction was run.
 
+> **Correction, 2026-10-25 — the paired benchmark was underpowered by a sampling bug,
+> and two of this document's three positive findings do not survive fixing it.**
+> The mutant arms were sampled 100-of-each by hash with no parent stratification, so of
+> 28 parents holding both mutant classes only 17 landed with both in the sample. A
+> targeted top-up brought all 28 in. Re-running the paired test:
+>
+> | metric | here (17) | **all 28** | p | new 11 alone |
+> |---|---|---|---|---|
+> | **packstat** | 14/17 | **23/28** | **0.0005** | 8/11 |
+> | shape complementarity | 13/17 | 16/28 | 0.286 | 5/11 |
+> | buried SASA | 13/17 | 16/28 | 0.286 | 4/11 |
+> | −dG/dSASA | 12/17 | 18/28 | 0.092 | 6/11 |
+> | ipTM | 9/17 | 14/28 | 0.575 | 5/11 |
+>
+> **packstat strengthened and now survives Bonferroni** (p=0.0005 against α=0.0056 over
+> the nine metrics tested), with the 11 genuinely new parents agreeing in direction
+> (8/11, p=0.113 — what an underpowered replication of a real effect looks like).
+> **Shape complementarity and buried SASA collapsed to chance** on the new parents
+> (5/11, 4/11). §6's "three significant geometric metrics" should be read as **one**.
+> ipTM and ipSAE are unchanged: chance and anti-correlated respectively.
+>
+> **The null control is above chance on this benchmark too, and packstat was checked
+> against it.** `ll_antigen` scores 17/28 (p=0.17), 7/11 on the new parents. The antigen
+> *sequence* is identical between a retained and a destroyed mutant, but each complex is
+> predicted separately, so its predicted *structure* differs and the score reads overall
+> prediction quality — the same channel that contaminated EXPERIMENT_03. Splitting the
+> parents by whether the null succeeded:
+>
+> | | n | packstat | p |
+> |---|---|---|---|
+> | null also won | 17 | 14/17 | 0.006 |
+> | null lost | 11 | **9/11** | 0.033 |
+>
+> packstat performs the same where the null fails as where it succeeds, so it is not
+> inheriting that channel. The standardized effects also run in opposite directions
+> (packstat +0.296, null −0.286), so the two are not measuring the same quantity.
+> Numbers regenerate via `analyze_paired.py` → `results/paired_comparison.md`.
+
+> **Follow-up, 2026-10-24.** §6's conclusion that "cross-complex affinity ranking
+> remains **untested**, not disproven" has now been tested directly, on a benchmark
+> built to remove the antigen-identity confound — see
+> [EXPERIMENT_03](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_03_within_antigen_ranking.md). Short version: ipTM does
+> carry some within-antigen signal (pooled ρ = +0.194), but the same null-control
+> technique used here fires on that benchmark too (+0.105 pooled, +0.284 on one
+> target), so most of it is not interpretable. ESM-IF1 reaches +0.078 against its
+> published ≈0.28 on the same data, leaving this document's backbone-quality
+> hypothesis as the leading explanation but unquantified.
+
 > **Correction, 2026-10-19.** An earlier version of this document (and of
 > IMPROVE_DESIGN.md §4) claimed packstat and shape complementarity are "already computed
 > inside BoltzGen's analysis stage, so adopting them costs a `--metrics_override`." That

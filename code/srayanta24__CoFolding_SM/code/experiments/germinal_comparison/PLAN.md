@@ -147,7 +147,7 @@ a metrics dict keyed like Protenix's: `plddt`, `plddt_binder`, `ptm`, `iptm`,
 validated backend, and there's no JAX/PyTorch bridging concern since nothing in Stage B
 is differentiated.
 
-But: this project already has a standing pattern for exactly this — README.md's TROP2
+But: this project already has a standing pattern for exactly this — README.md's Target A
 worked example chains a BoltzGen design into Skill A (`scripts/run_design.py`) as an
 *external*, independent cross-check, precisely because a design shouldn't be graded only
 by the backend that helped produce it. IMPROVE_DESIGN.md §2 states the same intent for
@@ -166,7 +166,7 @@ self-consistency-checked-but-still-self-scored) metric can provide alone.
   `vhh_pdl1.yaml:63`) — using it needs a torch swap and one adapter patch (§3), not new
   Germinal code.
 - **External cross-check (both pipelines' final candidates)**: OpenFold3 + Boltz-2 via
-  the existing Skill A pipeline — no new adapter needed, matches the TROP2 precedent
+  the existing Skill A pipeline — no new adapter needed, matches the Target A precedent
   exactly.
 - **Chai-1, AF3**: out of scope for v1 (§2b; AF3 license-excluded as already established
   project-wide).
@@ -265,8 +265,11 @@ comparison (`experiments/epitope_prediction/PLAN.md` §10: 3 `dev.txt` + 5 `test
 single-copy-antigen targets), so Germinal can be benchmarked head-to-head against
 BoltzGen on **identical antigens** — directly matches IMPROVE_DESIGN.md §2's own stated
 intent. Same split discipline already established
-(`databases/splits/README.md`): iterate against `dev.txt` targets only; reserve
-`test.txt` targets for final reported numbers.
+([`databases/splits/README.md`](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/databases/splits/README.md) §3): iterate against
+`dev.txt` targets only; reserve `test.txt` for final reported numbers — and because
+this plan tunes against `dev`, report on **`test_cluster_disjoint.txt`** rather than
+full `test.txt` (§4 there: 59 clusters straddle the dev/test boundary, so 26% of
+`test.txt` is homologous to something already tuned against).
 
 ## 7. Evaluation / comparison harness
 

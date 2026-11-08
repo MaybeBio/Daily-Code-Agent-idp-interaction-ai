@@ -147,3 +147,37 @@ skewness, with the network's values in parentheses. In every pair a short, expan
 matched with a longer, more compact one ($\nu=0.44$--$0.60$).}
 \label{fig:shape_pairs}
 \end{figure*}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig25_family_heads}
+\caption{\textbf{The two-exponent output against free mixture densities.}
+The network retrained with only its output head changed: log-normal mixtures with $K$ components (blue circles) and
+two-exponent forms (red squares), same inputs, NLL only, last epoch. Numbers in parentheses: free output parameters per
+protein; the released head (bottom row, dotted line) has 2, with six global coefficients for $A$. Networks are
+$512\times2$ unless stated; the open circle is the earlier recipe, with moment penalties and checkpoint selection on
+validation. Mean and sd over three seeds (open circle on the sticky split: two seeds).
+\textbf{a}, Validation NLL: the released head has 1.1524, the $K=3$ network at $512\times3$ 1.1508.
+\textbf{b}, Mean Wasserstein-1 distance on the sticky split, sequences more contact-prone than any used in training
+(5.96\% against 6.67\% for that network).
+\textbf{c}, The same distance against network size (labels: width $\times$ hidden layers). At $64\times2$ the mixture
+reaches 11.42\%, the two-exponent head 7.38\%.}
+\label{fig:family_heads}
+\end{figure*}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig26_starling_shape}
+\caption{\textbf{Shape of the $R_g$ distribution: the network against STARLING.}
+The network is trained on HPS1 and STARLING on Mpipi-GG. Every distribution is divided by its own mean, so size plays no part.
+\textbf{a--c}, Spread $\sigma/\langle R_g\rangle$ and the probabilities of compact ($R_g<t_c\langle R_g\rangle$) and extended
+($R_g>t_e\langle R_g\rangle$) conformations, where $t_c=0.681+0.311/\sqrt{N}$ and $t_e=1.421-0.571/\sqrt{N}$ are the 5th and 95th percentiles of
+$R_g/\langle R_g\rangle$ of a typical training chain of the same length. From the network against STARLING (blue circles) and, for scale, against the HPS1
+trajectories (green triangles), the force field the network was trained on. Grey band: $\pm1.96$ times the median sampling
+error of a STARLING ensemble (2000 conformations); block resampling puts HPS1's slightly lower. $\rho$: Spearman correlation and MAE over the
+119 proteins with $N\geq20$; open symbols have $N<20$, outside the network's domain.
+\textbf{d--g}, The proteins at the 25th, 50th and 75th percentiles and the largest of the shape $W_1$ between the network and
+STARLING over 121 proteins, as a percentage of $\langle R_g\rangle$: STARLING histogram and network prediction. Dotted lines mark $t_c$ and $t_e$ at
+that length.}
+\label{fig:starling_shape}
+\end{figure*}

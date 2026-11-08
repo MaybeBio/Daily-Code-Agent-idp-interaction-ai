@@ -511,8 +511,15 @@ energy calculations.
 - `step_n_preprocessed`: Last simulation step where preprocessing was done.
 - `sparse_pair_generation`: sparse-pair generation reflected in the cached masks
   and tile metadata.
+- `reorder_generation`, `tile_generation`: the [`GPUNeighborFinder`](@ref) rebuild
+  counts reflected in the cached Morton order and tile list, which
+  [`find_neighbors`](@ref) increases when they are due to be rebuilt.
 - `num_pairs`: host-side cached copy of the current interacting-tile count,
   used to size kernel launches.
+- `neighbor_reference`: the coordinates and boundary that the interacting-tile list
+  was built from, or `nothing` before the list is built or when it is rebuilt every
+  time. Used by a [`GPUNeighborFinder`](@ref) with `auto_update` to decide when to
+  refresh the list.
 
 Every buffer takes memory proportional to the number of atoms or the number of
 exceptions, apart from the interacting-tile vectors which are sized from the number
@@ -564,7 +571,10 @@ mutable struct BuffersGPU{F, P, V, VN, KT, PT, C, M, IT, ITT, ITD, NIT, OIT, CR,
     grad_scratch::Base.RefValue{Any}
     step_n_preprocessed::Int
     sparse_pair_generation::UInt64
+    reorder_generation::UInt64
+    tile_generation::UInt64
     num_pairs::Int
+    neighbor_reference::Base.RefValue{Any}
 end
 
 function BuffersGPU(fs_mat, pe_vec_nounits, virial, virial_nounits, kin_tensor, pres_tensor,
@@ -592,7 +602,8 @@ function BuffersGPU(fs_mat, pe_vec_nounits, virial, virial_nounits, kin_tensor, 
                       num_interacting_tiles,
                       interacting_tiles_overflow, coords_reordered, velocities_reordered,
                       atoms_reordered, fs_mat_reordered, Base.RefValue{Any}(nothing),
-                      step_n_preprocessed, sparse_pair_generation, num_pairs)
+                      step_n_preprocessed, sparse_pair_generation, UInt64(0), UInt64(0),
+                      num_pairs, Base.RefValue{Any}(nothing))
 end
 
 function clear_constraint_virial!(buffers::BuffersCPU, step_n::Integer)
@@ -730,7 +741,7 @@ function init_buffers!(sys::System{D, <:AbstractGPUArray, T, TH}, n_threads,
                       num_interacting_tiles,
                       interacting_tiles_overflow, coords_reordered, velocities_reordered,
                       atoms_reordered, fs_mat_reordered, Base.RefValue{Any}(nothing),
-                      -1, UInt64(0), 0)
+                      -1, UInt64(0), UInt64(0), UInt64(0), 0, Base.RefValue{Any}(nothing))
 end
 
 """
@@ -822,6 +833,10 @@ function forces!(fs,
                  general_inters=sys.general_inters,
                  visit_state::Bool=false,
                  strictness=default_strictness()) where {T, TH, needs_vir}
+    has_early_interactions = any(evaluate_before_pairwise, values(general_inters))
+    if has_early_interactions
+        fill!(fs, zero(eltype(fs)))
+    end
     if needs_vir
         fill!(buffers.virial, zero(TH) * sys.energy_units)
     else
@@ -848,6 +863,12 @@ function forces!(fs,
                 fill!(buffers.vir_chunks[chunk_i], zero(TH))
             end
         end
+    end
+
+    for inter in filter(evaluate_before_pairwise, values(general_inters))
+        AtomsCalculators.forces!(fs, sys, inter; neighbors=neighbors, step_n=step_n,
+                                 n_threads=n_threads, buffers=buffers, needs_vir=needs_vir,
+                                 visit_state=visit_state, strictness=strictness)
     end
 
     if length(pairwise_inters) > 0
@@ -878,15 +899,21 @@ function forces!(fs,
                              buffers.vir_chunks, Val(n_threads), Val(needs_vir))
     end
 
-    fs .= buffers.fs_nounits .* sys.force_units
+    if has_early_interactions
+        fs .+= buffers.fs_nounits .* sys.force_units
+    else
+        fs .= buffers.fs_nounits .* sys.force_units
+    end
     if needs_vir
-        buffers.virial .= buffers.vir_nounits .* sys.energy_units
+        buffers.virial .+= buffers.vir_nounits .* sys.energy_units
     end
 
     for inter in values(general_inters)
-        AtomsCalculators.forces!(fs, sys, inter; neighbors=neighbors, step_n=step_n,
-                                 n_threads=n_threads, buffers=buffers, needs_vir=needs_vir,
-                                 visit_state=visit_state, strictness=strictness)
+        if !evaluate_before_pairwise(inter)
+            AtomsCalculators.forces!(fs, sys, inter; neighbors=neighbors, step_n=step_n,
+                                     n_threads=n_threads, buffers=buffers, needs_vir=needs_vir,
+                                     visit_state=visit_state, strictness=strictness)
+        end
     end
     distribute_forces!(fs, sys, buffers; n_threads=n_threads)
 
@@ -1333,14 +1360,32 @@ function forces!(fs,
                  general_inters=sys.general_inters,
                  visit_state::Bool=false,
                  strictness=default_strictness()) where needs_vir
-    # Allow an Enzyme reverse rule
-    gpu_forces!(fs, sys, neighbors, step_n, buffers, needs_vir_val, pairwise_inters,
-                specific_inter_lists, n_threads)
+    has_early_interactions = any(evaluate_before_pairwise, values(general_inters))
+    if has_early_interactions
+        fill!(fs, zero(eltype(fs)))
+    end
+    if needs_vir
+        fill!(buffers.virial, zero(eltype(buffers.virial)))
+    end
 
     for inter in values(general_inters)
-        AtomsCalculators.forces!(fs, sys, inter; neighbors=neighbors, step_n=step_n,
-                                 n_threads=n_threads, buffers=buffers, needs_vir=needs_vir,
-                                 visit_state=visit_state, strictness=strictness)
+        if evaluate_before_pairwise(inter)
+            AtomsCalculators.forces!(fs, sys, inter; neighbors=neighbors, step_n=step_n,
+                                     n_threads=n_threads, buffers=buffers, needs_vir=needs_vir,
+                                     visit_state=visit_state, strictness=strictness)
+        end
+    end
+
+    # Allow an Enzyme reverse rule
+    gpu_forces!(fs, sys, neighbors, step_n, buffers, needs_vir_val, pairwise_inters,
+                specific_inter_lists, n_threads, Val(has_early_interactions))
+
+    for inter in values(general_inters)
+        if !evaluate_before_pairwise(inter)
+            AtomsCalculators.forces!(fs, sys, inter; neighbors=neighbors, step_n=step_n,
+                                     n_threads=n_threads, buffers=buffers, needs_vir=needs_vir,
+                                     visit_state=visit_state, strictness=strictness)
+        end
     end
     distribute_forces!(fs, sys, buffers; n_threads=n_threads)
 
@@ -1362,9 +1407,9 @@ function gpu_forces!(fs,
                      ::Val{needs_vir},
                      pairwise_inters,
                      specific_inter_lists,
-                     n_threads::Integer) where {D, T, TH, needs_vir}
+                     n_threads::Integer,
+                     ::Val{accumulate}=Val(false)) where {D, T, TH, needs_vir, accumulate}
     if needs_vir
-        fill!(buffers.virial, zero(T) * sys.energy_units)
         fill!(buffers.virial_nounits, zero(TH))
     else
         invalidate_interaction_virial!(buffers.validity)
@@ -1382,18 +1427,25 @@ function gpu_forces!(fs,
             pairwise_forces_loop_gpu!(buffers, sys, pis_nonl, nbs, Val(needs_vir), step_n)
         end
         if length(pis_nl) > 0
-            pairwise_forces_loop_gpu!(buffers, sys, pis_nl, neighbors, Val(needs_vir), step_n)
+            start_pairwise_forces_gpu!(buffers, sys, pis_nl, neighbors, Val(needs_vir),
+                                       step_n)
+        end
+
+        for inter_list in values(specific_inter_lists)
+            specific_forces_gpu!(buffers.fs_mat, buffers.virial_nounits,
+                                inter_list, sys.coords, sys.velocities, sys.atoms,
+                                sys.boundary, Val(needs_vir), step_n, sys.force_units, Val(T))
+        end
+
+        if length(pis_nl) > 0
+            finish_pairwise_forces_gpu!(buffers, sys, pis_nl, neighbors, Val(needs_vir),
+                                        step_n)
         end
         return nothing
     end
 
-    for inter_list in values(specific_inter_lists)
-        specific_forces_gpu!(buffers.fs_mat, buffers.virial_nounits,
-                            inter_list, sys.coords, sys.velocities, sys.atoms,
-                            sys.boundary, Val(needs_vir), step_n, sys.force_units, Val(T))
-    end
-
-    apply_force_units_gpu!(fs, buffers.fs_mat, sys.force_units, Val(D), Val(T))
+    apply_force_units_gpu!(fs, buffers.fs_mat, sys.force_units, Val(D), Val(T),
+                           Val(accumulate))
 
     if needs_vir
         buffers.virial .+= from_device(buffers.virial_nounits) .* sys.energy_units

@@ -198,6 +198,9 @@ The noise floor is calibrated on HPS1 split-half W1, because n_eff from R_g's au
 factor is 0.74 on W1, and STARLING's independent samples need none (ratio 1.00). Two proteins, stath_NTD and RS-peptide,
 have N below the network's stated minimum of 20 and are drawn open in the figure.
 
+`fit_nu.py` fits the two-exponent distribution to each ensemble, over its own mean and with ln A free (the fit paper fig24 uses
+for MD), into `nu_fits.csv`, with the sd of nu over 20 resamples. The paper text quotes it against the network's nu (`sec:starling`).
+
 ## Things to know before using the numbers
 
 - **Tau_ht40 cannot be run.** N = 441 is over STARLING's limit of 380, so the set is 121 proteins. It stays in

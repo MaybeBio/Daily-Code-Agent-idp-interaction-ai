@@ -1,0 +1,19 @@
+name: test
+channels:
+
+  - conda-forge
+
+  - defaults
+dependencies:
+    # Base depends
+  - python
+  - pip
+
+    # Zpoly
+  - rdkit
+  - numpy
+  - pyyaml
+
+    # Testing
+  - pytest
+  - pytest-cov

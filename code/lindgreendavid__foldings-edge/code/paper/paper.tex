@@ -1,0 +1,141 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black}
+
+\title{When Precision Misleads:\\
+A Subgroup Audit of AlphaFold's pLDDT as a Predictor\\
+of Curated Protein Disorder}
+\author{David Lindgreen}
+\date{October 9, 2026 \\[2pt] \small Version 0.1.0 \quad Preprint, not peer reviewed}
+
+\emergencystretch=3em
+\begin{document}
+\maketitle
+
+\begin{abstract}
+AlphaFold's per-residue confidence score (pLDDT) is lower inside intrinsically disordered regions, and a pLDDT$<$70
+rule is used as a disorder predictor. We tested this on 228{,}662 residues of 387 human proteins joined to curated
+DisProt annotations, with hypotheses and thresholds fixed before analysis. The core result is robust: median pLDDT is
+45.1 inside curated disorder and 88.8 outside, the direction holds in 332 of 372 proteins analysed individually, and
+the rule has recall 0.765 but precision 0.341 (MCC 0.367). We then audit the subgroup comparisons in our own
+original report, which scored each subgroup against the same shared pool of non-disorder residues. For such designs
+precision and MCC depend mechanically on subgroup size: at equal recall, the conditional-folding group's precision
+would be 0.071 against 0.306 for the rest, almost exactly the observed 0.063 against 0.310. Compared with
+size-independent quantities and protein-clustered intervals, the classifier's recall is lower on proteins with a
+conditional-folding annotation (0.681 against 0.780; difference 0.099, 95\% interval 0.0005 to 0.212), while the
+AUC difference (0.049; $-0.005$ to 0.115) is not distinguishable from zero. A reported weakest evidence code
+(hydrogen--deuterium exchange, recall 0.351) rests on four proteins (interval 0.09 to 0.72). The original claims are
+corrected accordingly.
+\end{abstract}
+
+\section{Question}
+Alderson et al.~\cite{alderson2023} showed that some conditionally folded disordered regions receive confident
+AlphaFold2 predictions. We asked a narrower, independently checkable question~\cite{jumper2021}: on a fresh
+snapshot of human DisProt entries, is pLDDT lower inside curated disorder, how well does the fixed rule pLDDT$<$70
+recover the curated labels, and where does it fail? This is not a replication of the earlier paper's figures; we compare
+only qualitatively.
+
+\section{Data and preregistered analysis}
+We sampled 400 of 1{,}339 human DisProt entries with a fixed seed, joined each to its AlphaFold DB per-residue pLDDT,
+and applied preregistered exclusions (13 entries: 7 without a resolvable prediction, 6 with a fragmented one). This
+leaves 387 proteins and 228{,}662 residues, of which 36{,}988 (16.2\%) lie in a curated disorder region and 191{,}674 do
+not. Hypotheses: \textbf{H1}, pLDDT is lower inside curated disorder (Mann--Whitney, with Kolmogorov--Smirnov as a
+robustness check); \textbf{H2}, the rule pLDDT$<$70 predicts the curated label above chance (precision, recall, F1,
+Matthews correlation coefficient MCC~\cite{matthews1975}).
+
+\section{Preregistered results}
+\textbf{H1 is supported.} Median pLDDT is 45.09 inside and 88.75 outside curated disorder (difference 43.66, bootstrap
+95\% interval 43.34--43.97; KS $D=0.484$). Because residues of one protein are correlated, we also compared
+within-protein medians for the 372 proteins containing both kinds of residue: the median paired difference is 36.47
+(protein-cluster bootstrap 95\% interval 34.29--40.07), positive in 332 proteins, negative in 39 and tied in one.
+\textbf{H2 is confirmed above chance, with moderate performance.}
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lcc}
+\toprule
+ & Point estimate & Protein-cluster 95\% interval\\
+\midrule
+Precision & 0.341 & 0.294--0.390\\
+Recall & 0.765 & 0.726--0.802\\
+F1 & 0.472 & 0.422--0.521\\
+MCC & 0.367 & 0.320--0.415\\
+\bottomrule
+\end{tabular}
+\caption{The rule pLDDT$<$70 against curated disorder. Confusion counts: TP 28{,}306, FP 54{,}760, TN 136{,}914, FN 8{,}682.}
+\end{table}
+
+\section{The flaw in the original subgroup comparisons}
+The original report broke performance down by a protein-level conditional-folding flag (61 of 387 proteins carry a
+``disorder to order'' annotation) and by evidence code, and called precision and MCC ``substantially worse'' for the
+conditional-folding group (precision 0.063 against 0.310; MCC 0.142 against 0.360). Each row, however, scored its
+subgroup's disorder residues against the \emph{same} 191{,}674 non-disorder residues, so the number of false positives
+(54{,}760) is fixed while the number of true positives scales with subgroup size. Precision
+$=\mathrm{TP}/(\mathrm{TP}+\mathrm{FP})$ therefore falls for any smaller subgroup, whatever the classifier does.
+If both groups had the overall recall of 0.765, precision would be 0.071 for the 5{,}435 conditional-group residues and
+0.306 for the other 31{,}553: the observed 0.063 and 0.310 are almost exactly this size effect. Precision and MCC are
+simply not comparable across such subgroups. The original report noted this for evidence codes but not for the
+conditional-folding table.
+
+\section{Post-hoc size-independent audit}
+We compared the groups using (i) recall within the group, and (ii) the area under the ROC curve (AUC) separating the
+group's disorder residues from the shared non-disorder pool, with 95\% intervals from a protein-cluster bootstrap
+(10{,}000 resamples for recall, 1{,}000 for AUC)~\cite{field2007}. Each protein belongs to exactly one group (61
+conditional proteins against 326 others). This analysis was not preregistered and all of it is reported.
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lccc}
+\toprule
+ & Conditional & Other & Difference (95\% interval)\\
+\midrule
+Recall & 0.681 & 0.780 & 0.099 (0.0005 to 0.212)\\
+AUC & 0.730 & 0.780 & 0.049 ($-$0.005 to 0.115)\\
+Observed precision & 0.063 & 0.310 & (size-dependent)\\
+Precision at equal recall & 0.071 & 0.306 & (size-dependent)\\
+\bottomrule
+\end{tabular}
+\caption{Conditional-folding subgroup audit. Only recall and AUC are comparable across groups.}
+\end{table}
+The direction agrees with the motivation of Alderson et al.: the rule is somewhat less sensitive where conditional
+folding occurs. But the recall interval barely excludes zero and the AUC interval includes it, so the evidence for a
+gap is weak at this sample size, not ``substantial''.
+
+\paragraph{Evidence codes.}
+The original report singled out hydrogen--deuterium exchange mass spectrometry (HDX-MS) as the weakest evidence code
+(recall 0.351). Those 578 residues come from only four proteins, and the protein-clustered interval is 0.09 to 0.72.
+Several other codes rest on one to five proteins (for example dynamic light scattering: 384 residues from one protein), for
+which bootstrap intervals are degenerate or unreliable. Recall ranges across codes with larger protein counts are
+narrower and more informative: X-ray missing-residue evidence 0.702 (202 proteins; 0.622--0.781), NMR 0.772
+(108 proteins; 0.708--0.828), circular dichroism 0.757 (37 proteins; 0.649--0.845).
+
+\section{Limitations}
+One DisProt snapshot, human proteins only, a 400-of-1{,}339 sample, and one threshold. The conditional-folding flag is a
+protein-level proxy, not the region-level definition of the earlier work. Absence of a curated disorder annotation does
+not mean order, so false positives are partly missing curation. Subgroups are overlapping annotations, so no causal
+role of any experimental technique is implied. The audit is post-hoc and descriptive; it corrects over-reading in the
+original report and does not test a new biological hypothesis.
+
+\section*{Reproducibility and AI assistance}
+Code, frozen registry, tests and the subgroup audit:\\
+\url{https://github.com/lindgreendavid/foldings-edge}\\
+Interactive laboratory:\\
+\url{https://foldings-edge-interactive.lindgreendavid.workers.dev}\\
+The frozen registry regenerates identically from the committed residue table. The analysis code, tests and drafts of this
+text were produced with substantial assistance from an AI system (Claude, Anthropic); the author is responsible for the
+content.
+
+\begin{thebibliography}{9}
+\bibitem{alderson2023} T.~R. Alderson, I.~Priti\v{s}anac, {\DJ}.~Kolari\'c, A.~M. Moses, J.~D. Forman-Kay, Systematic
+identification of conditionally folded intrinsically disordered regions by AlphaFold2, \emph{Proc. Natl. Acad. Sci. USA}
+\textbf{120}(44), e2304302120 (2023).
+\bibitem{jumper2021} J.~Jumper et al., Highly accurate protein structure prediction with AlphaFold,
+\emph{Nature} \textbf{596}, 583--589 (2021).
+\bibitem{matthews1975} B.~W. Matthews, Comparison of the predicted and observed secondary structure of T4 phage lysozyme,
+\emph{Biochim. Biophys. Acta} \textbf{405}, 442--451 (1975).
+\bibitem{field2007} C.~A. Field and A.~H. Welsh, Bootstrapping clustered data,
+\emph{J. R. Stat. Soc. B} \textbf{69}, 369--390 (2007).
+\end{thebibliography}
+\end{document}

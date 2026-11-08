@@ -1,0 +1,29 @@
+# TIP4P/2005 water and Madrid-2019 ions (rqm/system/slab.md).
+# Source: I. M. Zeron, J. L. F. Abascal, C. Vega, J. Chem. Phys. 151, 134504 (2019):
+#   Table I (charges, water geometry), Table III (sigma_ij, nm), Table IV (epsilon_ij, kJ/mol).
+version: 1
+water:            # TIP4P/2005: O-H (nm), H-O-H (deg), O-M (nm), charges (e)
+  d_oh: 0.09572
+  angle_hoh: 104.52
+  d_om: 0.01546
+  q_h: 0.5564
+  q_m: -1.1128
+# type: [atomic number, mass (u), charge (e), sigma (nm), epsilon (kJ/mol)]
+types:
+  OW_tip4p: [8, 15.9994, 0.0, 0.315890, 0.774908]
+  HW_tip4p: [1, 1.008, 0.5564, 0.0, 0.0]
+  MW_tip4p: [0, 0.0, -1.1128, 0.0, 0.0]
+  NA_mad: [11, 22.990, 0.85, 0.221737, 1.472356]
+  K_mad: [19, 39.098, 0.85, 0.230140, 1.985740]
+  CL_mad: [17, 35.453, -0.85, 0.469906, 0.076923]
+ions:             # GROMACS molecule name -> type
+  NA: NA_mad
+  K: K_mad
+  CL: CL_mad
+# Cross terms given in Tables III/IV; every other pair among these types is Lorentz-Berthelot (the paper's "LB").
+pairs:
+  NA_mad-CL_mad: [0.300512, 1.438894]
+  NA_mad-OW_tip4p: [0.260838, 0.793388]
+  K_mad-CL_mad: [0.339700, 1.400000]
+  K_mad-OW_tip4p: [0.289040, 1.400430]
+  CL_mad-OW_tip4p: [0.423867, 0.061983]

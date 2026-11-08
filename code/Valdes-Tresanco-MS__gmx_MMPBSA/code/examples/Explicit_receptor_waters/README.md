@@ -1,0 +1,238 @@
+---
+template: main.html
+title: Explicit receptor waters
+---
+
+# MM/GBSA with explicit receptor waters
+
+This example retains 10 interfacial water molecules in a single-trajectory protein-protein calculation and assigns
+them to the receptor. Interface residues are identified from their change in solvent-accessible surface area (dASA).
+
+<div class="example-card-grid" markdown>
+
+-   **Protocol**
+
+    Single trajectory
+
+-   **System**
+
+    Protein-protein complex
+
+-   **Explicit solvent**
+
+    10 receptor waters
+
+-   **Bundled test**
+
+    `gmx_MMPBSA_test -t 26`
+
+</div>
+
+## Before you begin
+
+This folder contains its own copy of the molecular files used by the [Protein-protein example][8]:
+
+<div class="example-card-grid" markdown>
+
+-   **Calculation settings**
+
+    dASA explicit-water settings in `mmpbsa.in` (`-i`)
+
+-   **GROMACS system**
+
+    Structure `com.tpr` (`-cs`) and topology `topol.top` (`-cp`), including the neighboring `toppar` directory
+
+-   **Trajectory**
+
+    PBC-corrected and fitted trajectory `com_traj.xtc` (`-ct`)
+
+-   **Molecular selections**
+
+    Index `index.ndx` (`-ci`) with the `SOLU_chain1` and `SOLU_chain2` groups (`-cg`)
+
+</div>
+
+See the [complete command-line reference][1] for all available options.
+
+## Run the example
+
+### Run the bundled test
+
+The test runner downloads and runs the self-contained example automatically:
+
+```bash
+gmx_MMPBSA_test -t 26
+```
+
+See the [`gmx_MMPBSA_test` documentation][7] for download, selection, and cleanup options.
+
+### Run it manually
+
+Obtain the source tree by cloning the repository or downloading its source archive from the
+[explicit-water example directory on GitHub][10]. Then change to the `Explicit_receptor_waters` directory and choose
+either the serial or MPI command. Use the versioned example archive for the 1.7.0 release, or clone the repository
+and use the example directory directly.
+
+=== "Serial"
+
+    ```bash
+    gmx_MMPBSA -O \
+      -i mmpbsa.in \
+      -cs com.tpr \
+      -ct com_traj.xtc \
+      -ci index.ndx \
+      -cg SOLU_chain1 SOLU_chain2 \
+      -cp topol.top \
+      -o FINAL_RESULTS_MMPBSA.dat \
+      -eo FINAL_RESULTS_MMPBSA.csv
+    ```
+
+=== "With MPI"
+
+    ```bash
+    mpirun -np 2 gmx_MMPBSA -O \
+      -i mmpbsa.in \
+      -cs com.tpr \
+      -ct com_traj.xtc \
+      -ci index.ndx \
+      -cg SOLU_chain1 SOLU_chain2 \
+      -cp topol.top \
+      -o FINAL_RESULTS_MMPBSA.dat \
+      -eo FINAL_RESULTS_MMPBSA.csv
+    ```
+
+## Configure the calculation
+
+The concise `mmpbsa.in` is shown first. The all-options version was generated with
+`gmx_MMPBSA --create_input gb` and updated with the same example-specific values.
+
+=== "Concise input"
+
+    ```yaml linenums="1" title="mmpbsa.in"
+    Sample input file for ST GB calculation with explicit receptor waters
+    # This input keeps 10 waters closest to a static cpptraj dASA interface.
+
+    &general
+    sys_name="Prot-Prot-ExpWat",
+    startframe=1,
+    endframe=10,
+    PBRadii=4,
+    explicit_waters=10,
+    explicit_waters_mask="dASA",
+    explicit_waters_dasa_cutoff=0.5,
+    /
+    &gb
+    igb=8, saltcon=0.150,
+    /
+    ```
+
+=== "Generated input — all options"
+
+    ```yaml linenums="1" title="mmpbsa.in generated with --create_input gb"
+    Input block generated for the 1.7.0 release.
+    Be careful with the variables you modify, some can have severe consequences on the results you obtain.
+
+    # General namelist variables
+    &general
+      sys_name                       = "Prot-Prot-ExpWat"                     # System name; e.g. "complex"
+      startframe                     = 1                                      # First frame; e.g. 1
+      endframe                       = 10                                     # Last frame; e.g. 100
+      interval                       = 1                                      # Frame interval; e.g. 1
+
+
+      PBRadii                        = 4                                      # PB radii set; 1-7
+      temperature                    = 298.15                                 # Temperature (K); e.g. 298.15
+      qh_entropy                     = 0                                      # Legacy QH output reader; new calculations reject 1
+      interaction_entropy            = 0                                      # Run IE entropy; 0/1
+      ie_segment                     = 25                                     # IE tail diagnostic only (%); not primary IE; e.g. 25
+      c2_entropy                     = 0                                      # Run C2 entropy; 0/1
+      assign_chainID                 = 0                                      # Assign chain IDs; 0/1
+      exp_ki                         = 0.0                                    # Experimental Ki (nM); e.g. 0.0
+      full_traj                      = 0                                      # Write full trajectory; 0/1
+      gmx_path                       = ""                                     # GROMACS path; e.g. "/usr/bin"
+      keep_files                     = 2                                      # Files to keep; 0-2
+      netcdf                         = 0                                      # Use NetCDF; 0/1
+      solvated_trajectory            = 1                                      # Clean solvated traj.; 0/1
+      explicit_waters                = 10                                     # Explicit waters; e.g. 10
+      explicit_waters_mask           = "dASA"                                 # Water reference; e.g. ":1-10", "within 4", "dASA"
+      explicit_waters_group          = "automatic"                                     # Solvent group; e.g. "TIP3" or "automatic"
+      explicit_waters_dasa_cutoff    = 0.5                                    # dASA cutoff; e.g. 0.5
+      explicit_waters_as             = "receptor"                             # Water owner; e.g. "receptor"
+      explicit_waters_extra_points   = "error"                                # Virtual sites; "error" or "strip"
+      verbose                        = 1                                      # Output verbosity; 0-2
+    /
+
+    # (AMBER) Generalized-Born namelist variables
+    &gb
+      igb                            = 8                                      # GB model, e.g. 2 or 8
+      intdiel                        = 1.0                                    # Internal dielectric; e.g. 1.0
+      extdiel                        = 78.5                                   # External dielectric; e.g. 78.5
+      saltcon                        = 0.150                                  # Salt conc. (M); e.g. 0.150
+      surften                        = 0.0072                                 # Surface tension; e.g. 0.0072
+      surfoff                        = 0.0                                    # Surface offset; e.g. 0.0
+      molsurf                        = 0                                      # Use molsurf; 0/1
+      msoffset                       = 0.0                                    # Molsurf offset; e.g. 0.0
+      probe                          = 1.4                                    # Probe radius (A); e.g. 1.4
+      ifqnt                          = 0                                      # Enable QM/MM; 0/1
+      qm_theory                      = "PM6-DH+"                              # QM theory; e.g. "PM6-DH+"
+      qm_residues                    = ""                                     # QM residues; e.g. ":1-5"
+      com_qmmask                     = ""                                     # Complex QM mask; e.g. ":1-5"
+      rec_qmmask                     = ""                                     # Receptor QM mask; e.g. ":1-5"
+      lig_qmmask                     = ""                                     # Ligand QM mask; e.g. ":1"
+      qmcharge_com                   = 0                                      # Complex QM charge; e.g. 0
+      qmcharge_lig                   = 0                                      # Ligand QM charge; e.g. 0
+      qmcharge_rec                   = 0                                      # Receptor QM charge; e.g. 0
+      qmcut                          = 9999.0                                 # QM cutoff (A); e.g. 9999
+      scfconv                        = 1e-08                                  # SCF convergence; e.g. 1.0e-8
+      itrmax                         = 1000                                   # Maximum SCF iterations; e.g. 5000
+      # ndiis_attempts                 = None                                 # Maximum DIIS attempts per SCF cycle; e.g. 700
+      peptide_corr                   = 0                                      # Peptide correction; 0/1
+      writepdb                       = 1                                      # Write QM PDB; 0/1
+      verbosity                      = 0                                      # QM/MM verbosity; 0-5
+      alpb                           = 0                                      # Use ALPB; 0/1
+      arad_method                    = 1                                      # ALPB size method; e.g. 1
+    /
+    ```
+
+!!! info "Keep in mind"
+    This setup provides a practical starting point for assessing explicit interfacial waters. Adapt the number of
+    waters, interface definition, and frame sampling to the system and scientific question.
+
+## How explicit-water selection works
+
+The dASA workflow identifies interface residues from their change in solvent-accessible surface area using a cutoff
+of 0.5. For every frame, `cpptraj closest` then retains the 10 waters nearest to that static interface-residue mask.
+The residue mask remains fixed, but water identities can vary between frames.
+
+The retained waters are included in the complex and receptor topologies; the ligand remains dry. The input processes
+frames 1 through 10 using GB-Neck2 (`igb=8`), mbondi3 radii (`PBRadii=4`), and 0.15 M salt, matching the corresponding
+dry Protein-protein example except for the explicit waters.
+
+This mode is supported for single-trajectory GB, GBNSR6, PB, RISM, and normal-mode calculations. It is not supported
+with multiple-trajectory inputs. If the solvent index group has a custom name, set `explicit_waters_group`. For
+extra-point water models such as OPC or TIP4P, the default is to stop and report the available remedies. Set
+`explicit_waters_extra_points="strip"` to continue for a controlled relative comparison, or use a 3-site water model
+such as TIP3P/SPC when preserving the original water electrostatics is important.
+
+## Inspect the selection
+
+Useful generated files include:
+
+- `_GMXMMPBSA_explicit_waters_dasa.dat`: dASA values used to define the interface.
+- `_GMXMMPBSA_explicit_waters_closest_0.dat`: water selections produced by `cpptraj closest`.
+- `COM.prmtop`: complex topology containing the retained waters.
+- `REC.prmtop`: receptor topology containing those waters.
+- `LIG.prmtop`: dry ligand topology.
+
+## Expected outputs
+
+A successful calculation produces the requested MM/GBSA summary and per-frame CSV output. Open the results with
+`gmx_MMPBSA_ana` for interactive inspection and plotting; see the [`gmx_MMPBSA_ana` documentation][5].
+
+  [1]: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/blob/HEAD/docs/gmx_MMPBSA_command-line.md#gmx_mmpbsa-command-line
+  [2]: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/blob/HEAD/docs/input_file.md#the-input-file
+  [3]: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/blob/HEAD/docs/input_file.md#sample-input-files
+  [5]: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/blob/HEAD/docs/analyzer.md#gmx_mmpbsa_ana-the-analyzer-tool
+  [7]: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/blob/HEAD/docs/examples/gmx_MMPBSA_test.md#gmx_mmpbsa_test-command-line
+  [8]: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/blob/HEAD/examples/Protein_protein/README.md
+  [10]: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA/tree/master/examples/Explicit_receptor_waters

@@ -1,0 +1,240 @@
+
+# Project information
+site_name: gmx_MMPBSA Documentation
+site_url: https://valdes-tresanco-ms.github.io/gmx_MMPBSA/dev/
+site_author: Mario S. and Mario E. Valdés-Tresanco
+site_description: >-
+  gmx_MMPBSA is a new tool based on AMBER's MMPBSA.py aiming to perform end-state free energy calculations with GROMACS
+  files
+
+# Repository
+repo_name: gmx_MMPBSA
+repo_url: https://github.com/Valdes-Tresanco-MS/gmx_MMPBSA
+edit_uri: ""
+
+# Copyright
+copyright: Copyright &copy; 2020 - 2022 MS. and ME. Valdés-Tresanco
+
+# Configuration
+# Keep drafts, experiments, and unvalidated historical examples in the repository,
+# but do not publish or index them until they have an explicit release decision.
+exclude_docs: |
+  application_note_advances_since_1_4_3.md
+  spikes/**
+  examples/COVID-19_related_proteins/**
+
+theme:
+  name: material
+  logo: assets/logo_white_border.svg
+  custom_dir: docs/overrides
+
+
+  # 404 page
+  static_templates:
+    - 404.html
+
+  # Don't include MkDocs' JavaScript
+  include_search_page: false
+  search_index_only: true
+
+  # Default values, taken from mkdocs_theme.yml
+  language: en
+  features:
+    - content.code.annotate
+    - content.tabs.link
+    # - header.autohide
+    # - navigation.expand
+#    - navigation.indexes
+    # - navigation.instant
+    - navigation.expand
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+#    - navigation.tracking
+    - search.highlight
+#    - search.share
+    - search.suggest
+    # - header.autohide
+    - toc.integrate
+
+  palette:
+    - scheme: default
+      primary: black
+      accent: black
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: black
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+
+#    - scheme: default
+#      primary: black
+#      accent: black
+#      toggle:
+#        icon: material/weather-sunny
+#        name: Switch to dark mode
+#    - scheme: slate
+#      primary: black
+#      accent: black
+#      toggle:
+#        icon: material/weather-night
+#        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  favicon: assets/logo.svg
+  icon:
+    logo: logo
+
+# Plugins
+plugins:
+  - search
+  - git-revision-date-localized:
+      type: datetime
+      enable_creation_date: true
+  - minify:
+      minify_html: true
+
+# Customization
+extra:
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Valdes-Tresanco-MS
+  version:
+    provider: mike
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - abbr
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: Valdes-Tresanco-MS
+      repo: gmx_MMPBSA
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Page tree
+nav:
+  - Home: index.md
+  - Getting started:
+    - Getting started: getting-started.md
+    - Introduction: introduction.md
+    - gmx_MMPBSA in a nutshell: summary.md
+    - gmx_MMPBSA vs other programs: versus.md
+    - Installation: installation.md
+  - gmx_MMPBSA:
+    - How gmx_MMPBSA works: howworks.md
+    - Command-line: gmx_MMPBSA_command-line.md
+    - Running gmx_MMPBSA: gmx_MMPBSA_running.md
+    - Logging and progress: logging.md
+    - The input file: input_file.md
+    - The output file: output.md
+    - Python API: api.md
+  - amber_MMPBSA:
+    - amber_MMPBSA: amber_MMPBSA.md
+    - AMBER input files example: examples/AMBER/README.md
+  - gmx_MMPBSA_ana:
+    - gmx_MMPBSA_ana: analyzer.md
+    - Command-line: gmx_MMPBSA_ana_command-line.md
+    - Running gmx_MMPBSA_ana: gmx_MMPBSA_ana_running.md
+  - Examples:
+    - Examples: examples/README.md
+    - gmx_MMPBSA_test: examples/gmx_MMPBSA_test.md
+    - Systems:
+      - Protein-protein: examples/Protein_protein/README.md
+      - Protein-ligand: examples/Protein_ligand/ST/README.md
+      - Protein-DNA: examples/Protein_DNA/README.md
+      - Protein-glycan: examples/Protein_glycan/README.md
+      - Membrane proteins: examples/Protein_membrane/README.md
+      - Metalloprotein-ligand: examples/Metalloprotein_ligand/README.md
+      - Multicomponent system: examples/Comp_receptor/README.md
+      # - COVID-19 related proteins:
+      #     - Info: examples/COVID-19_related_proteins/README.md
+      #     - Main protease: examples/COVID-19_related_proteins/Main_protease_7l5d/README.md
+      #     - Papain-like protease: examples/COVID-19_related_proteins/Papain-like_protease_7koj/README.md
+      #     - S1-ACE2 complex: examples/COVID-19_related_proteins/S1-ACE2_complex_7dmu/README.md
+      #     - S1 RBD with antibody: examples/COVID-19_related_proteins/S1_RBD_with_antibody_6zlr/README.md
+    - Analyses:
+        - Single Trajectory Protocol: examples/Protein_ligand/ST/README.md
+        - Multiple Trajectory Protocol: examples/Protein_ligand/MT/README.md
+        - BFE calculations:
+            - BFE calculation with GB: examples/Protein_ligand/ST/README.md
+            - ST MM/GBSA with explicit receptor waters: examples/Explicit_receptor_waters/README.md
+            - BFE calculation with GBNSR6: examples/GBNSR6/README.md
+            - BFE calculation with Linear PB: examples/Linear_PB_solver/README.md
+            - BFE calculation with NonLinear PB : examples/NonLinear_PB_solver/README.md
+            - BFE calculation with 3D-RISM: examples/3D-RISM/README.md
+        - Alanine scanning: examples/Alanine_scanning/README.md
+        - Decomposition analysis: examples/Decomposition_analysis/README.md
+        - Entropy calculations:
+            - Interaction Entropy: examples/Entropy_calculations/Interaction_Entropy/README.md
+            - nmode Entropy: examples/Entropy_calculations/nmode/README.md
+            - C2 Entropy calculations: examples/Entropy_calculations/C2_Entropy/README.md
+        - Stability calculations: examples/Stability/README.md
+        - QM/MMGBSA: examples/QM_MMGBSA/README.md
+        - Correlation: examples/Correlation/README.md
+        - Python API extraction: examples/API/README.md
+    - Input formats and force-field workflows:
+        - Native AMBER - representative protein-protein: examples/AMBER/README.md
+        - CHARMM topology - representative protein-ligand: examples/Protein_ligand_CHARMMff/README.md
+        - CHARMM LPH sites - specialized protein-ligand: examples/Protein_ligand_LPH_atoms_CHARMMff/README.md
+        - OPLS topology - representative protein-protein: examples/OPLS/protein_protein/README.md
+        - PSF/DCD conversion - representative protein-protein: examples/psf_dcd/protein_protein/README.md
+
+  - Help:
+    - Help: Q&A/README.md
+    - Installation: Q&A/installation.md
+    - OS issues: Q&A/OS_issues.md
+    - Calculations: Q&A/calculations.md
+    - Info:
+      - Changelog: changelog.md
+      - Compatibility and upgrades: compatibility.md
+      - Private Policy: private_policy.md
+    - Support: support.md
+  - Cite gmx_MMPBSA: cite_us.md
+
+extra_css:
+  - assets/stylesheets/termynal.css
+  - assets/stylesheets/custom.css
+extra_javascript:
+  - assets/js/termynal.js
+  - assets/js/custom.js

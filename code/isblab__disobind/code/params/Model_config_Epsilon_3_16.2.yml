@@ -1,0 +1,120 @@
+Version: '16.2'
+Embedding: T5
+Emb_type: global
+Model: Epsilon_3
+System: b'ev'
+Global_seed: 1
+conf:
+  model_params:
+    Model: Epsilon_3
+    emb_size: 1024
+    projection_layer:
+    - 128
+    - ln2
+    - true
+    - 1
+    - ''
+    output_dim: 1
+    input_layer:
+    - op-od
+    - vanilla
+    - avg2d
+    num_samples: 0
+    num_hid_layers:
+    - 0
+    - 0
+    - 0
+    - 0
+    - vanilla
+    - ''
+    bias: true
+    dropouts:
+    - 0.2
+    - 0
+    - 0
+    - 0
+    - 0
+    norm:
+    - true
+    - LN
+    temperature: null
+    output_layer: vanilla
+    activation1:
+    - elu
+    - null
+    activation2:
+    - sigmoid
+    - true
+    max_seq_len: 100
+    device: cuda
+    objective:
+    - interface_bin
+    - 10
+    - avg
+    - false
+    - true
+    - false
+  dataset:
+    train_set_size: 0.9
+    dev_set_size: 0.05
+    test_set_size: 0.05
+    input_files: ../database/v_19/T5/global-None/
+    train_file: Train_set_global_v_19.npy
+    dev_file: Dev_set_global_v_19.npy
+    test_file: Test_set_global_v_19.npy
+    output_path: ../models/Epsilon_3_Train/
+    batch_size: 64
+    batch_shuffle:
+    - true
+    - false
+    - false
+  train_params:
+    objective:
+    - interface_bin
+    - 10
+    - avg
+    - false
+    - true
+    - false
+    emb: T5
+    mask:
+    - false
+    - true
+    num_metrics:
+    - 7
+    - global
+    Nruns: 1
+    max_seq_len: 100
+    loss: se_loss
+    log_weight:
+    - 0.9
+    - 3
+    optimizer: AdamW
+    amsgrad: true
+    weight_decay:
+    - 0.05
+    calibration: None
+    max_norm: null
+    learning_rate:
+    - 0.0002
+    scheduler:
+      apply: true
+      name: exp
+      milestone:
+      - null
+      gamma:
+      - 0.87
+      start_factor: null
+      end_factor: null
+      total_iters: null
+      swa_start: null
+      swa_lr: null
+      base_lr: null
+      step_size_up: null
+      step_size_down: null
+    max_epochs: 20
+    contact_threshold:
+    - 0.5
+    save_model: true
+    model_path: model_global
+    optuna_trials: 0

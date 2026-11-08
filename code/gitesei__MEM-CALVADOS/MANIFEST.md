@@ -1,20 +1,20 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/gitesei/MEM-CALVADOS
-- 快照日期: 2026-10-28
-- 快照 commit: [`cc6e3a94a3f3`](https://github.com/gitesei/MEM-CALVADOS/commit/cc6e3a94a3f3c4404dd21c26873a6705752ca9a6)
+- 快照日期: 2026-11-08
+- 快照 commit: [`57dcd13ecc87`](https://github.com/gitesei/MEM-CALVADOS/commit/57dcd13ecc879ff78c8d082f491ce0f6c48a061e)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (80 个文件, 292.2 KB)
+## 保留 (80 个文件, 302.8 KB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| 源码 | 39 | 238.7 KB |
+| 源码 | 39 | 249.2 KB |
 | 文档 | 11 | 35.9 KB |
-| README | 17 | 13.0 KB |
-| 构建/配置 | 13 | 4.6 KB |
+| README | 17 | 13.1 KB |
+| 构建/配置 | 13 | 4.7 KB |
 
-按后缀: `.py` 37 (232.8 KB)、`无后缀` 1 (34.3 KB)、`.md` 17 (13.0 KB)、`.ipynb` 2 (5.9 KB)、`.yaml` 9 (1.9 KB)、`setup.py` 1 (1.7 KB)、`.rst` 10 (1.5 KB)、`Makefile` 1 (634 B)、`.ini` 1 (265 B)、`.txt` 1 (130 B)
+按后缀: `.py` 37 (243.3 KB)、`无后缀` 1 (34.3 KB)、`.md` 17 (13.1 KB)、`.ipynb` 2 (5.9 KB)、`.yaml` 9 (2.0 KB)、`setup.py` 1 (1.7 KB)、`.rst` 10 (1.5 KB)、`Makefile` 1 (634 B)、`.ini` 1 (265 B)、`.txt` 1 (130 B)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 
@@ -38,10 +38,10 @@
 | [`examples/two_IDR_MDP/input/TIA1.pdb`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/two_IDR_MDP/input/TIA1.pdb) | 325.7 KB |
 | [`examples/single_GO/input/AF-P00698.pdb`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/single_GO/input/AF-P00698.pdb) | 94.5 KB |
 | [`examples/single_GO/input/AF-P00698.json`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/single_GO/input/AF-P00698.json) | 46.5 KB |
+| [`residues.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/residues.csv) | 1.8 KB |
 | [`examples/bilayer/input/residues.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/bilayer/input/residues.csv) | 1.7 KB |
 | [`examples/single_TMP/input/residues.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/single_TMP/input/residues.csv) | 1.7 KB |
 | [`examples/single_TMP_AF/input/residues.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/single_TMP_AF/input/residues.csv) | 1.7 KB |
-| [`residues.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/residues.csv) | 1.7 KB |
 | [`tests/data/residues_C2RNA.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/tests/data/residues_C2RNA.csv) | 1.2 KB |
 | [`examples/single_RNA/residues_C2RNA.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/single_RNA/residues_C2RNA.csv) | 1.1 KB |
 | [`examples/slab_mixed/input/residues_C2RNA.csv`](https://github.com/gitesei/MEM-CALVADOS/raw/HEAD/examples/slab_mixed/input/residues_C2RNA.csv) | 1.1 KB |

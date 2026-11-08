@@ -224,51 +224,23 @@ function autotune_benchmark_ms!(prepare!::F, run!::G;
     return best_ms
 end
 
-# The box matrix with the basis vectors as columns, so that its inverse gives fractional
-#   coordinates, see `kernel_min_max_triclinic!`
-# The arguments are in column-major order
-@inline function triclinic_boundary_matrix(boundary::TriclinicBoundary, ::Type{T}) where T
-    return SMatrix{3, 3, T}(
-        ustrip(boundary.basis_vectors[1][1]), ustrip(boundary.basis_vectors[1][2]), ustrip(boundary.basis_vectors[1][3]),
-        ustrip(boundary.basis_vectors[2][1]), ustrip(boundary.basis_vectors[2][2]), ustrip(boundary.basis_vectors[2][3]),
-        ustrip(boundary.basis_vectors[3][1]), ustrip(boundary.basis_vectors[3][2]), ustrip(boundary.basis_vectors[3][3]),
-    )
-end
-
-function autotune_prepare_block_bounds!(buffers, sys::System{D, <:CuArray, T}, N::Int) where {D, T}
+function autotune_prepare_block_bounds!(buffers, sys::System{D, <:CuArray}, N::Int) where D
     n_blocks = cld(N, Int(WARPSIZE))
-    if sys.boundary isa TriclinicBoundary
-        H = triclinic_boundary_matrix(sys.boundary, T)
-        @cuda blocks=n_blocks threads=32 kernel_min_max_triclinic!(
-            buffers.morton_seq,
-            buffers.box_mins,
-            buffers.box_maxs,
-            sys.coords,
-            inv(H),
-            Val(N),
-            sys.boundary,
-            Val(D),
-        )
-    else
-        @cuda blocks=n_blocks threads=32 kernel_min_max!(
-            buffers.morton_seq,
-            buffers.box_mins,
-            buffers.box_maxs,
-            sys.coords,
-            Val(N),
-            sys.boundary,
-            Val(D),
-        )
-    end
+    @cuda blocks=n_blocks threads=32 kernel_min_max!(
+        buffers.morton_seq,
+        buffers.box_mins,
+        buffers.box_maxs,
+        sys.coords,
+        Val(N),
+        sys.boundary,
+        Val(D),
+    )
     CUDA.synchronize()
     return nothing
 end
 
 function autotune_prepare_common_state!(buffers, sys::System{D, <:CuArray}, N::Int) where D
-    morton_bits = 10
-    sides = box_sides(sys.boundary)
-    cell_width = sides ./ (2^morton_bits)
-    sorted_morton_seq!(buffers, sys.coords, cell_width, morton_bits)
+    sorted_morton_seq!(buffers, sys.coords, sys.boundary)
     refresh_tile_exceptions!(buffers, sys.neighbor_finder, Val(N))
     buffers.sparse_pair_generation = sys.neighbor_finder.cache_generation
     reorder_system_gpu!(buffers, sys)
@@ -365,7 +337,7 @@ function autotune_tile_threads!(buffers, sys::System{D, <:CuArray}, N::Int) wher
     n_blocks = cld(N, Int(WARPSIZE))
     # Also grows the tile list to fit, so that the candidates below do not overflow it
     find_interacting_tiles!(buffers, sys, n_blocks)
-    if use_tile_tree(sys, n_blocks)
+    if use_tile_tree(sys, n_blocks, buffers.num_pairs)
         # The tree search has no block shape to tune
         return nothing
     end
@@ -872,29 +844,524 @@ function Molly.pairwise_forces_loop_gpu!(buffers, sys::System{D, <:CuArray, T}, 
     return buffers
 end
 
-@inline function gpu_neighbor_refresh_flags(buffers, nf::GPUNeighborFinder, step_n)
+#=
+Displacement check
+
+The two largest squared displacements of the atoms since the reference coordinates, see
+`Molly.neighbors_invalidated`, found by one kernel. Each block reduces its atoms with warp
+shuffles, and the last block to finish reduces the results of all the blocks, decides
+whether the atoms have moved further than the allowance and writes the result to pinned
+host memory that the device can write to. It can also set a flag on the device that makes
+the tiled force and energy kernels return straight away, so that those kernels can be
+launched before the host knows the result. The host then only waits once the kernels are
+queued, and the device is kept busy while it waits.
+=#
+
+const displacement_threads = 256
+const displacement_max_blocks = 256
+
+# The field types are concrete given `T`, so that the check is type stable although the
+#   tracker holds the scratch without a type
+mutable struct CUDADisplacementScratch{T}
+    # Pinned host memory mapped into the device address space, holding the two largest
+    #   squared displacements and whether they exceed the allowance
+    result::CuArray{T, 1, CUDA_CORE.HostMemory}
+    result_host::Vector{T}
+    # The results of each block and the count of finished blocks on the device
+    block_maxs_1::CuArray{T, 1, CUDA_CORE.DeviceMemory}
+    block_maxs_2::CuArray{T, 1, CUDA_CORE.DeviceMemory}
+    counter::CuArray{Int32, 1, CUDA_CORE.DeviceMemory}
+    event::CuEvent
+    context::CuContext
+end
+
+function cuda_displacement_scratch(tracker, ::Type{T},
+                                   n_blocks::Integer=displacement_max_blocks) where T
+    scratch = (isnothing(tracker) ? nothing : tracker.scratch)
+    if scratch isa CUDADisplacementScratch{T} && scratch.context == CUDA.context() &&
+            length(scratch.block_maxs_1) >= n_blocks
+        return scratch
+    end
+    result = CuArray{T, 1, CUDA_CORE.HostMemory}(undef, 3)
+    result_host = unsafe_wrap(Array, result)
+    counter = fill!(CuArray{Int32, 1, CUDA_CORE.DeviceMemory}(undef, 1), Int32(0))
+    n_blocks_alloc = max(n_blocks, displacement_max_blocks)
+    block_maxs_1 = CuArray{T, 1, CUDA_CORE.DeviceMemory}(undef, n_blocks_alloc)
+    block_maxs_2 = CuArray{T, 1, CUDA_CORE.DeviceMemory}(undef, n_blocks_alloc)
+    scratch = CUDADisplacementScratch{T}(result, result_host, block_maxs_1, block_maxs_2,
+                    counter, CuEvent(CUDA_CORE.EVENT_DISABLE_TIMING), CUDA.context())
+    if !isnothing(tracker)
+        tracker.scratch = scratch
+    end
+    return scratch
+end
+
+@inline function warp_reduce_top2(max_1, max_2)
+    offset = 16
+    while offset > 0
+        other_1 = CUDA.shfl_down_sync(0xFFFFFFFF, max_1, offset)
+        other_2 = CUDA.shfl_down_sync(0xFFFFFFFF, max_2, offset)
+        max_1, max_2 = Molly.merge_top2((max_1, max_2), (other_1, other_2))
+        offset >>= 1
+    end
+    return max_1, max_2
+end
+
+# The two largest values over the block, correct in the first thread, called by every
+#   thread of the block
+# The lowest lane of each warp ends up with the two largest values of the warp, the
+#   values that other lanes end up with are not used
+@inline function block_reduce_top2(max_1, max_2, warp_maxs_1, warp_maxs_2, ::Val{T}) where T
+    tid = threadIdx().x
+    lane = (tid - 1) % 32 + 1
+    warp = (tid - 1) ÷ 32 + 1
+    max_1, max_2 = warp_reduce_top2(max_1, max_2)
+    @inbounds if lane == 1
+        warp_maxs_1[warp] = max_1
+        warp_maxs_2[warp] = max_2
+    end
+    sync_threads()
+    if warp == 1
+        n_warps = blockDim().x ÷ 32
+        @inbounds max_1 = (lane <= n_warps ? warp_maxs_1[lane] : zero(T))
+        @inbounds max_2 = (lane <= n_warps ? warp_maxs_2[lane] : zero(T))
+        max_1, max_2 = warp_reduce_top2(max_1, max_2)
+    end
+    sync_threads()
+    return max_1, max_2
+end
+
+@inline set_skip_flag!(::Nothing) = nothing
+@inline set_skip_flag!(skip_flag) = (@inbounds skip_flag[1] = Int32(1); nothing)
+
+# Called by every thread of a block with the two largest values of the block, writes them,
+#   and the last block to finish reduces the values of all the blocks and writes the result
+@inline function finish_displacement_check!(max_1, max_2, result, block_maxs_1, block_maxs_2,
+                                            counter, skip_flag, allowance::T,
+                                            ::Val{T}) where T
+    tid = threadIdx().x
+    block_i = blockIdx().x
+    n_blocks = gridDim().x
+    warp_maxs_1 = CuStaticSharedArray(T, 32)
+    warp_maxs_2 = CuStaticSharedArray(T, 32)
+    is_last = CuStaticSharedArray(Bool, 1)
+    max_1, max_2 = block_reduce_top2(max_1, max_2, warp_maxs_1, warp_maxs_2, Val(T))
+    @inbounds if tid == 1
+        block_maxs_1[block_i] = max_1
+        block_maxs_2[block_i] = max_2
+        # The result is visible to every block before this block is counted as finished
+        threadfence()
+        n_finished = CUDA.atomic_add!(pointer(counter, 1), Int32(1))
+        is_last[1] = (n_finished == n_blocks - Int32(1))
+    end
+    sync_threads()
+
+    @inbounds if is_last[1]
+        # Atomic reads, which are made in the device-wide cache, see the results of the
+        #   other blocks
+        max_1, max_2 = zero(T), zero(T)
+        b = tid
+        while b <= n_blocks
+            other_1 = CUDA.atomic_add!(pointer(block_maxs_1, b), zero(T))
+            other_2 = CUDA.atomic_add!(pointer(block_maxs_2, b), zero(T))
+            max_1, max_2 = Molly.merge_top2((max_1, max_2), (other_1, other_2))
+            b += blockDim().x
+        end
+        max_1, max_2 = block_reduce_top2(max_1, max_2, warp_maxs_1, warp_maxs_2, Val(T))
+        if tid == 1
+            invalid = !(sqrt(max_1) + sqrt(max_2) <= allowance)
+            result[1] = max_1
+            result[2] = max_2
+            result[3] = (invalid ? one(T) : zero(T))
+            if invalid
+                set_skip_flag!(skip_flag)
+            end
+            # Ready for the next check
+            counter[1] = Int32(0)
+        end
+    end
+    return nothing
+end
+
+function max_sq_displacements_kernel!(result, block_maxs_1, block_maxs_2, counter,
+                                      skip_flag, coords_var, ref_coords_var, boundary, F,
+                                      dist_unit, n_atoms::Int32, allowance::T,
+                                      ::Val{T}) where T
+    coords = CUDA_CORE.Const(coords_var)
+    ref_coords = CUDA_CORE.Const(ref_coords_var)
+    stride = blockDim().x * gridDim().x
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    max_1, max_2 = zero(T), zero(T)
+    @inbounds while i <= n_atoms
+        d2 = Molly.sq_displacement(coords[i], ref_coords[i], boundary, F, dist_unit, T)
+        max_1, max_2 = Molly.push_top2(max_1, max_2, d2)
+        i += stride
+    end
+    finish_displacement_check!(max_1, max_2, result, block_maxs_1, block_maxs_2, counter,
+                               skip_flag, allowance, Val(T))
+    return nothing
+end
+
+#=
+Reorder the coordinates and velocities into the current Morton order, as
+`reorder_system_kernel!` does, and check the displacements of the atoms in the same pass,
+setting the overflow flag of the tile list if they are too large. The tiled kernels
+launched after it then return straight away.
+=#
+function reorder_check_kernel!(coords_reordered, velocities_reordered, coords_var,
+                               velocities_var, seq_var, ref_coords_var, result, block_maxs_1,
+                               block_maxs_2, counter, skip_flag, boundary, F, dist_unit,
+                               allowance::T, ::Val{N}, ::Val{T}) where {N, T}
+    coords = CUDA_CORE.Const(coords_var)
+    velocities = CUDA_CORE.Const(velocities_var)
+    seq = CUDA_CORE.Const(seq_var)
+    ref_coords = CUDA_CORE.Const(ref_coords_var)
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    max_1 = zero(T)
+    @inbounds if i <= N
+        original_i = seq[i]
+        c = coords[original_i]
+        coords_reordered[i] = c
+        velocities_reordered[i] = velocities[original_i]
+        max_1 = Molly.sq_displacement(c, ref_coords[original_i], boundary, F, dist_unit, T)
+    end
+    finish_displacement_check!(max_1, zero(T), result, block_maxs_1, block_maxs_2, counter,
+                               skip_flag, allowance, Val(T))
+    return nothing
+end
+
+function launch_reorder_check!(buffers, sys, tracker, ref_coords, F, dist_unit,
+                               allowance::T) where T
+    N = length(sys.coords)
+    n_blocks = max(cld(N, displacement_threads), 1)
+    scratch = cuda_displacement_scratch(tracker, T, n_blocks)
+    @cuda threads=displacement_threads blocks=n_blocks reorder_check_kernel!(
+            buffers.coords_reordered, buffers.velocities_reordered, sys.coords,
+            sys.velocities, buffers.morton_seq, ref_coords, scratch.result,
+            scratch.block_maxs_1, scratch.block_maxs_2, scratch.counter,
+            buffers.interacting_tiles_overflow, sys.boundary, F, dist_unit, allowance,
+            Val(N), Val(T))
+    CUDA.record(scratch.event, CUDA.stream())
+    return scratch
+end
+
+#=
+Launch the check without waiting for it, returning the scratch to wait on.
+`allowance` is the total displacement of the two atoms that have moved furthest that the
+list allows, and `skip_flag`, if given, is set on the device when it is exceeded.
+=#
+function launch_displacement_check!(tracker, coords::CuArray, ref_coords, boundary, F,
+                                    dist_unit, ::Type{T}, allowance=T(Inf),
+                                    skip_flag=nothing) where T
+    n_atoms = length(coords)
+    n_blocks = clamp(cld(n_atoms, displacement_threads), 1, displacement_max_blocks)
+    scratch = cuda_displacement_scratch(tracker, T)
+    @cuda threads=displacement_threads blocks=n_blocks max_sq_displacements_kernel!(
+            scratch.result, scratch.block_maxs_1, scratch.block_maxs_2, scratch.counter,
+            skip_flag, coords, ref_coords, boundary, F, dist_unit, Int32(n_atoms), T(allowance),
+            Val(T))
+    CUDA.record(scratch.event, CUDA.stream())
+    return scratch
+end
+
+#=
+Wait for a check, returning the two largest squared displacements and whether they
+exceed the allowance.
+The host spins on the event rather than calling `CUDA.synchronize`, which after a short
+spin hands the wait to another thread and can take hundreds of microseconds to wake up
+once the event completes. That is the usual case when the device is behind the host, as
+for the neighbor finders that build a list on the GPU, where it made the check cost about
+15% of a step. After a second the normal synchronization is used.
+=#
+function wait_displacement_check(scratch::CUDADisplacementScratch)
+    event = scratch.event
+    if !CUDA.isdone(event)
+        t_start = time_ns()
+        while !CUDA.isdone(event)
+            ccall(:jl_cpu_pause, Cvoid, ())
+            # Lets other threads collect garbage while this one waits
+            ccall(:jl_gc_safepoint, Cvoid, ())
+            if time_ns() - t_start > 1_000_000_000
+                CUDA.synchronize(event)
+                break
+            end
+        end
+    end
+    result = scratch.result_host
+    @inbounds return result[1], result[2], !iszero(result[3])
+end
+
+function Molly.max_sq_displacements(coords::CuArray, ref_coords, boundary, F, dist_unit,
+                                    ::Type{T}, n_threads::Integer, tracker=nothing) where T
+    iszero(length(coords)) && return (zero(T), zero(T))
+    scratch = launch_displacement_check!(tracker, coords, ref_coords, boundary, F,
+                                         dist_unit, T)
+    max_sq_1, max_sq_2, _ = wait_displacement_check(scratch)
+    return max_sq_1, max_sq_2
+end
+
+#=
+The coordinates and boundary that the tile list held in a set of buffers was built from,
+kept in the buffers since a neighbor finder can be used with more than one set of
+buffers, for example those of a simulation and those made by a call to `forces(sys)`.
+`moved_last` and `moved_prev` are the total displacements of the two atoms that had moved
+furthest at the last two checks, used to predict when the tile list will be rebuilt.
+`pending_check` is a check that has been launched but not waited for, see
+`run_tiled_kernel!`.
+=#
+mutable struct TileReference{C, B, T}
+    coords::C
+    boundary::B
+    moved_last::T
+    moved_prev::T
+    pending_check::Union{Nothing, CUDADisplacementScratch{T}}
+end
+
+#=
+Whether the next check is expected to fail, extrapolating the displacements of the last
+two checks. The tile list is then rebuilt without checking, which is always safe, rather
+than checking and launching the force kernel before the result is known, since waiting
+for a check that fails means the device is idle while the rebuild is launched. This only
+affects speed.
+=#
+@inline function tile_check_expected_to_fail(ref::TileReference, allowance)
+    predicted = ref.moved_last + max(ref.moved_last - ref.moved_prev, zero(ref.moved_last))
+    return predicted > allowance
+end
+
+@inline function record_tile_check!(ref::TileReference, max_sq_1, max_sq_2)
+    ref.moved_prev = ref.moved_last
+    ref.moved_last = sqrt(max_sq_1) + sqrt(max_sq_2)
+    return ref
+end
+
+# The squared cutoff of the pairwise interactions that use the tile list
+tile_inters_sqdist(sys, pairwise_inters) = Molly.neighbor_inters_sqdist(pairwise_inters, (),
+                                                Molly.coords_length_unit(sys.coords))
+
+# Whether the tile list has to be rebuilt for reasons other than the atoms moving
+@inline function tile_refresh_due(buffers, nf::GPUNeighborFinder)
+    return buffers.step_n_preprocessed == -1 ||
+           buffers.reorder_generation != nf.reorder_generation ||
+           buffers.tile_generation != nf.tile_generation ||
+           buffers.sparse_pair_generation != nf.cache_generation || !nf.initialized
+end
+
+#=
+The reference held in `buffers` if it is for coordinates and a boundary of the types of
+those of `sys`, otherwise `nothing`. The buffers hold the reference without a type, so
+this makes the check type stable. A reference of another type, which would come from
+using the buffers with another system, is replaced when the tile list is rebuilt.
+=#
+@inline function tile_reference(buffers, sys)
+    T = Molly.coords_float_type(sys.coords)
+    ref = buffers.neighbor_reference[]
+    return (ref isa TileReference{typeof(sys.coords), typeof(sys.boundary), T} ? ref : nothing)
+end
+
+#=
+Reorder the coordinates and velocities into the current Morton order and check whether the
+atoms have moved far enough since the tile list in `buffers` was built that a pair within
+the cutoff of `pairwise_inters` could be missing. The check sets the overflow flag of the
+tile list if so, which makes the force and energy kernels return without doing anything,
+so that they can be launched straight after. Returns the scratch to wait on, or `nothing`
+if the tile list has to be rebuilt whatever the displacements are, as when the cutoff is
+not known or when the check is expected to fail, in which case nothing is launched.
+=#
+function start_tile_check!(ref::TileReference, buffers, sys, nf, pairwise_inters)
+    T = Molly.coords_float_type(sys.coords)
+    dist_unit = Molly.coords_length_unit(sys.coords)
+    F = Molly.box_deformation(ref.boundary, sys.boundary, T)
+    allowance = Molly.neighbor_allowance(sys.boundary, F, nf.dist_cutoff,
+                                tile_inters_sqdist(sys, pairwise_inters), dist_unit, T)
+    if isnothing(allowance) || length(ref.coords) != length(sys.coords)
+        return nothing
+    end
+    # Rebuilt without checking, see above
+    tile_check_expected_to_fail(ref, allowance) && return nothing
+    nf.tracker.n_checks += 1
+    return launch_reorder_check!(buffers, sys, nf.tracker, ref.coords, F, dist_unit,
+                                 allowance)
+end
+
+# Record that the tile list held in `buffers` was built from the current coordinates,
+#   reusing the memory of the previous reference `ref` if possible
+function record_tile_reference!(ref, buffers, sys)
+    if !isnothing(ref) && length(ref.coords) == length(sys.coords)
+        copyto!(ref.coords, sys.coords)
+        ref.boundary = sys.boundary
+        ref.moved_last = zero(ref.moved_last)
+        ref.moved_prev = zero(ref.moved_prev)
+        ref.pending_check = nothing
+    else
+        T = Molly.coords_float_type(sys.coords)
+        buffers.neighbor_reference[] = TileReference(copy(sys.coords), sys.boundary,
+                                                     zero(T), zero(T), nothing)
+    end
+    return buffers
+end
+
+function record_gpu_tiles!(buffers, sys, nf::GPUNeighborFinder, pairwise_inters)
+    nf.tracker.n_builds += 1
+    nf.auto_update || return buffers
+    if Molly.neighbors_trackable(sys.boundary, sys.coords, nf.dist_cutoff,
+                                 tile_inters_sqdist(sys, pairwise_inters))
+        record_tile_reference!(tile_reference(buffers, sys), buffers, sys)
+    else
+        # The tile list has to be rebuilt every time, so no reference is needed
+        buffers.neighbor_reference[] = nothing
+    end
+    return buffers
+end
+
+# find_neighbors increases the rebuild counts of the neighbor finder when the Morton order
+#   or the tile list is due to be rebuilt, so the cache follows the same rebuild points as
+#   the lists of the other neighbor finders
+# `moved` is whether the atoms have moved far enough to invalidate the tile list, in which
+#   case the tile list and Morton order are rebuilt
+@inline function gpu_neighbor_refresh_flags(buffers, nf::GPUNeighborFinder, moved::Bool)
     first_preprocess = (buffers.step_n_preprocessed == -1)
-    step_changed = (step_n != buffers.step_n_preprocessed)
-    needs_morton_refresh = (first_preprocess || (step_changed && step_n % nf.n_steps == 0))
+    needs_morton_refresh = (first_preprocess || moved ||
+                            buffers.reorder_generation != nf.reorder_generation)
     sparse_changed = (buffers.sparse_pair_generation != nf.cache_generation)
     needs_reorder = true # Coordinates can be changed at any point
     needs_sparse_refresh = (needs_morton_refresh || !nf.initialized || sparse_changed)
-    needs_tile_refresh = (needs_morton_refresh || !nf.initialized || sparse_changed)
+    needs_tile_refresh = (needs_sparse_refresh ||
+                          buffers.tile_generation != nf.tile_generation)
     return needs_morton_refresh, needs_reorder, needs_sparse_refresh, needs_tile_refresh
 end
 
-function refresh_interacting_tiles!(buffers, sys::System{D, <:CuArray, T}, N::Int) where {D, T}
-    n_blocks = cld(N, WARPSIZE)
-    if sys.boundary isa TriclinicBoundary
-        Hinv = inv(triclinic_boundary_matrix(sys.boundary, T))
-        @cuda blocks=n_blocks threads=32 kernel_min_max_triclinic!(
-            buffers.morton_seq, buffers.box_mins, buffers.box_maxs, sys.coords, Hinv, Val(N),
-            sys.boundary, Val(D))
-    else
-        @cuda blocks=n_blocks threads=32 kernel_min_max!(
-            buffers.morton_seq, buffers.box_mins, buffers.box_maxs, sys.coords,
-            Val(N), sys.boundary, Val(D))
+function record_neighbor_refresh!(buffers, nf::GPUNeighborFinder, step_n)
+    buffers.reorder_generation = nf.reorder_generation
+    buffers.tile_generation = nf.tile_generation
+    buffers.step_n_preprocessed = step_n
+    return buffers
+end
+
+# Bring the Morton order, the exception data, the reordered arrays and the tile list up to
+#   date as required by the flags
+function refresh_gpu_tiles!(buffers, sys, nf, pairwise_inters, step_n, flags,
+                            sync_reorder::Bool)
+    needs_morton_refresh, needs_reorder, needs_sparse_refresh, needs_tile_refresh = flags
+    N = length(sys.coords)
+    if needs_reorder || needs_sparse_refresh || needs_tile_refresh
+        if needs_morton_refresh
+            sorted_morton_seq!(buffers, sys.coords, sys.boundary)
+        end
+
+        if needs_sparse_refresh
+            refresh_tile_exceptions!(buffers, nf, Val(N))
+            nf.initialized = true
+            buffers.sparse_pair_generation = nf.cache_generation
+        end
+
+        if needs_reorder
+            reorder_system_gpu!(buffers, sys, Val(needs_morton_refresh))
+            sync_reorder && KernelAbstractions.synchronize(get_backend(sys.coords))
+        end
+
+        if needs_tile_refresh
+            refresh_interacting_tiles!(buffers, sys, N)
+            record_gpu_tiles!(buffers, sys, nf, pairwise_inters)
+        end
+        record_neighbor_refresh!(buffers, nf, step_n)
     end
+    return buffers
+end
+
+# Wait for the check pending on `ref` and record its result, returning whether the atoms
+#   have moved too far for the tile list
+function resolve_tile_check!(ref::TileReference, check::CUDADisplacementScratch)
+    ref.pending_check = nothing
+    max_sq_1, max_sq_2, moved = wait_displacement_check(check)
+    record_tile_check!(ref, max_sq_1, max_sq_2)
+    return moved
+end
+
+#=
+Run `launch_kernel!()`, which launches the tiled force or energy kernel, with a tile list
+that is up to date.
+With `auto_update`, when no rebuild is due for other reasons, the displacement check is
+made by the kernel that reorders the coordinates, and the kernel is launched speculatively
+with the current tile list. If the check finds that the atoms have moved too far the
+kernel returns straight away, and the tile list is rebuilt and the kernel launched again.
+Otherwise the host only waits for the check once the kernel is queued, so the device does
+not wait for the host. When the last checks show that the next one is likely to fail, the
+tile list is rebuilt straight away instead.
+With `defer`, the host does not wait for the check here but leaves it pending in the
+reference, and `finish_tile_check!` must be called before the results of the kernel are
+used. A check left pending, for example by an error before it was finished, is finished
+at the next call.
+=#
+# Inlined so that the closure is not allocated
+@inline function run_tiled_kernel!(launch_kernel!::K, buffers, sys, nf::GPUNeighborFinder,
+                                   pairwise_inters, step_n, sync_reorder::Bool,
+                                   defer::Bool=false) where K
+    # Whether the atoms have moved too far for the tile list, the only reason to rebuild it
+    #   that is not recorded by the generation counts
+    moved = false
+    ref = tile_reference(buffers, sys)
+    if !isnothing(ref)
+        stale_check = ref.pending_check
+        if !isnothing(stale_check)
+            moved = resolve_tile_check!(ref, stale_check)
+        end
+    end
+    if nf.auto_update && !moved && !tile_refresh_due(buffers, nf)
+        if isnothing(ref)
+            # There is no reference to check against
+            moved = true
+        else
+            check = start_tile_check!(ref, buffers, sys, nf, pairwise_inters)
+            if isnothing(check)
+                # The check could not be made or is expected to fail
+                moved = true
+            else
+                # The coordinates were reordered by the check
+                sync_reorder && KernelAbstractions.synchronize(get_backend(sys.coords))
+                launch_kernel!()
+                if defer
+                    ref.pending_check = check
+                    return buffers
+                end
+                moved = resolve_tile_check!(ref, check)
+                # Otherwise the kernel did nothing, so it is run again below once the tile
+                #   list is rebuilt, which also clears the overflow flag
+                moved || return buffers
+            end
+        end
+    end
+    refresh_gpu_tiles!(buffers, sys, nf, pairwise_inters, step_n,
+                       gpu_neighbor_refresh_flags(buffers, nf, moved), sync_reorder)
+    launch_kernel!()
+    return buffers
+end
+
+#=
+Wait for a check left pending by `run_tiled_kernel!` with `defer`. If the atoms have moved
+too far the kernel launched before the check did nothing, so the tile list is rebuilt and
+`launch_kernel!()` called again. Returns whether this was done.
+=#
+@inline function finish_tile_check!(launch_kernel!::K, buffers, sys, nf::GPUNeighborFinder,
+                                    pairwise_inters, step_n, sync_reorder::Bool) where K
+    ref = tile_reference(buffers, sys)
+    isnothing(ref) && return false
+    check = ref.pending_check
+    isnothing(check) && return false
+    moved = resolve_tile_check!(ref, check)
+    if moved
+        refresh_gpu_tiles!(buffers, sys, nf, pairwise_inters, step_n,
+                           gpu_neighbor_refresh_flags(buffers, nf, true), sync_reorder)
+        launch_kernel!()
+    end
+    return moved
+end
+
+function refresh_interacting_tiles!(buffers, sys::System{D, <:CuArray}, N::Int) where D
+    n_blocks = cld(N, WARPSIZE)
+    @cuda blocks=n_blocks threads=32 kernel_min_max!(
+        buffers.morton_seq, buffers.box_mins, buffers.box_maxs, sys.coords,
+        Val(N), sys.boundary, Val(D))
 
     find_interacting_tiles!(buffers, sys, n_blocks)
     prune_interacting_tiles!(buffers, sys, N)
@@ -925,8 +1392,8 @@ repeated. The vectors start at a size that is enough for typical systems, see
 `init_buffers!`, and are kept for later searches.
 =#
 function find_interacting_tiles!(buffers, sys, n_blocks)
-    search! = use_tile_tree(sys, n_blocks) ? find_interacting_tiles_tree! :
-                                             find_interacting_tiles_all_pairs!
+    use_tree = use_tile_tree(sys, n_blocks, buffers.num_pairs)
+    search! = use_tree ? find_interacting_tiles_tree! : find_interacting_tiles_all_pairs!
     reset_interacting_tile_state!(buffers)
     search!(buffers, sys, n_blocks)
     n_tiles = Int(only(from_device(buffers.num_interacting_tiles)))
@@ -938,6 +1405,7 @@ function find_interacting_tiles!(buffers, sys, n_blocks)
         throw_if_interacting_tiles_overflowed(buffers)
     end
     buffers.num_pairs = n_tiles
+    use_tree && sort_interacting_tiles!(buffers, n_tiles)
     return buffers
 end
 
@@ -987,6 +1455,63 @@ function find_interacting_tiles_tree!(buffers, sys::System{D}, n_blocks) where D
     return buffers
 end
 
+#=
+The tree search appends tiles in the order that its threads find them, so tiles next to
+each other in the list rarely share a block. `force_kernel!` runs consecutive tiles on
+the warps of a thread block, and with that order it is 10-20% slower than with the tiles
+of the all-pairs search, which appends the tiles of each 32x32 group of blocks column by
+column. Sorting the tiles into that order gives the speed back. The sort key holds the
+whole tile, so the tiles are read back from the sorted keys.
+=#
+function sort_interacting_tiles!(buffers, n_tiles)
+    n_tiles == 0 && return buffers
+    keys = similar(buffers.interacting_tiles_i, UInt64, n_tiles)
+    temp = similar(keys)
+    n_threads = 256
+    n_launch_blocks = cld(n_tiles, n_threads)
+    @cuda threads=n_threads blocks=n_launch_blocks tile_sort_keys_kernel!(
+        keys, buffers.interacting_tiles_i, buffers.interacting_tiles_j,
+        buffers.interacting_tiles_type, Int32(n_tiles))
+    Molly.AcceleratedKernels.sort!(keys; temp=temp, block_size=256)
+    @cuda threads=n_threads blocks=n_launch_blocks tiles_from_sort_keys_kernel!(
+        buffers.interacting_tiles_i, buffers.interacting_tiles_j,
+        buffers.interacting_tiles_type, keys, Int32(n_tiles))
+    CUDA.unsafe_free!(keys)
+    CUDA.unsafe_free!(temp)
+    return buffers
+end
+
+# Tile `(i, j)` ordered by the 32-block group of `j`, the 32-block group of `i`, `j` and
+#   `i`, with the tile type, 0 or 1 from `emit_interacting_tile!`, in the lowest bit
+# The groups take 26 bits each, enough for the Int32 block indices
+@inline function tile_sort_key(i::Int32, j::Int32, type::UInt8)
+    i0 = UInt64(i - Int32(1))
+    j0 = UInt64(j - Int32(1))
+    return ((j0 >> 5) << 37) | ((i0 >> 5) << 11) | ((j0 & 0x1f) << 6) | ((i0 & 0x1f) << 1) |
+           UInt64(type & 0x01)
+end
+
+function tile_sort_keys_kernel!(keys, tiles_i, tiles_j, tiles_type, n_tiles)
+    t = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x
+    if t <= n_tiles
+        @inbounds keys[t] = tile_sort_key(tiles_i[t], tiles_j[t], tiles_type[t])
+    end
+    return nothing
+end
+
+function tiles_from_sort_keys_kernel!(tiles_i, tiles_j, tiles_type, keys, n_tiles)
+    t = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x
+    if t <= n_tiles
+        @inbounds key = keys[t]
+        i0 = (((key >> 11) & 0x03ffffff) << 5) | ((key >> 1) & 0x1f)
+        j0 = ((key >> 37) << 5) | ((key >> 6) & 0x1f)
+        @inbounds tiles_i[t] = (i0 % Int32) + Int32(1)
+        @inbounds tiles_j[t] = (j0 % Int32) + Int32(1)
+        @inbounds tiles_type[t] = (key & 0x01) % UInt8
+    end
+    return nothing
+end
+
 """
     pairwise_forces_loop_gpu!(buffers, sys, pairwise_inters, nbs::Nothing, needs_vir, step_n)
 
@@ -994,54 +1519,77 @@ Maintainer entry point for the CUDA tiled pairwise force path.
 
 Pipeline:
 1. Rebuild the Morton ordering and the Morton-ordered exception data when the
-   [`GPUNeighborFinder`](@ref) reorder cadence invalidates them.
+   atoms have moved far enough since the last rebuild to invalidate the tile list
+   with `auto_update=true`, or when [`find_neighbors`](@ref) has marked them as due
+   every `n_steps` steps of the [`GPUNeighborFinder`](@ref) with `auto_update=false`.
 2. Reorder coordinates, velocities, and atoms into Morton order.
-3. Recompute the compact list of interacting 32x32 tiles when the cached tile
-   list is stale for the current `dist_cutoff`, growing it if it overflows.
+3. Recompute the compact list of interacting 32x32 tiles when the order changed
+   or [`find_neighbors`](@ref) forced a rebuild, growing it if it overflows.
 4. Launch `force_kernel!` over that compact tile list and reverse the reorder.
 
 Cache contract:
-- `buffers.step_n_preprocessed` gates reuse of reordered coordinates and tile
-  search work within a simulation step.
+- The Morton order and tile list are rebuilt when [`find_neighbors`](@ref) has
+  increased the rebuild counts of the [`GPUNeighborFinder`](@ref) since they were
+  last built, when `buffers.step_n_preprocessed` is `-1` for new buffers, or with
+  `auto_update=true` when the displacement check against `buffers.neighbor_reference`
+  fails. The force kernel is then launched before the result of the check is known,
+  and the check sets `buffers.interacting_tiles_overflow` when it fails so that the
+  kernel returns straight away, see `run_tiled_kernel!`.
+- `gpu_forces!` calls `start_pairwise_forces_gpu!` instead, which does not wait for
+  the check, and `finish_pairwise_forces_gpu!` once the specific forces are launched,
+  which waits for it and calculates the forces again if it failed.
 - `buffers.num_pairs` is the host-side cached interacting-tile count used to
   size the force-kernel launch.
 - `sys.neighbor_finder.initialized` only indicates whether the Morton-ordered
-  exception data is current. The interacting-tile list still depends on
-  the neighbor finder's `n_steps` and `dist_cutoff`.
+  exception data is current.
 """
 function Molly.pairwise_forces_loop_gpu!(buffers, sys::System{D, <:CuArray, T, TH}, pairwise_inters,
                          nbs::Nothing, ::Val{needs_vir}, step_n) where {D, T, TH, needs_vir}
-    N = length(sys.coords)
+    return tiled_pairwise_forces!(buffers, sys, pairwise_inters, Val(needs_vir), step_n,
+                                  false)
+end
+
+# As above, but the host does not wait for the check of the tile list, which is left to
+#   `finish_pairwise_forces_gpu!` once `gpu_forces!` has launched the specific forces
+function Molly.start_pairwise_forces_gpu!(buffers, sys::System{D, <:CuArray, T, TH},
+                                          pairwise_inters, nbs::Nothing, ::Val{needs_vir},
+                                          step_n) where {D, T, TH, needs_vir}
+    return tiled_pairwise_forces!(buffers, sys, pairwise_inters, Val(needs_vir), step_n,
+                                  true)
+end
+
+# The forces are added to fs_mat when the force kernel is relaunched, since the reverse
+#   reorder adds to it and the kernel launched before the failed check added nothing
+function Molly.finish_pairwise_forces_gpu!(buffers, sys::System{D, <:CuArray, T, TH},
+                                           pairwise_inters, nbs::Nothing, ::Val{needs_vir},
+                                           step_n) where {D, T, TH, needs_vir}
+    r_cut2 = kernel_pair_cutoff_2(sys, pairwise_inters)
+    launch_kernel! = () -> launch_force_kernel!(buffers, sys, pairwise_inters, r_cut2,
+                                                Val(needs_vir), step_n)
+    if finish_tile_check!(launch_kernel!, buffers, sys, sys.neighbor_finder, pairwise_inters,
+                          step_n, false)
+        reverse_reorder_forces_gpu!(buffers, sys)
+    end
+    return buffers
+end
+
+function tiled_pairwise_forces!(buffers, sys, pairwise_inters, ::Val{needs_vir}, step_n,
+                                defer::Bool) where needs_vir
     r_cut2 = kernel_pair_cutoff_2(sys, pairwise_inters)
     nf = sys.neighbor_finder
+    launch_kernel! = () -> launch_force_kernel!(buffers, sys, pairwise_inters, r_cut2,
+                                                Val(needs_vir), step_n)
+    run_tiled_kernel!(launch_kernel!, buffers, sys, nf, pairwise_inters, step_n, false, defer)
+    reverse_reorder_forces_gpu!(buffers, sys)
+    return buffers
+end
 
-    needs_morton_refresh, needs_reorder, needs_sparse_refresh, needs_tile_refresh =
-        gpu_neighbor_refresh_flags(buffers, nf, step_n)
-    if needs_reorder || needs_sparse_refresh || needs_tile_refresh
-        if needs_morton_refresh
-            morton_bits = 10
-            sides = box_sides(sys.boundary)
-            w = sides ./ (2^morton_bits)
-            sorted_morton_seq!(buffers, sys.coords, w, morton_bits)
-        end
-
-        if needs_sparse_refresh
-            refresh_tile_exceptions!(buffers, nf, Val(N))
-            nf.initialized = true
-            buffers.sparse_pair_generation = nf.cache_generation
-        end
-
-        if needs_reorder
-            reorder_system_gpu!(buffers, sys, Val(needs_morton_refresh))
-        end
-
-        if needs_tile_refresh
-            refresh_interacting_tiles!(buffers, sys, N)
-        end
-        buffers.step_n_preprocessed = step_n
-    end
-    
-    # Execute force kernel over the list of interacting tiles
+# Launch the force kernel over the list of interacting tiles
+# `r_cut2` is a value rather than a `Val` so that the call to this function is not a
+#   dynamic dispatch, as the call to `@cuda` inside it is anyway
+function launch_force_kernel!(buffers, sys::System{D, <:CuArray, T, TH}, pairwise_inters,
+                              r_cut2, ::Val{needs_vir}, step_n) where {D, T, TH, needs_vir}
+    N = length(sys.coords)
     auto_kernel = @cuda launch=false always_inline=true fastmath=pairwise_fastmath(T) force_kernel!(
         buffers.fs_mat_reordered,
         buffers.virial_nounits,
@@ -1090,9 +1638,6 @@ function Molly.pairwise_forces_loop_gpu!(buffers, sys::System{D, <:CuArray, T, T
             threads=(32, block_y), blocks=n_blocks_launch, shmem=shmem
         )
     end
-
-    reverse_reorder_forces_gpu!(buffers, sys)
-
     return buffers
 end
 
@@ -1102,48 +1647,27 @@ end
 Maintainer entry point for the CUDA tiled pairwise energy path.
 
 This follows the same Morton reorder -> exception translation -> tile search
-pipeline as `pairwise_forces_loop_gpu!`, but launches `energy_kernel!` instead
-of the force kernel. The key difference is that energy evaluation reuses any
-preprocessing already performed for the current step so forces and energies can
-share the same cached tile metadata.
+pipeline as `pairwise_forces_loop_gpu!`, including the displacement check, but launches
+`energy_kernel!` instead of the force kernel. Energy evaluation reuses any preprocessing
+already performed since the last rebuild, so forces and energies share the same cached
+tile metadata.
 """
 function Molly.pairwise_pe_loop_gpu!(pe_vec_nounits, buffers, sys::System{D, <:CuArray, T, TH},
                                       pairwise_inters, nbs::Nothing,
                                       step_n) where {D, T, TH}
-    # The ordering is usually recomputed for potential energy, but we can reuse it
-    #   if it was already computed for this step
-    N = length(sys.coords)
+    # The ordering and tiles are reused if they are current
     r_cut2 = kernel_pair_cutoff_2(sys, pairwise_inters)
-    backend = get_backend(sys.coords)
     nf = sys.neighbor_finder
+    launch_kernel! = () -> launch_energy_kernel!(pe_vec_nounits, buffers, sys, pairwise_inters,
+                                                 r_cut2, step_n)
+    run_tiled_kernel!(launch_kernel!, buffers, sys, nf, pairwise_inters, step_n, true)
+    return pe_vec_nounits
+end
 
-    needs_morton_refresh, needs_reorder, needs_sparse_refresh, needs_tile_refresh =
-        gpu_neighbor_refresh_flags(buffers, nf, step_n)
-    if needs_reorder || needs_sparse_refresh || needs_tile_refresh
-        if needs_morton_refresh
-            morton_bits = 10
-            sides = box_sides(sys.boundary)
-            w = sides ./ (2^morton_bits)
-            sorted_morton_seq!(buffers, sys.coords, w, morton_bits)
-        end
-
-        if needs_sparse_refresh
-            refresh_tile_exceptions!(buffers, nf, Val(N))
-            nf.initialized = true
-            buffers.sparse_pair_generation = nf.cache_generation
-        end
-
-        if needs_reorder
-            reorder_system_gpu!(buffers, sys, Val(needs_morton_refresh))
-            KernelAbstractions.synchronize(backend)
-        end
-
-        if needs_tile_refresh
-            refresh_interacting_tiles!(buffers, sys, N)
-        end
-        buffers.step_n_preprocessed = step_n
-    end
-
+# Launch the energy kernel over the list of interacting tiles
+function launch_energy_kernel!(pe_vec_nounits, buffers, sys::System{D, <:CuArray, T, TH},
+                               pairwise_inters, r_cut2, step_n) where {D, T, TH}
+    N = length(sys.coords)
     kernel = @cuda launch=false always_inline=true fastmath=pairwise_fastmath(T) energy_kernel!(
             pe_vec_nounits, buffers.coords_reordered,
             buffers.velocities_reordered, buffers.atoms_reordered, Val(N), Val(r_cut2), Val(sys.energy_units), pairwise_inters,
@@ -1170,8 +1694,8 @@ function Molly.pairwise_pe_loop_gpu!(pe_vec_nounits, buffers, sys::System{D, <:C
                 buffers.num_interacting_tiles, buffers.interacting_tiles_overflow;
                 blocks=n_blocks_launch, threads=(32, block_y), shmem=shmem)
     end
-     return pe_vec_nounits
- end
+    return pe_vec_nounits
+end
 
 function boxes_dist(r1_min::SVector{D, T}, r1_max::SVector{D, T}, r2_min::SVector{D, T}, r2_max::SVector{D, T}, boundary) where {D, T}
     va = vector(r2_max, r1_min, boundary)
@@ -1182,33 +1706,68 @@ function boxes_dist(r1_min::SVector{D, T}, r1_max::SVector{D, T}, r2_min::SVecto
     return SVector(ntuple(d -> r1_min[d] - r2_max[d] <= zero(T) && r2_min[d] - r1_max[d] <= zero(T) ? zero(T) : ifelse(a[d] < b[d], a[d], b[d]), D))
 end
 
-#=
-Triclinic boxes case is treated only in 3 dimensions.
-
-The block bounds are in fractional coordinates in [0, 1), see `kernel_min_max_triclinic!`,
-which carry the length unit of the coordinates. The periodic gap between the blocks along
-each box vector is found as for a cubic box of side one and converted to a distance with
-the distance between the box faces spanned by the other two vectors. Since the box
-vectors are not orthogonal these distances do not add in quadrature, so the largest of
-them is used. It is a lower bound on the distance between any atom of one block and any
-image of an atom of the other, and is returned as the first component.
-=#
-function boxes_dist(r1_min::SVector{D, T}, r1_max::SVector{D, T}, r2_min::SVector{D, T}, r2_max::SVector{D, T}, boundary::TriclinicBoundary) where {D, T}
-    frac_side = oneunit(T)
-    widths = Molly.cell_list_box_widths(boundary)
-    d = zero(T)
-    for k in 1:3
-        overlap = (r1_min[k] - r2_max[k] <= zero(T)) && (r2_min[k] - r1_max[k] <= zero(T))
-        gap_a = abs(Molly.vector_1D(r2_max[k], r1_min[k], frac_side))
-        gap_b = abs(Molly.vector_1D(r1_max[k], r2_min[k], frac_side))
-        gap = ifelse(overlap, zero(T), min(gap_a, gap_b))
-        d = max(d, gap * ustrip(unit(T), widths[k]))
-    end
-    return SVector(d, zero(T), zero(T))
+# Whether some periodic image of the bounding box of one block of atoms is within the cutoff
+#   of the bounding box of another
+@inline function boxes_within_cutoff(r1_min, r1_max, r2_min, r2_max, boundary, r_cut2)
+    d_block = boxes_dist(r1_min, r1_max, r2_min, r2_max, boundary)
+    return sum(d_block .* d_block) <= r_cut2
 end
 
-# Wrap a fractional coordinate, which carries the length unit of the coordinates, into [0, 1)
-@inline wrap_fractional(s) = s - floor(s / oneunit(s)) * oneunit(s)
+#=
+The block bounds of a triclinic box are in the brick coordinates of `Molly.morton_coord`.
+A displacement from a point in box 1 to a point in box 2 lies in the box
+[r2_min - r1_max, r2_max - r1_min], and its periodic images add n1 * a + n2 * b + n3 * c for
+integers n1, n2 and n3. As a has no y or z component and b has no z component, the z range of
+an image only depends on n3 and the y range only depends on n2 and n3. So the images are
+visited from z to y, over the integers that bring each range within the cutoff of zero,
+skipping those that are already further away than the cutoff, and the closest image along
+x is found directly. This is exact for the boxes, and since the distance between two boxes
+only gets smaller as a box grows, it can also be used for the tree search.
+The image counts are floats, so that the loops are empty rather than erroring for NaN.
+=#
+function boxes_within_cutoff(r1_min, r1_max, r2_min, r2_max, boundary::TriclinicBoundary,
+                             r_cut2)
+    a, b, c = boundary.basis_vectors
+    lo = r2_min - r1_max
+    hi = r2_max - r1_min
+    r_cut = sqrt(r_cut2)
+    n3 = ceil((-r_cut - hi[3]) / c[3])
+    n3_max = floor((r_cut - lo[3]) / c[3])
+    while n3 <= n3_max
+        dz2 = interval_dist2(lo[3] + n3 * c[3], hi[3] + n3 * c[3])
+        y_lo = lo[2] + n3 * c[2]
+        y_hi = hi[2] + n3 * c[2]
+        n2 = ceil((-r_cut - y_hi) / b[2])
+        n2_max = floor((r_cut - y_lo) / b[2])
+        while n2 <= n2_max
+            dyz2 = dz2 + interval_dist2(y_lo + n2 * b[2], y_hi + n2 * b[2])
+            if dyz2 <= r_cut2
+                x_shift = n3 * c[1] + n2 * b[1]
+                dx2 = periodic_interval_dist2(lo[1] + x_shift, hi[1] + x_shift, a[1])
+                if dyz2 + dx2 <= r_cut2
+                    return true
+                end
+            end
+            n2 += one(n2)
+        end
+        n3 += one(n3)
+    end
+    return false
+end
+
+# The squared distance from zero to the interval [lo, hi]
+@inline function interval_dist2(lo, hi)
+    d = max(lo, -hi, zero(lo))
+    return d * d
+end
+
+# The squared distance from zero to the closest of the intervals [lo, hi] + n * side
+@inline function periodic_interval_dist2(lo, hi, side)
+    lo_wrap = lo - side * floor(lo / side)
+    hi_wrap = lo_wrap + (hi - lo)
+    d = ifelse(hi_wrap >= side, zero(lo), min(lo_wrap, side - hi_wrap))
+    return d * d
+end
 
 """
     reorder_system_gpu!(buffers, sys)
@@ -1277,6 +1836,8 @@ end
 Compute the minimum and maximum coordinates for each 32-atom block.
 These bounds are used for fast bounding-box intersection tests during tile finding
 to skip non-interacting tile pairs.
+For a triclinic boundary the coordinates are first wrapped into the brick of the
+diagonal components of the basis vectors, see `Molly.morton_coord`.
 """
 function kernel_min_max!(
     sorted_seq,
@@ -1301,8 +1862,9 @@ function kernel_min_max!(
 
     if i <= n - r && local_i <= D32
         @inbounds s_i = sorted_seq_ro[i]
+        @inbounds c_i = Molly.morton_coord(coords[s_i], boundary)
         for k in a:b
-            @inbounds val = coords[s_i][k]
+            @inbounds val = c_i[k]
             @inbounds mins_smem[local_i, k] = val
             @inbounds maxs_smem[local_i, k] = val
         end
@@ -1341,134 +1903,15 @@ function kernel_min_max!(
     # Since the remainder array is low-dimensional, we do the scan
     if i > n - r && i <= n && local_i <= r
         @inbounds s_i = sorted_seq_ro[i]
+        @inbounds c_i = Molly.morton_coord(coords[s_i], boundary)
         for k in a:b
-            @inbounds r_smem[local_i, k] = coords[s_i][k]
+            @inbounds r_smem[local_i, k] = c_i[k]
         end
     end
     xyz_min = CuStaticSharedArray(C, b)
     xyz_max = CuStaticSharedArray(C, b)
     @inbounds for k in a:b
         xyz_min[k] =  10 * box_sides(boundary, k) # very large (arbitrary) value
-        xyz_max[k] = -10 * box_sides(boundary, k)
-    end
-    # Publish the r_smem writes from lanes 1:r and the xyz_min/xyz_max initialisation
-    # by all lanes before lane 1 reads and updates them.
-    sync_threads()
-    if local_i == a
-        for j in a:r
-            @inbounds begin
-                for k in a:b
-                    if r_smem[j, k] < xyz_min[k]
-                        xyz_min[k] = r_smem[j, k]
-                    end
-                    if r_smem[j, k] > xyz_max[k]
-                        xyz_max[k] = r_smem[j, k]
-                    end
-                end
-            end
-        end
-        if blockIdx().x == ceil(Int32, n/D32) && r != Int32(0)
-            @inbounds for k in a:b
-                mins[blockIdx().x, k] = xyz_min[k]
-                maxs[blockIdx().x, k] = xyz_max[k]
-            end
-        end
-    end
-
-    return nothing
-end
-
-"""
-    kernel_min_max_triclinic!(sorted_seq, mins, maxs, coords, Hinv, n_atoms, boundary, D)
-
-Compute the minimum and maximum coordinates for each 32-atom block in a system
-with a triclinic boundary. Converts to fractional coordinates using `Hinv` for
-bounds calculations.
-"""
-function kernel_min_max_triclinic!(
-    sorted_seq,
-    mins::AbstractArray{C},
-    maxs::AbstractArray{C},
-    coords_var,
-    Hinv,
-    ::Val{n},
-    boundary,
-    ::Val{D}) where {n, C, D}
-
-    D32 = Int32(32)
-    a = Int32(1)
-    b = Int32(D)
-    r = Int32(n % D32)
-    i = threadIdx().x + (blockIdx().x - a) * blockDim().x
-    local_i = threadIdx().x
-    sorted_seq_ro = CUDA_CORE.Const(sorted_seq)
-    coords = CUDA_CORE.Const(coords_var)
-    mins_smem = CuStaticSharedArray(C, (D32, b))
-    maxs_smem = CuStaticSharedArray(C, (D32, b))
-    r_smem = CuStaticSharedArray(C, (r, b))
-
-    if i <= n - r && local_i <= D32
-        @inbounds s_i = sorted_seq_ro[i]
-        @inbounds r_i = coords[s_i]
-        @inbounds for k in a:b
-            val = zero(C)
-            for j in a:b
-                val += Hinv[k,j]*r_i[j]
-            end
-            # Wrapped so that the periodic gaps in `boxes_dist` are valid for any coordinates
-            val = wrap_fractional(val)
-            @inbounds mins_smem[local_i, k] = val
-            @inbounds maxs_smem[local_i, k] = val
-        end
-    end
-    sync_threads()
-    if i <= n - r && local_i <= D32
-        for p in a:Int32(log2(D32))
-            for k in a:b
-                @inbounds begin
-                    if local_i % Int32(2^p) == Int32(0)
-                        if mins_smem[local_i, k] > mins_smem[local_i - Int32(2^(p - 1)), k]
-                            mins_smem[local_i, k] = mins_smem[local_i - Int32(2^(p - 1)), k]
-                        end
-                        if maxs_smem[local_i, k] < maxs_smem[local_i - Int32(2^(p - 1)), k]
-                            maxs_smem[local_i, k] = maxs_smem[local_i - Int32(2^(p - 1)), k]
-                        end
-                    end
-                end
-            end
-            # Level p reads slots written by other lanes at level p - 1. Lanes of a
-            # warp are not guaranteed to run in lockstep (independent thread
-            # scheduling since Volta), so a warp barrier is required between levels.
-            # The enclosing branch is uniform across the block (n - r is a multiple
-            # of 32 and threads=32), so all lanes reach this barrier.
-            sync_warp()
-        end
-        if local_i == D32
-            @inbounds for k in a:b
-                mins[blockIdx().x, k] = mins_smem[local_i, k]
-                maxs[blockIdx().x, k] = maxs_smem[local_i, k]
-            end
-        end
-
-    end
-
-    # Since the remainder array is low-dimensional, we do the scan
-    if i > n - r && i <= n && local_i <= r
-        @inbounds s_i = sorted_seq_ro[i]
-        @inbounds r_i = coords[s_i]
-        for k in a:b
-            val = zero(C)
-            @inbounds for j in a:b
-                val += Hinv[k,j]*r_i[j]
-            end
-            # Transform to fractional space: s = Hinv * r, wrapped into [0, 1)
-            @inbounds r_smem[local_i, k] = wrap_fractional(val)
-        end
-    end
-    xyz_min = CuStaticSharedArray(C, b)
-    xyz_max = CuStaticSharedArray(C, b)
-    @inbounds for k in a:b
-        xyz_min[k] =  10 * box_sides(boundary, k) # Very large (arbitrary) value
         xyz_max[k] = -10 * box_sides(boundary, k)
     end
     # Publish the r_smem writes from lanes 1:r and the xyz_min/xyz_max initialisation
@@ -1779,9 +2222,7 @@ function find_interacting_blocks_kernel!(
         @inbounds r_min_j = SVector{D}(ntuple(d -> mins_ro[j, d], D))
         @inbounds r_max_j = SVector{D}(ntuple(d -> maxs_ro[j, d], D))
 
-        d_block = boxes_dist(r_min_i, r_max_i, r_min_j, r_max_j, boundary)
-        
-        if sum(d_block .* d_block) <= r_cut2
+        if boxes_within_cutoff(r_min_i, r_max_i, r_min_j, r_max_j, boundary, r_cut2)
             emit_interacting_tile!(interacting_tiles_i, interacting_tiles_j,
                                    interacting_tiles_type, num_interacting_tiles,
                                    interacting_tiles_overflow, max_total_tiles,
@@ -1832,17 +2273,42 @@ interacting tiles times the depth of the tree.
 
 The box distance only gets smaller as a box grows, so a subtree that is skipped holds
 no block that the brute-force search would have accepted and the two searches give the
-same tiles. Only orthorhombic boundaries use the tree, see `use_tile_tree`.
+same tiles. This holds for triclinic boundaries too, see `boxes_within_cutoff`. The
+tiles are then sorted into the order of the brute-force search, see
+`sort_interacting_tiles!`.
 =#
 
-# Number of blocks from which the tree search is used
-# Below this the all-pairs search is faster, since there are too few blocks to keep
-#   the GPU busy with one thread walking the tree per block
-const TILE_TREE_MIN_BLOCKS = 6000
+#=
+Whether to use the tree search rather than the all-pairs search, given the number of
+tiles found by the previous search, or 0 before the first search.
+The all-pairs search takes time in proportion to the square of the number of blocks.
+Below about a million atoms there are too few blocks to keep the GPU busy with one thread
+walking the tree per block, so the time of the tree search and of the sort of its tiles
+depends less on the number of blocks than on the tiles per block, which set the length of
+each walk. The two take the same time at a number of blocks that grows with the square
+root of the tiles per block. Measured as the time per step on an RTX A6000 for liquid
+argon, water and protein in water with cutoffs of 0.7-2.0 nm, giving 40-260 tiles per
+block, it is 4,600-9,700 blocks for orthorhombic boxes and 3,200-5,400 blocks for
+truncated octahedra, where the box test costs more, see `boxes_within_cutoff`. The
+expressions below are within 10% of most of these and at most 35% above the rest, which
+costs at most 2% of the time per step since the searches take similar times there.
+Before the first search, the tiles per block of a solvated protein with a cutoff of
+1.2 nm are assumed.
+=#
+const TILE_TREE_BLOCKS_PER_SQRT_TILE = 750
+const TILE_TREE_BLOCKS_PER_SQRT_TILE_TRICLINIC = 470
+const TILE_TREE_DEFAULT_TILES_PER_BLOCK = 100
 
-function use_tile_tree(sys, n_blocks)
-    sys.boundary isa TriclinicBoundary && return false
-    min_blocks = something(env_override("MOLLY_CUDA_TILE_TREE_MIN_BLOCKS"), TILE_TREE_MIN_BLOCKS)
+function use_tile_tree(sys, n_blocks, n_tiles_previous)
+    min_blocks = env_override("MOLLY_CUDA_TILE_TREE_MIN_BLOCKS")
+    if min_blocks === nothing
+        tiles_per_block = (n_tiles_previous > 0 ? n_tiles_previous / n_blocks :
+                                                  TILE_TREE_DEFAULT_TILES_PER_BLOCK)
+        blocks_per_sqrt_tile = (sys.boundary isa TriclinicBoundary ?
+                                TILE_TREE_BLOCKS_PER_SQRT_TILE_TRICLINIC :
+                                TILE_TREE_BLOCKS_PER_SQRT_TILE)
+        min_blocks = blocks_per_sqrt_tile * sqrt(tiles_per_block)
+    end
     return n_blocks >= min_blocks
 end
 
@@ -1942,8 +2408,7 @@ function find_interacting_blocks_tree_kernel!(
                 @inbounds node = tree_offsets[k] + n
                 r_min_j, r_max_j = stored_box(tree_mins_ro, tree_maxs_ro, node, Val(D))
             end
-            d_block = boxes_dist(r_min_i, r_max_i, r_min_j, r_max_j, boundary)
-            visit = sum(d_block .* d_block) <= r_cut2
+            visit = boxes_within_cutoff(r_min_i, r_max_i, r_min_j, r_max_j, boundary, r_cut2)
         end
         if visit
             if k == Int32(0)
@@ -2179,8 +2644,11 @@ function force_kernel!(
         opposites_sum[lane, k, warpid] = zero(T)
     end
 
+    # Virial W_αβ = Σ dr_α f_β with f the force on j, matching the CPU path. All
+    #   components are kept since the tensor is not symmetric for non-central forces.
     vir_xx = zero(T); vir_yy = zero(T); vir_zz = zero(T)
     vir_xy = zero(T); vir_xz = zero(T); vir_yz = zero(T)
+    vir_yx = zero(T); vir_zx = zero(T); vir_zy = zero(T)
 
     j_0_tile = (j - a) * warpsize()
     index_j = j_0_tile + lane
@@ -2242,15 +2710,18 @@ function force_kernel!(
                     end
 
                     if needs_vir
-                        vir_xx += ustrip(f[1]) * ustrip(dr[1])
+                        vir_xx += ustrip(dr[1]) * ustrip(f[1])
                         if D >= 2
-                            vir_yy += ustrip(f[2]) * ustrip(dr[2])
-                            vir_xy += ustrip(f[1]) * ustrip(dr[2])
+                            vir_yy += ustrip(dr[2]) * ustrip(f[2])
+                            vir_xy += ustrip(dr[1]) * ustrip(f[2])
+                            vir_yx += ustrip(dr[2]) * ustrip(f[1])
                         end
                         if D >= 3
-                            vir_zz += ustrip(f[3]) * ustrip(dr[3])
-                            vir_xz += ustrip(f[1]) * ustrip(dr[3])
-                            vir_yz += ustrip(f[2]) * ustrip(dr[3])
+                            vir_zz += ustrip(dr[3]) * ustrip(f[3])
+                            vir_xz += ustrip(dr[1]) * ustrip(f[3])
+                            vir_zx += ustrip(dr[3]) * ustrip(f[1])
+                            vir_yz += ustrip(dr[2]) * ustrip(f[3])
+                            vir_zy += ustrip(dr[3]) * ustrip(f[2])
                         end
                     end
                 end
@@ -2295,15 +2766,18 @@ function force_kernel!(
                     end
 
                     if needs_vir
-                        vir_xx += ustrip(f[1]) * ustrip(dr[1])
+                        vir_xx += ustrip(dr[1]) * ustrip(f[1])
                         if D >= 2
-                            vir_yy += ustrip(f[2]) * ustrip(dr[2])
-                            vir_xy += ustrip(f[1]) * ustrip(dr[2])
+                            vir_yy += ustrip(dr[2]) * ustrip(f[2])
+                            vir_xy += ustrip(dr[1]) * ustrip(f[2])
+                            vir_yx += ustrip(dr[2]) * ustrip(f[1])
                         end
                         if D >= 3
-                            vir_zz += ustrip(f[3]) * ustrip(dr[3])
-                            vir_xz += ustrip(f[1]) * ustrip(dr[3])
-                            vir_yz += ustrip(f[2]) * ustrip(dr[3])
+                            vir_zz += ustrip(dr[3]) * ustrip(f[3])
+                            vir_xz += ustrip(dr[1]) * ustrip(f[3])
+                            vir_zx += ustrip(dr[3]) * ustrip(f[1])
+                            vir_yz += ustrip(dr[2]) * ustrip(f[3])
+                            vir_zy += ustrip(dr[3]) * ustrip(f[2])
                         end
                     end
                 end
@@ -2370,15 +2844,18 @@ function force_kernel!(
                 end
                 
                 if needs_vir
-                    vir_xx += ustrip(f[1]) * ustrip(dr[1])
+                    vir_xx += ustrip(dr[1]) * ustrip(f[1])
                     if D >= 2
-                        vir_yy += ustrip(f[2]) * ustrip(dr[2])
-                        vir_xy += ustrip(f[1]) * ustrip(dr[2])
+                        vir_yy += ustrip(dr[2]) * ustrip(f[2])
+                        vir_xy += ustrip(dr[1]) * ustrip(f[2])
+                        vir_yx += ustrip(dr[2]) * ustrip(f[1])
                     end
                     if D >= 3
-                        vir_zz += ustrip(f[3]) * ustrip(dr[3])
-                        vir_xz += ustrip(f[1]) * ustrip(dr[3])
-                        vir_yz += ustrip(f[2]) * ustrip(dr[3])
+                        vir_zz += ustrip(dr[3]) * ustrip(f[3])
+                        vir_xz += ustrip(dr[1]) * ustrip(f[3])
+                        vir_zx += ustrip(dr[3]) * ustrip(f[1])
+                        vir_yz += ustrip(dr[2]) * ustrip(f[3])
+                        vir_zy += ustrip(dr[3]) * ustrip(f[2])
                     end
                 end
             end
@@ -2424,15 +2901,18 @@ function force_kernel!(
             end
             
             if needs_vir
-                vir_xx += ustrip(f[1]) * ustrip(dr[1])
+                vir_xx += ustrip(dr[1]) * ustrip(f[1])
                 if D >= 2
-                    vir_yy += ustrip(f[2]) * ustrip(dr[2])
-                    vir_xy += ustrip(f[1]) * ustrip(dr[2])
+                    vir_yy += ustrip(dr[2]) * ustrip(f[2])
+                    vir_xy += ustrip(dr[1]) * ustrip(f[2])
+                    vir_yx += ustrip(dr[2]) * ustrip(f[1])
                 end
                 if D >= 3
-                    vir_zz += ustrip(f[3]) * ustrip(dr[3])
-                    vir_xz += ustrip(f[1]) * ustrip(dr[3])
-                    vir_yz += ustrip(f[2]) * ustrip(dr[3])
+                    vir_zz += ustrip(dr[3]) * ustrip(f[3])
+                    vir_xz += ustrip(dr[1]) * ustrip(f[3])
+                    vir_zx += ustrip(dr[3]) * ustrip(f[1])
+                    vir_yz += ustrip(dr[2]) * ustrip(f[3])
+                    vir_zy += ustrip(dr[3]) * ustrip(f[2])
                 end
             end
         end
@@ -2487,15 +2967,18 @@ function force_kernel!(
                 end
                 
                 if needs_vir
-                    vir_xx += ustrip(f[1]) * ustrip(dr[1])
+                    vir_xx += ustrip(dr[1]) * ustrip(f[1])
                     if D >= 2
-                        vir_yy += ustrip(f[2]) * ustrip(dr[2])
-                        vir_xy += ustrip(f[1]) * ustrip(dr[2])
+                        vir_yy += ustrip(dr[2]) * ustrip(f[2])
+                        vir_xy += ustrip(dr[1]) * ustrip(f[2])
+                        vir_yx += ustrip(dr[2]) * ustrip(f[1])
                     end
                     if D >= 3
-                        vir_zz += ustrip(f[3]) * ustrip(dr[3])
-                        vir_xz += ustrip(f[1]) * ustrip(dr[3])
-                        vir_yz += ustrip(f[2]) * ustrip(dr[3])
+                        vir_zz += ustrip(dr[3]) * ustrip(f[3])
+                        vir_xz += ustrip(dr[1]) * ustrip(f[3])
+                        vir_zx += ustrip(dr[3]) * ustrip(f[1])
+                        vir_yz += ustrip(dr[2]) * ustrip(f[3])
+                        vir_zy += ustrip(dr[3]) * ustrip(f[2])
                     end
                 end
             end
@@ -2521,15 +3004,19 @@ function force_kernel!(
             if D >= 2
                 vir_yy += CUDA.shfl_down_sync(0xFFFFFFFF, vir_yy, offset_val)
                 vir_xy += CUDA.shfl_down_sync(0xFFFFFFFF, vir_xy, offset_val)
+                vir_yx += CUDA.shfl_down_sync(0xFFFFFFFF, vir_yx, offset_val)
             end
             if D >= 3
                 vir_zz += CUDA.shfl_down_sync(0xFFFFFFFF, vir_zz, offset_val)
                 vir_xz += CUDA.shfl_down_sync(0xFFFFFFFF, vir_xz, offset_val)
+                vir_zx += CUDA.shfl_down_sync(0xFFFFFFFF, vir_zx, offset_val)
                 vir_yz += CUDA.shfl_down_sync(0xFFFFFFFF, vir_yz, offset_val)
+                vir_zy += CUDA.shfl_down_sync(0xFFFFFFFF, vir_zy, offset_val)
             end
             offset_val ÷= 2
         end
 
+        # The virial is column-major, element (α, β) is at α + (β - 1) * D
         if lane == 1
             if vir_xx != zero(T)
                 CUDA.atomic_add!(pointer(global_virial, 1), TH(vir_xx))
@@ -2539,21 +3026,27 @@ function force_kernel!(
                     CUDA.atomic_add!(pointer(global_virial, D + 2), TH(vir_yy))
                 end
                 if vir_xy != zero(T)
-                    CUDA.atomic_add!(pointer(global_virial, 2), TH(vir_xy))
                     CUDA.atomic_add!(pointer(global_virial, D + 1), TH(vir_xy))
+                end
+                if vir_yx != zero(T)
+                    CUDA.atomic_add!(pointer(global_virial, 2), TH(vir_yx))
                 end
             end
             if D >= 3
                 if vir_zz != zero(T)
-                    CUDA.atomic_add!(pointer(global_virial, 9), TH(vir_zz))
+                    CUDA.atomic_add!(pointer(global_virial, 2 * D + 3), TH(vir_zz))
                 end
                 if vir_xz != zero(T)
-                    CUDA.atomic_add!(pointer(global_virial, 3), TH(vir_xz))
                     CUDA.atomic_add!(pointer(global_virial, 2 * D + 1), TH(vir_xz))
                 end
+                if vir_zx != zero(T)
+                    CUDA.atomic_add!(pointer(global_virial, 3), TH(vir_zx))
+                end
                 if vir_yz != zero(T)
-                    CUDA.atomic_add!(pointer(global_virial, 6), TH(vir_yz))
                     CUDA.atomic_add!(pointer(global_virial, 2 * D + 2), TH(vir_yz))
+                end
+                if vir_zy != zero(T)
+                    CUDA.atomic_add!(pointer(global_virial, D + 3), TH(vir_zy))
                 end
             end
         end

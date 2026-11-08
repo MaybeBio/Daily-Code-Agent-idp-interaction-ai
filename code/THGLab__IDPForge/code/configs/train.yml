@@ -1,0 +1,93 @@
+general:
+  me: train_cfg.yml
+  output: local
+  run_name: test
+  save_pdb: true
+  batch_save_freq: 2
+  epoch_save_freq: 5
+data:
+  train_path: 
+  - data/
+  val_path: 
+  - data/
+  tr_batch_size: 16
+  val_batch_size: 64
+training:
+  lr_scheduler:
+    max_lr: 0.001
+    warmup_no_steps: 1000
+    start_decay_after_n_steps: 5000
+    decay_every_n_steps: 5000
+  ema_decay: 0.99
+  trainer:
+    gradient_clip_val: 0.1
+    accumulate_grad_batches: 4
+    accelerator: gpu
+    devices: 1
+    max_epochs: 100
+    num_sanity_val_steps: 0
+  diff_pkl: data/diff_igso3.pkl
+  loss:
+    weights:
+      fape: 1
+      dist: 0.005
+      angular: 0.1
+      violation: 0.01
+    fape:
+      use_clamp: 0.5
+      clamp_distance: 10
+    dist:
+      start_epoch: 50
+      loop_clamp: 10
+      sidechain: 0
+      sidechain_clamp: 8
+    violation_cfg:
+      start_epoch: 80
+validation:
+  loss_weights:
+    ca_drmsd: 0.1
+    violation: 0.0
+    dist: 0.05
+    rg_error: 1.0
+  compute_cb_dist: true
+  compute_rg: true
+diffuse:
+  n_tsteps: 200
+  n_tsteps_inf: 40
+  euclid_b0: 0.01
+  euclid_bT: 0.08
+  torsion_b0: 0.01
+  torsion_bT: 0.06
+model:
+  t_embed_dim: 32
+  t2d_params:
+    DMIN: 3.0
+    DMAX: 39.0
+    DBINS: 32
+    ABINS: 32
+  self_condition: true
+  trunk:
+    num_blocks: 2
+    sequence_state_dim: 128
+    pairwise_state_dim: 64
+    sequence_head_width: 32
+    pairwise_head_width: 32
+    max_recycles: 3
+    recycle_min_bin: 3.375
+    recycle_max_bin: 39.375
+    structure_module:
+      c_s: 256
+      c_z: 64
+      c_ipa: 16
+      c_resnet: 128
+      no_heads_ipa: 8
+      no_qk_points: 4
+      no_v_points: 8
+      dropout_rate: 0.1
+      no_blocks: 4
+      no_transition_layers: 1
+      no_resnet_blocks: 2
+      no_angles: 7
+      trans_scale_factor: 10
+      epsilon: 0.00000001
+      inf: 100000000

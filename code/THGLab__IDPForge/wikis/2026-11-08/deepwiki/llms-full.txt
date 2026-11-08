@@ -1,0 +1,4036 @@
+# Page: IDPForge & AlphaFlex Overview
+
+# IDPForge & AlphaFlex Overview
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Data_Inputs/knot_screening.json](AlphaFlex/Data_Inputs/knot_screening.json)
+- [AlphaFlex/README.md](AlphaFlex/README.md)
+- [LICENSE](LICENSE)
+- [README.md](README.md)
+- [configs/sample.yml](configs/sample.yml)
+- [data/sic1_pre_exp.txt](data/sic1_pre_exp.txt)
+- [environment.yml](environment.yml)
+- [esm/__init__.py](esm/__init__.py)
+- [setup.py](setup.py)
+
+</details>
+
+
+
+IDPForge is a generative transformer-based protein language diffusion model designed to create all-atom ensembles for Intrinsically Disordered Proteins (IDPs) and proteins containing Intrinsically Disordered Regions (IDRs). While traditional structural biology tools often struggle with the conformational heterogeneity of disordered proteins, IDPForge leverages ESM2-based embeddings and diffusion processes to sample valid structural ensembles that can be optionally guided by experimental data.
+
+AlphaFlex (AFX-IDPForge) is an extension pipeline built upon IDPForge to handle large-scale ensemble generation for proteins with complex architectures, such as those containing multiple folded domains connected by disordered linkers.
+
+### System Relation & Purpose
+
+| System | Primary Purpose | Key Entities |
+| :--- | :--- | :--- |
+| **IDPForge** | Core generative model and sampling engine. | `idpforge/model.py`, `idpforge/diffuse.py` |
+| **AlphaFlex** | Orchestration pipeline for multi-domain/IDR proteins. | `Step_1_case_label.py` through `Step_4_ldr_stitch.py` |
+
+Sources: [README.md:1-4](), [AlphaFlex/README.md:1-5](), [setup.py:5-8]()
+
+---
+
+## Core Capabilities
+
+IDPForge and AlphaFlex provide a comprehensive toolkit for IDP/IDR modeling:
+
+*   **Generative Diffusion:** Uses a diffusion framework to sample protein conformations in both Euclidean (backbone coordinates) and torsional (dihedral angles) space.
+*   **Experimental Guidance:** Incorporates gradient-based potentials during reverse diffusion to bias ensembles toward experimental observables such as Paramagnetic Relaxation Enhancement (PRE) or smFRET.
+*   **Folded Context Retention:** Specifically designed to model disordered regions while maintaining the structural integrity of pre-existing folded domains.
+*   **Topological Validation:** Includes a structural validation suite to ensure generated ensembles are free of knots (unless native) and physical violations.
+*   **Large-Scale Orchestration:** The AlphaFlex pipeline automates the classification, template preparation, sampling, and kinematic stitching of complex proteins.
+
+Sources: [README.md:1-4](), [configs/sample.yml:34-40](), [AlphaFlex/README.md:49-115]()
+
+---
+
+## High-Level Architecture
+
+The system transitions from protein sequence and secondary structure definitions into a 3D coordinate space through a series of neural modules and diffusion steps.
+
+### Conceptual Workflow: Natural Language to Code Entity Space
+
+The following diagram maps the high-level scientific concepts to the specific code entities that implement them.
+
+**Diagram: IDPForge Generative Flow**
+```mermaid
+graph TD
+    subgraph "Input Space"
+        SEQ["Sequence & SS Encoding"]
+        EXP["Experimental Potentials"]
+    end
+
+    subgraph "Generative Core (idpforge/)"
+        TRUNK["FoldingTrunk (model.py)"]
+        DIFF["Diffuser (diffuse.py)"]
+        POT["Potential (utils/potential.py)"]
+    end
+
+    subgraph "Output Space"
+        ENS["Protein Ensemble (.pdb)"]
+        VAL["Validation (utils/structure_validation.py)"]
+    end
+
+    SEQ --> TRUNK
+    TRUNK --> DIFF
+    EXP --> POT
+    POT -- "Gradient Guidance" --> DIFF
+    DIFF --> ENS
+    ENS --> VAL
+```
+Sources: [idpforge/model.py:1-100](), [idpforge/diffuse.py:1-50](), [idpforge/utils/potential.py:1-50](), [idpforge/utils/structure_validation.py:1-50]()
+
+### AlphaFlex Pipeline Architecture
+
+The AlphaFlex pipeline manages the lifecycle of generating ensembles for proteins with folded domains (templates) and disordered regions (IDRs).
+
+**Diagram: AlphaFlex Multi-Step Pipeline**
+```mermaid
+graph LR
+    subgraph "Data & Labeling"
+        S1["Step_1_case_label.py"]
+        DB["AlphaFlex_database_Nov2025.json"]
+    end
+
+    subgraph "Template Preparation"
+        S2["Step_2_mk_ldr_template.py"]
+        MK_LDR["mk_ldr_template.py"]
+        MK_FLEX["mk_flex_template.py"]
+    end
+
+    subgraph "Sampling & Assembly"
+        S3["Step_3_sample_conformer.py"]
+        S4["Step_4_ldr_stitch.py"]
+        STITCH["assemble_kinematic_chain"]
+    end
+
+    DB --> S1
+    S1 --> S2
+    S2 --> MK_LDR
+    S2 --> MK_FLEX
+    MK_LDR --> S3
+    MK_FLEX --> S3
+    S3 --> S4
+    S4 --> STITCH
+```
+Sources: [AlphaFlex/README.md:49-115](), [AlphaFlex/config.py:1-50]()
+
+---
+
+## Detailed Documentation Sections
+
+For in-depth technical information, please refer to the following child pages:
+
+### [1.1 Getting Started: Installation & Configuration](#)
+Covers the environment setup using `environment.yml`, the integration of `OpenFold` resources, and the primary configuration files (`sample.yml`, `train.yml`) used to control model hyperparameters and diffusion schedules.
+*   **Key Files:** `environment.yml`, `setup.py`, `configs/sample.yml`
+*   **Details:** [README.md:15-97]()
+
+### [1.2 Data Files & Example Data](#)
+Documents the required data structures for training and inference, including secondary structure encodings, IGSO3 diffusion caches, and experimental data formats (e.g., `sic1_pre_exp.txt`).
+*   **Key Files:** `data/example_data.pkl`, `data/sic1_pre_exp.txt`, `AlphaFlex/Data_Inputs/knot_screening.json`
+*   **Details:** [README.md:200-205](), [AlphaFlex/README.md:7-16]()
+
+---
+*Note: This is a high-level parent page. For implementation details, loss functions, and specific model layers, see the [IDPForge Core Model Architecture](#) section.*
+
+---
+
+# Page: Getting Started: Installation & Configuration
+
+# Getting Started: Installation & Configuration
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [README.md](README.md)
+- [configs/sample.yml](configs/sample.yml)
+- [configs/train.yml](configs/train.yml)
+- [dockerfiles/Dockerfile_Ampere](dockerfiles/Dockerfile_Ampere)
+- [dockerfiles/Dockerfile_Blackwell](dockerfiles/Dockerfile_Blackwell)
+- [dockerfiles/env.yml](dockerfiles/env.yml)
+- [dockerfiles/idpforge_ampere.def](dockerfiles/idpforge_ampere.def)
+- [dockerfiles/idpforge_blackwell.def](dockerfiles/idpforge_blackwell.def)
+- [dockerfiles/openfold_setup_12.1.py](dockerfiles/openfold_setup_12.1.py)
+- [dockerfiles/openfold_setup_12.8.py](dockerfiles/openfold_setup_12.8.py)
+- [environment.yml](environment.yml)
+- [setup.py](setup.py)
+
+</details>
+
+
+
+This page provides a technical guide for setting up the IDPForge environment. IDPForge requires a specific stack of machine learning libraries (PyTorch, PyTorch Lightning), molecular dynamics tools (OpenMM, MDTraj), and bioinformatics utilities (OpenFold, ESM2).
+
+## Environment Setup Strategies
+
+IDPForge supports two primary installation paths depending on the target hardware (Ampere vs. Blackwell architectures) and the deployment environment (Local vs. HPC).
+
+### 1. Conda/Mamba Installation
+The primary method uses `environment.yml` to resolve dependencies. The project explicitly pins `pip==25.2` as newer versions may cause installation conflicts with specific ML components [dockerfiles/Dockerfile_Ampere:25-27]().
+
+| Component | Default (Ampere/Older) | Alternative (Blackwell/Newer) |
+| :--- | :--- | :--- |
+| **CUDA Toolkit** | 12.1 | 12.8 |
+| **PyTorch** | 2.5.1 | 2.7.1 |
+| **Python** | 3.10 | 3.10 |
+
+**Key Dependencies:**
+*   **ML Core:** `torch`, `pytorch-lightning`, `einops`, `ml-collections` [environment.yml:62-75]().
+*   **Bioinformatics:** `hmmer`, `hhsuite`, `mmseqs2`, `pdb-tools` [environment.yml:48-52]().
+*   **Simulation/Structure:** `openmm`, `pdbfixer`, `mdtraj`, `biopython` [environment.yml:39-45]().
+
+**Installation Workflow:**
+1. Create environment: `conda env create -f environment.yml` [README.md:26]().
+2. Install IDPForge as an editable module: `pip install -e .` [README.md:40]().
+3. Setup OpenFold (see below).
+
+### 2. OpenFold Integration
+IDPForge relies on OpenFold for its structure module kernels. Because OpenFold requires custom CUDA kernel compilation, IDPForge provides specialized setup scripts to ensure compatibility with modern CUDA versions.
+
+**OpenFold Setup Procedure:**
+1. Clone OpenFold into the same parent directory as IDPForge [README.md:49-53]().
+2. Download `stereo_chemical_props.txt` into `openfold/openfold/resources` [README.md:61-65]().
+3. Replace `openfold/setup.py` with the versioned script from IDPForge:
+    *   For CUDA 12.1: `dockerfiles/openfold_setup_12.1.py` [dockerfiles/openfold_setup_12.1.py:1-114]().
+    *   For CUDA 12.8: `dockerfiles/openfold_setup_12.8.py` [dockerfiles/openfold_setup_12.8.py:1-116]().
+4. Install with build isolation disabled: `pip install -e . --no-build-isolation` [README.md:94]().
+
+**Sources:** [README.md:13-97](), [environment.yml:1-82](), [setup.py:1-23](), [dockerfiles/openfold_setup_12.1.py:1-114](), [dockerfiles/openfold_setup_12.8.py:1-116]()
+
+---
+
+## Containerized Deployment
+
+For reproducible environments, IDPForge provides both Dockerfiles and Apptainer (Singularity) definition files. These containers bundle the environment, including the complex OpenFold kernel compilation.
+
+### System Architecture Diagram: Installation & Runtime
+This diagram maps the high-level installation components to their respective code entities and file locations.
+
+```mermaid
+graph TD
+    subgraph "Natural Language Space"
+        A["User Environment"]
+        B["Container Engine"]
+        C["Configuration"]
+    end
+
+    subgraph "Code Entity Space"
+        A --> D["environment.yml"]
+        A --> E["setup.py"]
+        
+        B --> F["dockerfiles/Dockerfile_Ampere"]
+        B --> G["dockerfiles/idpforge_blackwell.def"]
+        
+        C --> H["configs/sample.yml"]
+        C --> I["configs/train.yml"]
+        
+        F --> J["openfold_setup_12.1.py"]
+        G --> K["openfold_setup_12.8.py"]
+        
+        E --> L["idpforge (package)"]
+        E --> M["esm (package)"]
+    end
+
+    subgraph "Execution Layer"
+        L --> N["sample_idp.py"]
+        L --> O["train.py"]
+    end
+    
+    style D stroke-dasharray: 5 5
+    style H stroke-dasharray: 5 5
+    style I stroke-dasharray: 5 5
+```
+
+**Sources:** [README.md:212-220](), [dockerfiles/Dockerfile_Ampere:1-63](), [dockerfiles/idpforge_ampere.def:1-120](), [setup.py:12-12]()
+
+---
+
+## Configuration Files
+
+IDPForge uses YAML configuration files to manage model hyperparameters, diffusion schedules, and data paths.
+
+### 1. Training Configuration (`configs/train.yml`)
+Controls the neural network architecture and the training loop parameters.
+
+*   **Diffusion Schedule:** Defines the linear noise schedule for both Euclidean (coordinates) and Torsional (angles) space via `euclid_b0/bT` and `torsion_b0/bT` [configs/train.yml:57-60]().
+*   **Loss Weights:** Balances FAPE (Frame Aligned Point Error), distance, angular, and violation losses [configs/train.yml:31-35]().
+*   **Model Architecture:** Configures the `trunk` (number of blocks, state dimensions) and the `structure_module` (IPA heads, transition layers) [configs/train.yml:69-93]().
+
+### 2. Inference Configuration (`configs/sample.yml`)
+Controls the generation of protein ensembles.
+
+*   **Inference Steps:** `n_tsteps_inf` (often set to 40) defines the number of reverse diffusion steps [configs/sample.yml:45]().
+*   **Potential Guidance:** The `potential` flag enables gradient-based guidance during sampling (e.g., using PRE or FRET data) [configs/sample.yml:34-38]().
+*   **Relaxation:** Parameters for the AMBER force field relaxation post-sampling, including `tolerance` and `stiffness` [configs/sample.yml:51-56]().
+
+### Configuration Data Flow
+The following diagram illustrates how configuration entities interact with the sampling and training scripts.
+
+```mermaid
+graph LR
+    subgraph "Input Configs"
+        TRAIN_CFG["configs/train.yml"]
+        SAMPLE_CFG["configs/sample.yml"]
+    end
+
+    subgraph "Execution Logic"
+        TR_EXEC["train.py"]
+        SMP_EXEC["sample_idp.py"]
+    end
+
+    subgraph "Code Components"
+        MODEL["idpforge/model.py"]
+        DIFF["idpforge/utils/diffuser.py"]
+        RELAX["idpforge/utils/relax.py"]
+    end
+
+    TRAIN_CFG -- "trunk params" --> MODEL
+    TRAIN_CFG -- "beta schedules" --> DIFF
+    TRAIN_CFG --> TR_EXEC
+    
+    SAMPLE_CFG -- "inference_steps" --> DIFF
+    SAMPLE_CFG -- "stiffness" --> RELAX
+    SAMPLE_CFG --> SMP_EXEC
+    
+    TR_EXEC --> MODEL
+    SMP_EXEC --> MODEL
+```
+
+**Sources:** [configs/train.yml:1-93](), [configs/sample.yml:1-56](), [train.py:1-46](), [sample_idp.py:1-42]()
+
+---
+
+## External Data & Weights
+
+IDPForge requires pre-computed files and model weights that are not stored in the repository due to size.
+
+1.  **Model Weights:** `weights/mdl.ckpt` should be placed in the repository root [README.md:204]().
+2.  **IGSO3 Cache:** `data/diff_igso3.pkl` is required for rotational diffusion calculations [configs/train.yml:29]().
+3.  **Fragment Library:** `data/example_data.pkl` provides the secondary structure fragments used during sampling [configs/sample.yml:42]().
+
+**Sources:** [README.md:200-205](), [configs/sample.yml:42-42](), [configs/train.yml:29-29]()
+
+---
+
+# Page: Data Files & Example Data
+
+# Data Files & Example Data
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [data/AF-P05231-F1-model_v4.pdb](data/AF-P05231-F1-model_v4.pdb)
+- [data/AF-P05231_ndr.npz](data/AF-P05231_ndr.npz)
+- [data/README.md](data/README.md)
+- [data/asyn_pre_exp.txt](data/asyn_pre_exp.txt)
+- [idpforge/utils/definitions.py](idpforge/utils/definitions.py)
+- [idpforge/utils/structure_repair.py](idpforge/utils/structure_repair.py)
+- [relax_raw.py](relax_raw.py)
+
+</details>
+
+
+
+This page documents the contents of the `data/` directory, including training data structures, secondary structure encodings, diffusion caches, and experimental data formats used for guided sampling. It also details the procedure for preparing custom training datasets from PDB files.
+
+### Data Directory Overview
+
+The `data/` directory contains essential inputs for both training and inference. While large datasets (e.g., DisProt conformers) are hosted externally, the repository includes example files and utilities to process them.
+
+| File | Purpose |
+| :--- | :--- |
+| `example_data.pkl` | Example training data containing sequences, SS encodings, and coordinates. |
+| `example_sec.txt` | Compiled secondary structure strings for inference. |
+| `diff_igso3.pkl` | Cached IGSO3 discretization for rotational diffusion. |
+| `*_pre_exp.txt` | Paramagnetic Relaxation Enhancement (PRE) experimental data. |
+| `AF-P05231_ndr.npz` | AlphaFold template for IDR-in-folded-context sampling. |
+
+Sources: [data/README.md:3-9](), [data/README.md:41-45]()
+
+---
+
+### Training Data Format
+
+Training data is stored in Python pickle (`.pkl`) files. The `DiffDataset` class in the training pipeline expects a nested list structure: `[List[SS_Strings], List[Sequence_Strings], List[Coordinates]]`.
+
+#### Coordinate Representation
+Coordinates are stored as `(N, 14, 3)` or `(N, 9, 3)` arrays, representing the heavy atoms of each residue. IDPForge specifically utilizes the first 5 atoms (N, CA, C, O, CB) for backbone featurization [idpforge/utils/definitions.py:27-32]().
+
+#### Secondary Structure Encodings
+Secondary structure is encoded using an 8-character alphabet defined in `idpforge/utils/definitions.py`.
+
+| Code | Structure Type | Source |
+| :--- | :--- | :--- |
+| `H` | Alpha-helix | DSSP |
+| `E` | Beta-sheet | DSSP |
+| `P` | Polyproline II (PPII) | Ramachandran Assignment |
+| `A` | Alpha-region coil | Ramachandran Assignment |
+| `B` | Beta-region coil | Ramachandran Assignment |
+| `L` | Left-handed helix coil | Ramachandran Assignment |
+| `C` | Other coil | Ramachandran Assignment |
+| `-` | Masked/Unknown | Padding |
+
+Sources: [idpforge/utils/definitions.py:9-13](), [data/README.md:22-28]()
+
+---
+
+### Custom Data Preparation
+
+Custom training data is generated by processing PDB structures through a pipeline that extracts coordinates, sequences, and assigns secondary structure labels based on a combination of DSSP and Ramachandran regions.
+
+#### Data Preparation Flow
+The following diagram illustrates the transformation from raw PDB files to the `data.pkl` format used by the `DiffDataset`.
+
+**PDB to Training Data Transformation**
+```mermaid
+graph TD
+    subgraph "Input Space"
+        PDB["Raw PDB Files"]
+    end
+
+    subgraph "Processing Space (idpforge/utils/np_utils.py)"
+        PROC["process_pdb()"]
+        DSSP["mdtraj.compute_dssp()"]
+        RAMA["assign_rama()"]
+    end
+
+    subgraph "Feature Space"
+        SEQ["Amino Acid Sequence"]
+        CRD["Coordinates (N, 9, 3)"]
+        SS["SS String (H, E, P, A, B, C, L)"]
+    end
+
+    PDB --> PROC
+    PDB --> DSSP
+    PDB --> RAMA
+    
+    PROC --> SEQ
+    PROC --> CRD
+    DSSP -- "H, E labels" --> SS
+    RAMA -- "Coil labels" --> SS
+
+    SEQ --> PKL["data.pkl"]
+    CRD --> PKL
+    SS --> PKL
+```
+Sources: [data/README.md:12-38](), [idpforge/utils/definitions.py:9-14]()
+
+---
+
+### Diffusion & Cache Files
+
+#### IGSO3 Cache (`diff_igso3.pkl`)
+To accelerate training and inference, IDPForge caches the discretization of the Isotropic Gaussian on SO(3) (IGSO3). This distribution is used for rotational diffusion of the residue frames.
+*   **Schedule:** Linear beta schedule.
+*   **Steps:** Typically 200 timesteps.
+*   **Fallback:** If the file is missing, the system regenerates the cache based on parameters in the `Diffuser` class.
+
+Sources: [data/README.md:41-42]()
+
+#### Secondary Structure Database (`example_sec.txt`)
+During inference, users can provide a file containing potential secondary structure encodings for a target sequence. 
+*   **Manual Generation:** The `prep_sec.py` utility samples SS strings from a database based on sequence preference.
+*   **Format:** A text file where each line is a valid SS string of the target length.
+
+Sources: [data/README.md:45-49]()
+
+---
+
+### Experimental Guidance Data
+
+Experimental data files are used by the `Potential` classes in `idpforge/utils/potential.py` to guide the reverse diffusion process.
+
+#### PRE Data (`asyn_pre_exp.txt`)
+Paramagnetic Relaxation Enhancement data is provided in a distance-based representation.
+*   **Format:** CSV/TXT with headers `index, res1, atom1, res2, atom2, dist_value, lower, upper`.
+*   **Usage:** The `ContactPotential` class uses these distances to calculate a loss gradient that pulls or pushes residue pairs during sampling.
+
+#### FRET Data
+Similar to PRE, smFRET data specifies efficiency values between labeled residues, which are converted to distance constraints by the `EfretPotential`.
+
+**Experimental Data to Potential Guidance**
+```mermaid
+graph LR
+    subgraph "Data Files"
+        PRE_FILE["asyn_pre_exp.txt"]
+        FRET_FILE["fret_data.txt"]
+    end
+
+    subgraph "Code Entities (idpforge/utils/potential.py)"
+        PRE_POT["ContactPotential"]
+        FRET_POT["EfretPotential"]
+    end
+
+    subgraph "Inference Loop"
+        GRAD["calc_grad()"]
+        STEP["Reverse Diffusion Step"]
+    end
+
+    PRE_FILE --> PRE_POT
+    FRET_FILE --> FRET_POT
+    PRE_POT --> GRAD
+    FRET_POT --> GRAD
+    GRAD --> STEP
+```
+Sources: [data/asyn_pre_exp.txt:1-10](), [idpforge/utils/potential.py:1-50]()
+
+---
+
+### Post-Processing & Repair
+
+When generating ensembles, raw coordinates may occasionally contain geometric artifacts such as D-amino acid chirality flips or scrambled atom naming in Histidine rings (common after AMBER relaxation).
+
+#### Chirality Repair
+The `repair_chirality` function in `idpforge/utils/structure_repair.py` detects residues where the $N-C_\alpha-C-C_\beta$ volume is improper. It restores the L-isomer by reflecting all sidechain atoms across the $N-C_\alpha-C$ plane [idpforge/utils/structure_repair.py:35-47]().
+
+#### Histidine Naming
+The `fix_histidine_naming` function reassigns atom identities in the HIS imidazole ring based on spatial geometry and hydrogen count patterns (supporting HID, HIE, and HIP states) [idpforge/utils/structure_repair.py:156-178]().
+
+Sources: [idpforge/utils/structure_repair.py:21-32](), [idpforge/utils/structure_repair.py:64-72](), [relax_raw.py:123-150]()
+
+---
+
+# Page: IDPForge Core Model Architecture
+
+# IDPForge Core Model Architecture
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [README.md](README.md)
+- [configs/sample.yml](configs/sample.yml)
+- [idpforge/esm_wrapper.py](idpforge/esm_wrapper.py)
+- [idpforge/model.py](idpforge/model.py)
+
+</details>
+
+
+
+IDPForge is a transformer-based protein language diffusion model designed to generate all-atom ensembles of Intrinsically Disordered Proteins (IDPs) and Intrinsically Disordered Regions (IDRs) [README.md:1-4](). The architecture integrates the structural reasoning capabilities of ESMFold with a diffusion framework to model the conformational flexibility inherent in disordered proteins.
+
+### System Overview Diagram
+
+The following diagram illustrates the high-level data flow between the core components of the IDPForge system.
+
+```mermaid
+graph TD
+    subgraph "Input Processing"
+        A["input_process()"] --> B["batch_encode_sequences()"]
+        A --> C["batch_encode_ss()"]
+    end
+
+    subgraph "IDPForge Model [idpforge/model.py]"
+        B --> D["IDPForge.forward()"]
+        C --> D
+        E["Sinusoidal Time Embedding"] --> D
+        F["Noised Coordinates (x_t)"] --> D
+        G["Noised Torsions (alpha_t)"] --> D
+        
+        subgraph "Trunk & Structure"
+            D --> H["FoldingTrunk"]
+            H --> I["StructureModule"]
+        end
+    end
+
+    subgraph "Diffusion Loop [idpforge/diffuser.py]"
+        I --> J["Denoiser.get_next_pose()"]
+        J --> F
+        J --> G
+    end
+
+    subgraph "Output"
+        J --> K["output_to_pdb()"]
+    end
+```
+**Sources:** [idpforge/model.py:36-153](), [idpforge/misc.py:21-21](), [README.md:1-4]()
+
+---
+
+### Core Components
+
+#### 1. Neural Network Architecture (Trunk & Structure Module)
+The `IDPForge` class [idpforge/model.py:36-38]() serves as the central neural network. It utilizes an ESM2-based `FoldingTrunk` [idpforge/model.py:69-69]() to process sequence and pairwise information. Unlike standard folding models, IDPForge incorporates:
+*   **Time Embeddings:** Sinusoidal embeddings that inform the model of the current diffusion step [idpforge/model.py:59-61]().
+*   **Secondary Structure Encoding:** Explicit embeddings for secondary structure types (e.g., Helix, Sheet, Coil) to bias the ensemble generation [idpforge/model.py:67-67]().
+*   **IPA Structure Module:** An Invariant Point Attention (IPA) module that predicts 3D coordinates and torsion angles [configs/sample.yml:18-30]().
+
+For details, see [Model Architecture: Trunk, Structure Module & ESM Integration](#2.1).
+
+#### 2. Diffusion Process & IGSO3 Utilities
+IDPForge treats protein conformation generation as a reverse diffusion task. The `Diffuser` and `Denoiser` classes manage the transition from high-entropy (noisy) states to structured ensembles.
+*   **Euclidean Diffusion:** Applied to backbone $C\alpha$ coordinates.
+*   **Torsional Diffusion:** Applied to protein backbone and sidechain dihedral angles using IGSO3 rotational distributions to maintain proper geometry [idpforge/model.py:194-196]().
+
+For details, see [Diffusion Process: Diffuser, Denoiser & IGSO3 Utilities](#2.2).
+
+#### 3. Input Processing & Secondary Structure Assignment
+Before reaching the model, raw protein sequences and secondary structure strings are transformed into tensors via `input_process()` [idpforge/model.py:21-21](). This stage handles:
+*   **Ramachandran Assignment:** Converting $(\phi, \psi)$ angles into discrete secondary structure labels using `assign_rama`.
+*   **Chimeric Handling:** Managing residue index offsets for IDRs grafted onto folded domains.
+
+For details, see [Input Processing & Secondary Structure Encoding](#2.3).
+
+#### 4. Experimental Guidance Potentials
+During the reverse diffusion sampling loop (`recon`), the model can be guided by experimental data [idpforge/model.py:190-192](). The `Potential` system allows the integration of:
+*   **Radius of Gyration (RoG):** Compacting or expanding the ensemble.
+*   **PRE/FRET:** Distance restraints derived from Paramagnetic Relaxation Enhancement or Förster Resonance Energy Transfer.
+*   **J-Couplings:** NMR-derived local geometry restraints.
+
+For details, see [Experimental Guidance Potentials](#2.4).
+
+---
+
+### Architecture-Code Mapping
+
+This diagram maps specific codebase entities to their functional roles within the architecture.
+
+```mermaid
+classDiagram
+    class IDPForge {
+        +esm_s_mlp
+        +z_mlp
+        +time_embed
+        +trunk : FoldingTrunk
+        +forward(t, alpha_t, x_t, batch)
+        +recon(denoiser, batch)
+    }
+
+    class FoldingTrunk {
+        +blocks : TriangularSelfAttentionBlock
+        +structure_module : StructureModule
+    }
+
+    class Denoiser {
+        +get_next_pose()
+        +torsion_diffuser
+    }
+
+    class Potential {
+        +get_potential_gradients()
+    }
+
+    IDPForge --> FoldingTrunk : contains
+    FoldingTrunk --> StructureModule : contains
+    IDPForge ..> Denoiser : calls in recon()
+    IDPForge ..> Potential : applies gradients
+```
+**Sources:** [idpforge/model.py:36-70](), [idpforge/model.py:156-196](), [configs/sample.yml:1-33]()
+
+### Summary Table: Core Parameters
+
+| Component | Key Class/Function | Config Section | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Trunk** | `FoldingTrunk` | `model.trunk` | Processes sequence/pairwise states [idpforge/model.py:69]() |
+| **IPA** | `StructureModule` | `model.trunk.structure_module` | Predicts 3D frames and angles [configs/sample.yml:18]() |
+| **Diffusion** | `Denoiser` | `diffuse` | Handles noise schedules and sampling [idpforge/model.py:194]() |
+| **Input** | `input_process` | N/A | Tensorizes sequence and SS data [idpforge/model.py:21]() |
+| **Guidance** | `Potential` | `potential_cfg` | Injects experimental constraints [idpforge/model.py:190]() |
+
+**Sources:** [idpforge/model.py:21-70](), [configs/sample.yml:1-50]()
+
+---
+
+# Page: Model Architecture: Trunk, Structure Module & ESM Integration
+
+# Model Architecture: Trunk, Structure Module & ESM Integration
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [esm/axial_attention.py](esm/axial_attention.py)
+- [esm/esm2.py](esm/esm2.py)
+- [esm/esmfold/categorical_mixture.py](esm/esmfold/categorical_mixture.py)
+- [esm/esmfold/misc.py](esm/esmfold/misc.py)
+- [esm/esmfold/tri_self_attn_block.py](esm/esmfold/tri_self_attn_block.py)
+- [esm/esmfold/trunk.py](esm/esmfold/trunk.py)
+- [esm/modules.py](esm/modules.py)
+- [esm/multihead_attention.py](esm/multihead_attention.py)
+- [esm/rotary_embedding.py](esm/rotary_embedding.py)
+- [idpforge/esm_wrapper.py](idpforge/esm_wrapper.py)
+- [idpforge/model.py](idpforge/model.py)
+
+</details>
+
+
+
+The IDPForge model is a deep neural network designed for the generation of intrinsically disordered protein (IDP) ensembles. It leverages a modified version of the **ESMFold** architecture, integrating a diffusion-based approach to structural prediction. The model combines large-scale protein language model (ESM-2) embeddings with a geometry-aware folding trunk and an Invariant Point Attention (IPA) structure module.
+
+## Core Architecture Overview
+
+The model, defined in `IDPForge` [idpforge/model.py:36-69](), processes sequence, secondary structure, and noised structural features through a series of specialized modules to predict denoised backbone coordinates and torsion angles.
+
+### System Mapping: Conceptual to Code
+
+The following diagram bridges high-level architectural components to their specific implementations within the `idpforge` and `esm` namespaces.
+
+**Diagram: IDPForge Entity Mapping**
+```mermaid
+graph TD
+    subgraph "Input Processing"
+        A["Sequence/SS Input"] --> B["IDPForge.forward"]
+        C["Time Embedding"] --> B
+        D["Noised Structure (x_t, alpha_t)"] --> B
+    end
+
+    subgraph "Trunk & Attention"
+        B --> E["FoldingTrunk"]
+        E --> F["TriangularSelfAttentionBlock"]
+        F --> G["TriangleAttentionStartingNode"]
+        F --> H["TriangleAttentionEndingNode"]
+    end
+
+    subgraph "Structure Module"
+        E --> I["StructureModule"]
+        I --> J["InvariantPointAttention (IPA)"]
+        J --> K["Backbone Update"]
+    end
+
+    subgraph "Code Entities"
+        B-."idpforge/model.py".->B
+        E-."esm/esmfold/trunk.py".->E
+        F-."esm/esmfold/tri_self_attn_block.py".->F
+        I-."openfold/model/structure_module.py".->I
+    end
+```
+**Sources:** [idpforge/model.py:36-70](), [esm/esmfold/trunk.py:113-150](), [esm/esmfold/tri_self_attn_block.py:26-106]()
+
+---
+
+## Input Embeddings & Feature Fusion
+
+The `forward` pass [idpforge/model.py:79-153]() begins by fusing multiple information streams into a single-representation state ($s$) and a pairwise-representation state ($z$).
+
+### 1. Sinusoidal Time Embedding
+To inform the network of the current diffusion progress, the timestep $t$ is converted into a vector using a fixed sinusoidal embedding [idpforge/model.py:59-61](). This embedding is concatenated with the noised torsion features `alpha_t` [idpforge/model.py:110-111]().
+
+### 2. Sequence and Secondary Structure (SS) Encodings
+IDPForge extends the standard ESMFold input by explicitly embedding secondary structure labels.
+*   **AA Embedding:** Encodes the primary sequence [idpforge/model.py:68]().
+*   **SS Embedding:** Encodes 3-state or 8-state secondary structure definitions [idpforge/model.py:67]().
+*   **Feature Fusion:** The time-torsion vector is projected via `esm_s_mlp` and summed with the AA and SS embeddings to form the initial sequence state `s_s_0` [idpforge/model.py:112-114]().
+
+### 3. Geometry Encoding (xyz_to_t2d)
+The noised Cartesian coordinates $x_t$ are converted into pairwise distances and orientations using `xyz_to_t2d` [idpforge/model.py:118-119](). This geometric information is projected via `z_mlp` to form the initial pairwise state `s_z_0` [idpforge/model.py:51-56]().
+
+**Sources:** [idpforge/model.py:51-68](), [idpforge/model.py:110-120]()
+
+---
+
+## The Folding Trunk
+
+The `FoldingTrunk` [esm/esmfold/trunk.py:113]() is the computational engine of the model, consisting of 48 blocks (by default) of `TriangularSelfAttentionBlock`.
+
+### Triangular Self-Attention Block
+Each block updates the sequence and pairwise states through a series of specialized attention mechanisms:
+1.  **Sequence-to-Pair Communication:** Sequence information is projected into the pairwise space [esm/esmfold/tri_self_attn_block.py:142]().
+2.  **Pair-to-Sequence Communication:** Pairwise features act as a bias for sequence self-attention [esm/esmfold/tri_self_attn_block.py:133-137]().
+3.  **Triangular Multiplicative Updates:** Updates edges $(i, j)$ based on triangles $(i, j, k)$ using incoming and outgoing edges [esm/esmfold/tri_self_attn_block.py:146-151]().
+4.  **Triangular Attention:** Attention mechanisms that respect the triangle inequality, operating on rows (`TriangleAttentionStartingNode`) and columns (`TriangleAttentionEndingNode`) [esm/esmfold/tri_self_attn_block.py:153-164]().
+
+### Recycling Mechanism
+The trunk supports iterative refinement through "recycling." The outputs from a previous pass (sequence state, pairwise state, and a distogram of predicted positions) are normalized and added back to the initial embeddings for the next iteration [idpforge/model.py:121-129]().
+
+**Sources:** [esm/esmfold/tri_self_attn_block.py:132-169](), [esm/esmfold/trunk.py:183-205](), [idpforge/model.py:121-133]()
+
+---
+
+## Structure Module & IPA
+
+The final stage of the network is the `StructureModule` [esm/esmfold/trunk.py:147](), which transforms the abstract latent representations into physical 3D coordinates.
+
+### Invariant Point Attention (IPA)
+The core of the Structure Module is **Invariant Point Attention**. Unlike standard attention, IPA is invariant to the global rotation and translation of the protein frames. It operates by:
+*   Maintaining a "backbone frame" (rotation matrix and translation vector) for each residue.
+*   Performing attention in local coordinate systems.
+*   Updating frames iteratively through a dedicated transition layer.
+
+### Torsion Prediction
+In addition to Cartesian coordinates, the model predicts torsion angles ($\phi, \psi, \omega$ and sidechain $\chi$ angles). These are output as `angles` and `unnormalized_angles` in the final structure dictionary [idpforge/model.py:141-142]().
+
+**Sources:** [esm/esmfold/trunk.py:18-34](), [idpforge/model.py:134-145]()
+
+---
+
+## Data Flow: Forward Pass
+
+The data flow within `IDPForge.forward` is summarized below, illustrating the transition from noised inputs to predicted structural frames.
+
+**Diagram: IDPForge Forward Data Flow**
+```mermaid
+graph LR
+    subgraph Inputs
+        T["t (Timestep)"]
+        XT["x_t (Coords)"]
+        AT["alpha_t (Torsions)"]
+        SEQ["Sequence/SS"]
+    end
+
+    subgraph "Embedding Layer"
+        T --> TE["time_embed"]
+        SEQ --> SE["ss/aa_embedding"]
+        XT --> T2D["xyz_to_t2d"]
+    end
+
+    subgraph "Trunk Processing"
+        TE & SE & AT --> S0["s_s_0"]
+        T2D --> Z0["s_z_0"]
+        S0 & Z0 --> FT["FoldingTrunk (48 Blocks)"]
+    end
+
+    subgraph "Output Generation"
+        FT --> SM["StructureModule"]
+        SM --> POS["positions"]
+        SM --> ANG["angles"]
+    end
+
+    POS --> OUT["Output Dict"]
+    ANG --> OUT
+```
+**Sources:** [idpforge/model.py:79-153](), [esm/esmfold/trunk.py:160-205]()
+
+---
+
+## Implementation Details
+
+### Sinusoidal Embedding
+The time embedding is initialized using a fixed sinusoidal pattern and is not updated during training:
+```python
+self.time_embed = nn.Embedding(n_tsteps, cfg.t_embed_dim)
+self.time_embed.weight.data = sinusoidal_embedding(n_tsteps, cfg.t_embed_dim)
+self.time_embed.requires_grad_(False)
+```
+[idpforge/model.py:59-61]()
+
+### ESM Integration
+While IDPForge can utilize pre-computed ESM-2 embeddings, the `ESM_preprocess` class in `idpforge/esm_wrapper.py` handles the conversion between OpenFold/AlphaFold residue indexing and the ESM-2 alphabet [idpforge/esm_wrapper.py:34-43](). It specifically adds `<bos>` and `<eos>` tokens required by the language model [idpforge/esm_wrapper.py:54-62]().
+
+**Sources:** [idpforge/model.py:59-61](), [idpforge/esm_wrapper.py:34-98]()
+
+---
+
+# Page: Diffusion Process: Diffuser, Denoiser & IGSO3 Utilities
+
+# Diffusion Process: Diffuser, Denoiser & IGSO3 Utilities
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/utils/diff_utils.py](idpforge/utils/diff_utils.py)
+- [idpforge/utils/igso3_utils.py](idpforge/utils/igso3_utils.py)
+- [idpforge/utils/pre_relax.py](idpforge/utils/pre_relax.py)
+
+</details>
+
+
+
+This page details the diffusion framework within IDPForge, covering the mathematical schedules for Euclidean and torsional noise, the implementation of SO(3) rotational diffusion for protein backbones, and the mechanics of the reverse diffusion sampling loop.
+
+## Overview of the Diffusion Framework
+
+IDPForge utilizes a diffusion probabilistic model to generate protein ensembles. The process involves two primary components:
+1.  **Forward Diffusion**: Gradually adding noise to protein structures (coordinates and rotations) according to predefined schedules.
+2.  **Reverse Diffusion (Denosing)**: Using the neural network to predict the clean structure ($x_0$) from a noisy structure ($x_t$), then stepping back to $x_{t-1}$.
+
+### System Entity Map
+
+The following diagram maps the conceptual diffusion steps to the specific classes and functions implemented in the codebase.
+
+"Entity Mapping: Diffusion Logic to Code"
+```mermaid
+graph TD
+    subgraph "Noise Schedules"
+        A["Beta Schedule"] --> B["linear_beta_schedule"]
+        C["Noise Scale"] --> D["get_noise_schedule"]
+    end
+
+    subgraph "Diffusion Engine"
+        E["Diffuser Class"] --> F["idpforge/model.py"]
+        G["SO3 Diffuser"] --> H["SO3Diffuser Class"]
+    end
+
+    subgraph "Sampling Operations"
+        I["Reverse Step"] --> J["get_next_ca"]
+        I --> K["get_next_frames"]
+        I --> L["get_next_chi_angles"]
+        M["Alignment"] --> N["align_coords (Kabsch)"]
+    end
+
+    B --- [idpforge/utils/diff_utils.py:56-61]
+    D --- [idpforge/utils/diff_utils.py:64-76]
+    J --- [idpforge/utils/diff_utils.py:98-125]
+    K --- [idpforge/utils/diff_utils.py:126-161]
+    L --- [idpforge/utils/diff_utils.py:162-185]
+    N --- [idpforge/utils/diff_utils.py:25-54]
+```
+**Sources:** [idpforge/utils/diff_utils.py:1-185](), [idpforge/model.py:1-100]()
+
+---
+
+## Noise Schedules and Beta Calculations
+
+IDPForge supports linear schedules for the variance of the noise added at each timestep.
+
+*   **Linear Beta Schedule**: Computes a sequence of $\beta$ values from $\beta_0$ to $\beta_T$. The values are scaled by the number of steps to maintain consistency across different sampling lengths [idpforge/utils/diff_utils.py:56-61]().
+*   **Alphabar ($\bar{\alpha}$)**: Represents the cumulative product of $(1 - \beta_t)$, determining the total amount of noise at time $t$.
+*   **Coordinate Scaling**: Coordinates are typically scaled by a factor (e.g., `crd_scale=0.25`) during diffusion to normalize the variance [idpforge/utils/diff_utils.py:187]().
+
+**Sources:** [idpforge/utils/diff_utils.py:56-96]()
+
+---
+
+## IGSO3 Rotational Diffusion
+
+For backbone orientations, IDPForge uses the **Isotropic Gaussian on SO(3)** (IGSO3) distribution. This allows for principled diffusion on the manifold of rotation matrices rather than in Euclidean space.
+
+### Key Utilities
+*   **Exp/Log Maps**: Functions to map between the Lie algebra $\mathfrak{so}(3)$ (rotation vectors) and the Lie group $SO(3)$ (rotation matrices) [idpforge/utils/igso3_utils.py:27-40]().
+*   **Numerical Approximation**: Since the IGSO3 density involves an infinite sum, `f_igso3` provides a truncated power series approximation [idpforge/utils/igso3_utils.py:42-64]().
+*   **Pre-computation**: `calculate_igso3` discretizes the $\sigma$ and $\omega$ (angle) spaces to pre-compute CDFs and score norms, which are stored in `diff_igso3.pkl` for fast lookup during sampling [idpforge/utils/igso3_utils.py:88-132]().
+
+"Data Flow: SO(3) Sampling"
+```mermaid
+flowchart LR
+    subgraph "Pre-computation"
+        A["calculate_igso3"] --> B["diff_igso3.pkl"]
+    end
+    
+    subgraph "Inference"
+        B --> C["SO3Diffuser.sample_vec"]
+        C --> D["Rotation Matrix (R_t)"]
+        D --> E["get_next_frames"]
+    end
+```
+**Sources:** [idpforge/utils/igso3_utils.py:1-132](), [idpforge/utils/diff_utils.py:126-161]()
+
+---
+
+## Reverse Diffusion Sampling Loop
+
+The sampling process iteratively refines a structure from pure noise ($t=T$) to a folded ensemble ($t=0$).
+
+### 1. Initialization
+The process starts at `init_sample`, which places residues at the origin and applies random translations and IGSO3-sampled rotations [idpforge/utils/diff_utils.py:187-196]().
+
+### 2. Denoising Steps
+At each step $t$, the model predicts $x_0$. The following functions then calculate $x_{t-1}$:
+*   **`get_next_ca`**: Updates $C\alpha$ positions using the Gaussian posterior mean $\mu$ and variance $\sigma$ [idpforge/utils/diff_utils.py:98-125]().
+*   **`get_next_frames`**: Updates residue orientations. It converts coordinates to rigid frames using `rigid_from_3_points_np`, calculates the rotation transition via the `SO3Diffuser`, and applies it to the backbone atoms [idpforge/utils/diff_utils.py:126-161]().
+*   **`get_next_chi_angles`**: Diffuses sidechain torsion angles ($\chi$) while ensuring they stay within the $[-\pi, \pi]$ range using `wrap_rad` [idpforge/utils/diff_utils.py:162-185]().
+
+### 3. Alignment (Kabsch)
+To prevent the protein from drifting during diffusion, `align_coords` uses the Kabsch algorithm to align the predicted $C\alpha$ coordinates to a reference (usually the current noisy state), ensuring the center of mass and orientation are consistent [idpforge/utils/diff_utils.py:25-54]().
+
+### 4. Continuity Screening
+Before AMBER relaxation, the system performs a "pre-relax" check. `check_backbone_continuity` calculates $C\alpha-C\alpha$ distances. If the distance exceeds thresholds (e.g., $9.12\text{\AA}$ for backbone or $6.46\text{\AA}$ for junctions), the sample may be flagged as physically unrealistic [idpforge/utils/pre_relax.py:10-29]().
+
+| Parameter | Threshold ($\text{\AA}$) | Source |
+| :--- | :--- | :--- |
+| `_JUNCTION_CA_THRESHOLD` | 6.46 | [idpforge/utils/pre_relax.py:6]() |
+| `_BACKBONE_CA_THRESHOLD` | 9.12 | [idpforge/utils/pre_relax.py:7]() |
+
+**Sources:** [idpforge/utils/diff_utils.py:25-196](), [idpforge/utils/pre_relax.py:1-29]()
+
+---
+
+# Page: Input Processing & Secondary Structure Encoding
+
+# Input Processing & Secondary Structure Encoding
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/misc.py](idpforge/misc.py)
+- [idpforge/utils/np_utils.py](idpforge/utils/np_utils.py)
+- [idpforge/utils/prep_sec.py](idpforge/utils/prep_sec.py)
+- [idpforge/utils/tensor_utils.py](idpforge/utils/tensor_utils.py)
+
+</details>
+
+
+
+This page details the mechanisms within IDPForge for processing protein sequences and secondary structure (SS) information into a format suitable for the neural network. It covers the conversion of natural language sequence strings and SS labels into numerical tensors, the assignment of secondary structure from Cartesian coordinates using Ramachandran space, and the handling of chimeric proteins through linker insertion and residue index offsets.
+
+### Core Input Pipeline
+
+The primary entry point for preparing model inputs is `input_process`, which orchestrates the encoding of both amino acid sequences and secondary structure strings.
+
+#### input_process()
+The `input_process` function [idpforge/misc.py:99-116]() performs the following operations:
+1.  **Sequence Encoding**: Calls `batch_encode_sequences` (inherited from ESMFold) to convert amino acid strings into `aatype` tensors.
+2.  **SS Encoding**: Calls `batch_encode_ss` to convert secondary structure strings into `sstype` tensors.
+3.  **Validation**: Ensures that the sequence mask and secondary structure mask are identical [idpforge/misc.py:110-110]().
+4.  **Index Management**: Handles residue indexing, applying `residue_index_offset` (default 512) to distinguish non-contiguous chains or domains [idpforge/misc.py:104-105]().
+
+#### Data Flow: Natural Language to Code Entities
+
+The following diagram illustrates how raw input data is transformed into the tensor representations used by the `FoldingTrunk`.
+
+**Input Processing Data Flow**
+```mermaid
+graph TD
+    subgraph "Natural Language Space"
+        SEQ["Sequence String (e.g., 'MKW...')"]
+        SS_STR["SS String (e.g., 'CCC...')"]
+    end
+
+    subgraph "idpforge/misc.py"
+        IP["input_process()"]
+        BES["batch_encode_sequences()"]
+        BSS["batch_encode_ss()"]
+        ESS["encode_ss()"]
+    end
+
+    subgraph "Code Entity Space (Tensors)"
+        AAT["aatype (Batch, L)"]
+        SST["sstype (Batch, L)"]
+        MSK["aa_mask (Batch, L)"]
+        RID["residx (Batch, L)"]
+    end
+
+    SEQ --> IP
+    SS_STR --> IP
+    IP --> BES
+    IP --> BSS
+    BSS --> ESS
+    BES --> AAT
+    BSS --> SST
+    BES --> MSK
+    BES --> RID
+```
+Sources: [idpforge/misc.py:75-116]()
+
+---
+
+### Secondary Structure Encoding Logic
+
+Secondary structure is represented using a specific vocabulary defined in `sstype_order` [idpforge/utils/definitions.py:24-27](). The `encode_ss` function is responsible for the fine-grained logic of mapping these characters to integers.
+
+#### Ramachandran-based Assignment
+When backbone torsion angles are provided (e.g., during training or from a template), the system can dynamically assign secondary structure labels using `assign_rama` [idpforge/misc.py:61-63]().
+
+The `assign_rama` function [idpforge/utils/np_utils.py:16-32]() classifies residues based on $(\phi, \psi)$ regions:
+*   **A (Alpha)**: $-120^\circ < \phi < -20^\circ$ and $-100^\circ < \psi < 60^\circ$.
+*   **B (Beta)**: Extended regions ($-180^\circ$ to $-100^\circ$ or $150^\circ$ to $180^\circ$ for $\phi$).
+*   **L (Left-handed Alpha)**: $30^\circ < \phi < 100^\circ$ and $-50^\circ < \psi < 100^\circ$.
+*   **P (Polyproline II)**: Specifically defined region for PPII-like coils.
+*   **C (Coil)**: Default for any residue not falling into the above categories.
+
+#### Coil Sampling
+For disordered regions where specific SS is unknown, `encode_ss` can randomly sample coil subtypes (C, P, L) based on `coil_sample_probs` [idpforge/misc.py:64-67](). This introduces structural diversity in the ensemble generation for IDRs.
+
+**Secondary Structure Logic Mapping**
+```mermaid
+graph LR
+    subgraph "SS Assignment Logic"
+        direction TB
+        RAMA["assign_rama()"]
+        COIL["coil_sample_probs"]
+        LINK["chain_linker"]
+    end
+
+    subgraph "idpforge/misc.py: encode_ss()"
+        TOR["backbone_tor Tensor"] -- "If present" --> RAMA
+        SAMP["sample_coil=True"] -- "If no tor" --> COIL
+        SS_IN["Input SS String"] --> RE["Regex: H{6,} cleanup"]
+        RE --> SPLIT["Split by ':'"]
+        SPLIT --> JOIN["Join with Linker"]
+    end
+
+    RAMA --> RE
+    COIL --> RE
+    LINK --> JOIN
+```
+Sources: [idpforge/misc.py:55-73](), [idpforge/utils/np_utils.py:16-32]()
+
+---
+
+### Chimeric Proteins & Linkers
+
+IDPForge supports multi-chain or multi-domain proteins by inserting artificial linkers and manipulating residue indices to prevent the model from assuming physical connectivity where none exists.
+
+| Feature | Implementation | Description |
+| :--- | :--- | :--- |
+| **Chain Linker** | `chain_linker` | A sequence of "G" (for AA) or "C" (for SS), typically 25 residues long, inserted between chains split by ":" [idpforge/misc.py:72, 105](). |
+| **Index Offset** | `residue_index_offset` | A large integer (default 512) added to the residue index between chains to ensure the `TriangularSelfAttentionBlock` treats them as distant [idpforge/misc.py:104-107](). |
+| **Linker Masking** | `linker_mask` | A boolean mask identifying residues that are part of the artificial linker, used to exclude them from loss calculations or final outputs [idpforge/misc.py:106, 116](). |
+
+Sources: [idpforge/misc.py:99-116]()
+
+---
+
+### SS Database Fetching
+
+For inference on sequences without known SS, `idpforge/utils/prep_sec.py` provides utilities to fetch SS fragments from a database based on sequence homology.
+
+1.  **Fragment Parsing**: `parse_df` breaks down a database of known sequence-SS pairs into $k$-mer fragments [idpforge/utils/prep_sec.py:5-28]().
+2.  **Stochastic Sampling**: `fetch_sec_from_seq` reconstructs a complete SS string by randomly selecting $k$-mer fragments (1-5 residues) based on their occurrence probabilities in the database [idpforge/utils/prep_sec.py:30-62]().
+
+This mechanism allows the generator to sample realistic secondary structure propensities for intrinsically disordered proteins (IDPs) during the `sample_idp.py` workflow.
+
+Sources: [idpforge/utils/prep_sec.py:30-62](), [idpforge/utils/np_utils.py:104-150]()
+
+---
+
+# Page: Experimental Guidance Potentials
+
+# Experimental Guidance Potentials
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/utils/potential.py](idpforge/utils/potential.py)
+- [sample_idp.py](sample_idp.py)
+- [sample_ldr.py](sample_ldr.py)
+
+</details>
+
+
+
+IDPForge incorporates a gradient-based guidance system that allows experimental data to steer the reverse diffusion process. By defining differentiable "potentials" based on physical observables (Radius of Gyration, FRET, PRE, J-Couplings), the model can generate ensembles that are statistically consistent with experimental measurements while remaining within the learned structural manifold of intrinsically disordered proteins (IDPs).
+
+## Potential Guidance Framework
+
+The guidance system is implemented in `idpforge/utils/potential.py`. It operates by calculating the gradient of a potential function with respect to the atomic coordinates during each step of the reverse diffusion process. These gradients are then used to shift the predicted denoised structure toward states that better satisfy the experimental constraints.
+
+### The Potential Base Class
+All guidance terms inherit from the `Potential` interface [idpforge/utils/potential.py:15-18](). This class defines the contract for computing potentials and their corresponding gradients.
+
+*   **`compute(xyz)`**: Calculates a scalar potential value from the current coordinates `[B, L, 5, 3]`. The system is designed to **maximize** this value [idpforge/utils/potential.py:19-31]().
+*   **`get_potential_gradients(xyz)`**: Uses PyTorch's `autograd` to compute the gradient of the potential with respect to the input coordinates. It specifically handles zeroing out gradients for atoms not involved in the potential calculation and ensures that gradients are propagated to the backbone atoms (N, Ca, C) [idpforge/utils/potential.py:33-53]().
+
+### Guidance Logic Data Flow
+
+The following diagram illustrates how the `Potential` classes interface with the sampling loop in `sample_idp.py`.
+
+**Potential Integration Overview**
+```mermaid
+graph TD
+    subgraph "Inference Loop (sample_idp.py)"
+        START["Start Reverse Diffusion"] --> INIT["Initialize xt, tor_list"]
+        INIT --> MODEL_SAMPLE["model.sample()"]
+    end
+
+    subgraph "Guidance Application (idpforge/model.py)"
+        MODEL_SAMPLE --> POT_CHECK{"Potential Configured?"}
+        POT_CHECK -- Yes --> CALC_GRAD["Potential.get_potential_gradients()"]
+        CALC_GRAD --> APPLY_STEP["Apply Gradient Step to Denoised Coord"]
+        APPLY_STEP --> NEXT_T["Next Diffusion Step"]
+    end
+
+    subgraph "Potential Implementations (idpforge/utils/potential.py)"
+        CALC_GRAD -.-> RoG["RoG (Radius of Gyration)"]
+        CALC_GRAD -.-> Contact["Contact (PRE/NOE)"]
+        CALC_GRAD -.-> Efret["Efret (smFRET)"]
+        CALC_GRAD -.-> JCoup["JCoup (J-Couplings)"]
+    end
+```
+**Sources:** [sample_idp.py:142-156](), [idpforge/utils/potential.py:15-53]()
+
+## Available Potential Types
+
+IDPForge provides several specialized potential classes to handle different types of experimental data. These are mapped in the `Potentials` dispatch table [idpforge/utils/potential.py:162-168]().
+
+| Potential Key | Class | Description | Implementation Detail |
+| :--- | :--- | :--- | :--- |
+| `rg` | `RoG` | Radius of Gyration | Minimizes squared error between ensemble mean Rg and target [idpforge/utils/potential.py:56-67](). |
+| `contact` | `Contact` | Distance Restraints (PRE/NOE) | Uses a differentiable coordination-style function to enforce distance bounds [idpforge/utils/potential.py:70-98](). |
+| `fret` | `Efret` | smFRET Efficiency | Calculates FRET efficiency using $E = 1 / (1 + (r/R_0)^6)$ [idpforge/utils/potential.py:101-123](). |
+| `jcoup` | `JCoup` | Scalar J-Couplings | Uses Karplus equations to relate $\phi$ dihedrals to J-values [idpforge/utils/potential.py:126-148](). |
+| `multiple` | `Multiple` | Weighted Sum | Combines multiple potential terms into a single objective [idpforge/utils/potential.py:151-159](). |
+
+### Implementation Details
+
+#### Radius of Gyration (`RoG`)
+Calculates the distance of Ca atoms from the centroid. The potential returned is the negative squared error, encouraging the model to match the `target` Rg [idpforge/utils/potential.py:61-67]().
+
+#### Contact Potential (`Contact`)
+Used for PRE (Paramagnetic Resonance Enhancement) or NOE (Nuclear Overhauser Effect) data. It calculates a differentiable distance gram (`dgram`) and applies a loss if distances fall outside the specified `contact_bounds` [idpforge/utils/potential.py:93-95](). It includes an `exp_mask_p` parameter to randomly mask experimental constraints during sampling, which helps maintain ensemble diversity [idpforge/utils/potential.py:96-97]().
+
+#### J-Couplings (`JCoup`)
+Calculates the $\phi$ dihedral angle using `get_dih` [idpforge/utils/potential.py:143]() and applies a standard Karplus equation:
+$J(\phi) = 6.51 \cos^2(\phi - 60^\circ) - 1.76 \cos(\phi - 60^\circ) + 1.6$ [idpforge/utils/potential.py:144-145]().
+
+**Sources:** [idpforge/utils/potential.py:56-168]()
+
+## Configuration and Application
+
+In `sample_idp.py`, potentials are initialized based on the `sample.yml` configuration.
+
+**Potential Initialization Logic**
+```mermaid
+graph TD
+    CFG["sample.yml Config"] --> PARSE["Parse settings['potential_cfg']"]
+    PARSE --> PRE_CHECK{"Key == 'pre'?"}
+    PRE_CHECK -- Yes --> MAP["get_contact_map()"]
+    MAP --> INST["Instantiate Contact()"]
+    
+    PARSE --> RG_CHECK{"Key == 'rg'?"}
+    RG_CHECK -- Yes --> INST_RG["Instantiate RoG()"]
+    
+    INST --> MULTI["Wrap in Multiple()"]
+    INST_RG --> MULTI
+    
+    MULTI --> SAMPLE_CALL["model.sample(..., potential_cfgs=potential_cfg)"]
+```
+**Sources:** [sample_idp.py:64-87](), [idpforge/utils/potential.py:151-159]()
+
+### Key Parameters in Configuration
+*   **`timescale`**: Controls the diffusion steps during which guidance is active [sample_idp.py:66]().
+*   **`grad_clip`**: Prevents unstable updates by clipping the magnitude of the potential gradient [sample_idp.py:67]().
+*   **`weights`**: A dictionary mapping potential types to their relative importance in the `Multiple` potential sum [idpforge/utils/potential.py:155]().
+*   **`exp_mask_p`**: Probability of keeping an experimental constraint in a given step; used to prevent over-fitting to specific restraints [idpforge/utils/potential.py:81]().
+
+### Gradient Step Application
+The gradients obtained from `Potential.get_potential_gradients()` are applied to the predicted coordinates. For distance-based potentials (RoG, Contact, Efret), the system ensures gradients are propagated to the Ca atoms [idpforge/utils/potential.py:46-48](). For J-Couplings, gradients are calculated for the N-Ca-C backbone atoms to influence the torsion angles [idpforge/utils/potential.py:36-37]().
+
+**Sources:** [idpforge/utils/potential.py:33-53](), [sample_idp.py:64-87]()
+
+---
+
+# Page: Training Pipeline
+
+# Training Pipeline
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/loader.py](idpforge/loader.py)
+- [idpforge/loss.py](idpforge/loss.py)
+- [idpforge/utils/validation_metrics.py](idpforge/utils/validation_metrics.py)
+- [idpforge/wrapper.py](idpforge/wrapper.py)
+- [train.py](train.py)
+
+</details>
+
+
+
+The training pipeline for IDPForge is built on **PyTorch Lightning**, providing a structured framework for training the diffusion model on intrinsically disordered protein (IDP) ensembles. The pipeline handles the orchestration of rotational and Euclidean diffusion schedules, complex loss calculations including structural violations and secondary structure-aware distance losses, and model weight management via Exponential Moving Average (EMA).
+
+## Training Architecture Overview
+
+The training process is centralized in `train.py`, which initializes the diffusion parameters, data modules, and the model wrapper.
+
+### Training Flow
+The following diagram illustrates the relationship between the data loading, the diffusion process, and the training loop.
+
+```mermaid
+graph TD
+    subgraph "Data Preparation"
+        A["Pickle Files (.pkl)"] --> B["DiffDataset"]
+        B --> C["BatchCollator"]
+    end
+
+    subgraph "Training Loop (IDPForgeWrapper)"
+        C --> D["training_step()"]
+        D --> E["IDPForge Model"]
+        E --> F["calc_loss()"]
+        F --> G["Optimizer/Scheduler"]
+        G --> H["EMA Update"]
+    end
+
+    subgraph "Entities"
+        B -- "uses" --> I["Diffuser.diffuse_pose()"]
+        E -- "calls" --> J["FoldingTrunk / StructureModule"]
+        F -- "computes" --> K["FAPE / Torsion / Dist Loss"]
+    end
+```
+**Sources:** [train.py:21-39](), [idpforge/wrapper.py:56-83](), [idpforge/loader.py:18-45]()
+
+---
+
+## Training Entrypoint & Data Loading
+
+The `train.py` script serves as the primary entrypoint. It configures the `Diffuser` and `Denoiser` based on the `n_tsteps` defined in the YAML configuration and passes them to the `IDPloader`.
+
+*   **Data Loading:** `IDPloader` (a `LightningDataModule`) manages `DiffDataset` instances that load pre-processed protein ensembles.
+*   **Diffusion in Dataset:** The `DiffDataset` applies noise to ground-truth coordinates on-the-fly using `diffuser.diffuse_pose()`, generating the $x_t$ (Euclidean) and $\alpha_t$ (torsional) inputs required for the denoising task.
+*   **Batching:** `BatchCollator` utilizes `input_process()` to handle sequence encoding and secondary structure mapping for variable-length proteins in a single batch.
+
+For details on data formats and the loading mechanism, see [Training Entrypoint & Data Loading](#3.1).
+
+**Sources:** [train.py:25-35](), [idpforge/loader.py:62-99](), [idpforge/loader.py:102-115]()
+
+---
+
+## Loss Functions & Training Wrapper
+
+Training logic is encapsulated in `IDPForgeWrapper`, which inherits from `pl.LightningModule`. It manages the forward pass, loss calculation, and validation metrics.
+
+### Key Components
+*   **IDPForgeWrapper:** Orchestrates the `training_step` and `validation_step`. It implements **self-conditioning**, where the model occasionally uses its own previous prediction as an input to improve refinement.
+*   **Loss Function (`calc_loss`):** A composite loss function including:
+    *   **FAPE Loss:** Frame Aligned Point Error for backbone and sidechain atoms.
+    *   **Torsion Loss:** Measures the error in predicted dihedral angles.
+    *   **CB Distance Loss:** A custom distance loss that enforces secondary structure constraints and CA-CA connectivity.
+*   **EMA & Scheduling:** Uses `ExponentialMovingAverage` to maintain a smoothed version of model weights for validation and inference. The learning rate is managed by `AlphaFoldLRScheduler`.
+
+For details on specific loss terms and the PyTorch Lightning implementation, see [Loss Functions & Training Wrapper](#3.2).
+
+**Sources:** [idpforge/wrapper.py:17-36](), [idpforge/wrapper.py:65-76](), [idpforge/loss.py:42-89](), [idpforge/wrapper.py:133-135]()
+
+---
+
+## Training Logic to Code Mapping
+
+This diagram maps high-level training concepts to the specific classes and functions in the IDPForge codebase.
+
+```mermaid
+graph LR
+    subgraph "Natural Language Space"
+        Direction["Diffusion Training"]
+        Data["Data Augmentation"]
+        Optimization["Loss Optimization"]
+        Metric["Validation Metric"]
+    end
+
+    subgraph "Code Entity Space"
+        Direction --- IDPForge["IDPForge.forward()"]
+        Data --- DiffusePose["Diffuser.diffuse_pose()"]
+        Optimization --- CalcLoss["idpforge/loss.py:calc_loss()"]
+        Metric --- RgDist["rg_dist_per_group()"]
+    end
+
+    IDPForge -- "calls" --> Trunk["FoldingTrunk"]
+    CalcLoss -- "includes" --> FAPE["compute_fape()"]
+    CalcLoss -- "includes" --> CBDist["cb_dist_loss()"]
+```
+**Sources:** [idpforge/model.py:6-7](), [idpforge/loss.py:42-52](), [idpforge/utils/diff_utils.py:11-12](), [idpforge/utils/validation_metrics.py:32-38]()
+
+## Summary Table of Training Configuration
+
+| Component | Code Reference | Description |
+| :--- | :--- | :--- |
+| **Model Wrapper** | `IDPForgeWrapper` | PyTorch Lightning module for training/validation. |
+| **Loss Calculation** | `calc_loss()` | Aggregates FAPE, torsion, distance, and violation losses. |
+| **Data Module** | `IDPloader` | Handles training/validation datasets and multi-worker loading. |
+| **LR Scheduler** | `AlphaFoldLRScheduler` | Custom scheduler with warmup and decay steps. |
+| **EMA** | `ExponentialMovingAverage` | Maintains stable weights for evaluation. |
+
+**Sources:** [idpforge/wrapper.py:17](), [idpforge/loss.py:42](), [idpforge/loader.py:102](), [idpforge/wrapper.py:152](), [idpforge/wrapper.py:27]()
+
+---
+
+# Page: Training Entrypoint & Data Loading
+
+# Training Entrypoint & Data Loading
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [configs/train.yml](configs/train.yml)
+- [idpforge/loader.py](idpforge/loader.py)
+- [train.py](train.py)
+
+</details>
+
+
+
+This section documents the training infrastructure of IDPForge, focusing on the `train.py` entrypoint and the data pipeline implemented in `idpforge/loader.py`. The pipeline handles the ingestion of protein conformational ensembles, applies diffusion noise in both Euclidean and torsional spaces, and batches the resulting data for the neural network.
+
+## Training Entrypoint
+
+The training process is orchestrated by `train.py`, which utilizes **PyTorch Lightning** to manage the training loop, checkpointing, and logging [train.py:14-17](). It serves as the bridge between the configuration files, the data loading module, and the model wrapper.
+
+### Initialization and Configuration
+The script begins by initializing the `Diffuser` and `Denoiser` objects using parameters defined in the `diffuse` section of the configuration YAML [train.py:25-28](). These objects define the noise schedules for Euclidean coordinates and torsion angles.
+
+The training configuration (typically `configs/train.yml`) specifies critical hyperparameters:
+*   **Data Paths**: Locations for training and validation pickle files [configs/train.yml:9-12]().
+*   **Batch Sizes**: Separate sizes for training and validation [configs/train.yml:13-14]().
+*   **Trainer Settings**: Gradient clipping, accumulation, and hardware acceleration (GPU) [configs/train.yml:23-27]().
+*   **Loss Weights**: Balancing factors for FAPE, distance, angular, and violation losses [configs/train.yml:31-35]().
+
+### Checkpointing and Callbacks
+`train.py` implements several `ModelCheckpoint` strategies to ensure robust training recovery and model selection:
+1.  **Best 5**: Saves the top 5 models based on `val_loss` [train.py:59-67]().
+2.  **Latest 10**: Keeps the 10 most recent checkpoints for resume capability [train.py:70-78]().
+3.  **Periodic**: Saves a checkpoint every 10 epochs regardless of performance [train.py:81-86]().
+
+Sources: [train.py:21-118](), [configs/train.yml:1-60]()
+
+## Data Loading Architecture
+
+The data loading system is built around the `IDPloader` (a `LightningDataModule`), which manages the `DiffDataset` and `BatchCollator`.
+
+### Data Flow Overview
+
+The following diagram illustrates how raw protein data is transformed into diffused training batches.
+
+**Training Data Flow: From Pickle to Batch**
+```mermaid
+graph TD
+    subgraph "Data Storage"
+        PKL["Pickle Files (.pkl)"]
+    end
+
+    subgraph "idpforge/loader.py"
+        LDM["IDPloader (LightningDataModule)"]
+        DS["DiffDataset (Dataset)"]
+        BC["BatchCollator (collate_fn)"]
+    end
+
+    subgraph "idpforge/utils/diff_utils.py"
+        DIFF["Diffuser.diffuse_pose()"]
+    end
+
+    subgraph "idpforge/misc.py"
+        IP["input_process()"]
+    end
+
+    PKL --> LDM
+    LDM --> DS
+    DS -- "1. Sample Index" --> DIFF
+    DIFF -- "2. Add Noise (x_t, alpha_t)" --> DS
+    DS -- "3. Single Sample" --> BC
+    BC -- "4. Tokenize & Mask" --> IP
+    IP --> BC
+    BC -- "5. Padded Tensors" --> TRAIN["Trainer.fit()"]
+```
+Sources: [idpforge/loader.py:18-144](), [train.py:29-36]()
+
+### DiffDataset Implementation
+The `DiffDataset` class is responsible for loading the ground truth coordinates, sequences, and secondary structure (SS) labels. Its primary role is to apply the diffusion process to each sample during the `__getitem__` call [idpforge/loader.py:62-99]().
+
+*   **Noise Injection**: It calls `diffuse_pose()` from the `Diffuser` to generate noisy coordinates (`x_t`) and noisy torsion angles (`alpha_t`) [idpforge/loader.py:63-64]().
+*   **Time-Step Sampling**: During training, a time-step $T$ is sampled using a weighted distribution where later time-steps (more noise) are prioritized [idpforge/loader.py:67-68]().
+*   **Torsion & Frame Calculation**: It calculates the ground truth dihedral angles (omega, phi, psi, chi) and transforms them into local reference frames using `torsion_angles_to_frames` [idpforge/loader.py:75-86]().
+
+### BatchCollator and Input Processing
+Because protein sequences vary in length, the `BatchCollator` handles padding and tensor alignment. It utilizes `input_process()` from `idpforge/misc.py` to convert raw sequence strings and SS strings into numerical embeddings and generate attention masks [idpforge/loader.py:24-29]().
+
+Key outputs of the collator include:
+*   `sequence`: Padded token IDs for the ESM2 trunk.
+*   `ss`: Padded secondary structure encodings.
+*   `x_t` / `alpha_t`: Noisy Euclidean and torsional inputs for the denoiser.
+*   `T`: The diffusion time-step, broadcasted across the residue dimension [idpforge/loader.py:40-41]().
+
+Sources: [idpforge/loader.py:18-45](), [idpforge/loader.py:48-100]()
+
+## Code Entity Mapping
+
+This diagram maps the conceptual training stages to the specific classes and functions in the codebase.
+
+**System Entity Mapping**
+```mermaid
+classDiagram
+    class "train.py" {
+        +main(args)
+        +Trainer trainer
+    }
+    class "IDPloader" {
+        +setup(stage)
+        +train_dataloader()
+        +val_dataloader()
+    }
+    class "DiffDataset" {
+        +__getitem__(idx)
+        +Diffuser template_diffuser
+    }
+    class "BatchCollator" {
+        +__call__(batch)
+    }
+    class "Diffuser" {
+        +diffuse_pose(coords, seq)
+    }
+    class "IDPForgeWrapper" {
+        +training_step(batch)
+        +calc_loss(batch, pred)
+    }
+
+    "train.py" --> "IDPloader" : initializes
+    "train.py" --> "IDPForgeWrapper" : wraps model
+    "IDPloader" --> "DiffDataset" : creates
+    "IDPloader" --> "BatchCollator" : uses for DataLoader
+    "DiffDataset" --> "Diffuser" : applies noise
+    "IDPForgeWrapper" ..> "BatchCollator" : consumes output
+```
+Sources: [train.py:21-39](), [idpforge/loader.py:18-102](), [idpforge/utils/diff_utils.py:14-15]()
+
+## Training Data Format
+The training data is stored as pickle files containing four main components:
+1.  **SS**: Secondary structure labels (strings or integer encodings).
+2.  **Sequence**: Amino acid sequences.
+3.  **Coords**: Ground truth atomic coordinates (typically $N, CA, C, O, CB$).
+4.  **RGs**: (Optional) Radius of Gyration values for validation metrics.
+
+These are loaded into `DiffDataset` as a list of tuples or dictionaries [idpforge/loader.py:126-128]().
+
+Sources: [idpforge/loader.py:49-56](), [idpforge/loader.py:121-131]()
+
+---
+
+# Page: Loss Functions & Training Wrapper
+
+# Loss Functions & Training Wrapper
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/loss.py](idpforge/loss.py)
+- [idpforge/utils/validation_metrics.py](idpforge/utils/validation_metrics.py)
+- [idpforge/wrapper.py](idpforge/wrapper.py)
+
+</details>
+
+
+
+This page details the training infrastructure of IDPForge, centered around the `IDPForgeWrapper` PyTorch Lightning module. It covers the loss computation logic, optimization strategies, and validation metrics used to train the model for intrinsically disordered protein (IDP) ensemble generation.
+
+## Training Wrapper Architecture
+
+The `IDPForgeWrapper` encapsulates the `IDPForge` model, the diffusion process, and the optimization logic. It manages training and validation steps, weight averaging via EMA, and learning rate scheduling.
+
+### Entity Mapping: Training Logic to Code
+
+The following diagram maps high-level training concepts to their corresponding classes and functions in the codebase.
+
+**Training Wrapper Overview**
+```mermaid
+graph TD
+    subgraph "Lightning Module: IDPForgeWrapper"
+        A["IDPForgeWrapper (idpforge/wrapper.py)"] --> B["training_step()"]
+        A --> C["validation_step()"]
+        A --> D["configure_optimizers()"]
+    end
+
+    subgraph "Optimization & Weights"
+        D --> E["AlphaFoldLRScheduler (openfold/utils/lr_schedulers.py)"]
+        A --> F["ExponentialMovingAverage (openfold/utils/exponential_moving_average.py)"]
+        B --> G["on_before_zero_grad() -> ema.update()"]
+    end
+
+    subgraph "Loss Computation"
+        B --> H["calc_loss() (idpforge/loss.py)"]
+        H --> I["backbone_loss (FAPE)"]
+        H --> J["torsion_loss"]
+        H --> K["cb_dist_loss"]
+        H --> L["viol_loss"]
+    end
+```
+**Sources:** [idpforge/wrapper.py:17-36](), [idpforge/wrapper.py:133-135](), [idpforge/loss.py:42-90]()
+
+### Key Components
+
+*   **Self-Conditioning:** During training, the model optionally uses its own predictions from a previous diffusion step as input for the current step. This is implemented in `training_step` with a 50% probability [idpforge/wrapper.py:64-71]().
+*   **EMA Weight Management:** The wrapper maintains an Exponential Moving Average (EMA) of the model weights. During validation, it caches the current training weights, loads the EMA weights, and restores the training weights once the validation epoch ends [idpforge/wrapper.py:86-91](), [idpforge/wrapper.py:128-131]().
+*   **Learning Rate Scheduler:** It utilizes the `AlphaFoldLRScheduler`, which implements a linear warmup followed by a decay phase, specifically tuned for protein folding models [idpforge/wrapper.py:152-153]().
+
+---
+
+## Loss Functions
+
+The `calc_loss` function aggregates several structural and geometric loss components. The total loss is a weighted sum of these components as defined in the training configuration [idpforge/loss.py:88-89]().
+
+### Loss Component Breakdown
+
+| Loss Component | Function / Source | Description |
+| :--- | :--- | :--- |
+| **FAPE** | `backbone_loss` & `sidechain_fape` | Frame Aligned Point Error for backbone and sidechain frames [idpforge/loss.py:54-68](). |
+| **Torsion** | `torsion_loss` | Mean absolute error of predicted torsion angles (backbone and $\chi$) [idpforge/loss.py:44-52](), [idpforge/loss.py:159-166](). |
+| **CB Distance** | `cb_dist_loss` | Penalizes deviations in $C\beta-C\beta$ distances, with specific logic for secondary structure types [idpforge/loss.py:124-146](). |
+| **Violation** | `viol_loss` | Penalizes steric clashes and bond length/angle violations using OpenFold utilities [idpforge/loss.py:82-86](). |
+| **CA Connectivity**| `ca_connectivity_loss`| Ensures physical continuity of the peptide chain by penalizing $C\alpha-C\alpha$ distance deviations [idpforge/loss.py:135-136](). |
+
+### Data Flow: Loss Computation
+The diagram below illustrates how predicted coordinates and frames are processed through various loss functions.
+
+**Loss Data Flow**
+```mermaid
+graph LR
+    subgraph "Model Output"
+        P1["pred['positions']"]
+        P2["pred['frames']"]
+        P3["pred['angles']"]
+    end
+
+    subgraph "Loss Components"
+        L1["FAPE Loss"]
+        L2["Torsion Loss"]
+        L3["CB Distance Loss"]
+        L4["Violation Loss"]
+    end
+
+    P2 --> L1
+    P3 --> L2
+    P1 --> L3
+    P1 --> L4
+
+    subgraph "Ground Truth"
+        T1["true_coords"]
+        T2["true_rigids"]
+        T3["true_torsions"]
+    end
+
+    T2 --> L1
+    T3 --> L2
+    T1 --> L3
+```
+**Sources:** [idpforge/loss.py:42-87](), [idpforge/loss.py:124-146]()
+
+### Specialized IDP Losses
+
+*   **Secondary Structure Aware Distance Loss:** In `cb_dist_loss`, the model applies different penalties based on the secondary structure type (`sstype`). For residues predicted as coils, it clamps the error to allow for the inherent flexibility of IDPs, while applying stricter penalties to regions assigned to structured states [idpforge/loss.py:138-145]().
+*   **CA Connectivity:** A specific term is added to the distance loss to reinforce the 3.8Å $C\alpha-C\alpha$ distance, preventing "breaks" in the generated chain [idpforge/loss.py:135-136]().
+
+---
+
+## Validation & Metrics
+
+Validation is performed using the `recon` method of the model, which performs a reconstruction from noise [idpforge/wrapper.py:93]().
+
+### Validation Metrics
+
+1.  **dRMSD:** Calculates the distance root-mean-square deviation of $C\alpha$ atoms [idpforge/wrapper.py:102-103]().
+2.  **Structural Violations:** Monitors the physical plausibility of the generated ensembles [idpforge/wrapper.py:104-105]().
+3.  **Rg Distribution (`rg_error`):** A critical metric for IDPs. It computes the divergence between the predicted and true Radius of Gyration ($R_g$) distributions.
+    *   **Logic:** The `rg_dist_per_group` function groups conformers by sequence identity and compares the mean $R_g$ of the predicted ensemble against the ground truth [idpforge/utils/validation_metrics.py:32-53]().
+
+### Metric Implementations
+
+| Metric | Code Reference |
+| :--- | :--- |
+| **Radius of Gyration** | `calc_rg_with_mask` [idpforge/utils/validation_metrics.py:4-29]() |
+| **Grouped Rg Error** | `rg_dist_per_group` [idpforge/utils/validation_metrics.py:32-53]() |
+| **Violation Metric** | `viol_loss(..., return_metric=True)` [idpforge/wrapper.py:104]() |
+
+**Sources:** [idpforge/wrapper.py:96-123](), [idpforge/utils/validation_metrics.py:1-53]()
+
+---
+
+# Page: Inference: Generating Protein Ensembles
+
+# Inference: Generating Protein Ensembles
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/misc.py](idpforge/misc.py)
+- [sample_idp.py](sample_idp.py)
+- [sample_ldr.py](sample_ldr.py)
+
+</details>
+
+
+
+Inference in IDPForge is the process of generating structural ensembles for intrinsically disordered proteins (IDPs) or intrinsically disordered regions (IDRs) within a folded context. The system uses a reverse diffusion process guided by secondary structure predictions and optional experimental constraints.
+
+The inference pipeline is split into two primary entry points: `sample_idp.py` for standalone disordered sequences and `sample_ldr.py` for disordered regions connected to static folded domains. Both scripts utilize the `IDPForge` model and the `Denoiser`/`Diffuser` framework to iteratively refine protein coordinates from noise.
+
+### Inference Architecture Overview
+
+The following diagram illustrates the relationship between the high-level inference scripts and the underlying code entities that drive the sampling process.
+
+**Sampling System Bridge**
+```mermaid
+graph TD
+    subgraph "CLI Layer"
+        IDP["sample_idp.py"]
+        LDR["sample_ldr.py"]
+    end
+
+    subgraph "Core Logic (idpforge/)"
+        M["model.py: IDPForge"]
+        D["utils/diff_utils.py: Denoiser"]
+        DF["utils/diff_utils.py: Diffuser"]
+        P["misc.py: output_to_pdb"]
+    end
+
+    subgraph "Post-Processing"
+        R["utils/relax.py: AmberRelaxation"]
+        V["utils/structure_validation.py: validate_structure_post_relax"]
+    end
+
+    IDP --> D
+    LDR --> D
+    D --> DF
+    IDP --> M
+    LDR --> M
+    M -- "outputs" --> P
+    P -- "relax_protein()" --> R
+    R -- "validate()" --> V
+```
+**Sources:** [sample_idp.py:16-21](), [sample_ldr.py:19-23](), [idpforge/misc.py:119-135]()
+
+---
+
+### Sampling Modes
+
+#### 1. Full IDP Sampling
+This mode is used when the entire protein sequence is considered disordered. The `sample_idp.py` script takes a raw amino acid sequence and generates an ensemble by sampling secondary structure configurations from a database and diffusing coordinates in a global Euclidean space.
+
+For details on CLI arguments, secondary structure lookup, and potential-guided sampling, see **[Sampling Full IDPs (sample_idp.py)](#4.1)**.
+
+**Sources:** [sample_idp.py:27-29](), [sample_idp.py:88-104]()
+
+#### 2. IDRs in Folded Context (LDR)
+The "Local Disordered Region" (LDR) mode is designed for chimeric proteins where one or more IDRs are grafted onto a folded template (e.g., AlphaFold2 predicted domains). The `sample_ldr.py` script uses a `.npz` template to define fixed coordinates and masks, ensuring the generated IDRs are physically consistent with the folded domains.
+
+For details on template tiling, junction gates, and bfloat16 inference, see **[Sampling IDRs in Folded Context (sample_ldr.py)](#4.2)**.
+
+**Sources:** [sample_ldr.py:30-37](), [sample_ldr.py:72-75]()
+
+---
+
+### The Sampling Lifecycle
+
+Regardless of the mode, the generation process follows a standardized lifecycle managed by the `Denoiser` class [idpforge/utils/diff_utils.py:47]().
+
+**Inference Data Flow**
+```mermaid
+sequenceDiagram
+    participant CLI as "sample_*.py"
+    participant D as "Denoiser"
+    participant M as "IDPForge Model"
+    participant PP as "output_to_pdb"
+
+    CLI->>D: init_samples(sequences)
+    D-->>CLI: Gaussian Noise (xt, tor)
+    loop Reverse Diffusion Steps
+        CLI->>M: forward(xt, tor, ss, time)
+        M-->>CLI: Predicted Score/Update
+        CLI->>D: update_samples(xt, update)
+    end
+    CLI->>PP: Process batch
+    PP->>PP: AMBER Relax & Validate
+    PP-->>CLI: Validated PDBs
+```
+**Sources:** [sample_idp.py:141-169](), [sample_ldr.py:170-200](), [idpforge/misc.py:119-135]()
+
+---
+
+### Key Components
+
+| Component | Code Entity | Description |
+| :--- | :--- | :--- |
+| **Denoiser** | `Denoiser` [idpforge/utils/diff_utils.py:47]() | Manages the inference schedule and iterative updates of $x_t$. |
+| **SS Encoding** | `batch_encode_ss` [idpforge/misc.py:75]() | Converts string-based secondary structure (H, E, C) into model tokens. |
+| **Output Handler** | `output_to_pdb` [idpforge/misc.py:119]() | Orchestrates the transition from raw model tensors to relaxed PDB files. |
+| **Template Prep** | `mk_ldr_template.py` | Utility to create the `.npz` files required for LDR sampling. |
+
+---
+
+### Post-Generation Pipeline
+
+Generated conformers are not immediately saved as final results. They must pass through a rigorous quality control pipeline to ensure biological relevance:
+
+1.  **Backbone Continuity Check:** A pre-relaxation filter that ensures $C\alpha-C\alpha$ distances are within physical limits [idpforge/misc.py:198-201]().
+2.  **AMBER Relaxation:** The `relax_protein` function uses OpenMM to resolve steric clashes while maintaining the model's predicted topology [idpforge/misc.py:122]().
+3.  **Structural Validation:** A final suite of checks for chirality, bond lengths, and knotting [idpforge/misc.py:132]().
+
+For details on the relaxation and validation logic, see **[Post-Generation Processing: Relaxation, Repair & Validation](#4.4)**.
+
+**Sources:** [idpforge/misc.py:136-160](), [sample_ldr.py:100-108]()
+
+---
+
+### Child Pages
+*   **[Sampling Full IDPs (sample_idp.py)](#4.1)**: Standalone IDP generation and experimental guidance.
+*   **[Sampling IDRs in Folded Context (sample_ldr.py)](#4.2)**: Template-based sampling for chimeric proteins.
+*   **[Template Preparation Utilities](#4.3)**: Creating `.npz` templates from PDB structures.
+*   **[Post-Generation Processing: Relaxation, Repair & Validation](#4.4)**: The AMBER and validation quality gate.
+
+---
+
+# Page: Sampling Full IDPs (sample_idp.py)
+
+# Sampling Full IDPs (sample_idp.py)
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [README.md](README.md)
+- [configs/sample.yml](configs/sample.yml)
+- [sample_idp.py](sample_idp.py)
+
+</details>
+
+
+
+The `sample_idp.py` script serves as the primary entrypoint for generating all-atom structural ensembles of Intrinsically Disordered Proteins (IDPs). It leverages a diffusion-based transformer model to reverse-diffuse random noise into physically plausible protein conformers, optionally guided by experimental constraints.
+
+### Sources:
+- [sample_idp.py:1-20]()
+- [README.md:1-4]()
+
+---
+
+## CLI Arguments and Configuration
+
+The script uses a combination of command-line arguments and a YAML configuration file to define the sampling environment.
+
+| Argument | Description |
+| :--- | :--- |
+| `seq` | The amino acid sequence of the IDP to be sampled. |
+| `ckpt_path` | Path to the trained IDPForge model weights (`.ckpt` or `.pt`). |
+| `output_dir` | Directory where generated PDB files will be stored. |
+| `sample_cfg` | Path to the YAML configuration file (e.g., `configs/sample.yml`). |
+| `--batch` | Number of conformers to generate in a single GPU/CPU pass (default: 32). |
+| `--nconf` | Total target number of conformers for the ensemble (default: 100). |
+| `--cuda` | Flag to enable GPU acceleration. |
+| `--ss_db` | Path to a secondary structure database (overrides config `data_path`). |
+
+### Sources:
+- [sample_idp.py:172-183]()
+- [configs/sample.yml:1-56]()
+
+---
+
+## Initialization and Data Flow
+
+The sampling process begins by initializing the `Diffuser` and `Denoiser` objects, which manage the noise schedules and the iterative reverse-diffusion steps. The `IDPForge` model is then loaded with weights, specifically extracting the Exponential Moving Average (EMA) parameters.
+
+### System Entity Mapping: Initialization
+The following diagram illustrates the relationship between the CLI entrypoint and the core classes defined in the `idpforge` module.
+
+```mermaid
+graph TD
+    subgraph "CLI Entrypoint (sample_idp.py)"
+        MAIN["main()"]
+        ARGS["argparse"]
+    end
+
+    subgraph "Core Entities (idpforge/)"
+        MODEL["IDPForge Class (model.py)"]
+        DIFF["Diffuser Class (utils/diff_utils.py)"]
+        DENOISE["Denoiser Class (utils/diff_utils.py)"]
+        OUT["output_to_pdb() (misc.py)"]
+    end
+
+    ARGS --> MAIN
+    MAIN --> DIFF
+    MAIN --> DENOISE
+    MAIN --> MODEL
+    MODEL --> DENOISE
+    MAIN --> OUT
+```
+
+### Sources:
+- [sample_idp.py:31-60]()
+- [idpforge/model.py:16-16]()
+- [idpforge/utils/diff_utils.py:17-17]()
+
+---
+
+## Secondary Structure Database Lookup
+
+IDPForge utilizes a secondary structure (SS) database to provide structural context during sampling. The script follows a fallback logic to assign SS strings to the target sequence:
+
+1.  **Direct Path**: If `sec_path` is provided in the config, it reads SS strings directly from that file [sample_idp.py:105-109]().
+2.  **Database Lookup**: It uses `fetch_sec_from_seq` to find similar sequences in a pickle-based database (`example_data.pkl`) and retrieves their associated SS [sample_idp.py:90-100]().
+3.  **Fallback**: If lookup fails, it defaults to an "all-coil" (`C`) assignment [sample_idp.py:101-103]().
+
+### Sources:
+- [sample_idp.py:89-109]()
+- [idpforge/utils/prep_sec.py:19-19]()
+
+---
+
+## Generation Loop and Batching
+
+The generation process is wrapped in a `while` loop that persists until the `nsample` target is met. This design allows for **resume-capability**: the script checks the output directory for existing files using `count_done()` and only generates the remaining required conformers [sample_idp.py:122-140]().
+
+### Sampling Logic Flow
+
+```mermaid
+sequenceDiagram
+    participant S as sample_idp.py
+    participant D as Denoiser
+    participant M as IDPForge Model
+    participant P as output_to_pdb
+
+    loop While current_count < nsample
+        S->>D: init_samples(seq_list)
+        D-->>S: xt_list, tor_list (Gaussian/IGSO3 noise)
+        S->>M: model.sample(denoiser, ss_list, xt_list, ...)
+        Note over M: Iterative T-step Reverse Diffusion
+        M-->>S: outputs (Final Coordinates)
+        S->>P: Save batch to PDB
+        S->>S: count_done()
+    end
+```
+
+### Sources:
+- [sample_idp.py:142-170]()
+- [sample_idp.py:122-136]()
+
+---
+
+## Experimental Guidance Integration
+
+If enabled in the configuration (`potential: true`), the script initializes guidance potentials that influence the diffusion gradient. This allows the generated ensemble to satisfy experimental constraints such as Paramagnetic Relaxation Enhancement (PRE) or Radius of Gyration (Rg).
+
+*   **PRE/NOE**: Converted into a contact map potential using `get_contact_map` [sample_idp.py:70-77]().
+*   **Rg**: Targets a specific ensemble average radius of gyration [sample_idp.py:78-81]().
+*   **Hyperparameters**: Guidance is controlled by `timescale` (when guidance starts) and `grad_clip` (maximum gradient magnitude) [sample_idp.py:64-68]().
+
+### Sources:
+- [sample_idp.py:64-87]()
+- [idpforge/utils/np_utils.py:71-71]()
+
+---
+
+## Output Naming and Relaxation
+
+Generated conformers are saved using the `output_to_pdb` function. The naming convention depends on whether AMBER relaxation is performed:
+
+1.  **Raw Outputs**: Named `{idx}_raw.pdb` if `no_relax` is true [sample_idp.py:111-113]().
+2.  **Validated/Relaxed**: Named `{idx}_validated.pdb` if the full relaxation and validation pipeline is active [sample_idp.py:114-117]().
+
+The `next_available_idx()` function ensures that new batches do not overwrite existing files by finding the lowest unused integer prefix in the output directory [sample_idp.py:125-136]().
+
+### Sources:
+- [sample_idp.py:111-120]()
+- [sample_idp.py:158-160]()
+- [idpforge/misc.py:18-18]()
+
+---
+
+# Page: Sampling IDRs in Folded Context (sample_ldr.py)
+
+# Sampling IDRs in Folded Context (sample_ldr.py)
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [mk_flex_template.py](mk_flex_template.py)
+- [mk_ldr_template.py](mk_ldr_template.py)
+- [sample_ldr.py](sample_ldr.py)
+- [slice_pdb.py](slice_pdb.py)
+
+</details>
+
+
+
+The `sample_ldr.py` script is the primary inference entrypoint for generating ensembles of **Intrinsically Disordered Regions (IDRs)** within the context of fixed or flexible folded domains. Unlike full-sequence IDP sampling, this mode uses structural templates to constrain specific residues while allowing the diffusion model to sample the conformational space of the disordered segments.
+
+## Overview and Purpose
+
+The script implements a constrained diffusion process where the folded parts of a protein are held static (or used as boundary conditions) while the disordered regions are generated by the `IDPForge` model. It handles complex multi-step pipeline requirements, including template tiling for long proteins, bfloat16 inference for memory efficiency, and structural quality gating (knot detection and curvature checks).
+
+### Key Capabilities
+*   **Template-Based Constrained Diffusion**: Uses `.npz` templates generated by `mk_ldr_template.py` or `mk_flex_template.py`.
+*   **Secondary Structure Integration**: Combines experimental or predicted SS for disordered regions with fixed SS from folded domains.
+*   **Automated Truncation Handling**: Emits `_truncation.json` metadata to facilitate the "graft-back" of discarded domains in later pipeline steps.
+*   **Quality Gating**: Integrated filters for fold curvature, junction kappa (connectivity), and topological knot types.
+
+Sources: `sample_ldr.py` [1-37](), [114-149]()
+
+---
+
+## Data Flow and Logic
+
+The sampling process follows a loop that continues until the target number of validated conformers (`nsample`) is reached.
+
+### 1. Template and Metadata Loading
+The script loads a `.npz` template containing coordinates, sequence, and a binary `mask` (where `1` indicates a folded residue and `0` indicates a disordered residue) `[sample_ldr.py:73-75]()`. If the template was truncated during generation (e.g., to fit within GPU memory), the script emits a graft specification (`_truncation.json`) so that `Step_4_ldr_stitch.py` can later reassemble the full protein `[sample_ldr.py:114-135]()`.
+
+### 2. Secondary Structure (SS) Merging
+The function `combine_sec` merges the folded domain's known secondary structure with a sampled SS string for the IDR `[sample_ldr.py:30-31]()`. This ensures the `IDPForge` model receives a coherent `ss` input that respects the structural constraints of the template.
+
+### 3. The Reverse Diffusion Loop
+The core sampling happens within a `while` loop that manages batching and device placement:
+
+| Stage | Code Entity | Description |
+| :--- | :--- | :--- |
+| **Initialization** | `denoiser.init_samples()` | Generates initial Gaussian noise for coordinates and torsions `[sample_ldr.py:179]()`. |
+| **Constraint Injection** | `xt_list`, `tor_list` | Replaces noise at masked indices with template coordinates/torsions `[sample_ldr.py:184-187]()`. |
+| **Reverse Step** | `model.inference_step()` | Predicts the denoised structure at time $t-1$ `[sample_ldr.py:204]()`. |
+| **Constraint Enforcement** | Masking | After each step, folded residues are reset to template values to prevent drift `[sample_ldr.py:206-209]()`. |
+
+Sources: `sample_ldr.py` [30-31](), [73-98](), [170-210]()
+
+---
+
+## Technical Implementation
+
+### Code Entity Bridge: Natural Language to Code Space
+
+The following diagram maps high-level sampling concepts to specific implementation details in `sample_ldr.py`.
+
+**Figure 1: Inference Logic Mapping**
+```mermaid
+graph TD
+    subgraph "Input Processing"
+        A["Folded Template (.npz)"] --> B["np.load()"]
+        B --> C["mask [sample_ldr.py:73]"]
+        D["SS Database"] --> E["fetch_sec_from_seq() [sample_ldr.py:85]"]
+        C & E --> F["combine_sec() [sample_ldr.py:30]"]
+    end
+
+    subgraph "Inference Loop"
+        F --> G["denoiser.init_samples()"]
+        G --> H["model.inference_step() [sample_ldr.py:204]"]
+        H --> I["Constraint Masking [sample_ldr.py:206]"]
+        I -- "Loop T steps" --> H
+    end
+
+    subgraph "Quality Control"
+        I --> J["validate_structure_post_relax()"]
+        J --> K["Knot Gating [sample_ldr.py:236]"]
+        J --> L["Curvature Gates [sample_ldr.py:228]"]
+    end
+```
+Sources: `sample_ldr.py` [30-31](), [73-85](), [204-236]()
+
+### Multi-Step Pipeline Metadata
+For large proteins, `sample_ldr.py` supports a "Step-2 continuation" mode. If the template contains `step2_a_conformer` metadata, the script emits `_step2.json`. This allows the pipeline to build an IDR in fragments, pinning the first fragment as a pseudo-fold for the second generation step.
+
+Sources: `sample_ldr.py` [137-149]()
+
+---
+
+## Structural Validation and Gating
+
+After a conformer is generated and (optionally) relaxed using AMBER, it must pass several geometric gates before being saved to the `output_dir`.
+
+### Validation Gates
+The script utilizes `validate_structure_post_relax` to compute metrics that are then compared against CLI-provided thresholds:
+
+1.  **Fold Curvature (`fold_curv_ratio`)**: Ensures the folded domain has not undergone unphysical global deformation during relaxation `[sample_ldr.py:228]()`.
+2.  **Junction Kappa (`junction_kappa`)**: Measures the local curvature at the interface between the folded domain and the IDR to ensure a natural transition `[sample_ldr.py:231]()`.
+3.  **Knot Gating (`expected_knot_type`)**: Uses the `AlphaKnot2` hybrid topology classifier to screen for unphysical knots (e.g., ensuring a "Tail" IDR remains `0.1` or "Unknotted") `[sample_ldr.py:236-245]()`.
+
+**Figure 2: Validation Flow**
+```mermaid
+flowchart LR
+    A["Raw Conformer"] --> B["AMBER Relax [relax_protein]"]
+    B --> C["validate_structure_post_relax()"]
+    C --> D{"Curvature < Gate?"}
+    D -- "No" --> E["Discard"]
+    D -- "Yes" --> F{"Knot == Expected?"}
+    F -- "No" --> E
+    F -- "Yes" --> G["Save _validated.pdb"]
+```
+Sources: `sample_ldr.py` [216-245](), `idpforge/utils/structure_validation.py` [1-100]()
+
+---
+
+## Configuration and CLI
+
+### Critical Arguments
+| Argument | Description |
+| :--- | :--- |
+| `--fold_template` | Path to the `.npz` file containing `coord`, `mask`, `seq`, and `sec` `[sample_ldr.py:33]()`. |
+| `--sample_cfg` | Path to `sample.yml` containing diffusion hyperparameters `[sample_ldr.py:41]()`. |
+| `--nsample` | Target number of *validated* conformers to generate `[sample_ldr.py:34]()`. |
+| `--fold_curv_ratio` | Threshold for global fold deformation (0.0 to disable) `[sample_ldr.py:36]()`. |
+| `--expected_knot_type` | String label (e.g., "0.1") to filter topological errors `[sample_ldr.py:37]()`. |
+
+### Template Structure (.npz)
+The input template expected by `sample_ldr.py` must contain:
+*   `coord`: `(L, 37, 3)` array of heavy atom coordinates.
+*   `mask`: `(L,)` boolean array (`True` = Folded/Static).
+*   `seq`: `(L,)` sequence string.
+*   `sec`: `(L,)` secondary structure string (H/E/C/P/G/I/S/T/B).
+*   `coord_offset`: (Optional) Original PDB index for renumbering.
+
+Sources: `sample_ldr.py` [33-41](), `mk_ldr_template.py` [132-144]()
+
+---
+
+# Page: Template Preparation Utilities
+
+# Template Preparation Utilities
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [mk_flex_template.py](mk_flex_template.py)
+- [mk_ldr_template.py](mk_ldr_template.py)
+- [slice_pdb.py](slice_pdb.py)
+
+</details>
+
+
+
+The template preparation utilities provide the necessary pre-processing to generate `.npz` files used by the inference engine (`sample_ldr.py`). These utilities handle the extraction of structural data from PDB files, size-capping for large proteins, and the initialization of disordered region coordinates via geometric sampling or random domain placement.
+
+## Core Utilities Overview
+
+The pipeline utilizes two primary scripts to prepare templates based on the protein's architecture:
+1.  **`mk_ldr_template.py`**: Used for Intrinsically Disordered Regions (IDRs) that are flanking or embedded within a static folded context (e.g., N/C-terminal tails or loops).
+2.  **`mk_flex_template.py`**: Used for flexible multi-domain proteins where a linker connects two folded domains that can rotate and translate relative to one another.
+
+### System Mapping: Utilities to Code Entities
+
+The following diagram maps the logical preparation steps to the specific functions and classes in the codebase.
+
+**Template Preparation Data Flow**
+```mermaid
+graph TD
+    PDB["Input PDB File"] --> PP["process_pdb()"]
+    PP --> GCA["get_chi_angles()"]
+    PP --> DSSP["md.compute_dssp()"]
+    
+    subgraph "mk_ldr_template.py Logic"
+        LDR_S["sample_fix_distance()"]
+        LDR_T["_truncate_to_size()"]
+    end
+
+    subgraph "mk_flex_template.py Logic"
+        FLEX_S["sample_fold_orientation()"]
+        FLEX_T["_truncate_linker_domains()"]
+    end
+
+    GCA --> NPZ[".npz Template File"]
+    DSSP --> NPZ
+    LDR_T --> NPZ
+    FLEX_T --> NPZ
+```
+**Sources:** `mk_ldr_template.py` [132-143](), `mk_flex_template.py` [181-195]()
+
+---
+
+## Folded Domain Extraction and Feature Encoding
+
+Both utilities begin by extracting atomic coordinates and sequence information using `process_pdb` [mk_ldr_template.py:132](). The scripts then calculate essential structural features required by the IDPForge model:
+
+*   **Torsion Angles**: Side-chain $\chi$ angles are calculated via `get_chi_angles` and converted into $(\sin, \cos)$ pairs [mk_ldr_template.py:133-134]().
+*   **Secondary Structure (SS)**: SS is derived using MDTraj's DSSP implementation [mk_ldr_template.py:137](). For residues not classified as Helix (H) or Sheet (E), the `assign_rama` function classifies them based on $(\phi, \psi)$ angles into Ramachandran-based categories (e.g., 'P' for Polyproline II, 'B' for Beta-like) [mk_ldr_template.py:142-143]().
+
+**Sources:** `mk_ldr_template.py` [132-143](), `mk_flex_template.py` [181-195]()
+
+---
+
+## Static IDR Initialization (`mk_ldr_template.py`)
+
+For proteins with static folded domains, the script must provide "seed" coordinates for the disordered regions to initialize the diffusion process.
+
+### Seed-Distance Sampling
+The function `sample_fix_distance` generates initial CA coordinates for the first residue of an IDR tail or the midpoint of an IDR loop.
+*   It samples points on a sphere with a radius between `SEED_FLOOR` (6.46 Å) and `SEED_CEILING` (9.12 Å) [mk_ldr_template.py:23-24]().
+*   To prevent steric clashes in the initial template, it drops any sampled points within `min_fold_dist` of existing folded CA atoms [mk_ldr_template.py:40-56]().
+
+### Size-Capping and Truncation
+For proteins exceeding the model's capacity (e.g., `max_residues`), the `_truncate_to_size` function trims the folded domains while preserving the junction interface.
+*   **Budget Allocation**: It ensures the total system (IDR + kept fold) fits within `max_residues`.
+*   **Junction Preservation**: It maintains a minimum of 10 residues (default) per side of the IDR to ensure the model captures the junction geometry [mk_ldr_template.py:74-81]().
+*   **Graft Specification**: The script outputs a `graft_offset` and `graft_fold_range` in the `.npz` file, which is used by the AlphaFlex Step 4 stitching logic to reassemble the full-length protein [mk_ldr_template.py:111-116]().
+
+**Sources:** `mk_ldr_template.py` [40-56](), [59-125]()
+
+---
+
+## Flexible Domain Placement (`mk_flex_template.py`)
+
+When modeling a linker between two domains, the domains are treated as rigid bodies that are randomly oriented to create a diverse starting ensemble.
+
+### Random SO(3) Transformations
+The script applies random rotations and translations to the second domain (`fold2`) relative to the first (`fold1`).
+*   **Rotation**: Uses `scipy.spatial.transform.Rotation.random()` to sample uniformly from the SO(3) group [mk_flex_template.py:29-31]().
+*   **Translation**: The distance $d$ between domains is sampled from a normal distribution based on Flory’s polymer theory: $d = 5.51 \times L^{0.588}$, where $L$ is the linker length [mk_flex_template.py:98-99]().
+
+### Collision Detection
+The function `random_nonclashing_transform_scaled` uses a `KDTree` to ensure that the randomly placed domains do not clash (minimum distance > 3.8 Å) [mk_flex_template.py:48-84](). If a non-clashing pose cannot be found after `max_attempts`, it falls back to a potentially clashing pose to allow the diffusion process to resolve the geometry [mk_flex_template.py:127-139]().
+
+**Sources:** `mk_flex_template.py` [29-31](), [48-84](), [98-102]()
+
+---
+
+## The .npz Template Format
+
+The output of these utilities is a compressed NumPy file containing the following keys:
+
+| Key | Description |
+| :--- | :--- |
+| `coord` | `(L, 37, 3)` array of atomic coordinates (all-atom). |
+| `torsion` | `(L, 7, 2)` array of $(\sin, \cos)$ for $\chi$ angles. |
+| `mask` | `(L,)` boolean mask (True for folded, False for IDR). |
+| `seq` | One-letter amino acid sequence string. |
+| `sec` | Secondary structure encoding string (H, E, C, P, B, etc.). |
+| `graft_offset` | (Optional) Index offset for re-stitching truncated domains. |
+
+**Sources:** `mk_ldr_template.py` [108-125](), `mk_flex_template.py` [220-230]()
+
+---
+
+## Auxiliary PDB Slicing
+
+The `slice_pdb.py` script is a standalone utility used to extract specific residue ranges from a PDB file. It is frequently used to isolate a single domain from a multi-domain AF2 structure before passing it to the template preparation scripts.
+
+*   **Logic**: It parses `ATOM` and `HETATM` records and filters by the `resSeq` field [slice_pdb.py:15-20]().
+*   **Renumbering**: It can optionally renumber the output PDB starting from 1 using the `--renumber` flag [slice_pdb.py:21-22]().
+
+**Sources:** `slice_pdb.py` [7-40]()
+
+---
+
+# Page: Post-Generation Processing: Relaxation, Repair & Validation
+
+# Post-Generation Processing: Relaxation, Repair & Validation
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [data/AF-P05231_ndr.npz](data/AF-P05231_ndr.npz)
+- [idpforge/misc.py](idpforge/misc.py)
+- [idpforge/utils/relax.py](idpforge/utils/relax.py)
+- [idpforge/utils/structure_repair.py](idpforge/utils/structure_repair.py)
+- [idpforge/utils/structure_validation.py](idpforge/utils/structure_validation.py)
+- [relax_raw.py](relax_raw.py)
+
+</details>
+
+
+
+After the diffusion model generates raw coordinates, the IDPForge pipeline performs a multi-stage post-processing sequence to ensure physical realism, stereochemical correctness, and topological integrity. This process transforms raw neural network outputs into energy-minimized, validated PDB ensembles.
+
+### Overview of the Post-Generation Pipeline
+
+The post-generation lifecycle is managed primarily by `output_to_pdb()` in `idpforge/misc.py` [119-135](). The pipeline consists of:
+1.  **Conversion**: Transforming `atom14` internal representations to `atom37` PDB format [139-140]().
+2.  **Pre-Relaxation Screening**: Checking backbone continuity and NaN coordinates before expensive minimization [192-201]().
+3.  **AMBER Relaxation**: Using OpenMM to minimize the structure, typically with the folded domain residues restrained [idpforge/utils/relax.py:21-25]().
+4.  **Structural Repair**: Fixing D-amino acid flips and Histidine naming artifacts introduced by the forcefield [idpforge/utils/structure_repair.py:35-178]().
+5.  **Validation Suite**: A comprehensive check for clashes, chirality, bond integrity, and topological knots [idpforge/utils/structure_validation.py:206-258]().
+
+### Pipeline Workflow Diagram
+
+The following diagram illustrates the flow from raw tensor output to a validated PDB file, mapping the logical steps to the specific code entities responsible for them.
+
+**Post-Generation Processing Flow**
+```mermaid
+graph TD
+    subgraph "Raw Output Stage"
+        A["Model Output Tensors"] --> B["output_to_pdb()"]
+    end
+
+    subgraph "Relaxation & Repair Stage"
+        B --> C["relax_protein()"]
+        C -- "AMBER Minimization" --> D["relax.AmberRelaxation"]
+        D --> E{"Needs Repair?"}
+        E -- "D-isomer / HIS naming" --> F["repair_chirality()"]
+        E -- "D-isomer / HIS naming" --> G["fix_histidine_naming()"]
+        F --> H["Re-Relaxation"]
+        G --> H
+    end
+
+    subgraph "Validation Stage"
+        H --> I["validate_structure_post_relax()"]
+        E -- "Clean" --> I
+        I --> J["check_chirality()"]
+        I --> K["check_bond_integrity()"]
+        I --> L["check_clashes()"]
+        I --> M["AlphaKnot2 Hybrid Topology"]
+    end
+
+    subgraph "Finalization"
+        M -- "PASS" --> N["*_validated.pdb"]
+        M -- "FAIL" --> O["Discard Conformer"]
+    end
+```
+**Sources:** `idpforge/misc.py` [119-300](), `idpforge/utils/relax.py` [21-92](), `idpforge/utils/structure_validation.py` [206-258]().
+
+---
+
+### AMBER Relaxation (relax_protein)
+
+The relaxation stage utilizes the `AmberRelaxation` wrapper from OpenFold to perform energy minimization. A key feature of IDPForge is the use of a `viol_mask` to gate acceptance: the system calculates the fraction of residues with stereochemical violations and rejects conformers exceeding the `viol_threshold` (default 0.02) [idpforge/utils/relax.py:22-63]().
+
+For multi-domain proteins or IDRs in context, the `exclude_residues` configuration allows the folded domains to remain rigid (via harmonic restraints) while the disordered regions are free to minimize [relax_raw.py:58-61]().
+
+For details, see [AMBER Relaxation (relax_protein)](#4.4.1).
+
+**Sources:** `idpforge/utils/relax.py` [21-92](), `relax_raw.py` [47-62]().
+
+---
+
+### Structural Repair & Re-Relaxation
+
+Neural generation and forcefield minimization can occasionally produce stereochemical artifacts. IDPForge includes specialized repair utilities:
+*   **Chirality Repair**: `repair_chirality()` detects D-amino acids by calculating the scalar triple product of the N-CA-C-CB volume. If a flip is detected, it reflects the sidechain atoms across the N-CA-C plane to restore L-isomer geometry [idpforge/utils/structure_repair.py:35-154]().
+*   **Histidine Naming**: `fix_histidine_naming()` addresses a known issue where AMBER relaxation scrambles atom identities in the HIS imidazole ring. It reassigns names based on spatial geometry and hydrogen bonding patterns [idpforge/utils/structure_repair.py:156-178]().
+
+If repairs are applied, the structure is subjected to a second round of relaxation to ensure the new coordinates are energetically stable [relax_raw.py:153-166]().
+
+**Sources:** `idpforge/utils/structure_repair.py` [35-178](), `relax_raw.py` [123-166]().
+
+---
+
+### Structural Validation Suite
+
+The final quality gate is the `validate_structure_post_relax()` function. This suite performs high-fidelity checks to ensure the ensemble is suitable for scientific analysis.
+
+| Check | Code Entity | Description |
+| :--- | :--- | :--- |
+| **Chirality** | `check_chirality()` | Uses scalar triple product to ensure L-amino acid geometry [idpforge/utils/structure_validation.py:99-119](). |
+| **Bonds** | `check_bond_integrity()` | Graph-based check for stretched or broken covalent bonds [idpforge/utils/structure_validation.py:130-190](). |
+| **Clashes** | `check_clashes()` | Uses `cKDTree` for fast VdW overlap detection [idpforge/utils/structure_validation.py:192-204](). |
+| **Topology** | `AlphaKnot2` | Hybrid Alexander/HOMFLY polynomial check to detect unwanted knots [idpforge/utils/structure_validation.py:23-27](). |
+
+For details, see [Structural Validation Suite](#4.4.2).
+
+**Sources:** `idpforge/utils/structure_validation.py` [1-258]().
+
+---
+
+### Code Mapping: Logic to Entities
+
+This diagram maps the high-level processing requirements to the specific classes and functions in the `idpforge` codebase.
+
+**System Entity Mapping**
+```mermaid
+classDiagram
+    class OutputManager {
+        idpforge/misc.py
+        output_to_pdb()
+    }
+    class Minimizer {
+        idpforge/utils/relax.py
+        relax_protein()
+        AmberRelaxation
+    }
+    class RepairToolkit {
+        idpforge/utils/structure_repair.py
+        repair_chirality()
+        fix_histidine_naming()
+    }
+    class ValidationSuite {
+        idpforge/utils/structure_validation.py
+        validate_structure_post_relax()
+        check_bond_integrity()
+        check_clashes()
+    }
+
+    OutputManager --> Minimizer : "1. Minimizes Raw PDB"
+    Minimizer --> RepairToolkit : "2. Corrects Artifacts"
+    RepairToolkit --> Minimizer : "3. Re-minimizes (if repaired)"
+    Minimizer --> ValidationSuite : "4. Final Quality Gate"
+```
+**Sources:** `idpforge/misc.py` [119-135](), `idpforge/utils/relax.py` [21-25](), `idpforge/utils/structure_repair.py` [35-178](), `idpforge/utils/structure_validation.py` [206-258]().
+
+---
+
+# Page: AMBER Relaxation (relax_protein)
+
+# AMBER Relaxation (relax_protein)
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/utils/relax.py](idpforge/utils/relax.py)
+
+</details>
+
+
+
+The `relax_protein` utility provides a wrapper around the OpenFold/AMBER energy minimization pipeline. It is designed to refine the raw coordinates generated by the IDPForge diffusion process, resolving steric clashes and optimizing bond geometries while enforcing strict quality gates to ensure structural integrity, particularly for residues with aromatic rings.
+
+### Purpose and Scope
+During inference, the IDPForge model predicts atomic coordinates that may contain minor physical violations or strained geometries. The `relax_protein` function in [idpforge/utils/relax.py:21-86]() automates the invocation of `AmberRelaxation`, manages GPU resources to prevent memory contention, and applies a multi-stage rejection filter based on residue-level violations.
+
+---
+
+### System Architecture and Data Flow
+
+The relaxation process acts as a bridge between the "Deep Learning Space" (tensors/OpenFold protein objects) and the "Physical Simulation Space" (OpenMM energy minimization).
+
+**Natural Language to Code Entity Map: Relaxation Pipeline**
+
+| System Concept | Code Entity | File Reference |
+| :--- | :--- | :--- |
+| **Relaxation Entrypoint** | `relax_protein()` | [idpforge/utils/relax.py:21]() |
+| **AMBER Engine** | `relax.AmberRelaxation` | [idpforge/utils/relax.py:23]() |
+| **Violation Gate** | `viol_threshold` | [idpforge/utils/relax.py:22]() |
+| **Aromatic Check** | `ring_AA` | [idpforge/utils/relax.py:18]() |
+| **Device Control** | `CUDA_VISIBLE_DEVICES` | [idpforge/utils/relax.py:28-32]() |
+
+**Relaxation Logic Flow**
+
+```mermaid
+graph TD
+    Start["relax_protein() Call"] --> DevEnv["Set CUDA_VISIBLE_DEVICES"]
+    DevEnv --> InitAmber["Initialize AmberRelaxation"]
+    InitAmber --> RunMin["amber_relaxer.process()"]
+    
+    subgraph "Quality Gating Logic"
+    RunMin -- "Success" --> Mask["Apply viol_mask (IDR/Junction focus)"]
+    Mask --> RingCheck{"Ring-AA Violation <br/> > threshold?"}
+    RingCheck -- "No" --> FracCheck{"Total Viol Fraction <br/> > threshold?"}
+    end
+
+    RunMin -- "OpenMM Fail" --> Reject["Return 0 (Reject)"]
+    RingCheck -- "Yes" --> Reject
+    FracCheck -- "Yes" --> Reject
+    
+    FracCheck -- "No" --> Save["Write _relaxed.pdb"]
+    Save --> Cleanup["gc.collect() & Restore Env"]
+    Cleanup --> Success["Return 1 (Success)"]
+
+    Sources["Sources: idpforge/utils/relax.py:21-92"]
+```
+Sources: [idpforge/utils/relax.py:21-91]()
+
+---
+
+### Implementation Details
+
+#### 1. CUDA Device Management
+To avoid interference between the PyTorch model inference and the OpenMM simulation (which often runs on the GPU), `relax_protein` dynamically manages the `CUDA_VISIBLE_DEVICES` environment variable [idpforge/utils/relax.py:28-33](). If `model_device` is passed as an integer or a specific string, the environment is constrained to that device for the duration of the relaxation, then restored in the `finally` block [idpforge/utils/relax.py:79-80]().
+
+#### 2. Ring-AA Integrity Checks
+Aromatic residues (Phenylalanine, Tyrosine, Tryptophan, Histidine, and Proline) are particularly susceptible to distortions during rapid minimization if the initial coordinates are poor. The system identifies these residues using `ring_AA` indices [idpforge/utils/relax.py:18](). 
+
+If the number of aromatic residues exhibiting violations exceeds the `viol_threshold` (default 2%), the structure is rejected [idpforge/utils/relax.py:59-63](). This prevents "broken" rings from being accepted into the final ensemble.
+
+#### 3. Violation Fraction Gating
+The function supports a `viol_mask`, which allows the user to restrict the quality check to specific regions, such as the disordered regions (IDRs) or junctions, ignoring the pre-folded domains [idpforge/utils/relax.py:45-52](). 
+
+The acceptance criteria are two-fold [idpforge/utils/relax.py:69-76]():
+1. **Fractional Gate**: The ratio of violating residues to total free residues must be below `viol_threshold`.
+2. **Count Gate**: The absolute count of violations must not exceed a `viol_cap` (calculated as `max(4, threshold * n_free)`).
+
+#### 4. Memory Cleanup
+Given that `AmberRelaxation` and OpenMM can be memory-intensive, the function explicitly deletes the relaxer object and triggers Python's garbage collector (`gc.collect()`) within a `finally` block to ensure GPU memory is freed immediately after processing [idpforge/utils/relax.py:87-91]().
+
+---
+
+### Function Signature and Parameters
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `config` | `dict` | Configuration parameters for OpenFold relaxation (e.g., force field settings). |
+| `model_device` | `int/str` | The device identifier where the relaxation should execute. |
+| `unrelaxed_protein` | `Protein` | An OpenFold `Protein` object containing coordinates and `aatype`. |
+| `output_dir` | `str` | Directory to save the resulting `.pdb` file. |
+| `pdb_name` | `str` | Prefix for the output filename. |
+| `viol_threshold` | `float` | Tolerance for residue violations (default: 0.02). |
+| `viol_mask` | `np.ndarray` | Boolean mask indicating which residues to include in the violation check. |
+
+**Code Entity Relationship: relax_protein and OpenFold**
+
+```mermaid
+classDiagram
+    class relax_protein {
+        +config: dict
+        +model_device: Union[int, str]
+        +unrelaxed_protein: protein.Protein
+        +viol_threshold: float
+        +viol_mask: np.ndarray
+    }
+    class AmberRelaxation {
+        <<OpenFold>>
+        +process(prot, cif_output)
+    }
+    class Protein {
+        <<OpenFold>>
+        +aatype: np.ndarray
+        +residue_index: np.ndarray
+    }
+    
+    relax_protein ..> AmberRelaxation : instantiates
+    relax_protein ..> Protein : consumes
+    AmberRelaxation ..> Protein : processes
+```
+Sources: [idpforge/utils/relax.py:10-11](), [idpforge/utils/relax.py:21-38]()
+
+---
+
+### Error Handling
+The implementation wraps the `amber_relaxer.process` call in a nested `try-except` block to catch `ValueError` or `OpenMMException` [idpforge/utils/relax.py:36-42](). If minimization fails due to non-convergent forces or illegal geometries, the function logs the error and returns `0`, signaling a failed generation attempt to the calling sampling script.
+
+Sources: [idpforge/utils/relax.py:1-91]()
+
+---
+
+# Page: Structural Validation Suite
+
+# Structural Validation Suite
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [idpforge/utils/structure_validation.py](idpforge/utils/structure_validation.py)
+
+</details>
+
+
+
+The Structural Validation Suite, primarily implemented in `idpforge/utils/structure_validation.py`, provides a comprehensive set of geometric and topological checks to ensure the physical viability of generated protein ensembles. It is executed as a post-generation quality gate, particularly within the AlphaFlex pipeline's ensemble assembly stage.
+
+## Core Validation Workflow
+
+The primary entry point for validation is `validate_structure_post_relax()`. This function orchestrates a series of checks ranging from basic chemical integrity to complex knot topology analysis.
+
+### Data Flow and Initialization
+The suite accepts an OpenMM `Topology` and `Positions` object. It converts these to high-precision `float64` NumPy arrays to avoid rounding errors during geometric calculations [idpforge/utils/structure_validation.py:89-94]().
+
+### Validation Sequence
+1.  **Chirality Check**: Ensures all non-glycine residues maintain L-amino acid stereochemistry [idpforge/utils/structure_validation.py:99-100]().
+2.  **Bond Integrity**: Uses a graph-based comparison to detect broken covalent bonds [idpforge/utils/structure_validation.py:130-131]().
+3.  **Clash Detection**: Identifies steric overlaps between non-bonded heavy atoms [idpforge/utils/structure_validation.py:202-203]().
+4.  **Topology (Knot) Analysis**: Employs a hybrid Alexander-HOMFLY polynomial approach to classify the global and domain-specific fold topology [idpforge/utils/structure_validation.py:348-350]().
+5.  **Curvature Gating**: Measures the geometric strain at junction points and within folded domains [idpforge/utils/structure_validation.py:449-450]().
+
+```mermaid
+graph TD
+    A["validate_structure_post_relax()"] --> B["check_chirality()"]
+    A --> C["check_bond_integrity()"]
+    A --> D["check_clashes()"]
+    A --> E["Topology Validation"]
+    
+    E --> E1["get_alpha_knot_topology()"]
+    E1 --> E1a["Alexander Polynomial (Fast)"]
+    E1 --> E1b["HOMFLY Polynomial (Precise)"]
+    
+    A --> F["Curvature Gates"]
+    F --> F1["check_junction_kappa()"]
+    F --> F2["check_fold_curvature()"]
+    
+    subgraph "Logic Source"
+        B --- B_ref["idpforge/utils/structure_validation.py:99"]
+        C --- C_ref["idpforge/utils/structure_validation.py:130"]
+        D --- D_ref["idpforge/utils/structure_validation.py:202"]
+        E1 --- E1_ref["idpforge/utils/structure_validation.py:348"]
+    end
+```
+**Sources:** [idpforge/utils/structure_validation.py:89-203](), [idpforge/utils/structure_validation.py:348-450]()
+
+---
+
+## Geometric Integrity Checks
+
+### Chirality Validation
+The `check_chirality()` function validates the $C_\alpha$ stereocenter. For each residue (excluding Glycine), it calculates the **scalar triple product** of the vectors from $C_\alpha$ to $N$, $C$, and $C_\beta$ [idpforge/utils/structure_validation.py:109-114]().
+*   **Threshold**: A volume $< 1.0 \text{ \AA}^3$ is flagged as a violation (D-amino acid or distorted planar geometry) [idpforge/utils/structure_validation.py:116-118]().
+
+### Bond Integrity
+`check_bond_integrity()` performs an atom-name-agnostic graph comparison. It builds an "expected" bond graph from the topology and an "observed" graph based on a distance cutoff (default 2.0 \AA) [idpforge/utils/structure_validation.py:121-122](), [idpforge/utils/structure_validation.py:166](). If the degree sequences of these graphs do not match, the residue is flagged for broken covalent bonds [idpforge/utils/structure_validation.py:170-175]().
+
+### Steric Clash Detection
+Clashes are detected using a `cKDTree` for efficient neighbor searching [idpforge/utils/structure_validation.py:214]().
+*   **Radius**: The system uses VDW radii (C: 1.70, N: 1.55, O: 1.52, S: 1.80) [idpforge/utils/structure_validation.py:20]().
+*   **Gate**: A clash is defined as two non-bonded heavy atoms closer than $0.7 \times (\text{vdw}_1 + \text{vdw}_2)$ [idpforge/utils/structure_validation.py:216]().
+
+**Sources:** [idpforge/utils/structure_validation.py:19-20](), [idpforge/utils/structure_validation.py:99-186](), [idpforge/utils/structure_validation.py:202-225]()
+
+---
+
+## AlphaKnot2 Hybrid Topology Classification
+
+The suite implements a robust topology engine in `get_alpha_knot_topology()` to prevent the generation of spurious knots in IDRs or the loss of native knots in folded domains.
+
+### The Hybrid Approach
+1.  **Alexander Polynomial**: A fast, probabilistic check (`ALEXANDER_TRIES = 100`) acts as a gatekeeper [idpforge/utils/structure_validation.py:23-25](). If the Alexander polynomial indicates an unknot with high probability, the structure is cleared quickly.
+2.  **HOMFLY Polynomial**: If the Alexander check is ambiguous or indicates a knot, the system invokes the `pyknotid` library to calculate the HOMFLY polynomial, which is a more powerful topological invariant [idpforge/utils/structure_validation.py:382-390]().
+
+### Domain-Specific Validation
+The function `validate_per_domain_knots()` compares the observed topology of specific residue ranges against an expected `knot_screening.json` specification [idpforge/utils/structure_validation.py:47-69](), [idpforge/utils/structure_validation.py:421-425](). This ensures that if a protein is known to be a 3_1 knot (trefoil), the generated ensemble preserves that specific topology [idpforge/utils/structure_validation.py:435-440]().
+
+```mermaid
+sequenceDiagram
+    participant V as validate_structure_post_relax
+    participant K as get_alpha_knot_topology
+    participant A as Alexander Gatekeeper
+    participant H as HOMFLY Calculator
+
+    V->>K: Check global topology
+    K->>A: Sample projections (100 tries)
+    alt Alexander P(Unknot) > 0.65
+        A-->>K: Return "Unknot"
+    else Alexander Ambiguous
+        K->>H: Compute HOMFLY Polynomial
+        H-->>K: Return Knot Type (e.g., 3_1, 5_2)
+    end
+    K-->>V: Topology Summary
+```
+**Sources:** [idpforge/utils/structure_validation.py:22-44](), [idpforge/utils/structure_validation.py:348-440]()
+
+---
+
+## Curvature and Junction Gates
+
+To prevent unphysical "kinks" at the transition between folded domains and disordered linkers, the suite applies curvature constraints.
+
+### Junction Kappa
+`check_junction_kappa()` calculates the local curvature ($\kappa$) at the junction points defined in the graft specification. It uses a sliding window (default 20 residues) to compute the angle between segments [idpforge/utils/structure_validation.py:33](), [idpforge/utils/structure_validation.py:449-455]().
+
+### Fold Curvature
+`check_fold_curvature()` ensures that the internal geometry of the folded domains has not been distorted during the diffusion or relaxation process [idpforge/utils/structure_validation.py:476-480](). It computes the mean curvature of the $C_\alpha$ trace within the domain and flags structures exceeding the `fold_kappa_max` threshold [idpforge/utils/structure_validation.py:490-495]().
+
+| Gate | Function | Threshold Parameter | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Junction** | `check_junction_kappa` | `junction_kappa_max` | Prevents sharp V-shaped kinks at IDR-Folded interfaces. |
+| **Fold** | `check_fold_curvature` | `fold_kappa_max` | Detects global deformation of folded templates. |
+| **Knot** | `validate_per_domain_knots` | `knot_screening.json` | Ensures topological consistency with native state. |
+
+**Sources:** [idpforge/utils/structure_validation.py:33](), [idpforge/utils/structure_validation.py:449-500]()
+
+---
+
+# Page: AlphaFlex Pipeline
+
+# AlphaFlex Pipeline
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Data_Inputs/knot_screening.json](AlphaFlex/Data_Inputs/knot_screening.json)
+- [AlphaFlex/README.md](AlphaFlex/README.md)
+- [AlphaFlex/config.py](AlphaFlex/config.py)
+
+</details>
+
+
+
+The **AlphaFlex** pipeline is a four-step automated workflow designed for the large-scale generation of disordered protein ensembles. It leverages AlphaFold2 (AF2) structures as templates and uses the IDPForge diffusion model to sample conformational ensembles of Intrinsically Disordered Regions (IDRs) while maintaining the structural integrity of folded domains.
+
+The pipeline is designed to handle proteins ranging from fully disordered (Category 0) to complex multi-domain proteins with disordered tails, linkers, and loops (Categories 1-3) [AlphaFlex/README.md:51-58]().
+
+### Pipeline Architecture
+
+The workflow progresses from database labeling to final ensemble assembly. Each step is orchestrated by a dedicated script that consumes the outputs of the previous stage.
+
+```mermaid
+graph TD
+    subgraph "Step 1: Case Labeling"
+        S1["Step_1_case_label.py"] --> S1B["Step_1B_subset_label.py"]
+    end
+
+    subgraph "Step 2: Template Prep"
+        S2["Step_2_mk_ldr_template.py"]
+    end
+
+    subgraph "Step 3: Sampling"
+        S3["Step_3_sample_conformer.py"]
+    end
+
+    subgraph "Step 4: Assembly"
+        S4["Step_4_ldr_stitch.py"]
+    end
+
+    DB[("AlphaFlex_database.json")] --> S1
+    S1B -->|"Filtered ID List"| S2
+    S2 -->|"NPZ Templates"| S3
+    S3 -->|"Raw PDB Pools"| S4
+    S4 -->|"Final Ensembles"| Output[/Protein Ensembles/]
+
+    style S1 fill:none,stroke-dasharray: 5 5
+    style S1B fill:none,stroke-dasharray: 5 5
+    style S2 fill:none,stroke-dasharray: 5 5
+    style S3 fill:none,stroke-dasharray: 5 5
+    style S4 fill:none,stroke-dasharray: 5 5
+```
+**Sources:** [AlphaFlex/README.md:3-16](), [AlphaFlex/config.py:27-101]()
+
+---
+
+### Step 1: Case Labeling & Subset Filtering
+This stage classifies proteins based on their IDR topology using the `AlphaFlex_database_Nov2025.json` [AlphaFlex/README.md:9-10](). 
+
+- **Case Labeling**: `Step_1_case_label.py` augments the database with IDR types: **Tails** (N- or C-terminal), **Linkers** (between domains), and **Loops** (internal to a domain) [AlphaFlex/README.md:51-58]().
+- **Subset Filtering**: `Step_1B_subset_label.py` generates specific lists of UniProt IDs for processing, allowing users to filter by total protein length, IDR count, or specific IDR lengths [AlphaFlex/config.py:34-51]().
+
+For details on classification logic and schema, see [Step 1: Case Labeling & Subset Filtering](#5.1).
+
+**Sources:** [AlphaFlex/config.py:27-51](), [AlphaFlex/README.md:49-80]()
+
+---
+
+### Step 2: Template Generation
+`Step_2_mk_ldr_template.py` prepares the structural starting points for the diffusion model. It handles two primary template types:
+
+1. **Static Templates**: Created by `mk_ldr_template.py` for Tails and Loops, where the folded environment is held rigid [AlphaFlex/README.md:86-87]().
+2. **Flexible Templates**: Created by `mk_flex_template.py` for Linkers, where adjacent folded domains are randomly translated and rotated to sample the inter-domain space [AlphaFlex/README.md:88-89]().
+
+For details on template `.npz` formats and size-capping logic, see [Step 2: Template Generation](#5.2).
+
+**Sources:** [AlphaFlex/config.py:53-74](), [AlphaFlex/README.md:82-94]()
+
+---
+
+### Step 3: Conformer Sampling
+`Step_3_sample_conformer.py` manages the high-throughput execution of the IDPForge model (`sample_ldr.py` or `sample_idp.py`).
+
+- **Parallelization**: Supports `split_index` for distributing workloads across HPC nodes [AlphaFlex/config.py:76-96]().
+- **Quality Gates**: Implements curvature gates (`SAMPLE_JUNCTION_KAPPA`) and knot screening using `knot_screening.json` to ensure generated disordered regions do not create unphysical topologies with the folded domains [AlphaFlex/config.py:87-89](), [AlphaFlex/Data_Inputs/knot_screening.json:1-21]().
+
+For details on the sampling loop and state persistence, see [Step 3: Conformer Sampling](#5.3).
+
+**Sources:** [AlphaFlex/config.py:76-96](), [AlphaFlex/README.md:96-115]()
+
+---
+
+### Step 4: Kinematic Stitching & Ensemble Assembly
+The final stage, `Step_4_ldr_stitch.py`, assembles individual IDR conformers back into the full-length protein.
+
+- **Kinematic Assembly**: Uses Monte Carlo stitching to join disordered segments to folded domains while minimizing clashes [AlphaFlex/config.py:120-122]().
+- **Relaxation**: Performs AMBER energy minimization with harmonic restraints (`RELAX_STIFFNESS`) on the folded domains to ensure chemical validity at the junctions [AlphaFlex/config.py:109-114]().
+
+For details on the stitching algorithm and structural validation, see [Step 4: Kinematic Stitching & Ensemble Assembly](#5.4).
+
+**Sources:** [AlphaFlex/config.py:99-122](), [AlphaFlex/README.md:117-133]()
+
+---
+
+### Configuration and Inputs
+The pipeline is controlled by a centralized configuration file and several reference datasets.
+
+| Entity | Code Reference | Role |
+| :--- | :--- | :--- |
+| **Pipeline Config** | `AlphaFlex/config.py` | Global paths, batch sizes, and physics thresholds. |
+| **Knot Screening** | `knot_screening.json` | Pre-calculated native topology for AF2 templates. |
+| **Master Database** | `AlphaFlex_database_Nov2025.json` | UniProt IDR boundaries and PAE-based interactions. |
+| **Weights** | `weights/mdl.ckpt` | The trained IDPForge diffusion model weights. |
+
+For details on schema and configuration parameters, see [AlphaFlex Configuration & Data Inputs](#5.5).
+
+**Sources:** [AlphaFlex/config.py:1-25](), [AlphaFlex/Data_Inputs/knot_screening.json:1-21](), [AlphaFlex/README.md:7-16]()
+
+---
+
+# Page: Step 1: Case Labeling & Subset Filtering
+
+# Step 1: Case Labeling & Subset Filtering
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Data_Inputs/AF2_9606_HUMAN_v4_num_residues.json](AlphaFlex/Data_Inputs/AF2_9606_HUMAN_v4_num_residues.json)
+- [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json](AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json)
+- [AlphaFlex/Data_Inputs/Test_Structures/O14653.pdb](AlphaFlex/Data_Inputs/Test_Structures/O14653.pdb)
+- [AlphaFlex/Step_1B_subset_label.py](AlphaFlex/Step_1B_subset_label.py)
+- [AlphaFlex/Step_1_case_label.py](AlphaFlex/Step_1_case_label.py)
+- [AlphaFlex/utils/file_ops.py](AlphaFlex/utils/file_ops.py)
+- [AlphaFlex/utils/smart_scoring.py](AlphaFlex/utils/smart_scoring.py)
+
+</details>
+
+
+
+This stage of the AlphaFlex pipeline is responsible for the topological classification of proteins based on their Intrinsically Disordered Regions (IDRs) and the subsequent filtering of these proteins into specific subsets for ensemble generation. It processes the raw AlphaFold2-derived database to assign hierarchical categories (IDP, Tails, Linkers, Loops) and enables users to define custom datasets based on length and IDR counts.
+
+## IDR Classification Logic
+
+The script `Step_1_case_label.py` implements a hierarchical classification system. It evaluates the position of IDRs relative to folded domains and uses Predicted Aligned Error (PAE) data to distinguish between internal disordered segments.
+
+### Hierarchical Categories
+Proteins are assigned exactly one category based on the most complex IDR type present:
+
+| Category | Name | Description | Implementation |
+| :--- | :--- | :--- | :--- |
+| **0** | **IDP** | Fully disordered protein; no folded domains detected. | `is_full_idp` [AlphaFlex/Step_1_case_label.py:111-123]() |
+| **1** | **Tails** | Folded domain(s) with only N-terminal or C-terminal IDRs. | `has_tail` [AlphaFlex/Step_1_case_label.py:191-193]() |
+| **2** | **Linkers** | Internal IDRs between non-interacting folded domains. | `has_linker` [AlphaFlex/Step_1_case_label.py:188-190]() |
+| **3** | **Loops** | Internal IDRs between interacting domains (or within one). | `has_loop` [AlphaFlex/Step_1_case_label.py:185-187]() |
+
+### Implementation Flow
+The classifier iterates through the `master_db` and uses residue ranges from the `num_residues_db` to determine terminal status. For internal IDRs, it checks the `interaction_set` (derived from `mean_pae` thresholds in the input JSON) to decide between "Loop" and "Linker" labels.
+
+### Data Entity Mapping: Classification
+The following diagram bridges the logical classification categories to the specific code variables and data structures used in `Step_1_case_label.py`.
+
+**Classification Logic Flow**
+```mermaid
+graph TD
+    DB["AlphaFlex_database_Nov2025.json"] -- "prot_id, data" --> Loop["Main Classification Loop"]
+    Loop -- "check range [1, num_res]" --> C0["Category 0: is_full_idp"]
+    Loop -- "check is_n_term | is_c_term" --> C1["Category 1: has_tail"]
+    Loop -- "check interaction_set" --> C3["Category 3: has_loop"]
+    Loop -- "else" --> C2["Category 2: has_linker"]
+    
+    subgraph "Code Entities"
+    C0 --> L1["labeled_idrs.append(type='IDP')"]
+    C1 --> L2["labeled_idrs.append(type='Tail IDR')"]
+    C2 --> L3["labeled_idrs.append(type='Linker IDR')"]
+    C3 --> L4["labeled_idrs.append(type='Loop IDR')"]
+    end
+```
+Sources: [AlphaFlex/Step_1_case_label.py:83-200](), [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:1-55]()
+
+## Subset Filtering & Generation
+
+`Step_1B_subset_label.py` acts as a query engine for the labeled database. It allows researchers to extract specific UniProt IDs that meet structural criteria for downstream simulation.
+
+### Filter Criteria
+1.  **Protein Length**: Filters based on total residue count using `min_len` and `max_len` [AlphaFlex/Step_1B_subset_label.py:71-77]().
+2.  **IDR Count**: Enforces specific numbers of Tails, Linkers, or Loops. Can be `exact` (e.g., exactly 2 tails) or `minimum` (at least 2 tails) [AlphaFlex/Step_1B_subset_label.py:32-48]().
+3.  **IDR Length**: Filters individual IDR segments by length (e.g., only proteins where all IDRs are between 20-50 residues) [AlphaFlex/Step_1B_subset_label.py:126-148]().
+4.  **Sampling**: Randomly selects a maximum number of IDs via `max_samples` [AlphaFlex/Step_1B_subset_label.py:170-171]().
+
+### Data Entity Mapping: Filtering
+This diagram shows how CLI arguments in `Step_1B_subset_label.py` map to the internal processing of the labeled JSON database.
+
+**Subset Filtering Entity Map**
+```mermaid
+graph LR
+    subgraph "CLI Arguments (args)"
+    A1["--tail_count"]
+    A2["--idr_min_len"]
+    A3["--exact"]
+    end
+
+    subgraph "Internal Functions"
+    F1["count_idr_types()"]
+    F2["check_type_counts()"]
+    F3["idr_details loop"]
+    end
+
+    subgraph "Outputs"
+    O1["custom_subsets/.txt"]
+    O2["advanced_info/_report.txt"]
+    end
+
+    A1 --> F1
+    A3 --> F2
+    F1 --> F2
+    A2 --> F3
+    F2 --> O1
+    F3 --> O2
+```
+Sources: [AlphaFlex/Step_1B_subset_label.py:22-63](), [AlphaFlex/Step_1B_subset_label.py:107-167]()
+
+## Data Schemas
+
+### AlphaFlex_database_Nov2025.json
+The input database contains structural metadata for each UniProt entry.
+*   `idrs`: List of `[start, end]` residue ranges [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:3-8]().
+*   `mean_pae`: A dictionary mapping domain pairs (e.g., "F1-F2") to their average PAE value. Low PAE indicates interaction [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:41-48]().
+*   `interactions`: A list of domain pairs (e.g., `["F1", "F2"]`) pre-determined to be interacting [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:49-54]().
+
+### Output ID List Format
+The primary output of Step 1B is a plain text file containing one UniProt ID per line, located in `output_root/custom_subsets/`. This file is used as the `--split_index` or input list for Step 2 and Step 3 [AlphaFlex/Step_1B_subset_label.py:178-192]().
+
+## Summary Reports
+For every subset generated, the system produces a filtration report (`_report.txt`) including:
+*   Applied length constraints.
+*   Breakdown of IDR types found.
+*   Detailed list of every IDR range and length for the included proteins.
+*   A statistical summary of categories (0-3) represented in the subset.
+
+Sources: [AlphaFlex/Step_1B_subset_label.py:194-210](), [AlphaFlex/Step_1_case_label.py:215-220]()
+
+---
+
+# Page: Step 2: Template Generation
+
+# Step 2: Template Generation
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Step_2_mk_ldr_template.py](AlphaFlex/Step_2_mk_ldr_template.py)
+- [mk_flex_template.py](mk_flex_template.py)
+- [mk_ldr_template.py](mk_ldr_template.py)
+- [slice_pdb.py](slice_pdb.py)
+
+</details>
+
+
+
+Step 2 of the AlphaFlex pipeline is responsible for preparing the structural templates required by the diffusion model to sample Intrinsically Disordered Regions (IDRs) within their folded contexts. This step transforms high-level protein classifications into specific `.npz` files containing coordinates, secondary structure encodings, and geometric constraints.
+
+### Template Generation Workflow
+
+The orchestration script `Step_2_mk_ldr_template.py` iterates through the IDs identified in Step 1, maps them to PDB files in the library, and invokes specialized generators based on the IDR category (Tail, Loop, or Linker).
+
+#### Data Flow: From PDB to .npz Template
+
+The following diagram illustrates how the system converts a static AlphaFold2 PDB file into a diffusion-ready template.
+
+**Diagram: PDB Processing Pipeline**
+```mermaid
+graph TD
+    PDB["AlphaFold2 PDB File"] --> P_PDB["process_pdb()"]
+    P_PDB --> CRD["Coordinates (N, 37, 3)"]
+    P_PDB --> SEQ["Sequence"]
+    
+    CRD --> GCA["get_chi_angles()"]
+    GCA --> TOR["Torsion Vectors (N, 7, 2)"]
+    
+    PDB --> DSSP["md.compute_dssp()"]
+    DSSP --> SS["Secondary Structure String"]
+    
+    CRD & SEQ & TOR & SS --> NPZ[".npz Template File"]
+```
+**Sources:** `mk_ldr_template.py` [132-143](), `AlphaFlex/Step_2_mk_ldr_template.py` [184-210]()
+
+---
+
+### Core Components
+
+#### 1. Static Templates (`mk_ldr_template.py`)
+Used for **Tails** (Category 1) and **Loops** (Category 2). These templates maintain the relative orientation of the folded domain(s) exactly as found in the input PDB.
+
+*   **Seed Sampling:** For N/C-terminal tails, the script samples "seed" positions for the first disordered residue. It uses `sample_fix_distance()` to place seeds on a sphere (radius 6.46Å to 9.12Å) centered on the junction residue, ensuring no clashes with the folded domain [mk_ldr_template.py:40-56]().
+*   **Secondary Structure:** It combines DSSP-derived states for folded regions with "C" (Coil) or Ramachandran-derived states for the IDR [mk_ldr_template.py:136-143]().
+
+#### 2. Flexible Linker Templates (`mk_flex_template.py`)
+Used for **Linkers** (Category 3). Unlike static templates, linkers require sampling the relative orientation and distance between the two flanking folded domains to provide a diverse starting ensemble for the IDR.
+
+*   **SO(3) Sampling:** The script generates random rotation matrices via `random_rotation_matrix()` [mk_flex_template.py:29-31]().
+*   **Flory Distance:** The distance between domains is sampled based on a Flory-like polymer model: $d = 5.51 \times L^{0.588}$, where $L$ is the linker length [mk_flex_template.py:98-100]().
+*   **Clash Detection:** `random_nonclashing_transform_scaled()` uses a `scipy.spatial.KDTree` to ensure that the randomly placed domains do not overlap before saving the pose [mk_flex_template.py:48-84]().
+
+**Diagram: Flexible Domain Transformation**
+```mermaid
+graph LR
+    subgraph "mk_flex_template.py"
+        F1["Folded Domain 1"]
+        F2["Folded Domain 2"]
+        R["random_rotation_matrix()"]
+        D["Flory Distance Sampling"]
+        K["KDTree Clash Check"]
+    end
+
+    F1 --> R
+    F2 --> R
+    R --> D
+    D --> K
+    K -- "Success" --> NPZ["Multi-pose .npz"]
+    K -- "Fail" --> R
+```
+**Sources:** `mk_flex_template.py` [29-31, 48-84, 98-100]()
+
+---
+
+### Size Capping and Truncation
+
+To handle large proteins that exceed the GPU memory limits of the diffusion model (typically capped at 500–600 residues), Step 2 implements a truncation logic.
+
+#### Truncation Mechanism
+If a protein is too large, `_truncate_to_size()` (for static) or `_truncate_linker_domains()` (for linkers) crops the folded domains. It ensures the IDR is kept entirely, along with a minimum buffer (default 10 residues) of the folded domain at each junction for stitching purposes [mk_ldr_template.py:59-125](), [mk_flex_template.py:142-175]().
+
+#### Sidecar Files (`.trunc.json`)
+When truncation occurs, `Step_2_mk_ldr_template.py` generates a `.trunc.json` sidecar file. This file contains the `graft_spec`, which records the original residue indices and the offset needed to stitch the generated IDR back into the full-length protein in Step 4 [AlphaFlex/Step_2_mk_ldr_template.py:53-65](), [slice_pdb.py:7-40]().
+
+| Function | File | Purpose |
+| :--- | :--- | :--- |
+| `_truncate_to_size` | `mk_ldr_template.py` | Caps static templates to `max_residues`. |
+| `_truncate_linker_domains` | `mk_flex_template.py` | Caps linker templates while preserving junctions. |
+| `slice_pdb_file` | `slice_pdb.py` | Physically extracts the residue range for the truncation. |
+
+**Sources:** `mk_ldr_template.py` [59-82](), `mk_flex_template.py` [142-153](), `slice_pdb.py` [7-25]()
+
+---
+
+### The .npz Template Format
+
+The output of Step 2 is a compressed NumPy file (`.npz`) containing the following keys:
+
+*   **`coord`**: `(N, 37, 3)` array of all-atom coordinates. IDR positions are typically set to zero or seed values.
+*   **`mask`**: `(N,)` boolean array where `True` indicates a folded residue (fixed) and `False` indicates an IDR residue (diffused).
+*   **`seq`**: The amino acid sequence string.
+*   **`sec`**: The secondary structure encoding string (H, E, C, P, etc.).
+*   **`torsion`**: `(N, 7, 2)` array of sine/cosine values for protein torsion angles.
+*   **`graft_spec`** (Optional): Metadata for re-assembling truncated proteins.
+
+**Sources:** `mk_ldr_template.py` [108-125](), `mk_flex_template.py` [166-174]()
+
+---
+
+# Page: Step 3: Conformer Sampling
+
+# Step 3: Conformer Sampling
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Step_3_sample_conformer.py](AlphaFlex/Step_3_sample_conformer.py)
+- [AlphaFlex/config.py](AlphaFlex/config.py)
+
+</details>
+
+
+
+Step 3 of the AlphaFlex pipeline is responsible for generating large-scale, validated conformer pools for each Intrinsically Disordered Region (IDR) identified in Step 1. It orchestrates the execution of the core IDPForge sampling scripts, manages state persistence to allow for interrupted runs, and applies rigorous structural filters—including knot screening and curvature gates—before conformers are accepted into the pool.
+
+### Workflow Orchestration
+
+The entrypoint for this stage is `Step_3_sample_conformer.py`. It functions as a high-level manager that dispatches sampling tasks to `sample_ldr.py` (for IDRs in a folded context) or `sample_idp.py` (for fully disordered proteins).
+
+#### Key Components
+*   **State Persistence**: Uses `.step3_state.json` within each IDR's output directory to track `total_attempts`, allowing the pipeline to resume generation after crashes or HPC timeouts [AlphaFlex/Step_3_sample_conformer.py:27-57]().
+*   **Parallelization**: Supports HPC batching via the `--split_index` argument, allowing the total protein list to be divided across multiple jobs [AlphaFlex/Step_3_sample_conformer.py:313-324]().
+*   **Validation Gating**: Enforces quality controls defined in `AlphaFlex/config.py`, such as `SAMPLE_JUNCTION_KAPPA` (junction curvature) and `SAMPLE_FOLD_CURV_RATIO` [AlphaFlex/config.py:86-89]().
+
+#### Data Flow: Generation to Validation
+The following diagram illustrates how `Step_3_sample_conformer.py` interfaces with the core sampling logic and the validation suite.
+
+**Diagram: Conformer Sampling Control Flow**
+```mermaid
+graph TD
+    subgraph "AlphaFlex Orchestrator"
+        A["Step_3_sample_conformer.py"] -- "calls" --> B["run_idr_workflow()"]
+        B -- "manages" --> C[".step3_state.json"]
+    end
+
+    subgraph "Core Sampling Subprocess"
+        B -- "executes" --> D["sample_ldr.py"]
+        D -- "loads" --> E["idpforge/model.py"]
+        D -- "validates" --> F["idpforge/utils/structure_validation.py"]
+    end
+
+    subgraph "Structural Gates"
+        F -- "checks" --> G["Knot Screening"]
+        F -- "checks" --> H["Curvature Gates"]
+        F -- "checks" --> I["AMBER Relaxation"]
+    end
+
+    G --> J{"Accepted?"}
+    H --> J
+    I --> J
+    J -- "Yes" --> K["*_validated.pdb"]
+    J -- "No" --> L["Discard"]
+    K -- "return count" --> B
+```
+Sources: [AlphaFlex/Step_3_sample_conformer.py:84-142](), [AlphaFlex/Step_3_sample_conformer.py:178-239](), [AlphaFlex/config.py:78-97]()
+
+---
+
+### IDR and IDP Workflows
+
+The script differentiates between "Category 0" (fully disordered proteins) and proteins containing folded domains.
+
+#### 1. IDR Workflow (`run_idr_workflow`)
+This function handles regions that are grafted onto folded templates. It performs the following:
+*   **Sidecar Management**: Copies `_truncation.json` files from Step 2 to the output directory to maintain residue numbering offsets [AlphaFlex/Step_3_sample_conformer.py:186-191]().
+*   **Knot Filtering**: If the protein is listed in the `knot_screening.json` database, it filters the expected knot types based on the specific truncation window of the IDR [AlphaFlex/Step_3_sample_conformer.py:159-174]().
+*   **Subprocess Execution**: Calls `sample_ldr.py` with specific flags for `--fold_curv_ratio`, `--fold_curv_window`, and `--junction_kappa` [AlphaFlex/Step_3_sample_conformer.py:94-110]().
+
+#### 2. IDP Workflow (`run_idp_workflow`)
+For proteins classified as fully disordered (Category 0), the script bypasses template-based sampling:
+*   **Subprocess Execution**: Calls `sample_idp.py` directly [AlphaFlex/Step_3_sample_conformer.py:242-264]().
+*   **Batching**: Uses `SAMPLE_BATCH_SIZE` to generate the requested `SAMPLE_N_CONFS` [AlphaFlex/config.py:81-82]().
+
+Sources: [AlphaFlex/Step_3_sample_conformer.py:178-239](), [AlphaFlex/Step_3_sample_conformer.py:242-282]()
+
+---
+
+### Structural Validation & Knot Screening
+
+A critical feature of Step 3 is the integration of `idpforge/utils/structure_validation.py` to ensure physical plausibility.
+
+| Feature | Implementation | Description |
+| :--- | :--- | :--- |
+| **Knot Screening** | `load_knot_screening()` | Reads `knot_screening.json` to identify domains that must remain unknotted or have specific topologies [AlphaFlex/Step_3_sample_conformer.py:24](). |
+| **Curvature Gates** | `--junction_kappa` | Measures the curvature ($\kappa$) at the junction between a folded domain and an IDR to prevent "kinked" transitions [AlphaFlex/Step_3_sample_conformer.py:102](). |
+| **Fold Stability** | `--fold_curv_ratio` | Ensures that the folded domain template has not been significantly distorted during the diffusion or relaxation process [AlphaFlex/Step_3_sample_conformer.py:100](). |
+| **Intermediate Cleanup** | `_cleanup_dir()` | Automatically deletes `*_raw.pdb` and `*_relaxed.pdb` files, retaining only the final `*_validated.pdb` to save disk space [AlphaFlex/Step_3_sample_conformer.py:59-67](). |
+
+**Code-to-System Mapping: Validation Logic**
+```mermaid
+classDiagram
+    class Step_3_sample_conformer {
+        +run_idr_workflow()
+        +generate_conformers()
+        +_filter_knot_spec_for_window()
+    }
+    class sample_ldr {
+        +main()
+        +validate_structure_post_relax()
+    }
+    class structure_validation {
+        +check_knots()
+        +calc_junction_curvature()
+        +check_fold_stability()
+    }
+    
+    Step_3_sample_conformer --> sample_ldr : subprocess.run()
+    sample_ldr --> structure_validation : calls
+```
+Sources: [AlphaFlex/Step_3_sample_conformer.py:94-124](), [AlphaFlex/Step_3_sample_conformer.py:159-174](), [AlphaFlex/config.py:86-89]()
+
+---
+
+### HPC Execution & Splitting
+
+To handle large datasets (e.g., the Human Proteome), `Step_3_sample_conformer.py` includes logic to split the workload.
+
+*   **Protein Selection**: The script reads the `idp_cases_to_run.json` generated in Step 2 [AlphaFlex/Step_3_sample_conformer.py:307-311]().
+*   **Chunking**: Using the `--split_index` and `--total_splits` arguments, the script calculates a subset of proteins to process: `proteins[split_index::total_splits]` [AlphaFlex/Step_3_sample_conformer.py:321-324]().
+*   **Logging**: Each protein's output is captured in a dedicated log file within the `logs/Step_3/` directory, facilitating debugging of specific failures [AlphaFlex/Step_3_sample_conformer.py:301-304]().
+
+Sources: [AlphaFlex/Step_3_sample_conformer.py:285-330](), [AlphaFlex/config.py:56]()
+
+---
+
+# Page: Step 4: Kinematic Stitching & Ensemble Assembly
+
+# Step 4: Kinematic Stitching & Ensemble Assembly
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Step_4_ldr_stitch.py](AlphaFlex/Step_4_ldr_stitch.py)
+- [AlphaFlex/utils/graft_back.py](AlphaFlex/utils/graft_back.py)
+- [AlphaFlex/utils/stitch.py](AlphaFlex/utils/stitch.py)
+- [AlphaFlex/utils/truncate.py](AlphaFlex/utils/truncate.py)
+
+</details>
+
+
+
+Step 4 is the final stage of the AlphaFlex pipeline, responsible for integrating independently sampled Intrinsically Disordered Regions (IDRs) into their respective folded domain contexts to produce full-length protein ensembles. This process utilizes kinematic chain assembly to ensure geometric continuity, followed by physics-based relaxation and a multi-tiered structural validation gate.
+
+### Overview of Assembly Workflow
+
+The stitching process in `Step_4_ldr_stitch.py` handles three primary structural categories:
+1.  **Category-0 (Full IDPs):** Fast-pass assembly that bypasses kinematic stitching, focusing on ensemble PDB finalization.
+2.  **Category-1/2 (Tails and Linkers):** Kinematic assembly of one or more IDRs onto a static folded template.
+3.  **Category-3 (Loops):** Complex stitching requiring two-point kinematic anchors to maintain loop closure.
+
+For proteins that were truncated during Step 2 to fit within memory limits, this step performs a "Graft-Back" operation to restore the full-length sequence before relaxation.
+
+Sources: [AlphaFlex/Step_4_ldr_stitch.py:1-12]() | [AlphaFlex/utils/stitch.py:112-128]()
+
+---
+
+### Implementation Architecture
+
+The following diagram maps the high-level logic of `Step_4_ldr_stitch.py` to the underlying code entities and utility functions.
+
+**Kinematic Assembly Logic Flow**
+```mermaid
+graph TD
+    Start["process_protein()"] --> CatCheck{"Check Category"}
+    
+    CatCheck -- "Category 0" --> FastPass["Fast-pass Ensemble Finalization"]
+    CatCheck -- "Category 1-3" --> LocateEnsembles["find_ensemble_dirs()"]
+    
+    LocateEnsembles --> TruncCheck{"Is Truncated?"}
+    TruncCheck -- "Yes" --> Renum["_maybe_renumber_truncated_pool()"]
+    Renum --> Graft["graft_conformer_multi()"]
+    
+    Graft --> StitchLoop["Monte Carlo Stitching Loop"]
+    TruncCheck -- "No" --> StitchLoop
+    
+    subgraph "Stitching Core"
+        StitchLoop --> Kinematic["assemble_kinematic_chain()"]
+        Kinematic --> RelaxRepair["_relax_repair_validate()"]
+    end
+    
+    RelaxRepair --> Finalize["finalize_model_pdb()"]
+    Finalize --> End["mkensemble()"]
+```
+Sources: [AlphaFlex/Step_4_ldr_stitch.py:23-50](), [AlphaFlex/Step_4_ldr_stitch.py:191-220](), [AlphaFlex/utils/stitch.py:132-165]()
+
+---
+
+### Kinematic Chain Assembly
+
+The core assembly logic resides in `assemble_kinematic_chain` [AlphaFlex/utils/stitch.py:254-325](). It treats the protein as a series of segments (folded domains and disordered regions) and uses BioPython's `Superimposer` to align them at junctions.
+
+#### Segment Mapping and Alignment
+The system builds a segment map using `build_segment_map` [AlphaFlex/utils/stitch.py:207-251](), which identifies the sequence ranges for all structural components. For each disordered segment, the assembler:
+1.  Identifies the **Alignment Stub**: A small set of residues (defined by `ALIGNMENT_STUB_HALF_SIZE` [AlphaFlex/utils/stitch.py:20]()) at the junction between the folded domain and the IDR.
+2.  Performs **Rigid Transformation**: Uses the Kabsch algorithm (via `Superimposer`) to transform the IDR conformer coordinates into the coordinate frame of the folded template.
+3.  **Kinematic Propagation**: As each segment is added, subsequent segments are transformed relative to the new cumulative structure, maintaining the kinematic chain.
+
+Sources: [AlphaFlex/utils/stitch.py:254-325](), [AlphaFlex/utils/graft_back.py:47-56]()
+
+---
+
+### Graft-Back for Truncated Pools
+
+For large proteins where IDRs were sampled using truncated templates (Step 2), the `graft_back.py` utility restores the missing folded domains.
+
+| Function | Purpose |
+| :--- | :--- |
+| `graft_conformer` | Restores distal folded domains for a single-IDR fragment using a 3-step Kabsch-based graft [AlphaFlex/utils/graft_back.py:93-160](). |
+| `graft_conformer_multi` | Orchestrates independent grafting of multiple domains for complex linkers [AlphaFlex/utils/graft_back.py:162-180](). |
+| `renumber_pool` | Maps truncated residue indices back to native UniProt numbering [AlphaFlex/utils/stitch.py:114](). |
+
+The graft quality is monitored via the `junction_gap` and `seam_gap` metrics, which measure the Euclidean distance between the $C\alpha$ atoms at the splice site [AlphaFlex/utils/graft_back.py:145-159]().
+
+Sources: [AlphaFlex/utils/graft_back.py:93-180](), [AlphaFlex/utils/truncate.py:5-63]()
+
+---
+
+### The _relax_repair_validate Quality Gate
+
+Every stitched conformer must pass a multi-stage quality gate before being accepted into the final ensemble. This is encapsulated in `_relax_repair_validate` [AlphaFlex/Step_4_ldr_stitch.py:256-320]().
+
+**Validation and Repair Pipeline**
+```mermaid
+graph LR
+    subgraph "Relaxation & Repair"
+        A["relax_with_established_method()"] --> B["fix_histidine_naming()"]
+        B --> C["repair_chirality()"]
+    end
+    
+    subgraph "Validation Gates"
+        C --> D{"check_bond_integrity()"}
+        D -- "Pass" --> E{"validate_structure_post_relax()"}
+        E -- "Pass" --> F{"_check_fold_curvature()"}
+    end
+    
+    F -- "Success" --> Accept["Accept Conformer"]
+    D -- "Fail" --> Reject["Reject & Retry"]
+```
+
+#### AMBER Relaxation with Restraints
+The function `relax_with_established_method` [AlphaFlex/Step_4_ldr_stitch.py:128-189]() performs energy minimization using the AMBER99SB forcefield via OpenMM. Crucially, it applies harmonic restraints to the folded domains while allowing the IDRs to relax freely. This is controlled by the `idr_indices` passed to the `viol_mask` in `relax_protein` [AlphaFlex/Step_4_ldr_stitch.py:163-171]().
+
+#### Structural Integrity Checks
+- **Chirality Repair:** `repair_chirality` [AlphaFlex/Step_4_ldr_stitch.py:102]() corrects D-amino acids and improper planarity resulting from the stitching or relaxation process.
+- **Bond Integrity:** `check_bond_integrity` [AlphaFlex/Step_4_ldr_stitch.py:103]() ensures no unphysical bond lengths exist at the kinematic junctions.
+- **Fold Curvature:** `_check_fold_curvature` [AlphaFlex/Step_4_ldr_stitch.py:91]() validates that the static folded domains have not been distorted during relaxation.
+
+Sources: [AlphaFlex/Step_4_ldr_stitch.py:128-189](), [AlphaFlex/Step_4_ldr_stitch.py:256-320](), [idpforge/utils/relax.py:89]()
+
+---
+
+### Ensemble Finalization
+
+Once the target number of conformers (defined in `config.py`) is reached, the single-model PDBs are aggregated.
+
+1.  **PDB Finalization:** `finalize_model_pdb` [AlphaFlex/Step_4_ldr_stitch.py:90]() adds necessary metadata, TER records, and standardizes atom naming.
+2.  **Ensemble Concatenation:** `mkensemble` [AlphaFlex/Step_4_ldr_stitch.py:38-48]() reads the validated PDB files and concatenates them into a single multi-MODEL PDB file, removing redundant headers like `CRYST1` or `MASTER` records.
+3.  **Stale Cleanup:** `_clear_stale_ensembles` [AlphaFlex/Step_4_ldr_stitch.py:62-69]() ensures that previous failed or incomplete runs do not contaminate the final output directory.
+
+Sources: [AlphaFlex/Step_4_ldr_stitch.py:38-69](), [idpforge/misc.py:90]()
+
+---
+
+# Page: AlphaFlex Configuration & Data Inputs
+
+# AlphaFlex Configuration & Data Inputs
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json](AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json)
+- [AlphaFlex/Data_Inputs/knot_screening.json](AlphaFlex/Data_Inputs/knot_screening.json)
+- [AlphaFlex/README.md](AlphaFlex/README.md)
+- [AlphaFlex/config.py](AlphaFlex/config.py)
+- [AlphaFlex/utils/file_ops.py](AlphaFlex/utils/file_ops.py)
+- [AlphaFlex/utils/smart_scoring.py](AlphaFlex/utils/smart_scoring.py)
+
+</details>
+
+
+
+This page documents the centralized configuration system, input databases, and reference schemas utilized by the AlphaFlex pipeline. These resources facilitate large-scale IDR ensemble generation by providing structural metadata, topological screening, and pipeline control constants.
+
+## Pipeline Configuration (`AlphaFlex/config.py`)
+
+The `config.py` file serves as the central source of truth for all pipeline constants, file paths, and hyperparameters across Steps 1 through 4 of the AlphaFlex workflow [AlphaFlex/config.py:1-122]().
+
+### Global Paths and Execution
+The configuration defines the environment and base directories for the pipeline.
+* `PYTHON_EXEC`: The current Python interpreter used for subprocess calls [AlphaFlex/config.py:14-14]().
+* `PROJECT_ROOT` and `PARENT_DIR`: Used to resolve paths relative to the `AlphaFlex` directory and the base `IDPForge` installation [AlphaFlex/config.py:15-16]().
+* `INPUT_DATA_DIR`: Points to `AlphaFlex/Data_Inputs`, containing the master JSON databases [AlphaFlex/config.py:18-18]().
+
+### Key Pipeline Hyperparameters
+The pipeline behavior is controlled by several threshold and attempt constants:
+
+| Parameter | Default Value | Purpose |
+| :--- | :--- | :--- |
+| `TEMPLATE_N_CONFS` | 200 | Number of template conformations in Step 2 [AlphaFlex/config.py:66-66](). |
+| `SAMPLE_N_CONFS` | 10 | Target conformers per IDR in Step 3 [AlphaFlex/config.py:81-81](). |
+| `SAMPLE_BATCH_SIZE` | 6 | Diffusion batch size for inference [AlphaFlex/config.py:82-82](). |
+| `STITCH_N_CONFORMERS`| 10 | Final ensemble size in Step 4 [AlphaFlex/config.py:104-104](). |
+| `RELAX_STIFFNESS` | 10.0 | Harmonic restraint strength for AMBER [AlphaFlex/config.py:110-110](). |
+| `SAMPLE_JUNCTION_KAPPA`| 0.12 | Curvature gate for IDR-Folded junctions [AlphaFlex/config.py:89-89](). |
+
+### Adaptive Clash Scoring
+AlphaFlex utilizes an adaptive thresholding mechanism for stitching, defined by `STITCH_BASE_CLASH_THRESHOLD` (10.0) and `STITCH_CLASH_INCREMENT` (5.0) [AlphaFlex/config.py:121-122](). These are used by `get_smart_threshold` to relax constraints if valid conformers are not found within initial attempts [AlphaFlex/utils/smart_scoring.py:4-6]().
+
+**Sources:** [AlphaFlex/config.py:1-122](), [AlphaFlex/utils/smart_scoring.py:1-6]()
+
+---
+
+## Master Database (`AlphaFlex_database_Nov2025.json`)
+
+This database contains the structural metadata for the AlphaFold2 9606 Human v4 proteome, enabling the classification of IDRs based on their predicted context [AlphaFlex/README.md:9-10]().
+
+### Schema Structure
+Each entry is keyed by UniProt ID and contains:
+* `idrs`: A list of `[start, end]` residue ranges (1-indexed) identifying disordered regions [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:3-8]().
+* `mean_pae`: A dictionary mapping domain pairs (e.g., `D1-F1`, `F1-F2`) to their mean Predicted Aligned Error in Angstroms [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:23-27]().
+* `interactions`: A list of folded domain pairs (e.g., `["F1", "F2"]`) where the mean PAE is $< 15$ Å, indicating a stable interface [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:49-54]().
+
+**Sources:** [AlphaFlex/Data_Inputs/AlphaFlex_database_Nov2025.json:1-331](), [AlphaFlex/README.md:9-10]()
+
+---
+
+## Knot Screening Reference (`knot_screening.json`)
+
+This reference file contains pre-calculated topological data for all proteins containing folded domains. It is used during structure validation to ensure that generated ensembles maintain the "native" topology predicted by AlphaFold2 [AlphaFlex/README.md:14-15]().
+
+### Data Fields
+* `label`: High-level topological classification (e.g., "None" for unknotted) [AlphaFlex/Data_Inputs/knot_screening.json:2-3]().
+* `reason`: Descriptive string explaining the classification (e.g., "F1=Unknot", "NoFoldedDomain") [AlphaFlex/Data_Inputs/knot_screening.json:4-4]().
+* `domains`: An array of domain-specific topological reports, including the residue `range`, the specific `knot` type, and a confidence score in the `reason` field [AlphaFlex/Data_Inputs/knot_screening.json:10-20]().
+
+**Sources:** [AlphaFlex/Data_Inputs/knot_screening.json:1-359](), [AlphaFlex/README.md:14-15]()
+
+---
+
+## Data Flow: Configuration to Execution
+
+The following diagram illustrates how the configuration constants and JSON databases are consumed by the AlphaFlex pipeline scripts.
+
+### Configuration to Code Mapping
+```mermaid
+graph TD
+    subgraph "Natural Language Space"
+        Config["Pipeline Configuration"]
+        DB["Master Database"]
+        KnotRef["Knot Reference"]
+    end
+
+    subgraph "Code Entity Space"
+        CFG_PY["AlphaFlex/config.py"]
+        STEP1["Step_1_case_label.py"]
+        STEP2["Step_2_mk_ldr_template.py"]
+        STEP3["Step_3_sample_conformer.py"]
+        STEP4["Step_4_ldr_stitch.py"]
+        
+        DB_FILE["AlphaFlex_database_Nov2025.json"]
+        KNOT_FILE["knot_screening.json"]
+    end
+
+    CFG_PY -- "Provides constants to" --> STEP1
+    CFG_PY -- "Provides constants to" --> STEP2
+    CFG_PY -- "Provides constants to" --> STEP3
+    CFG_PY -- "Provides constants to" --> STEP4
+
+    DB_FILE -- "MASTER_DB_PATH" --> STEP1
+    KNOT_FILE -- "KNOT_SCREENING_PATH" --> STEP3
+    KNOT_FILE -- "KNOT_SCREENING_PATH" --> STEP4
+```
+**Sources:** [AlphaFlex/config.py:19-22](), [AlphaFlex/README.md:1-20]()
+
+---
+
+## Reference Data: Residue Counts
+
+The file `AF2_9606_HUMAN_v4_num_residues.json` (referenced via `LENGTH_REF_PATH`) provides a lookup table for total protein lengths [AlphaFlex/config.py:20-20](). This is primarily used in Step 1B for length-based subset filtering [AlphaFlex/README.md:11-11]().
+
+### Subset Filtering Logic
+The constants `SUBSET_MIN_LENGTH` and `SUBSET_MAX_LENGTH` define the global filter applied to the UniProt IDs found in the residue count database [AlphaFlex/config.py:40-41]().
+
+**Sources:** [AlphaFlex/config.py:34-50](), [AlphaFlex/README.md:64-80]()
+
+---
+
+## File Operations and Staging (`AlphaFlex/utils/file_ops.py`)
+
+AlphaFlex employs specialized file utilities to manage the high volume of PDB files generated during sampling and stitching.
+
+### Key Utilities
+* `atomic_transfer`: Uses `shutil.copy2` and `os.replace` to ensure files are moved to final directories only when fully written, preventing partial reads by downstream steps [AlphaFlex/utils/file_ops.py:8-18]().
+* `rename_and_clean_final_directory`: Sanitizes output directories by removing temporary files (starting with `.tmp_` or ending in `.tmp`/`.bak`) and renumbering valid `*_relaxed.pdb` files into a continuous sequence [AlphaFlex/utils/file_ops.py:24-87]().
+* `cleanup_staging_area`: Removes intermediate `raw_att*.pdb` files from the conformer generation stage [AlphaFlex/utils/file_ops.py:92-122]().
+
+### Staging Workflow
+```mermaid
+graph LR
+    subgraph "Staging Area"
+        Raw["raw_attN.pdb"]
+        Tmp[".tmp_N_relaxed.pdb"]
+    end
+    
+    subgraph "Final Directory"
+        Final["N_relaxed.pdb"]
+    end
+
+    STEP3 -- "Generates" --> Raw
+    STEP4 -- "Relaxes" --> Tmp
+    ATOMIC["atomic_transfer()"] -- "Moves" --> Tmp
+    Tmp -- "Renames to" --> Final
+    CLEAN["cleanup_staging_area()"] -- "Deletes" --> Raw
+```
+**Sources:** [AlphaFlex/utils/file_ops.py:1-130]()
+
+---
+
+# Page: Ensemble Scoring (X-EISD)
+
+# Ensemble Scoring (X-EISD)
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [score_ensemble.py](score_ensemble.py)
+- [scoring/__init__.py](scoring/__init__.py)
+
+</details>
+
+
+
+The **X-EISD (Experimental Ensemble Inference from Structural Data)** system in IDPForge provides a rigorous framework for evaluating the quality of generated structural ensembles against experimental observables. It utilizes a Bayesian approach to calculate the log-likelihood of an ensemble given experimental data, accounting for both experimental uncertainty and back-calculation errors.
+
+The scoring pipeline involves three main stages: back-calculating observables from PDB structures, optimizing the ensemble weights (or calculating scores for uniform weights), and normalizing these scores to facilitate cross-method benchmarks.
+
+### Architecture Overview
+
+The scoring system is centered around the `score_ensemble.py` entrypoint, which orchestrates the data flow between calculators, parsers, and the X-EISD optimizer.
+
+#### Logic Flow Diagram
+This diagram maps the natural language scoring process to the specific code entities responsible for each step.
+
+```mermaid
+graph TD
+    subgraph "Data Loading"
+        EXP["Experimental Data (EXP_DATA_LIB)"]
+        PDBs["PDB Ensemble Files"]
+    end
+
+    subgraph "Back-Calculation Space"
+        BC_Table["BACK_Calculators Dispatch"]
+        JC["jc_backcalc"]
+        CS["cshift_backcalc"]
+        NOE["noe_backcalc"]
+        PRE["pre_backcalc"]
+        FRET["fret_backcalc"]
+        RG["calc_rg"]
+    end
+
+    subgraph "Scoring & Optimization Space"
+        XEISD_Class["XEISD Class (optimizer.py)"]
+        Scorer["ENSEMBLE_Scorers (scorer.py)"]
+        Norm["normalize.py"]
+    end
+
+    PDBs --> BC_Table
+    EXP --> BC_Table
+    BC_Table --> JC & CS & NOE & PRE & FRET & RG
+    
+    JC & CS & NOE & PRE & FRET & RG --> XEISD_Class
+    XEISD_Class --> Scorer
+    Scorer --> Results["scores_trials.csv / scores_all.csv"]
+    Results --> Norm
+```
+**Sources:** [score_ensemble.py:20-23](), [score_ensemble.py:34-36](), [score_ensemble.py:76-77]()
+
+---
+
+### Back-Calculation of Experimental Observables
+Before an ensemble can be scored, the physical observables measured in experiments (such as NMR chemical shifts or FRET efficiencies) must be predicted from the 3D coordinates of each conformer.
+
+*   **Supported Observables:** The system supports J-couplings, Chemical Shifts (via CSpred/UCBShift), NOE distances, PRE distances, smFRET efficiency, and Radius of Gyration (Rg).
+*   **Dispatch System:** The `BACK_Calculators` dictionary in `scoring/calculator.py` maps data type keys to their respective back-calculation functions.
+*   **Caching:** To handle computationally expensive operations (like chemical shift prediction), the system implements a caching mechanism that saves results to `_cache.csv` files.
+
+For details on specific calculators and hydrogen substitution logic, see **[Back-Calculation of Experimental Observables](#6.1)**.
+
+**Sources:** [score_ensemble.py:21](), [score_ensemble.py:34-36](), [score_ensemble.py:69-74]()
+
+---
+
+### X-EISD Scoring & Optimization
+The core scoring logic uses the X-EISD framework to determine how well the ensemble represents the experimental state.
+
+*   **Log-Likelihood:** The `XEISD` class calculates log-likelihood scores for different experimental properties, allowing for a statistically sound comparison between models.
+*   **Trial-Based Validation:** By default, `score_ensemble.py` performs 30 trials of 100-conformer random subsamples. This provides a mean and standard deviation for scores, ensuring that the results are not biased by a single lucky subsample.
+*   **Metrics:** The system reports both Mean Absolute Error (MAE) and X-EISD scores (log-likelihood) per property.
+
+For details on the scoring math, the `XEISD` class, and optimization routines, see **[X-EISD Scoring, Optimization & Normalization](#6.2)**.
+
+**Sources:** [score_ensemble.py:4-10](), [score_ensemble.py:76-77](), [score_ensemble.py:88-102]()
+
+---
+
+### Execution Modes
+The `score_ensemble.py` CLI provides several modes of operation to support different research workflows:
+
+| Mode | Flag | Description | Output |
+| :--- | :--- | :--- | :--- |
+| **Benchmark** | (default) | 30 trials of 100 random conformers. | `scores_trials.csv` |
+| **Full Ensemble** | `--all` | Scores every conformer in the directory in a single pass. | `scores_all.csv` |
+| **Rg Only** | `--rg` | Computes mass-weighted, all-atom Rg for proteins without NMR data. | `rg_trials.csv` |
+| **Normalization** | `--normalize` | Aggregates per-protein CSVs into a cross-method benchmark table. | `output/` tables |
+
+**Sources:** [score_ensemble.py:3-11](), [score_ensemble.py:113-146]()
+
+### Data Entity Relationship
+This diagram shows how the `score_ensemble.py` script interacts with the underlying classes to produce final metrics.
+
+```mermaid
+classDiagram
+    class score_ensemble {
+        +main()
+        +backcalc_ensemble()
+        +validate_pdb()
+    }
+    class XEISD {
+        +calc_scores(data_types, indices)
+    }
+    class BACK_Calculators {
+        <<enumeration>>
+        jc
+        cs
+        noe
+        pre
+        fret
+    }
+    class EXP_DATA_LIB {
+        <<interface>>
+        protein_name
+        observables
+    }
+
+    score_ensemble --> EXP_DATA_LIB : fetches target data
+    score_ensemble --> BACK_Calculators : dispatches calc tasks
+    score_ensemble --> XEISD : initializes with bc_data
+    XEISD --> score_ensemble : returns MAE and Log-Likelihood
+```
+**Sources:** [score_ensemble.py:20-22](), [score_ensemble.py:40-42](), [score_ensemble.py:76-90]()
+
+---
+
+# Page: Back-Calculation of Experimental Observables
+
+# Back-Calculation of Experimental Observables
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [scoring/calculator.py](scoring/calculator.py)
+- [scoring/parser.py](scoring/parser.py)
+
+</details>
+
+
+
+This page documents the technical implementation of back-calculators used to bridge the gap between 3D protein conformers and experimental measurements. These utilities, primarily located in `scoring/calculator.py`, allow IDPForge to validate generated ensembles against various biophysical data types, including J-couplings, NOE, PRE, smFRET, chemical shifts, and Radius of Gyration (Rg).
+
+### Overview and Data Flow
+
+The back-calculation process transforms atomic coordinates from PDB files into predicted observables. This is a critical component of the **X-EISD** (Experimental Enhanced Integrative Structural Dissemination) scoring framework.
+
+The system uses a dispatch table `BACK_Calculators` to map experimental data types to their respective calculation functions [scoring/calculator.py:207-214]().
+
+**Sources:**
+- [scoring/calculator.py:1-13]()
+- [scoring/calculator.py:207-214]()
+
+---
+
+### Implementation of Back-Calculators
+
+#### 1. Scalar Couplings (J-couplings)
+The `jc_backcalc` function predicts 3-bond $^3J_{HNH\alpha}$ couplings based on the protein backbone dihedral angle $\phi$. It utilizes a Karplus-like relationship where the predicted value is proportional to the cosine of the angle [scoring/calculator.py:108-123]().
+
+*   **Logic**: Calculates $\phi$ for each residue and applies a phase-shifted cosine transformation: $\cos(\phi - 60^\circ)$ [scoring/calculator.py:122]().
+*   **Parameters**: Uses Karplus coefficients (A, B, C) defined in the `Stack` initialization for J-couplings [scoring/parser.py:76-79]().
+
+#### 2. Distance-Based Observables (NOE, PRE, smFRET)
+These calculators rely on inter-atomic distances, often requiring specific handling for hydrogen atoms or paramagnetic labels.
+
+| Observable | Function | Implementation Detail |
+| :--- | :--- | :--- |
+| **smFRET** | `fret_backcalc` | Calculates efficiency $E = 1 / (1 + (d/R_0)^6)$ between CA atoms of specified residues [scoring/calculator.py:126-140](). |
+| **PRE** | `pre_backcalc` | Calculates $1/r^6$ distances between a spin-label residue and target protons. Supports virtual atom substitution [scoring/calculator.py:165-182](). |
+| **NOE** | `noe_backcalc` | Similar to PRE, but typically involves proton-proton distances within a specific cutoff [scoring/calculator.py:148-162](). |
+
+#### 3. Chemical Shifts (CSpred/UCBShift)
+Chemical shifts are calculated via `run_cspred`, which acts as a wrapper for the external **UCBShift** (CSpred) tool.
+*   **Process**: It generates a temporary PDB, executes a subprocess running `CSpred.py`, and parses the resulting text output [scoring/calculator.py:143-145]().
+*   **Environment**: Requires `CSPRED_PATH` and `CSPRED_PYTHON` environment variables to be set [scoring/calculator.py:14-17]().
+
+#### 4. Radius of Gyration (Rg)
+The `calc_rg` function computes the mass-weighted radius of gyration.
+*   **Mass Mapping**: Uses a standard `atomic_mass` dictionary (C:12, O:16, N:14, S:32, H:1) [scoring/calculator.py:94]().
+*   **Formula**: $R_g = \sqrt{\frac{\sum m_i (r_i - r_{cm})^2}{\sum m_i}}$ where $r_{cm}$ is the center of mass.
+
+**Sources:**
+- [scoring/calculator.py:94-95]()
+- [scoring/calculator.py:108-140]()
+- [scoring/calculator.py:165-182]()
+- [scoring/parser.py:76-80]()
+
+---
+
+### Hydrogen Atom Substitution Logic
+
+Since many experimental observables (NOE, PRE, Chemical Shifts) involve hydrogen atoms that may not be present in standard PDB outputs, the system implements a mapping logic to identify the correct heavy-atom "parent" or to handle methyl/methylene group equivalence.
+
+#### Mapping Dictionaries
+*   **`hydrogen_abbrev`**: Maps shorthand hydrogen names (e.g., "HB" for Alanine) to specific PDB atom names (e.g., "HB1", "HB2", "HB3") [scoring/calculator.py:44-71]().
+*   **`heavy_atom_hydrogen`**: Maps hydrogen names back to their bonded heavy atoms (e.g., Alanine "HA" is bonded to "CA") [scoring/calculator.py:72-93]().
+
+#### Virtual Atom Logic
+In functions like `pre_backcalc`, if a hydrogen atom is missing, the calculator can fallback to the coordinates of the parent heavy atom defined in `heavy_atom_hydrogen` to estimate the distance [scoring/calculator.py:178-180]().
+
+**Sources:**
+- [scoring/calculator.py:44-93]()
+- [scoring/calculator.py:175-181]()
+
+---
+
+### System Entity Map: Back-Calculation Dispatch
+
+The following diagram illustrates how the high-level observable types requested by the user are dispatched to specific code entities and internal data structures.
+
+**Calculator Dispatch Architecture**
+```mermaid
+graph TD
+    subgraph "Natural Language Space"
+        J["J-Couplings"]
+        CS["Chemical Shifts"]
+        FRET["smFRET"]
+        Dists["Distances (NOE/PRE)"]
+    end
+
+    subgraph "Code Entity Space: scoring/calculator.py"
+        Dispatch["BACK_Calculators (dict)"]
+        JC_Fn["jc_backcalc()"]
+        CS_Fn["run_cspred()"]
+        FRET_Fn["fret_backcalc()"]
+        PRE_Fn["pre_backcalc()"]
+        NOE_Fn["noe_backcalc()"]
+        
+        Dispatch -->|'jc'| JC_Fn
+        Dispatch -->|'cs'| CS_Fn
+        Dispatch -->|'fret'| FRET_Fn
+        Dispatch -->|'pre'| PRE_Fn
+        Dispatch -->|'noe'| NOE_Fn
+    end
+
+    subgraph "External Dependencies"
+        UCB["UCBShift (Subprocess)"]
+        DSSP["mkdssp (Binary)"]
+        
+        CS_Fn --> UCB
+        CS_Fn --> DSSP
+    end
+
+    J --- Dispatch
+    CS --- Dispatch
+    FRET --- Dispatch
+    Dists --- Dispatch
+```
+**Sources:**
+- [scoring/calculator.py:14-20]()
+- [scoring/calculator.py:207-214]()
+
+---
+
+### Data Registry and Uncertainties
+
+Experimental data is managed via the `EXP_DATA_LIB`, which lazily scans the directory specified by `IDPFORGE_EXP_DATA` [scoring/parser.py:24-72]().
+
+#### Back-Calculation Errors (`BC_ERRORS`)
+The system maintains a registry of inherent uncertainties for each back-calculation method, which are used during X-EISD scoring to weight the likelihood of the ensemble [scoring/parser.py:19-22]().
+
+| Data Type | Uncertainty ($\sigma$) | Source/Note |
+| :--- | :--- | :--- |
+| `pre` | 0.001 | Fixed |
+| `noe` | 0.01 | Fixed |
+| `fret` | 0.0074 | Fixed |
+| `cs (CA)` | 0.97 | UCBShift Error |
+| `cs (H)` | 0.38 | UCBShift Error |
+| `jc` | Variable | A: 0.14, B: 0.03, C: 0.08 (sqrt) |
+
+**Sources:**
+- [scoring/parser.py:19-22]()
+- [scoring/parser.py:75-80]()
+
+---
+
+### Ensemble Processing Workflow
+
+The back-calculation typically follows a multi-step workflow when processing large ensembles:
+
+**Ensemble Processing Flow**
+```mermaid
+flowchart LR
+    PDBs["Trajectory (traj.pdb)"] --> Split["split_pdbs()"]
+    Split --> Files["Individual .pdb files"]
+    Files --> Calc["BACK_Calculators"]
+    
+    subgraph "Back-Calculator Logic"
+        Calc --> Parser["Bio.PDB.PDBParser"]
+        Parser --> Loop["Iterate Models & Residues"]
+        Loop --> Math["Geometric/External Calculation"]
+    end
+    
+    Math --> Results["Results Matrix (N_models x N_obs)"]
+```
+
+**Sources:**
+- [scoring/calculator.py:97-106]()
+- [scoring/calculator.py:115-123]()
+- [scoring/calculator.py:135-140]()
+
+---
+
+# Page: X-EISD Scoring, Optimization & Normalization
+
+# X-EISD Scoring, Optimization & Normalization
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [score_ensemble.py](score_ensemble.py)
+- [scoring/normalize.py](scoring/normalize.py)
+- [scoring/optimizer.py](scoring/optimizer.py)
+- [scoring/rg.py](scoring/rg.py)
+- [scoring/scorer.py](scoring/scorer.py)
+
+</details>
+
+
+
+The X-EISD (Experimental Enhanced Information for Structural Distributions) module provides the framework for evaluating generated protein ensembles against experimental data. It implements maximum log-likelihood scoring for multiple experimental observables, provides utilities for ensemble optimization via Monte Carlo sampling, and includes a normalization pipeline for benchmarking against alternative structural models.
+
+## X-EISD Scoring Framework
+
+The scoring system calculates the agreement between back-calculated values from the generated ensemble and experimental data. It accounts for both experimental uncertainty and back-calculation error using a maximum log-likelihood approach.
+
+### Key Scoring Components
+The `ENSEMBLE_Scorers` dictionary in `scoring/scorer.py` dispatches specific scoring functions for different data types:
+*   **Chemical Shifts (`cs`)**: Uses `cs_score_ensemble` to compare predicted shifts against experimental values, accounting for atom-specific back-calculation sigmas [scoring/scorer.py:41-53]().
+*   **J-Couplings (`jc`)**: Uses `jc_score_ensemble` to solve for Karplus parameters ($A, B, C$) that maximize the likelihood of the observed couplings [scoring/scorer.py:88-100]().
+*   **Distances (NOE/PRE)**: Uses `dist_score_ensemble` which performs $r^{-6}$ averaging over the ensemble before calculating the log-likelihood [scoring/scorer.py:103-118]().
+*   **Generic (smFRET)**: Uses `generic_score_ensemble` for simple value-to-value comparison [scoring/scorer.py:121-129]().
+
+### Mathematical Implementation
+The core likelihood calculation relies on two primary functions:
+1.  `calc_opt_params`: Calculates the optimal parameters that maximize the likelihood given experimental and back-calculation uncertainties [scoring/scorer.py:6-15]().
+2.  `normal_loglike`: Computes the log-probability under a normal distribution, with stability handling for zero-sigma cases [scoring/scorer.py:18-32]().
+
+**Sources:** [scoring/scorer.py:1-135]()
+
+---
+
+## Ensemble Optimization
+
+The `XEISD` class in `scoring/optimizer.py` provides an API for both scoring static ensembles and optimizing sub-ensembles from a larger pool of generated conformers.
+
+### The XEISD Class
+The class is initialized with experimental data and pre-calculated back-calculation data [scoring/optimizer.py:20-29]().
+*   `calc_scores(dtypes, indices)`: Computes MAE and X-EISD scores for a specific subset of the conformer pool defined by `indices` [scoring/optimizer.py:46-66]().
+*   `optimize(...)`: Performs a stochastic search to find a sub-ensemble of size `ens_size` that maximizes the total log-likelihood across requested properties [scoring/optimizer.py:68-107]().
+
+### Optimization Algorithms
+The `optimize` method supports two modes:
+1.  **Greedy (`max`)**: Only accepts moves that strictly increase the total score [scoring/optimizer.py:96-97]().
+2.  **Metropolis-Hastings (`mc`)**: Uses the `monte_carlo` function to accept moves based on a temperature parameter `beta` [scoring/optimizer.py:8-17, 98-99]().
+
+### Optimization Data Flow
+The following diagram bridges the logical optimization flow to the code entities.
+
+**Diagram: X-EISD Optimization Loop**
+```mermaid
+graph TD
+    subgraph "Code Entity Space"
+        XEISD_Class["XEISD Class (scoring/optimizer.py)"]
+        CalcScores["calc_scores()"]
+        ScorerMap["ENSEMBLE_Scorers (scoring/scorer.py)"]
+        MC_Func["monte_carlo()"]
+    end
+
+    subgraph "Logic Space"
+        InputData["Exp Data + BC Cache"] --> XEISD_Class
+        XEISD_Class -->|Iterative Sampling| CalcScores
+        CalcScores -->|Property Dispatch| ScorerMap
+        ScorerMap -->|Log-Likelihood| TotalScore["Total Log-Likelihood"]
+        TotalScore --> Decision{"Accept Move?"}
+        Decision -->|MC Mode| MC_Func
+        Decision -->|Greedy Mode| MaxCheck["New > Old"]
+        
+        Update["Update best_indices"]
+    end
+    
+    MaxCheck -->|True| Update
+    MC_Func -->|True| Update
+```
+**Sources:** [scoring/optimizer.py:1-107](), [scoring/scorer.py:132-135]()
+
+---
+
+## Radius of Gyration (Rg) Calculation
+
+The `scoring/rg.py` module handles the calculation of mass-weighted Radius of Gyration for ensembles. This is specifically used for the $\%\left|dRg\right|/Rg$ metric in benchmarking.
+
+*   **Atomic Masses**: Defined in `ATOMIC_MASS` (C:12, O:16, N:14, S:32, H:1) [scoring/rg.py:20]().
+*   **Mass-Weighted Rg**: Implemented in `calc_rg(pdb_path)`, which calculates the center of mass (CM) and then the mass-weighted root-mean-square deviation from that center [scoring/rg.py:59-69]().
+*   **Trial Sampling**: The `process_one` function generates `rg_trials.csv` by calculating the mean Rg over 30 trials of 100-conformer random subsamples [scoring/rg.py:94-120]().
+
+**Sources:** [scoring/rg.py:1-134]()
+
+---
+
+## The score_ensemble.py CLI
+
+`score_ensemble.py` is the main entry point for scoring generated PDBs. It supports several operational modes.
+
+### Operational Modes
+1.  **Default Benchmark Mode**: Performs 30 trials of 100-conformer random subsampling with replacement, reporting mean and standard deviation of MAE and log-likelihood [score_ensemble.py:4-6, 84-85]().
+2.  **All-Conformer Mode (`--all`)**: Scores the entire pool of PDBs in a single pass [score_ensemble.py:7, 78-82]().
+3.  **Rg Mode (`--rg`)**: Triggers the Rg calculation pipeline to generate `rg_trials.csv` [score_ensemble.py:8-9, 132-134]().
+4.  **Normalization Mode (`--normalize`)**: Aggregates scores across different methods to build benchmark tables [score_ensemble.py:10, 130-131]().
+
+### Data Flow for Scoring
+The CLI manages the lifecycle from PDB files to final CSV scores.
+
+**Diagram: score_ensemble.py Data Flow**
+```mermaid
+graph LR
+    PDBs["*.pdb files"] --> BC_Calc["backcalc_ensemble()"]
+    BC_Calc -->|BACK_Calculators| BCCache["BC Data / Cache CSV"]
+    
+    BCCache --> XEISD_Init["XEISD(exp_data, bc_data)"]
+    XEISD_Init --> TrialLoop["Trial Loop (30x)"]
+    
+    subgraph "Trial Processing"
+        TrialLoop --> Subsample["Random Subsample (100)"]
+        Subsample --> CalcScores["xeisd.calc_scores()"]
+    end
+    
+    CalcScores --> FinalCSV["scores_trials.csv"]
+```
+**Sources:** [score_ensemble.py:1-110](), [scoring/calculator.py:21]()
+
+---
+
+## Normalization & Benchmarking
+
+The `scoring/normalize.py` module implements the cross-method normalization defined in the IDPForge benchmarking protocol.
+
+### Normalization Logic
+*   **Canonical Sets**: `derive_canonical_sets` identifies which proteins have which experimental data types available [scoring/normalize.py:15-32]().
+*   **Equation S11**: Implemented in `normalize_per_protein`. It scales scores such that $X_{norm} = (X - X_{min}) / (X_{max} - X_{min})$ per protein across all compared methods [scoring/normalize.py:61-71]().
+*   **Aggregation**:
+    *   NOE and PRE scores are summed into a single "NOE/PRE" category [scoring/normalize.py:114-121]().
+    *   The "Total" score is an aggregate of all available observables normalized per protein [scoring/normalize.py:135-149]().
+    *   `chi2_CS` is calculated as the mean over trials of the per-shift $\chi^2$ [scoring/normalize.py:154-162]().
+
+### Output Tables
+The `run` function generates a summary `pd.DataFrame` containing normalized scores for CS, JC, NOE/PRE, FRET, and Total, alongside the $\chi^2_{CS}$ and $\%\left|dRg\right|/Rg$ metrics [scoring/normalize.py:128-132, 149-162]().
+
+**Sources:** [scoring/normalize.py:1-162]()
+
+---
+
+# Page: Glossary
+
+# Glossary
+
+<details>
+<summary>Relevant source files</summary>
+
+The following files were used as context for generating this wiki page:
+
+- [AlphaFlex/Data_Inputs/knot_screening.json](AlphaFlex/Data_Inputs/knot_screening.json)
+- [AlphaFlex/README.md](AlphaFlex/README.md)
+- [README.md](README.md)
+- [configs/sample.yml](configs/sample.yml)
+- [idpforge/loss.py](idpforge/loss.py)
+- [idpforge/misc.py](idpforge/misc.py)
+- [idpforge/utils/diff_utils.py](idpforge/utils/diff_utils.py)
+- [idpforge/utils/potential.py](idpforge/utils/potential.py)
+- [idpforge/utils/pre_relax.py](idpforge/utils/pre_relax.py)
+- [idpforge/utils/structure_validation.py](idpforge/utils/structure_validation.py)
+- [idpforge/utils/validation_metrics.py](idpforge/utils/validation_metrics.py)
+- [idpforge/wrapper.py](idpforge/wrapper.py)
+- [scoring/scorer.py](scoring/scorer.py)
+
+</details>
+
+
+
+This page provides technical definitions for domain-specific terminology, architectural components, and implementation details within the **IDPForge** and **AlphaFlex** frameworks.
+
+## Core Concepts
+
+### Intrinsically Disordered Proteins (IDP)
+Proteins that lack a fixed or ordered three-dimensional structure under physiological conditions. IDPForge models these as ensembles of conformers rather than a single static structure [README.md:1-3]().
+
+### Intrinsically Disordered Regions (IDR)
+Specific segments within a protein that are disordered, often flanking or connecting folded domains. AlphaFlex categorizes these based on their structural context:
+*   **Tail**: An IDR located at the N- or C-terminus of a protein, adjacent to one folded domain [AlphaFlex/README.md:53-54]().
+*   **Linker**: An IDR that connects two folded domains [AlphaFlex/README.md:53-54]().
+*   **Loop**: An IDR that exists within a single folded domain [AlphaFlex/README.md:53-54]().
+
+### Conformational Ensemble
+ A collection of structural models representing the dynamic landscape of an IDP. IDPForge generates these ensembles using a diffusion-based generative process [README.md:1-3]().
+
+---
+
+## Architectural Components
+
+### IDPForge Trunk & Structure Module
+The neural network architecture is encapsulated in the `IDPForge` class [idpforge/wrapper.py:21-25](). It integrates an ESM2-based trunk with a structure module derived from ESMFold/OpenFold.
+*   **Self-Conditioning**: A technique where the model's previous prediction at $t+1$ is fed back as an input at step $t$ to improve structural consistency [idpforge/wrapper.py:65-68](), [configs/sample.yml:8]().
+*   **IPA (Invariant Point Attention)**: The mechanism used in the structure module to update residue frames and positions while maintaining rotational and translational invariance [configs/sample.yml:21-25]().
+
+### Diffuser and Denoiser
+The diffusion framework manages the transition from noise to structured coordinates.
+*   **IGSO(3)**: Isotropic Gaussian on the Special Orthogonal group. Used for diffusing and denoising residue orientations (rotations) [idpforge/utils/diff_utils.py:16-17](), [idpforge/utils/diff_utils.py:149-152]().
+*   **Linear Beta Schedule**: A noise schedule where the variance $\beta$ increases linearly over time steps $T$ [idpforge/utils/diff_utils.py:56-61]().
+
+### Secondary Structure (SS) Encoding
+Secondary structure information is treated as a primary input feature.
+*   **sstype_order**: A mapping of SS characters (H=Helix, E=Strand, C=Coil) to numerical tokens [idpforge/misc.py:24-27]().
+*   **assign_rama**: A utility that assigns SS labels based on Ramachandran torsion angles [idpforge/misc.py:28](), [idpforge/misc.py:61-63]().
+*   **Coil Sampling**: The process of randomly assigning specific torsion-based coil subtypes to "C" regions to increase ensemble diversity [idpforge/misc.py:64-67]().
+
+**Sources:** [idpforge/wrapper.py:17-36](), [idpforge/misc.py:55-73](), [idpforge/utils/diff_utils.py:56-76](), [configs/sample.yml:1-33]().
+
+---
+
+## Data Flow & System Interaction
+
+The following diagram maps the high-level generation concepts to specific code entities and data structures.
+
+### Diagram 1: Conformer Generation Data Flow
+"Reverse Diffusion Loop" to "Code Entity Space"
+
+```mermaid
+graph TD
+    subgraph "Natural Language Space"
+        Input["Sequence & SS Strings"]
+        Noise["Gaussian Noise"]
+        Step["Reverse Diffusion Step"]
+        Output["PDB Ensemble"]
+    end
+
+    subgraph "Code Entity Space"
+        IP["input_process()"]
+        INIT["init_sample()"]
+        WRAP["IDPForgeWrapper"]
+        MODEL["IDPForge Model"]
+        DIF["Diffuser / Denoiser"]
+        OUT["output_to_pdb()"]
+    end
+
+    Input --> IP
+    IP -->|"aatype, sstype"| INIT
+    Noise --> INIT
+    INIT -->|"x_t, alpha_t"| WRAP
+    WRAP -->|"forward pass"| MODEL
+    MODEL -->|"recon x_0"| DIF
+    DIF -->|"reverse_sample_vectorized"| WRAP
+    WRAP -->|"Loop T times"| MODEL
+    MODEL -->|"final positions"| OUT
+    OUT --> Output
+```
+**Sources:** [idpforge/misc.py:99-117](), [idpforge/misc.py:119-140](), [idpforge/wrapper.py:56-83](), [idpforge/utils/diff_utils.py:126-160](), [idpforge/utils/diff_utils.py:187-200]().
+
+---
+
+## Structural Validation & Constraints
+
+### Knot Screening
+A quality gate used in AlphaFlex to ensure generated conformers match the expected topology of their folded domains.
+*   **knot_screening.json**: A database containing pre-calculated knot types (e.g., Unknot, $3_1$) for UniProt entries [AlphaFlex/Data_Inputs/knot_screening.json:1-20]().
+*   **AlphaKnot2 Hybrid**: A validation logic using Alexander and HOMFLY polynomials to classify protein topology [idpforge/utils/structure_validation.py:22-28]().
+
+### Structural Violations
+Calculated during training and inference to penalize unphysical structures.
+*   **FAPE (Frame Aligned Point Error)**: Measures the error in atom positions relative to residue frames [idpforge/loss.py:30-39]().
+*   **Connectivity Loss**: A penalty applied if $C\alpha-C\alpha$ distances exceed physical limits (~3.8 Å) [idpforge/loss.py:135-137]().
+*   **Chirality Check**: A check using the scalar triple product of $N, C, C\alpha, C\beta$ to ensure L-amino acid stereochemistry [idpforge/utils/structure_validation.py:99-119]().
+
+**Sources:** [idpforge/loss.py:42-89](), [idpforge/utils/structure_validation.py:39-69](), [idpforge/utils/structure_validation.py:99-130](), [AlphaFlex/Data_Inputs/knot_screening.json:1-80]().
+
+---
+
+## Scoring & Experimental Guidance
+
+### X-EISD (Experimental Ensemble Inference)
+A maximum log-likelihood framework used to score ensembles against experimental data [scoring/scorer.py:1-2]().
+*   **Back-Calculators**: Functions that convert 3D coordinates into observable properties like $R_g$ (Radius of Gyration), Chemical Shifts, or FRET efficiencies [idpforge/utils/validation_metrics.py:4-29]().
+*   **Potential Guidance**: The integration of experimental data as a gradient-based energy term during reverse diffusion to bias the ensemble toward experimental agreement [configs/sample.yml:34-40]().
+
+### Diagram 2: Ensemble Scoring Pipeline
+"Experimental Validation" to "Code Entity Space"
+
+```mermaid
+graph LR
+    subgraph "Input Data"
+        EXP["Exp. Observables (.txt/.csv)"]
+        ENS["Generated PDBs"]
+    end
+
+    subgraph "Scoring Engine"
+        CALC["scoring/calculator.py"]
+        SCORER["ENSEMBLE_Scorers"]
+        XEISD["XEISD Optimizer"]
+    end
+
+    subgraph "Metrics"
+        MAE["Mean Absolute Error"]
+        LL["Log-Likelihood"]
+    end
+
+    ENS --> CALC
+    CALC -->|"bc_data"| SCORER
+    EXP --> SCORER
+    SCORER --> XEISD
+    XEISD --> MAE
+    XEISD --> LL
+```
+**Sources:** [scoring/scorer.py:132-135](), [idpforge/utils/validation_metrics.py:32-53](), [idpforge/loss.py:124-130]().
+
+---
+
+## Table of Technical Abbreviations
+
+| Abbreviation | Full Term | Definition | Code Pointer |
+| :--- | :--- | :--- | :--- |
+| **SS** | Secondary Structure | Helix (H), Sheet (E), or Coil (C) labels. | `idpforge/misc.py:24` |
+| **IPA** | Invariant Point Attention | Attention mechanism for structural updates. | `configs/sample.yml:21` |
+| **FAPE** | Frame Aligned Point Error | Loss function for structural alignment. | `idpforge/loss.py:8` |
+| **IGSO3** | Isotropic Gaussian on SO(3) | Rotational diffusion distribution. | `idpforge/utils/igso3_utils.py` |
+| **LDR** | Long Disordered Region | Disordered segments within a folded context. | `AlphaFlex/README.md:86` |
+| **X-EISD** | Experimental EISD | Maximum log-likelihood ensemble scoring. | `scoring/scorer.py:1` |
+| **EMA** | Exponential Moving Average | Model weight smoothing during training. | `idpforge/wrapper.py:27` |
+
+**Sources:** [idpforge/misc.py:24-27](), [idpforge/loss.py:8](), [idpforge/wrapper.py:27](), [scoring/scorer.py:1](), [AlphaFlex/README.md:86-88]().

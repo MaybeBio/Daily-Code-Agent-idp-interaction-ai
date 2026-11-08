@@ -6,8 +6,9 @@ export
 @public DExpDispersionCorrectionλ
 
 @doc raw"""
-    DoubleExponential(; cutoff, use_neighbors, α, β, shortcut, σ_mixing, ϵ_mixing,
-                      weight_special)
+    DoubleExponential(; cutoff=NoCutoff(), use_neighbors=true, α, β,
+                      shortcut=Molly.LJZeroShortcut(), σ_mixing=Molly.LorentzMixing(),
+                      ϵ_mixing=Molly.GeometricMixing(), weight_special=1)
 
 The double exponential interaction between two atoms.
 
@@ -154,8 +155,12 @@ end
 end
 
 @doc raw"""
-    DoubleExponentialSoftCore(; cutoff, use_neighbors, α, β, shortcut, σ_mixing,
-                              ϵ_mixing, λ_mixing, scheduler, weight_special)
+    DoubleExponentialSoftCore(; cutoff=NoCutoff(), use_neighbors=true, α, β,
+                              shortcut=Molly.LJZeroShortcut(),
+                              σ_mixing=Molly.LorentzMixing(),
+                              ϵ_mixing=Molly.GeometricMixing(),
+                              λ_mixing=Molly.MinimumMixing(),
+                              scheduler=Molly.DefaultLambdaScheduler(), weight_special=1)
 
 The double exponential interaction between two atoms with a soft core, used for
 the appearing and disappearing of atoms.
@@ -359,8 +364,8 @@ end
 end
 
 @doc raw"""
-    DExpDispersionCorrection(atoms, cutoff, α, β, σ_mixing=LorentzMixing(),
-                             ϵ_mixing=GeometricMixing())
+    DExpDispersionCorrection(atoms, cutoff, α, β, σ_mixing=Molly.LorentzMixing(),
+                             ϵ_mixing=Molly.GeometricMixing())
 
 The long-range dispersion correction for the [`DoubleExponential`](@ref) interaction, the
 analogue of [`LJDispersionCorrection`](@ref).
@@ -400,8 +405,7 @@ struct DExpDispersionCorrection{F, EC, C, T, S, E, P}
     β::T
     σ_mix::S
     ϵ_mix::E
-    # As for `LJDispersionCorrection`
-    group_pairs::P
+    group_pairs::P # As for `LJDispersionCorrection`
 end
 
 dexp_pe(r, α, β, rm, ϵ) = ϵ * (β * exp(α * (1 - r / rm)) - α * exp(β * (1 - r / rm))) / (α - β)
@@ -603,8 +607,7 @@ struct DExpDispersionCorrectionλ{F, EC, C, T, L, S, E, SCH, P}
     ϵ_mix::E
     # Kept so that `set_lambda!` can rebuild the factors, which are precomputed from the coupling
     scheduler::SCH
-    # As for `LJDispersionCorrectionλ`
-    class_pairs::P
+    class_pairs::P # As for `LJDispersionCorrectionλ`
     n_eff::Float64
 end
 
@@ -664,6 +667,8 @@ AtomsCalculators.@generate_interface function AtomsCalculators.forces!(
     return fs
 end
 
+AtomsCalculators.zero_forces(sys::System, ::DExpDispersionCorrection) = zero_forces(sys)
+
 AtomsCalculators.@generate_interface function AtomsCalculators.potential_energy(sys,
                                                     inter::DExpDispersionCorrectionλ; kwargs...)
     return inter.factor / volume(sys) + inter.energy_const
@@ -679,3 +684,5 @@ AtomsCalculators.@generate_interface function AtomsCalculators.forces!(
     end
     return fs
 end
+
+AtomsCalculators.zero_forces(sys::System, ::DExpDispersionCorrectionλ) = zero_forces(sys)

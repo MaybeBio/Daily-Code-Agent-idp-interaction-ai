@@ -17,6 +17,8 @@
 # if received directly from Google. Use is subject to terms of use available at
 # https://github.com/google-deepmind/alphafold3/blob/main/WEIGHTS_TERMS_OF_USE.md
 
+from concurrent import futures
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from alphafold3 import structure
@@ -440,6 +442,143 @@ class MmcifToArraysTest(parameterized.TestCase):
     exp_branch_mask[[0, 13]] = False
 
     np.testing.assert_array_equal(branch_mask, exp_branch_mask)
+
+  @parameterized.named_parameters(
+      (
+          'matches',
+          (
+              ['A', 'A', 'B'],
+              ['1', '2', '1'],
+              ['ALA', 'GLY', 'SER'],
+              ['.', 'A', '.'],
+          ),
+          (
+              ['B', 'A', 'A', 'B'],
+              ['1', '2', '1', '1'],
+              ['SER', 'GLY', 'ALA', 'SER'],
+              ['.', 'A', '.', '.'],
+          ),
+          [2, 1, 0, 2],
+      ),
+      ('empty', ([], [], [], []), ([], [], [], []), []),
+  )
+  def test_map_residue_keys(self, src, query, expected):
+    to_obj = lambda cols: [np.array(c, dtype=object) for c in cols]
+    np.testing.assert_array_equal(
+        mmcif_utils.map_residue_keys(to_obj(src), to_obj(query)),
+        np.array(expected, dtype=np.int64),
+        strict=True,
+    )
+
+  def test_map_residue_keys_missing_raises_key_error(self):
+    to_obj = lambda *v: [np.array([x], dtype=object) for x in v]
+    with self.assertRaisesRegex(KeyError, "'A', '2', 'ALA', '.'"):
+      mmcif_utils.map_residue_keys(
+          to_obj('A', '1', 'ALA', '.'), to_obj('A', '2', 'ALA', '.')
+      )
+
+  @parameterized.parameters(
+      ('HH11', 'HH21'),
+      ('HH21', 'HH11'),
+      ('HH12', 'HH22'),
+      ('HH22', 'HH12'),
+  )
+  def test_fix_arg_asymmetric_hydrogens(self, present_h, expected_h):
+    atoms = np.array(['CD', 'NH1', 'NH2', present_h], dtype=object)
+    cif = cif_dict.from_string(
+        'data_t\nloop_\n_atom_site.id\n_atom_site.pdbx_PDB_model_num\n'
+        '_atom_site.label_asym_id\n_atom_site.label_seq_id\n'
+        '_atom_site.label_comp_id\n_atom_site.label_atom_id\n'
+        '_atom_site.label_alt_id\n_atom_site.occupancy\n'
+        + '\n'.join(f'{i + 1} 1 A 1 ARG {a} . 1.0' for i, a in enumerate(atoms))
+        + '\n'
+    )
+    mmcif_utils.fix_residues(
+        mmcif_utils.read_layout(cif),
+        comp_id=np.full(4, 'ARG', dtype=object),
+        atom_id=atoms,
+        atom_x=np.array([0.0, 3.0, 1.0, 0.0], dtype=np.float32),
+        atom_y=np.zeros(4, dtype=np.float32),
+        atom_z=np.zeros(4, dtype=np.float32),
+        fix_arg=True,
+    )
+    np.testing.assert_array_equal(
+        atoms, np.array(['CD', 'NH2', 'NH1', expected_h], dtype=object)
+    )
+
+  def test_concurrent_filter_and_fix_residues(self):
+    cif = _read_test_cif_file('5inz')
+
+    def _worker(_: int) -> tuple[str, ...]:
+      index, _, layout = mmcif_utils.filter(
+          cif,
+          include_nucleotides=True,
+          include_ligands=True,
+          include_water=True,
+          model_id='1',
+      )
+      atom_id = _atom_site_str_array(cif, 'label_atom_id', gather=index[0])
+      coords = [
+          cif.get_array(
+              f'_atom_site.Cartn_{c}', dtype=np.float32, gather=index
+          )[0]
+          for c in ('x', 'y', 'z')
+      ]
+      mmcif_utils.fix_residues(
+          layout,
+          comp_id=_atom_site_str_array(cif, 'label_comp_id', gather=index[0]),
+          atom_id=atom_id,
+          atom_x=coords[0],
+          atom_y=coords[1],
+          atom_z=coords[2],
+          fix_arg=True,
+      )
+      return tuple(atom_id.tolist())
+
+    with futures.ThreadPoolExecutor(max_workers=8) as pool:
+      results = list(pool.map(_worker, range(16)))
+    self.assertLen(set(results), 1)
+
+  def test_selected_polymer_residue_mask_accepts_sequences(self):
+    layout = mmcif_utils.read_layout(
+        cif_dict.from_string(
+            'data_t\nloop_\n_atom_site.id\n_atom_site.pdbx_PDB_model_num\n'
+            '_atom_site.label_asym_id\n_atom_site.label_seq_id\n'
+            '_atom_site.label_comp_id\n_atom_site.label_atom_id\n'
+            '_atom_site.label_alt_id\n_atom_site.occupancy\n'
+            '1 1 A 1 ALA CA . 1.0\n'
+        )
+    )
+    cols = [['A'], ['1'], ['ALA'], ['A', 'A'], ['1', '1'], ['ALA', 'GLY']]
+    arr_cols = [np.array(c, dtype=object) for c in cols]
+    np.testing.assert_array_equal(
+        mmcif_utils.selected_polymer_residue_mask(layout, *cols),
+        mmcif_utils.selected_polymer_residue_mask(layout, *arr_cols),
+        strict=True,
+    )
+
+  def test_selected_ligand_residue_mask_accepts_sequences(self):
+    layout = mmcif_utils.read_layout(
+        cif_dict.from_string(
+            'data_t\nloop_\n_atom_site.id\n_atom_site.pdbx_PDB_model_num\n'
+            '_atom_site.label_asym_id\n_atom_site.label_seq_id\n'
+            '_atom_site.label_comp_id\n_atom_site.label_atom_id\n'
+            '_atom_site.label_alt_id\n_atom_site.occupancy\n'
+            '1 1 B . ATP C1 . 1.0\n'
+        )
+    )
+    cols = [
+        ['B'], ['.'], ['10'], ['ATP'], ['.'],
+        ['B', 'B'], ['10', '10'], ['.', '.'], ['ATP', 'ADP'],
+        [], [], [], [],
+    ]  # pyformat: disable
+    arr_cols = [np.array(c, dtype=object) for c in cols]
+    for got, want in zip(
+        mmcif_utils.selected_ligand_residue_mask(layout, *cols),
+        mmcif_utils.selected_ligand_residue_mask(layout, *arr_cols),
+        strict=True,
+    ):
+      np.testing.assert_array_equal(got, want, strict=True)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=77.0", "versioningit~=3.1"]
+build-backend = "setuptools.build_meta"
+
+# Self-descriptive entries which should always be present
+# https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+[project]
+name = "zpoly"
+description = "Zwitterionic polymers for MD: monomer library, chain builder, GROMACS force fields, bulk and LLPS slab systems"
+dynamic = ["version"]
+readme = "README.md"
+authors = [
+    { name = "Hussen O. Mohammed", email = "husenoumer876@gmail.com" }
+]
+
+license = "MIT"
+
+license-files = ["LICENSE"]
+
+
+# See https://pypi.org/classifiers/
+keywords = ["zwitterionic polymers", "molecular dynamics", "GROMACS", "OPLS-AA", "GAFF2", "LLPS", "force field"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+]
+requires-python = ">=3.10"
+# Declare any run-time dependencies that should be installed with the package.
+# rq-561736a8
+dependencies = [
+    "rdkit>=2023.9",
+    "numpy>=1.22",
+    "PyYAML>=6.0",
+]
+
+# Update the urls once the hosting is set up.
+#[project.urls]
+#"Source" = "https://github.com/<username>/zpoly/"
+#"Documentation" = "https://zpoly.readthedocs.io/"
+
+# rq-1eaf96c1
+[project.scripts]
+zpoly = "zpoly.cli:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6.1.2",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+# Ref https://setuptools.pypa.io/en/latest/userguide/datafiles.html#package-data
+[tool.setuptools.package-data]
+zpoly = [
+    "py.typed",
+]
+"zpoly.zwitterions" = [
+    "data/*.yaml",
+]
+"zpoly.forcefield" = [
+    "data/*.yaml",
+]
+"zpoly.system" = [
+    "data/*.yaml",
+]
+
+[tool.versioningit]
+default-version = "1+unknown"
+
+[tool.versioningit.format]
+distance = "{base_version}+{distance}.{vcs}{rev}"
+dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[tool.versioningit.vcs]
+method = "git"
+match = ["*"]
+default-tag = "1.0.0"
+
+[tool.versioningit.write]
+file = "src/zpoly/_version.py"
+
+[tool.coverage.run]
+omit = [
+    # Omit the tests
+    "tests/*",
+    # Omit the generated version file
+    "src/zpoly/_version.py",
+]

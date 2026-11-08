@@ -35,6 +35,8 @@ AtomsCalculators.@generate_interface function AtomsCalculators.forces!(fs,
     return fs
 end
 
+AtomsCalculators.zero_forces(sys::System, ::AbstractEwald) = zero_forces(sys)
+
 function AtomsCalculators.energy_forces!(fs::AbstractVector, # Required for disambiguation
                                          sys::System,
                                          inter::AbstractEwald;
@@ -64,7 +66,7 @@ end
 end
 
 """
-    Ewald(dist_cutoff; error_tol=0.0005, ϵr=1.0, coulomb_const=coulomb_const,
+    Ewald(dist_cutoff; error_tol=0.0005, ϵr=1.0, coulomb_const=Molly.coulomb_const,
           scheduler=Molly.DefaultLambdaScheduler())
 
 Ewald summation for long range electrostatics implemented as an
@@ -349,7 +351,7 @@ end
 
 @doc raw"""
     PME(dist_cutoff, atoms, boundary; error_tol=0.0005, order=5,
-        ϵr=1.0, coulomb_const=coulomb_const, fixed_charges=true, mesh_dims=nothing,
+        ϵr=1.0, coulomb_const=Molly.coulomb_const, fixed_charges=true, mesh_dims=nothing,
         scheduler=Molly.DefaultLambdaScheduler(), float_type_high=Float64,
         grad_safe=false, n_threads=Threads.nthreads())
 
@@ -1540,7 +1542,7 @@ end
 
 @doc raw"""
     PME_λ(dist_cutoff, atoms, boundary; error_tol=0.0005, order=5, ϵr=1.0,
-          coulomb_const=coulomb_const, fixed_charges=true, mesh_dims=nothing,
+          coulomb_const=Molly.coulomb_const, fixed_charges=true, mesh_dims=nothing,
           scheduler=Molly.GROMACSLambdaABFEScheduler(), λ=0.0, grad_safe=false,
           n_threads=Threads.nthreads())
 

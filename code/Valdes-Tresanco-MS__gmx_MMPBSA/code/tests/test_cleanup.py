@@ -1,0 +1,86 @@
+import os
+import tempfile
+import unittest
+from pathlib import Path
+
+from GMXMMPBSA.utils import remove
+
+
+class CleanupTest(unittest.TestCase):
+    def test_clean_removes_default_csv_outputs_with_summary_outputs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            for filename in (
+                'FINAL_RESULTS_MMPBSA.dat', 'FINAL_RESULTS_MMPBSA.csv',
+                'FINAL_DECOMP_MMPBSA.dat', 'FINAL_DECOMP_MMPBSA.csv',
+            ):
+                (root / filename).write_text('results\n')
+
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                remove(-1)
+            finally:
+                os.chdir(old_cwd)
+
+            for filename in (
+                'FINAL_RESULTS_MMPBSA.dat', 'FINAL_RESULTS_MMPBSA.csv',
+                'FINAL_DECOMP_MMPBSA.dat', 'FINAL_DECOMP_MMPBSA.csv',
+            ):
+                self.assertFalse((root / filename).exists())
+
+    def test_minimal_cleanup_preserves_info_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / '_GMXMMPBSA_info').write_text("INPUT['pb']['inp'] = 1\n")
+            (root / '_GMXMMPBSA_pb.mdin').write_text('inp=1\n')
+            (root / 'GMXMMPBSA_membrane_parameters.csv').write_text('diagnostic\n')
+            (root / 'GMXMMPBSA_membrane_parameters.png').write_bytes(b'diagnostic')
+            (root / 'COM.prmtop').write_text('temporary\n')
+            (root / 'COMPACT_MMXSA_RESULTS.mmxsa').write_text('results\n')
+
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                remove(0)
+            finally:
+                os.chdir(old_cwd)
+
+            self.assertTrue((root / '_GMXMMPBSA_info').exists())
+            self.assertTrue((root / 'GMXMMPBSA_membrane_parameters.csv').exists())
+            self.assertTrue((root / 'GMXMMPBSA_membrane_parameters.png').exists())
+            self.assertTrue((root / 'COMPACT_MMXSA_RESULTS.mmxsa').exists())
+            self.assertFalse((root / '_GMXMMPBSA_pb.mdin').exists())
+            self.assertFalse((root / 'COM.prmtop').exists())
+
+    def test_cleanup_removes_multi_digit_trajectory_files_only(self):
+        for flag in (-1, 0):
+            with self.subTest(flag=flag), tempfile.TemporaryDirectory() as tmpdir:
+                root = Path(tmpdir)
+                removable = (
+                    'COM_traj_0.xtc',
+                    'COM_traj_10.xtc',
+                    '#REC_traj_12.xtc',
+                )
+                retained = (
+                    'COM_traj_10.xtc.backup',
+                    'COM_traj_a.xtc',
+                )
+                for filename in removable + retained:
+                    (root / filename).write_text('trajectory\n')
+
+                old_cwd = os.getcwd()
+                os.chdir(tmpdir)
+                try:
+                    remove(flag)
+                finally:
+                    os.chdir(old_cwd)
+
+                for filename in removable:
+                    self.assertFalse((root / filename).exists())
+                for filename in retained:
+                    self.assertTrue((root / filename).exists())
+
+
+if __name__ == '__main__':
+    unittest.main()

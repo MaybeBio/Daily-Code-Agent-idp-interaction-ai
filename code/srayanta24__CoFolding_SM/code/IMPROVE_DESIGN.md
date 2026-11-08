@@ -350,11 +350,21 @@ Why each tier failed to beat ipTM at the headline task, since the reasons differ
   good as the backbone it conditions on. Cheap to test by re-running on deposited
   structures; not done.
 
-**Cost, measured.** Rosetta ran ~15 min/structure against ~3 min of GPU to *generate* a
-design: rescoring is **5× more expensive than generation**, which rules it out as a
-funnel-wide filter at 60,000-design scale regardless of accuracy. ESM-IF1 (7 s) and
-ipSAE (~0) are funnel-viable but do not work. packstat/sc are the fortunate case —
-effective *and* already free.
+**Cost, measured.** Rosetta averaged 22.7 min/structure (125.5 CPU-hours for 332)
+against ~3 min of GPU to *generate* a design, so rescoring consumes roughly an order of
+magnitude more compute than generation — ruling it out as a funnel-wide filter at
+60,000-design scale regardless of accuracy. ESM-IF1 (7.6 s) and ipSAE (~0) are
+funnel-viable but do not work.
+
+**The cheap escape was tested and closed (2026-10-30).** Within Rosetta the cost is not
+packstat — `InterfaceAnalyzer` takes 2.4 s and `FastRelax` 571 s, so relaxation is 99.6%
+of it. Since packstat is geometric rather than energetic it seemed it might survive
+skipping relaxation, which would have given the one working metric at ~2 s. Across all
+379 paired complexes it does not: **23/28 relaxed → 15/28 raw**, rank correlation only
++0.507. Mean |Δ| is a reassuring 0.038 on a 0.41–0.80 range, which is exactly the trap —
+a small offset with poor rank correlation destroys *ranking*, and ranking is the only
+thing packstat is used for here. Full write-up and the redirect to distillation:
+[experiments/finetuning/PLAN.md](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/finetuning/PLAN.md) §4b.
 
 **Correction to this section's earlier Tier 2 claim.** It said BoltzGen "already runs an
 inverse-folding model and discards the likelihood," implying a one-line extraction. The
@@ -413,6 +423,47 @@ than a settled fact. And it was measured on *point mutants*, which are a much su
 perturbation than two independently generated designs — whether the advantage transfers
 to real design diversity is exactly milestone 7's transfer question, now with a concrete
 hypothesis to test rather than an open-ended one.
+
+**Update 2026-10-24, after EXPERIMENT_03.** A third benchmark was built specifically to
+answer the affinity-ranking question EXPERIMENT_02 had to leave open — within-antigen,
+using AbBiBench (which turned out to be sitting unused inside `databases/asd/`). Result:
+ipTM does carry some signal (pooled ρ = +0.194, +0.208 on HER2), correcting an earlier
+report of ρ ≈ 0 that had been computed on a benchmark with inverted ground-truth labels.
+But the antigen-only null control fires again (+0.105 pooled, +0.284 on one target),
+so most of the apparent signal is target-specific leakage rather than affinity.
+
+**Update 2026-10-25.** The paired benchmark turned out to be underpowered by a
+sampling bug (parents were not stratified, so 17 of 28 available parents were used). At
+the full 28, **packstat reaches 23/28, p=0.0005 — surviving Bonferroni over seven
+metrics**, with the 11 new parents agreeing in direction (8/11). Shape complementarity
+and buried SASA, which had looked significant at 17, **collapsed to chance**. ipTM stays
+at chance (14/28) and ipSAE is anti-correlated (7/28).
+
+**So there is now one metric with a defensible claim to beating ipTM on the comparison
+a design campaign actually makes.** That is a real change from "no demonstrated
+selection signal," though it rests on point mutants rather than independently generated
+designs.
+
+> **Update 2026-10-31 — the transfer question is now answered, and the answer is no.**
+> packstat was scored on all 1,530 complexes of the six-target within-antigen benchmark
+> (1,201 core-hours of FastRelax). It ranks graded affinity at **ρ = +0.058 pooled,
+> below its own null control (+0.070)**, and reaches significance on one target of six.
+> The pre-registered rescue — that it detects gross damage rather than gradation, so it
+> should recover on the affinity extremes — could not be established either, because at
+> 6 targets the sign test is so underpowered that the null control also wins 5/6.
+> packstat's scope is therefore **binding-retained vs binding-destroyed, and nothing
+> wider**: at the time, an interface-integrity detector, not a ranker. See
+> [EXPERIMENT_04](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_04_packstat_transfer.md).
+>
+> **Update 2026-11-01 — even "interface-integrity detector" does not hold on designs.**
+> [EXPERIMENT_05](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/EXPERIMENT_05_design_transfer.md)
+> scored packstat on 1,096 real BoltzGen designs against a structural-self-consistency
+> label: **AUC 0.508 (chance, below its own null) on the committed target, worse than
+> chance on a second.** The 23/28 was specific to point mutants of near-native crystal
+> backbones and does not survive the backbone being generated. packstat is retracted as
+> a selection *or* filtering metric, and **finetuning milestone 2 (distil packstat) is
+> cancelled** — there is nothing worth distilling. The best design-level signal is ipTM
+> (AUC 0.708), already free, and it predicts structure quality, not binding.
 
 ---
 
@@ -473,6 +524,55 @@ feeding `databases/sabdab/structures/` in requires a real data adapter
 only one of the three that would put antibody knowledge into the weights. Its cost
 profile has not improved, but its *relevance* has. Reassess in §5.
 
+**Started 2026-10-25** → [experiments/finetuning/PLAN.md](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/finetuning/PLAN.md).
+First result already in, and it reframes the objective. AntiFold (ESM-IF1 *plus*
+antibody fine-tuning, same 142M architecture) scores **16/28** on the paired benchmark
+against generic ESM-IF1's 13/28 — the right direction, but still **below the 17/28 null
+control**. So the cheapest version of the §1 fix produces a gain inside the noise, and
+model size is not the constraint (142M is the same as ESM-IF1 and comparable to this
+project's Model D).
+
+The reframe: **the missing ingredient may not be antibody-ness but *binding*.** Every
+metric evaluated across four experiments — ipTM, ipSAE, Rosetta, ESM-IF1, AntiFold — is
+unsupervised with respect to binding. None has ever seen a binding label. The plan now
+targets that, via the one diverse supervised signal in `databases/`: ASD's `bool`
+subset, 106,197 rows over 832 antigens carrying both classes.
+
+Three data traps were found and are recorded there, each of which would have produced a
+confidently wrong result: ASD's `-log KD` is mislabelled on some targets; graded
+affinity exists for only 3-5 antigens; and **every structure-bearing `bool` row is a
+positive**, so no structural negatives exist anywhere in our data. That last one killed
+the originally chosen approach. The full-scale version that would fix it needs ~21,000
+GPU-hours and is written up separately in
+[FULL_SCALE_BOOL.md](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/finetuning/FULL_SCALE_BOOL.md) against future cluster
+access.
+
+---
+
+## 6b. The one cheap check that could redirect the programme
+
+Recorded 2026-10-31, from [`scoring_calibration/PLAN.md`](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/experiments/scoring_calibration/PLAN.md) §11.5.
+
+Five experiments concluded that no cheap metric ranks antibody designs. That conclusion
+rests on a benchmark whose resolving power we **borrowed rather than demonstrated**:
+AbBiBench publishes **ProteinMPNN ρ ≈ 0.30** and ESM-IF1 ≈ 0.28 on the same affinity
+data where our best column is **+0.141**. Someone else gets double our best, and we
+never tried to reproduce it.
+
+**Score the 1,530 existing ASD structures with ProteinMPNN and compare to the published
+number.** No new cofolding, no GPU campaign — the structures are already on disk.
+
+It discriminates between two very different programme directions:
+
+| outcome | what it means | where the work goes |
+|---|---|---|
+| reproduces at ≈0.30 | our **predicted backbones** are the bottleneck, not the metrics | structure quality — better folding, MSAs, relaxation |
+| lands near +0.14 | published baselines don't transfer to predicted backbones | §11.1 stands; training branch / own labels |
+
+**This should be done before any significant investment in the training branch**, since
+the training branch is premised on no cheap metric existing — and if the real problem is
+structure quality, training a scorer on bad structures inherits the bottleneck.
+
 ---
 
 ## 7. Shared prerequisite: leak-free train/test splits
@@ -487,10 +587,37 @@ Of 11,458 unique antigen-bound structures in `databases/sabdab/`: **8,072 `train
 `excluded_no_sequence`** (post-cutoff, redundancy unverifiable — excluded rather than
 assumed safe).
 
-**Known documentation gap**: `databases/splits/README.md` is referenced from several
-places in this repo but does not exist and was never committed. The verified counts and
-per-source cross-reference currently live only in `databases/splits/splits_summary.json`
-and `.claude/skills/splits/SKILL.md`. Worth writing.
+Written up in full at [`databases/splits/README.md`](https://github.com/srayanta24/CoFolding_SM/blob/HEAD/databases/splits/README.md)
+(2026-10-31), which closes a documentation gap that had been referenced from six places
+without existing. It carries the bucket table, the per-source cross-reference (**AACDB
+is 3,628/3,674 `train_era`** — which is why AACDB is a training-label source and not an
+evaluation set), the rule for which comparisons are legitimate, and the reconciliation
+of 2,217 extraction failures against only 291 exclusions.
+
+**Writing it surfaced a real flaw.** `dev` and `test` are each cluster-disjoint from
+`train_era` as designed (0 shared clusters, verified) — the guarantee that matters for
+any claim about BoltzGen holds. But they are **not cluster-disjoint from each other**:
+the dev/test split hashes the structure id *after* clustering, so **59 clusters straddle
+the boundary**, covering 70 of 100 `dev` and **197 of 751 `test`** structures. Tuning on
+`dev` and reporting on full `test` therefore leaks into 26% of the test set.
+
+Re-splitting would renumber `dev`/`test` and silently invalidate every number already
+reported against them, so instead `test_cluster_disjoint.txt` is now emitted: the **554**
+test structures sharing no cluster with `dev`, verified disjoint from `dev` and
+`train_era` both. **Any number that follows dev-based tuning must be reported on that
+file.**
+
+**Checked, rather than assumed: nothing reported so far is affected.** The
+scoring-calibration benchmarks draw from `dev`+`test` without dev-based tuning. The
+epitope-prediction work *does* follow a dev-then-test discipline, so its targets were
+checked directly against the cluster table — **0 of its 6 `test` targets share a cluster
+with any of its 7 `dev` targets**, and its model training and calibration use an
+internal hash split that never touches either file. Its milestone 6/7 numbers stand.
+
+(That check did turn up a separate, smaller point: three of those test targets —
+`pdb_00009cct`, `pdb_00009me5`, `pdb_00009me7` — all sit in cluster `pdb_00009ccw`, so
+they are not three independent observations. Relevant to how many targets a downstream
+result is described as spanning, not to leakage.)
 
 ---
 

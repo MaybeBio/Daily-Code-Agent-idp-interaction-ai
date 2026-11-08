@@ -58,7 +58,8 @@ SCORES_DIR = HERE / ".scores"
 RESULTS = HERE / "results" / "scores.tsv"
 OUT = HERE / "results" / "rosetta.tsv"
 
-CARRY = ["entry_id", "set", "label", "kd_molar", "ddg_kcal", "elisa_ratio", "iptm"]
+CARRY = ["entry_id", "set", "label", "kd_molar", "ddg_kcal", "elisa_ratio", "iptm",
+         "target_pdb", "neg_log_kd"]
 METRICS = ["dG_separated", "dSASA_int", "dG_dSASA_x100", "sc_value",
            "interface_hbonds", "delta_unsat_hbonds", "packstat",
            "total_score_relaxed", "total_score_raw", "nres"]
@@ -89,8 +90,16 @@ def _score_one(args: tuple) -> dict:
         from pyrosetta.rosetta.protocols.analysis import InterfaceAnalyzerMover
         from pyrosetta.rosetta.protocols.relax import FastRelax
 
-        hits = glob.glob(str(SCORES_DIR / entry_id / "**" / "*_model_0.cif"),
-                         recursive=True)
+        # Milestone 7 (--manifest) carries an explicit cif_path, because real design
+        # pools live under data/designs/ and experiments/actual_campaigns/ rather than
+        # in this folder's own .scores/ tree. Falls back to the original glob so the
+        # calibration-set behaviour is untouched.
+        explicit = carry.get("cif_path")
+        if explicit:
+            hits = [explicit] if os.path.exists(explicit) else []
+        else:
+            hits = glob.glob(str(SCORES_DIR / entry_id / "**" / "*_model_0.cif"),
+                             recursive=True)
         if not hits:
             out["status"] = "no_structure"
             out["seconds"] = f"{time.time()-t0:.1f}"
@@ -145,17 +154,46 @@ def main() -> None:
                     help="worker processes (default: cores - 4, leaving headroom)")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--sets", default=None, help="comma-separated set names")
+    ap.add_argument("--results", default=str(RESULTS))
+    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--manifest", default=None,
+                    help="score an arbitrary manifest TSV instead of results/scores.tsv. "
+                         "Must carry entry_id and cif_path; every other column is "
+                         "carried through verbatim. Used by milestone 7 (real design "
+                         "pools). Implies no --sets filtering.")
     args = ap.parse_args()
 
-    scored = list(csv.DictReader(RESULTS.open(encoding="utf-8"), delimiter="\t"))
-    if args.sets:
-        want = {s.strip() for s in args.sets.split(",")}
-        scored = [r for r in scored if r["set"] in want]
+    out_path = Path(args.out)
+    if args.manifest:
+        # Carry every manifest column, so the output is self-describing and the
+        # analysis step needs no second join. FIELDS is derived from the manifest
+        # rather than the module constant, and the schema guard below still applies.
+        with Path(args.manifest).open(encoding="utf-8") as fh:
+            scored = list(csv.DictReader(fh, delimiter="\t"))
+        if not scored:
+            raise SystemExit(f"[rosetta] manifest {args.manifest} is empty")
+        carry_cols = list(scored[0].keys())
+        for req in ("entry_id", "cif_path"):
+            if req not in carry_cols:
+                raise SystemExit(f"[rosetta] manifest lacks required column {req!r}")
+        for r in scored:
+            r.setdefault("status", "ok")       # manifests are pre-filtered
+    else:
+        carry_cols = CARRY
+        results_path = Path(args.results)
+        scored = list(csv.DictReader(results_path.open(encoding="utf-8"),
+                                     delimiter="\t"))
+        if args.sets:
+            want = {s.strip() for s in args.sets.split(",")}
+            scored = [r for r in scored if r["set"] in want]
+    fields = carry_cols + METRICS + ["status", "seconds"]
+    if not args.manifest:
+        assert fields == FIELDS, "carry/FIELDS drift"
 
     done = set()
-    if OUT.exists():
+    if out_path.exists():
         done = {r["entry_id"] for r in
-                csv.DictReader(OUT.open(encoding="utf-8"), delimiter="\t")
+                csv.DictReader(out_path.open(encoding="utf-8"), delimiter="\t")
                 if r.get("entry_id")}
     todo = [r for r in scored if r["entry_id"] not in done and r["status"] == "ok"]
     if args.limit:
@@ -166,13 +204,25 @@ def main() -> None:
     if not todo:
         return
 
-    jobs = [(r["entry_id"], {k: r.get(k, "") for k in CARRY}) for r in todo]
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    new_file = not OUT.exists()
+    jobs = [(r["entry_id"], {k: r.get(k, "") for k in carry_cols}) for r in todo]
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    new_file = not out_path.exists()
+    # Same schema guard as score_sets.py. Extending the carried label columns while
+    # an output file already existed silently shifted every later column; the rows
+    # stayed parseable as text but `status` read blank, so downstream steps reported
+    # "nothing to do" and exited successfully. Fail loudly instead.
+    if not new_file:
+        with out_path.open(encoding="utf-8") as _fh:
+            _existing = _fh.readline().rstrip("\n").split("\t")
+        if _existing != fields:
+            raise SystemExit(
+                f"[{__file__}] REFUSING TO APPEND: {out_path} has "
+                f"{len(_existing)} columns, this build writes {len(fields)}. "
+                "Rewrite the file with the current schema or use a new --out.")
     t_start = time.time()
 
-    with OUT.open("a", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=FIELDS, delimiter="\t",
+    with out_path.open("a", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=fields, delimiter="\t",
                            extrasaction="ignore", lineterminator="\n")
         if new_file:
             w.writeheader()
@@ -187,7 +237,7 @@ def main() -> None:
                       f"sc={res.get('sc_value') or '-':>7} {res['seconds']:>7}s "
                       f"| ETA {(len(jobs)-i)*el/i/3600:.1f}h", flush=True)
 
-    print(f"[rosetta] done in {(time.time()-t_start)/3600:.2f}h -> {OUT}")
+    print(f"[rosetta] done in {(time.time()-t_start)/3600:.2f}h -> {out_path}")
 
 
 if __name__ == "__main__":

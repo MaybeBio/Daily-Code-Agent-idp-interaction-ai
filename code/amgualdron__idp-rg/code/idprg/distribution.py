@@ -92,6 +92,42 @@ def quantiles(q, lnA, lnSm, nu):
     return np.exp(np.interp(q, c / c[-1], np.log(r)))
 
 
+def tail_below(ratio, lnA, nu, block=2000):
+    """P(Rg < ratio x <Rg>) per chain, over arrays of chains. A function of the shape alone, so S_m plays no part."""
+    ratio, lnA, nu = (np.asarray(a, float) for a in (ratio, lnA, nu))
+    out, dT = np.empty(len(ratio)), T[1] - T[0]
+    for b in range(0, len(ratio), block):
+        i = slice(b, b + block)
+        r, w = grid(lnA[i], np.zeros(len(lnA[i])), nu[i])
+        mean = np.trapezoid(w * r, T, axis=-1)
+        c = np.concatenate([np.zeros((w.shape[0], 1)), np.cumsum(0.5 * (w[:, 1:] + w[:, :-1]) * dT, axis=1)], axis=1)
+        c /= c[:, -1:]
+        t = np.log(ratio[i] * mean)
+        k = np.clip(((t - T[0]) / dT).astype(int), 0, len(T) - 2)
+        f, n = (t - T[k]) / dT, np.arange(len(k))
+        out[i] = c[n, k] * (1 - f) + c[n, k + 1] * f
+    return out
+
+
+# Compact and extended populations. The bounds are the 5th and 95th percentiles of R_g / <R_g> of a typical chain of the
+# same length: per training protein, the percentile over its MD frames; then the median per length bin, fitted by
+# a + b / sqrt(N). So a typical chain has 5% of its conformations in each population at any N, and a chain's value reads
+# directly against that. proteome/populations.py refits these constants and records why 5% (populations_thresholds.csv).
+COMPACT_BOUND, EXTENDED_BOUND = (0.681, 0.311), (1.421, -0.571)
+
+
+def population_bounds(N):
+    """(t_c, t_e): a conformation is compact if Rg < t_c <Rg> and extended if Rg > t_e <Rg>."""
+    s = np.asarray(N, float) ** -0.5
+    return COMPACT_BOUND[0] + COMPACT_BOUND[1] * s, EXTENDED_BOUND[0] + EXTENDED_BOUND[1] * s
+
+
+def populations(lnA, nu, N):
+    """(P_c, P_e) per chain."""
+    tc, te = population_bounds(N)
+    return tail_below(tc, lnA, nu), 1 - tail_below(te, lnA, nu)
+
+
 # ---------------------------------------------------------------- jax (training, fitting, scoring)
 T_J, LOG_W_J = jnp.asarray(T), jnp.log(jnp.asarray(_W))
 

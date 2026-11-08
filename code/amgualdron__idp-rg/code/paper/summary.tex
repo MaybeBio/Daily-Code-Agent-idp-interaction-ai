@@ -376,6 +376,120 @@ network and \val{fig.fig20.nu.r2_closed_form_vs_fitted} for the closed form. The
 \val{fig.fig20.nu.fitted.min}--\val{fig.fig20.nu.fitted.max} fitted and \val{fig.fig20.nu.network.min}--\val{fig.fig20.nu.network.max} for the network. Its largest losses are on compact chains, where
 the $\mRg$ error is \pct{cf.val.by.compact.mean_err_pct} against \pct{net.val.by.compact.mean_err_pct} for the network.
 
+\subsection{Shape against STARLING}\label{sec:starling}
+STARLING is a generative model trained on Mpipi-GG simulations, so it gives distributions from a force field the network
+never saw. We sampled \val{fig.fig26.n} of the \val{data.n_benchmark} benchmark proteins at 150~mM; \val{fig.fig26.not_sampled.0}
+($N=\val{fig.fig26.not_sampled_N}$) is over its limit of 380 residues. Every distribution is divided by its own mean, so the
+comparison is of shape alone (Figure~\ref{fig:starling_shape}).
+
+The shapes are close. The median $W_1$ between the network and STARLING is \pct{fig.fig26.shape_pct.median} of $\mRg$
+(family-bootstrap 95\% interval \val{fig.fig26.shape_pct.ci.0}--\val{fig.fig26.shape_pct.ci.1}; sampling alone gives
+\val{fig.fig26.shape_pct.floor}), the 90th percentile is \pct{fig.fig26.shape_pct.p90} and the largest \pct{fig.fig26.shape_pct.max}.
+The spread of $R_g$ within a protein, measured the same way, is \pct{fig.fig26.width_pct}. We call a conformation compact if $R_g<t_c\mRg$ and extended if $R_g>t_e\mRg$, with $t_c=0.681+0.311/\sqrt{N}$ and
+$t_e=1.421-0.571/\sqrt{N}$: the 5th and 95th percentiles of $R_g/\mRg$ of a typical training chain of the same length, so that such a chain has
+5\% of its conformations in each state at any $N$. A fixed ratio of $\mRg$ would not do this, because the spread grows with $N$ and most of
+the variation in the probabilities would then be length. The two models put about the same share of conformations in these states: median
+$P_c$ of \pct{fig.fig26.median_pct.pc_star} for STARLING and \pct{fig.fig26.median_pct.pc_net} for the network, and median $P_e$ of
+\pct{fig.fig26.median_pct.pe_star} and \pct{fig.fig26.median_pct.pe_net}, with mean absolute differences of \val{fig.fig26.pc.mae} and \val{fig.fig26.pe.mae}.
+
+The agreement is mostly in the shape the proteins share, not in what separates them. One shape averaged from the HPS1
+trajectories of other families matches STARLING with a median $W_1$ of \pct{fig.fig26.shape_pct.shared}, and the network is closer
+than that on only \val{fig.fig26.beats_shared} of \val{fig.fig26.n} proteins. Protein by protein, the Spearman correlation between the
+network and STARLING is \val{fig.fig26.cv.rho} for the spread (interval \val{fig.fig26.cv.rho_ci.0}--\val{fig.fig26.cv.rho_ci.1}),
+\val{fig.fig26.pc.rho} for the compact probability (\val{fig.fig26.pc.rho_ci.0}--\val{fig.fig26.pc.rho_ci.1}) and \val{fig.fig26.pe.rho} for the extended probability
+(\val{fig.fig26.pe.rho_ci.0}--\val{fig.fig26.pe.rho_ci.1}), against \val{fig.fig26.cv.rho_hps1}, \val{fig.fig26.pc.rho_hps1} and \val{fig.fig26.pe.rho_hps1} between the network and its own force field,
+HPS1. Sampling noise alone would allow about \val{fig.fig26.pc.noise_ceiling_rho} for $P_c$ and \val{fig.fig26.pe.noise_ceiling_rho} for $P_e$. So the network does not rank these proteins by compact population,
+against either force field: it predicts nearly the same $P_c$ for all of them. It does rank them by extended population against HPS1. In STARLING the probabilities follow the spread only in part
+($\rho=\val{fig.fig26.tails_vs_spread_rho.pc}$ for $P_c$ and \val{fig.fig26.tails_vs_spread_rho.pe} for $P_e$). The exponent tests asymmetry directly, and it agrees less: the two-exponent $\nu$ fitted to the
+STARLING ensembles correlates with the network's at $\rho=\val{fig.fig26.nu.rho}$ (\val{fig.fig26.nu.rho_ci.0}--\val{fig.fig26.nu.rho_ci.1}), against \val{fig.fig26.nu.rho_hps1} for the same fit to HPS1, mostly
+because of the \val{fig.fig26.n_a1} A1-LCD variants (median $\nu$ \val{fig.fig26.nu.a1_star} against \val{fig.fig26.nu.a1_net}, skewness \val{fig.fig26.nu.a1_skew_star} against \val{fig.fig26.nu.a1_skew_net}); without them
+$\rho=\val{fig.fig26.nu.rho_rest}$ (\val{fig.fig26.nu.rho_rest_ci.0}--\val{fig.fig26.nu.rho_rest_ci.1}). Normalizing by size therefore does not remove the force field entirely, and
+\pct{fig.fig26.shape_pct.above_floor} of the $W_1$ values exceed the 95th percentile of the noise.
+
+So the common shape is robust to the choice of these two force fields; a protein's departure from it is not shown to be. STARLING
+also stands in for Mpipi-GG here without a direct test, because no Mpipi-GG distributions are available. Both force fields are
+coarse-grained with implicit solvent and SAXS gives only a mean, so this tests agreement between models and not the
+experimental distribution.
+
+The \val{fig.fig26.n} proteins took \val{fig.fig26.run.hours}~h \val{fig.fig26.run.minutes}~min on one GPU (\val{fig.fig26.run.gpu}, STARLING
+\val{fig.fig26.run.version}), at \val{fig.fig26.run.conformations} conformations per protein. That is after heavy optimization: \val{fig.fig26.run.steps} DDIM steps,
+batches of \val{fig.fig26.run.batch}, a float16 denoiser and a compiled model (estimated 3.7~h without the last two;
+\texttt{experiments/starling/README.md}).
+
+\subsection{Output families}\label{sec:families}
+Table~\ref{tab:families} and \texttt{fig25} retrain the network with only its output head changed (same inputs, NLL
+only, last epoch, three seeds; \texttt{results/family\_heads.csv}). Validation has informed this project's choices
+before, so this comparison is descriptive; it did not select the released model. Parameters per protein fall from 8 (a
+$K=3$ log-normal mixture) to 2 ($\ln S_m$ and $\nu$, with $\ln A$ from the amplitude law's six global coefficients).
+
+On validation the released head has NLL \val{fam.law2_512x2.val.nll} and $\mRg$ error
+\pct{fam.law2_512x2.val.mean_err_pct}. Among the mixtures, only the larger $K=3$ network is clearly better: NLL
+\val{fam.mix3_512x3.val.nll} (paired difference \val{fam.mix3_512x3.val.dnll_1e3}${}\pm{}$\val{fam.mix3_512x3.val.dnll_se_1e3}
+$\times10^{-3}$ nats per frame), $\mRg$ error \pct{fam.mix3_512x3.val.mean_err_pct}. At two parameters per protein the
+family decides the result: the released head beats the log-normal ($K=1$) by
+\val{fam.mix1_512x2.val.dnll_1e3}${}\pm{}$\val{fam.mix1_512x2.val.dnll_se_1e3}$\times10^{-3}$ nats per frame. Mixtures
+with $K\geq2$ still predict skewness and kurtosis better (Table~\ref{tab:families}).
+
+On the sticky split, the released head's $\mRg$ error and mean $W_1$ are \pct{fam.law2_512x2.sticky.mean_err_pct} and
+\pct{fam.law2_512x2.sticky.w1_mean_pct}, against \pct{fam.mix3_512x3.sticky.mean_err_pct} and
+\pct{fam.mix3_512x3.sticky.w1_mean_pct} for the best mixture. On the length split the two tie. A third hidden layer
+improves the $K=3$ mixture but not the two-exponent head. Below 512 units the mixture becomes unstable on sticky chains:
+mean $W_1$ at $64\times2$ is \pct{fam.mix3_64x2.sticky.w1_mean_pct}${}\pm{}$\val{fam.mix3_64x2.sticky.sd.w1_mean_pct},
+against \pct{fam.law2_64x2.sticky.w1_mean_pct}${}\pm{}$\val{fam.law2_64x2.sticky.sd.w1_mean_pct}. On validation the two
+heads lose about the same when shrunk.
+
+Part of the gain over the earlier $K=3$ recipe (moment penalties and checkpoint selection on validation) comes from that
+recipe, not from the family: on the sticky split, NLL-only training alone takes the $K=3$ mean $W_1$ from
+\pct{fam.run20_512x3.sticky.w1_mean_pct} to \pct{fam.mix3_512x3.sticky.w1_mean_pct}.
+
+The tie of the two exponents through one $\nu$ is an approximation. Left independent, the network gives
+$\nu_\delta=\val{fam.exp.val.nu_delta}$ and $\nu_g=\val{fam.exp.val.nu_g}$ on validation (seed sd
+\val{fam.exp.val.seed_sd_nu_delta} and \val{fam.exp.val.seed_sd_nu_g}), so $\delta=\val{fam.exp.val.delta}$ and
+$g=\val{fam.exp.val.g}$ against \val{fam.exp.val.delta_tied} and \val{fam.exp.val.g_tied} when tied. Direct fits to each
+training and validation protein's MD frames, with no network, give the same means: $\nu_\delta=\val{fam.exp.md.nu_delta}$
+and $\nu_g=\val{fam.exp.md.nu_g}$, with $\nu_\delta>\nu_g$ on \val{fam.exp.md.frac_nu_delta_above}\% of proteins and
+held-out NLL lower on \val{fam.exp.md.frac_heldout_better}\% (median gain \val{fam.exp.md.dnll_median_1e3}$\times10^{-3}$
+nats per frame). So $g$ is about \val{fam.exp.md.g_over_relation} times the $3\delta/(2\delta-3)$ that one $\nu$ implies. The
+gap $\nu_\delta-\nu_g$ falls with chain length, from \val{fam.exp.md.gap_N_le50} at $N\le50$ to
+\val{fam.exp.md.gap_N_200_300} at $200<N\le300$ and \val{fam.exp.md.gap_N_gt300} above, and does not reach zero; replicate
+simulations differ by \val{fam.exp.md.replicate_gap_abs_diff} (median over \val{fam.exp.md.replicate_pairs} pairs). The
+frames span $s\approx\val{fam.exp.md.s_q01}$--\val{fam.exp.md.s_q999}, so these are effective exponents of the central
+distribution and do not test the asymptotic tails; $\delta$, $g$ and $A$ also trade off against each other. Untying gains
+\val{fam.free4_512x2.val.dnll_1e3}${}\pm{}$\val{fam.free4_512x2.val.dnll_se_1e3}$\times10^{-3}$ nats per frame on validation
+and closes the skewness and kurtosis gap to the mixtures, but gives no resolved gain in NLL or $W_1$ on the extrapolation
+splits. The amplitude law
+costs little: freeing $\ln A$ changes validation NLL by
+\val{fam.freeA_512x2.val.dnll_1e3}${}\pm{}$\val{fam.freeA_512x2.val.dnll_se_1e3}$\times10^{-3}$.
+
+\newcommand{\famrow}[1]{\val{fam.#1.val.nll} & \val{fam.#1.val.mean_err_pct} & \val{fam.#1.val.std_err_pct} & \val{fam.#1.val.skew_mae} & \val{fam.#1.val.exkurt_mae} & \val{fam.#1.val.w1_mean_pct} & \val{fam.#1.length.mean_err_pct} & \val{fam.#1.sticky.mean_err_pct} & \val{fam.#1.sticky.w1_mean_pct}}
+\begin{table}[h]
+\centering
+\caption{Output families on one recipe, mean over seeds 42--44 (so the released row differs slightly from the five-seed
+values elsewhere). $p$: free output parameters per protein. Errors in \%, $W_1$ the mean over proteins as \% of $\mRg$;
+skew and kurtosis are mean absolute errors. Networks are $512\times2$ unless stated. The first row is the earlier recipe:
+moment penalties and checkpoint selection on validation, two seeds on the extrapolation splits.}\label{tab:families}
+\small
+\begin{tabular}{@{}l r r r r r r r r r r@{}}
+\toprule
+& & \multicolumn{6}{c}{validation} & length & \multicolumn{2}{c}{sticky}\\
+head & $p$ & NLL & $\mRg$ & $\sigma$ & skew & kurt. & $W_1$ & $\mRg$ & $\mRg$ & $W_1$\\
+\midrule
+$K=3$, moment loss, $512\times3$ & 8 & \famrow{run20_512x3}\\
+$K=3$, $512\times3$ & 8 & \famrow{mix3_512x3}\\
+$K=3$ & 8 & \famrow{mix3_512x2}\\
+$K=2$ & 5 & \famrow{mix2_512x2}\\
+$K=1$ & 2 & \famrow{mix1_512x2}\\
+\addlinespace
+independent exponents & 4 & \famrow{free4_512x2}\\
+tied $\nu$, free $A$ & 3 & \famrow{freeA_512x2}\\
+tied $\nu$, $A$ from law (released) & 2 & \famrow{law2_512x2}\\
+\addlinespace
+$K=3$, $128\times2$ & 8 & \famrow{mix3_128x2}\\
+tied $\nu$, $A$ from law, $128\times2$ & 2 & \famrow{law2_128x2}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 %==========================================================================================================
 \section{Ablations}\label{sec:abl}
 Each row retrains the network, or refits the closed form, with one change from the released configuration

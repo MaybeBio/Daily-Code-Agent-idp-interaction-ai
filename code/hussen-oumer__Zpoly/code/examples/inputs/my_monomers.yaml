@@ -1,0 +1,9 @@
+# Your own monomers: use them with  LIBRARY = my_monomers.yaml  and  MONOMER = <name>.
+version: 1
+monomers:
+  - name: SBMA-C3L
+    full_name: '[3-(Methacryloyloxy)propyl]dimethyl(3-sulfopropyl)ammonium'
+    family: Sulfobetaine
+    status: specialty                     # common | specialty | combinatorial | computed
+    residue: SL                           # optional: residues SLF, SLR, SLE
+    blocks: [MA, C3, NMe2, C3, SO3]       # or: smiles: C=C(C)C(=O)OCCC[N+](C)(C)CCCS(=O)(=O)[O-]

@@ -1,0 +1,8 @@
+title: Pol II (G) complex
+tags: [chemical crosslinks, PMI, EM]
+prereqs: [python/numpy]
+pmid: 30190596
+accessions: [PDBDEV_00000025]
+test:
+    runtime: 24h
+build: release

@@ -1,0 +1,12 @@
+# Sulfonate (SY2) bonds and angles missing from the stock OPLS-AA files (rqm/forcefield/builtin_charges.md).
+# Source: the group's OPLS-AA topologies of DMAPS, A3361 and A3367. Used only where the force field has none.
+# (The sulfate of the initiator end groups has its own types and takes GAFF2 terms: data/gaff2_so4.yaml.)
+version: 1
+bonds:
+  - {types: [CT, SY2], b0: 0.18100, kb: 185769.6}
+  - {types: [OY, SY2], b0: 0.14577, kb: 443504.0}
+angles:
+  - {types: [CT, CT, SY2], theta0: 114.70, k: 418.400}
+  - {types: [HC, CT, SY2], theta0: 109.50, k: 292.880}
+  - {types: [CT, SY2, OY], theta0: 108.90, k: 619.232}
+  - {types: [OY, SY2, OY], theta0: 113.83, k: 418.400}

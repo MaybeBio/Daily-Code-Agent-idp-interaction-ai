@@ -558,7 +558,7 @@ free_energy_scale(::NoTempering) = -1
 free_energy_scale(wt::WellTempered) = -wt.bias_factor / (wt.bias_factor - 1)
 
 @doc raw"""
-    Metadynamics(memory; n_steps=1, tempering=NoTempering(), logger=nothing)
+    Metadynamics(memory; n_steps=1, tempering=Molly.NoTempering(), logger=nothing)
 
 A history-dependent bias potential for Metadynamics: a sum of Gaussians deposited at
 previously visited collective variable (CV) values.
@@ -1114,7 +1114,8 @@ function visit_deposit!(md::Metadynamics, cv_sim, step_n, k; v_bias=nothing,
 end
 
 # Returns the bias energy before any hill deposited by visiting this state
-function AtomsCalculators.potential_energy(sys, md::Metadynamics; step_n=nothing,
+AtomsCalculators.@generate_interface function AtomsCalculators.potential_energy(sys,
+                                          md::Metadynamics; step_n=nothing,
                                           visit_state::Bool=false,
                                           strictness=default_strictness(), kwargs...)
     visit_state && check_logger_kT(md.logger, md, sys.k)
@@ -1162,16 +1163,15 @@ function metadynamics_forces!(fs, sys, md::Metadynamics; needs_vir::Bool=false,
     return pe
 end
 
-function AtomsCalculators.forces!(fs, sys, md::Metadynamics; needs_vir::Bool=false,
+AtomsCalculators.@generate_interface function AtomsCalculators.forces!(fs, sys,
+                                  md::Metadynamics; needs_vir::Bool=false,
                                   buffers=nothing, step_n=nothing, visit_state::Bool=false,
                                   strictness=default_strictness(), kwargs...)
     metadynamics_forces!(fs, sys, md; needs_vir, buffers, step_n, visit_state, strictness)
     return fs
 end
 
-# As for Ewald, the allocating and energy forms use Molly's zero_forces
-AtomsCalculators.forces(sys::System, md::Metadynamics; kwargs...) =
-    AtomsCalculators.forces!(zero_forces(sys), sys, md; kwargs...)
+AtomsCalculators.zero_forces(sys::System, ::Metadynamics) = zero_forces(sys)
 
 function AtomsCalculators.energy_forces!(fs::AbstractVector, # Required for disambiguation
                                          sys::System, md::Metadynamics; needs_vir::Bool=false,

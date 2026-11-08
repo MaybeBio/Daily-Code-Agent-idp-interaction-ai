@@ -298,6 +298,10 @@ David S. Cerutti, Rafal Wiewiora, Simon Boothroyd, Woody Sherman.
 
 
 
+* **SO3LR Tauri: Generally Applicable Force Fields for Reactive (Bio)Molecular Simulations Covering the Periodic Table** [2026]  
+Adil Kabylda, Florian N. Brünig, Miguel Gallegos, J. Thorben Frank, Evgeny Moerman, Oliver T. Unke, Stefan Chmiela, Klaus-Robert Müller, Alexandre Tkatchenko.  
+[arXiv:2611.06237(2026)](https://doi.org/10.48550/arXiv.2611.06237) | [code](https://github.com/general-molecular-simulations/so3lr)  
+
 * **Force Fields and Simulation Engines: Lessons Learned from Porting Amber ff14SB and ff19SB to GROMACS** [2026]  
 Vedran Miletić, Miłosz Wieczór, Carlos Simmerling, Markus Rampp, Bert L. de Groot, Carsten Kutzner, Vytautas Gapsys.  
 [J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c01592) | [code](https://gitlab.mpcdf.mpg.de/barnsteen/workflow)  
@@ -362,6 +366,11 @@ Wang, L., Brasnett, C., Borges-Araújo, L. et al.
 
 
 
+
+
+* **Neopep: Reinforcement Learning from Machine-Learned Force Field Energy for Non-Canonical Peptide Structure Prediction** [2026]  
+Dhanya Jagannathan, Philip M. Kim.  
+[bioRxiv(2026)](https://doi.org/10.64898/2026.10.22.760799)  
 
 * **On-the-Fly Machine-Learned Force Fields for High-Fidelity Polymer Glass Transition Simulations** [2026]  
 Ashutosh Srivastava, Sakshi Agarwal, Shivank Shukla, Harikrishna Sahu, Rampi Ramprasad.  
@@ -827,6 +836,12 @@ Kevin V. Bigting, Shubhadeep Nag, Yaxin An.
 
 
 
+
+
+* **DIME: Dynamics Inferred from Monte Carlo Ensembles via Continuous-Time Markov Chains** [2026]  
+Krishna Praneet Mulukutla, Marimuthu Krishnan.  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c01396)  
+
 * **MD-LLM-2: A Transferable Language Model of Molecular Dynamics with Physical Conditioning and Explicit Path Probabilities** [2026]  
 Mhd Hussein Murtada, Z. Faidon Brotzakis, Michele Vendruscolo.  
 [arXiv:2610.10879(2026)](https://doi.org/10.48550/arXiv.2610.10879)  
@@ -1058,6 +1073,28 @@ Wang, Han, Linfeng Zhang, Jiequn Han, and E. Weinan.
 
 
 
+
+
+
+* **Unconstrained learning of equivariant atomistic properties** [2026]  
+Joseph W. Abbott, Paolo Pegolo, Pol Febrer, Michelangelo Domina, Sandra Saade, Matthias Kellner, Filippo Bigi, Philip Loche, Michele Ceriotti.  
+  [arXiv:2610.31183(2026)](https://doi.org/10.48550/arXiv.2610.31183)  
+
+* **High-quality, high-information datasets for universal atomistic machine learning** [2026]  
+Cesare Malosso, Filippo Bigi, Paolo Pegolo, Joseph W. Abbott, Philip Loche, Mariana Rossi, Tiago J. Goncalves, Sandip De, Michele Ceriotti, Arslan Mazitov.  
+  [arXiv:2603.02089(2026)](https://doi.org/10.48550/arXiv.2603.02089) | [code](https://github.com/lab-cosmo/upet)  
+
+* **FACTO: fast atom-centered tensor operator for accurate and efficient foundational machine-learned interatomic potentials** [2026]  
+Siyuan Liu, Chang Han, Sheng Gong, Yanping Yang, Tianze Zheng, Yu Xia, Kuang Yu, Shenzhen Xu, Wen Yan.  
+  [arXiv:2611.03276(2026)](https://doi.org/10.48550/arXiv.2611.03276)  
+
+* **Fine-Tuning Universal Machine Learning Potentials Enables Efficient Computation of Li Electrode Potentials in Battery Electrolytes** [2026]  
+Feng Wang, Yu-Hang Tang, Yi-Min Wei, Jun Cheng.  
+  [Journal American Chemical Society(2026)](https://doi.org/10.1021/jacs.6c12519)  
+
+* **MLIPDiff: Guiding Denoising Diffusion Models for Structure-Based Drug Design via Machine-Learned Interatomic Potentials** [2026]  
+Yiyan Liao, Amin Tavakoli, Yu Zhang, Anima Anandkumar.  
+  [arXiv:2610.33315(2026)](https://doi.org/10.48550/arXiv.2610.33315)  
 
 * **High-quality, high-information datasets for universal atomistic machine learning** [2026]  
 Cesare Malosso, Filippo Bigi, Paolo Pegolo, Joseph W. Abbott, Philip Loche, Mariana Rossi, Tiago J. Goncalves, Sandip De, Michele Ceriotti, Arslan Mazitov.  
@@ -2184,7 +2221,9 @@ Pham, T.D., Tanikanti, A. & Keçeli, M.
 
 
 
-
+* **Bond-valence theory is a general electrostatic valence rule** [2026]  
+M. L. Whittaker.  
+[arXiv:2611.05339 (2026)](https://doi.org/10.48550/arXiv.2611.05339)  
 
 * **The Python simulations of chemistry framework: 10 years of an open-source quantum chemistry project** [2026]  
 Sun, Qiming, Matthew R. Hermes, Xiaojie Wu, Huanchen Zhai, Xing Zhang, Abdelrahman M. Ahmed, Juan José Aucar et al.  
@@ -2241,7 +2280,9 @@ Wieners, L., Garcia, M.E.
 
 
 
-
+* **Ab initio simulation of excited-state potential energy surfaces with transferable deep quantum Monte Carlo** [2026]  
+Schätzle, Z., Szabó, P.B., Cuzzocrea, A. et al.  
+[Nat Comput Sci (2026)](https://doi.org/10.1038/s43588-026-01065-y) | [code](https://github.com/deepqmc/deepqmc)  
 
 * **Hybrid Ab Initio and Empirical Machine Learning Models for the Potential Energy Surface** [2026]  
 Pablo Peña-Cano.  
@@ -2641,7 +2682,7 @@ Maddipatla, A., Sellam Bojan, N., Bojan, M. et al.
 
 * **Biasing Conformational Sampling in Alphafold 3 and Boltz-2 via Pair Representation Scaling** [2026]  
 Shosuke Suzuki, Toshiyuki Amagasa.  
-[bioRxiv (2026)](https://doi.org/10.64898/2026.01.23.701250) | [code](https://github.com/suzuki-2001/pair-representation-scaling)  
+[J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c02094) | [bioRxiv (2026)](https://doi.org/10.64898/2026.01.23.701250) | [code](https://github.com/suzuki-2001/pair-representation-scaling)  
 
 * **BilboMD: a web-accessible SAXS and AlphaFold-guided modeling pipeline** [2026]  
 Scott Classen, Joshua Del Mundo, Dhruva Kulkarni, Shreyas Prabhakar, Alan Hicks, Michal Hammel.  
@@ -4493,6 +4534,10 @@ Matteo Pavan, Davide Bassani, Mattia Sturlese, Stefano Moro.
 
 
 
+
+* **Fine-Tuning Universal Machine Learning Potentials Enables Efficient Computation of Li Electrode Potentials in Battery Electrolytes** [2026]  
+Feng Wang, Yu-Hang Tang, Yi-Min Wei, Jun Cheng.  
+  [Journal American Chemical Society(2026)](https://doi.org/10.1021/jacs.6c12519)  
 
 * **A latent-space extrapolation grade built into graph atomic cluster expansion foundation potentials** [2026]  
 Yury Lysogorskiy, Anton Bochkarev, Ralf Drautz.  
