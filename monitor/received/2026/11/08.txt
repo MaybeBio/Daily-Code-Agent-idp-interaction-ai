@@ -1,0 +1,63 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-08 07:55:49 | 💬 nvan21 created issue 'Fix supernode detection in mju_cholFactorNumeric' in google-deepmind/mujoco
+2026-11-08 07:46:11 | ⭐️ vtrivedy starred google-deepmind/mujoco
+2026-11-08 07:44:40 | 🔀 StafaH opened PR in google-deepmind/mujoco_warp
+2026-11-08 07:39:56 | 🔀 Trinkle23897 merged PR in sail-sg/envpool
+2026-11-08 07:36:58 | 🍴 sasobadovinac forked google-deepmind/mujoco
+2026-11-08 07:18:53 | ⭐️ boujeebinch starred google-deepmind/habermas_machine
+2026-11-08 07:16:54 | ⭐️ thewebarea starred google-deepmind/detectorscope
+2026-11-08 06:54:24 | 🔀 M-Colley opened PR in google-deepmind/mujoco
+2026-11-08 06:54:12 | 🍴 M-Colley forked google-deepmind/mujoco
+2026-11-08 06:44:50 | ⭐️ PedroPizarro starred google-deepmind/mujoco
+2026-11-08 06:40:34 | 🍴 blessedefe4real forked google-deepmind/mujoco
+2026-11-08 06:40:26 | ⭐️ ar0801715-code starred google-deepmind/synthid-text
+2026-11-08 06:27:03 | ⭐️ MarkChrisE2091 starred google-deepmind/alphafold3
+2026-11-08 06:07:44 | 🍴 MarkChrisE2091 forked google-deepmind/alphafold
+2026-11-08 06:07:26 | ⭐️ MarkChrisE2091 starred google-deepmind/alphafold
+2026-11-08 06:00:47 | ⭐️ cagbal starred google-deepmind/mujoco
+2026-11-08 05:42:28 | 🐛 kasparkk opened issue in google-deepmind/torax: '`iterhybrid_predictor_corrector` example fails in v2.0.0: max_steps must be specified for ChiTimeStepCalculatorConfig'
+2026-11-08 05:31:15 | 🔀 TomZahavy opened PR in google-deepmind/cryptids
+2026-11-08 05:23:18 | ⭐️ asound1111-pixel starred google-deepmind/android_env
+2026-11-08 05:20:02 | ⭐️ Himanshu-Khadka starred google-deepmind/mujoco
+2026-11-08 05:20:01 | 🍴 Sam-v6 forked google-deepmind/pysc2
+2026-11-08 05:09:13 | ⭐️ StuntmanDaver starred google-deepmind/alphafold3
+2026-11-08 04:55:33 | ⭐️ AmandSilvar starred google-deepmind/alphafold
+2026-11-08 04:54:47 | ⭐️ trippinCode starred google-deepmind/alphaevolve
+2026-11-08 04:51:59 | ⭐️ ivankirichok starred google-deepmind/mujoco
+2026-11-08 04:46:23 | ⭐️ hdjonidi starred google-deepmind/mujoco
+2026-11-08 03:26:56 | 🔀 hadley merged PR in r-lib/cli
+2026-11-08 02:59:03 | 🔀 hadley opened PR in r-lib/cli
+2026-11-08 02:59:02 | 🆕 hadley created branch 'reproducible-docs' at r-lib/cli
+2026-11-08 01:38:58 | 🔀 kennethreitz opened PR in kennethreitz/RetroVault
+2026-11-08 01:21:56 | 💬 kennethreitz created issue 'Lower macOS version requirement' in kennethreitz/RetroVault
+2026-11-08 01:18:07 | 🔀 kennethreitz merged PR in kennethreitz/requeststoken.org
+2026-11-08 01:17:59 | 🔀 kennethreitz opened PR in kennethreitz/requeststoken.org
+2026-11-08 01:16:08 | 🔀 kennethreitz merged PR in kennethreitz/RetroVault
+2026-11-08 01:08:17 | 💬 hadley created issue 'Preserve unescaped query values across chained URL updates' in r-lib/httr2
+2026-11-08 01:08:01 | 🐛 hadley closed issue in r-lib/httr2: '`I()` protection lost when subsequent `req_url_query()` calls re-parse the URL'
+2026-11-08 00:52:06 | 🔀 kennethreitz merged PR in kennethreitz/requeststoken.org
+2026-11-08 00:51:46 | 🔀 kennethreitz opened PR in kennethreitz/requeststoken.org
+2026-11-08 00:28:19 | 🔀 hadley merged PR in r-lib/cli
+2026-11-08 00:26:50 | 🔀 hadley merged PR in r-lib/covr
+2026-11-08 00:15:41 | 🔀 hadley opened PR in r-lib/cli
+2026-11-07 22:40:48 | 🔀 hadley merged PR in eliocamp/metR
+2026-11-07 22:26:02 | 🚀 fuxialexander pushed to fuxialexander/cd200_manuscript_bundle
+    - [49945c2] (expanded) Point new users to the MoDL 0.2.2 quick start
+2026-11-07 22:19:20 | 🆕 fuxialexander created branch 'releases/0.2.2' at fuxialexander/cd200_manuscript_bundle
+2026-11-07 15:19:02 | 🆕 fuxialexander created branch 'revision-20261107' at fuxialexander/cd200_manuscript_bundle
+2026-11-07 14:28:19 | 🆕 Trinkle23897 created branch 'jiayi/main-correctness-audit' at sail-sg/envpool
+2026-11-07 13:19:47 | 🚀 boscoh pushed to boscoh/gigmap
+    - [f10a09a] (expanded) Raise the day cache version, so an old row cannot serve
+2026-11-07 12:48:26 | 🚀 boscoh pushed to boscoh/gigmap
+    - [0dbbb27] (expanded) Drop the end date of a one-day run in one place
+2026-11-07 12:43:28 | 🚀 boscoh pushed to boscoh/gigmap
+    - [793bbfd] (expanded) Give the narrow map 35% of the viewport height
+2026-11-07 12:43:01 | 🚀 boscoh pushed to boscoh/gigmap
+    - [3da6cd1] (expanded) Join the two spans of one day in the hours text
+2026-11-07 12:35:46 | 🚀 boscoh pushed to boscoh/gigmap
+    - [9b715ac] (expanded) Build the lines of a run in the template, not with CSS
+2026-11-07 10:37:22 | 🚀 boscoh pushed to boscoh/gigmap
+    - [0073fac] (expanded) Tighten the map popup, so the zoom buttons cover less of it
+2026-11-07 05:12:55 | 🚀 torvalds pushed to torvalds/linux
+    - [a7963b1] (expanded) Merge tag 'iommu-fixes-v7.4-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/iommu/linux

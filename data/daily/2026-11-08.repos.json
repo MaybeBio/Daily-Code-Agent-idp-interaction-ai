@@ -1,0 +1,288 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 254775,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "Himanshu-Khadka",
+      "M-Colley",
+      "PedroPizarro",
+      "blessedefe4real",
+      "cagbal",
+      "hdjonidi",
+      "ivankirichok",
+      "nvan21",
+      "sasobadovinac",
+      "vtrivedy"
+    ],
+    "event": "mixed",
+    "stars": 16107,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/alphafold",
+    "who": [
+      "AmandSilvar",
+      "MarkChrisE2091"
+    ],
+    "event": "mixed",
+    "stars": 14930,
+    "language": "Python",
+    "description": "Open source code for AlphaFold 2.",
+    "url": "https://github.com/google-deepmind/alphafold"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "MarkChrisE2091",
+      "StuntmanDaver"
+    ],
+    "event": "star",
+    "stars": 8737,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "google-deepmind/pysc2",
+    "who": [
+      "Sam-v6"
+    ],
+    "event": "fork",
+    "stars": 8336,
+    "language": "Python",
+    "description": "StarCraft II Learning Environment",
+    "url": "https://github.com/google-deepmind/pysc2"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "StafaH"
+    ],
+    "event": "pr",
+    "stars": 1609,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "sail-sg/envpool",
+    "who": [
+      "Trinkle23897"
+    ],
+    "event": "mixed",
+    "stars": 1533,
+    "language": "C++",
+    "description": "C++-based high-performance parallel environment execution engine (vectorized env) for general RL environments.",
+    "url": "https://github.com/sail-sg/envpool"
+  },
+  {
+    "full_name": "google-deepmind/android_env",
+    "who": [
+      "asound1111-pixel"
+    ],
+    "event": "star",
+    "stars": 1257,
+    "language": "Python",
+    "description": "ML research on Android devices.",
+    "url": "https://github.com/google-deepmind/android_env"
+  },
+  {
+    "full_name": "google-deepmind/synthid-text",
+    "who": [
+      "ar0801715-code"
+    ],
+    "event": "star",
+    "stars": 1241,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/synthid-text"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "kasparkk"
+    ],
+    "event": "issue",
+    "stars": 750,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "r-lib/cli",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 729,
+    "language": "R",
+    "description": "Tools for making beautiful & useful command line interfaces",
+    "url": "https://github.com/r-lib/cli"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "thewebarea"
+    ],
+    "event": "star",
+    "stars": 446,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "r-lib/covr",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 348,
+    "language": "R",
+    "description": "Test coverage reports for R",
+    "url": "https://github.com/r-lib/covr"
+  },
+  {
+    "full_name": "r-lib/httr2",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 273,
+    "language": "R",
+    "description": "Make HTTP requests and process their responses. A modern reimagining of httr.",
+    "url": "https://github.com/r-lib/httr2"
+  },
+  {
+    "full_name": "eliocamp/metR",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 158,
+    "language": "R",
+    "description": "Tools for Easier Analysis of Meteorological Fields",
+    "url": "https://github.com/eliocamp/metR"
+  },
+  {
+    "full_name": "google-deepmind/habermas_machine",
+    "who": [
+      "boujeebinch"
+    ],
+    "event": "star",
+    "stars": 121,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/habermas_machine"
+  },
+  {
+    "full_name": "THGLab/LP-PDBBind",
+    "who": [
+      "abodrov-1"
+    ],
+    "event": "star",
+    "stars": 76,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/THGLab/LP-PDBBind"
+  },
+  {
+    "full_name": "google-deepmind/cryptids",
+    "who": [
+      "TomZahavy"
+    ],
+    "event": "pr",
+    "stars": 73,
+    "language": "Lean",
+    "description": "Some Cryptids and Lean proofs",
+    "url": "https://github.com/google-deepmind/cryptids"
+  },
+  {
+    "full_name": "google-deepmind/alphaevolve",
+    "who": [
+      "trippinCode"
+    ],
+    "event": "star",
+    "stars": 37,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphaevolve"
+  },
+  {
+    "full_name": "kennethreitz/RetroVault",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 18,
+    "language": "Swift",
+    "description": "A native macOS client for RomM.",
+    "url": "https://github.com/kennethreitz/RetroVault"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "pr",
+    "stars": 2,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "fuxialexander/cd200_manuscript_bundle",
+    "who": [
+      "fuxialexander"
+    ],
+    "event": "mixed",
+    "stars": 0,
+    "language": "Python",
+    "description": "CD200 ATAC deletion manuscript bundle: motif CNN training, deletion scans, and Model Studio",
+    "url": "https://github.com/fuxialexander/cd200_manuscript_bundle"
+  },
+  {
+    "full_name": "boscoh/gigmap",
+    "who": [
+      "boscoh"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/boscoh/gigmap"
+  }
+]
