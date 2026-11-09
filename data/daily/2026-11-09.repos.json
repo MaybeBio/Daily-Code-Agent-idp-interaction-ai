@@ -1,0 +1,123 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 254898,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "kennethreitz/pytheory",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 1661,
+    "language": "Python",
+    "description": "Music Theory for Humans.",
+    "url": "https://github.com/kennethreitz/pytheory"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "zblore"
+    ],
+    "event": "pr",
+    "stars": 1356,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "ai4protein/VenusFactory2",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 253,
+    "language": "Python",
+    "description": "🏭 AI agent platform with skills for protein engineering, the noob-friendly AI tutorial tool for life science professionals. (ACL Demo2025, arXiv 2026)",
+    "url": "https://github.com/ai4protein/VenusFactory2"
+  },
+  {
+    "full_name": "idptools/finches",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 52,
+    "language": "Jupyter Notebook",
+    "description": "FINCHES (First-principle Interactions via CHEmical Specificity) - Python package for predicting chemically-specific molecular interactions for IDRs",
+    "url": "https://github.com/idptools/finches"
+  },
+  {
+    "full_name": "Junjie-Zhu/IDPFold2",
+    "who": [
+      "ayushd718"
+    ],
+    "event": "star",
+    "stars": 31,
+    "language": "Python",
+    "description": "Code for generating ensembles with IDPFold2",
+    "url": "https://github.com/Junjie-Zhu/IDPFold2"
+  },
+  {
+    "full_name": "holehouse-lab/xdrf",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 7,
+    "language": "M4",
+    "description": "This directory contains source of the portable data compression  library xdrf, which was developed for EUROPORT.",
+    "url": "https://github.com/holehouse-lab/xdrf"
+  },
+  {
+    "full_name": "gitesei/MEM-CALVADOS",
+    "who": [
+      "gitesei"
+    ],
+    "event": "push",
+    "stars": 2,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/gitesei/MEM-CALVADOS"
+  },
+  {
+    "full_name": "kennethreitz/cannoli",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "branch",
+    "stars": 1,
+    "language": "Kotlin",
+    "description": "A frontend with just the right amount of filling!",
+    "url": "https://github.com/kennethreitz/cannoli"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "kennethreitz/gen1recomp-mod-index",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "branch",
+    "stars": 0,
+    "language": "",
+    "description": "",
+    "url": "https://github.com/kennethreitz/gen1recomp-mod-index"
+  }
+]

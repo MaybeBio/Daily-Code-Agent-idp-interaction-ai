@@ -1,0 +1,42 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-09 08:27:05 | 🔀 zblore opened PR in google-deepmind/formal-conjectures
+2026-11-09 04:18:36 | 🚀 torvalds pushed to torvalds/linux
+    - [8a65162] (expanded) Merge tag 'driver-core-7.4-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/driver-core/driver-core
+2026-11-09 02:52:09 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [284d4ce] (expanded) perf(models): share bounded discovery metadata snapshots
+2026-11-09 02:10:32 | 🆕 kennethreitz created branch 'local/version-and-credits' at kennethreitz/cannoli
+2026-11-09 01:03:24 | 🆕 kennethreitz created branch 'add-gen1-music-frlg' at kennethreitz/gen1recomp-mod-index
+2026-11-08 23:43:28 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [540f946] (expanded) fix(scientist): resume after verified replacement experiments
+2026-11-08 23:41:19 | 🚀 alexholehouse pushed to holehouse-lab/xdrf
+    - [930abc4] (expanded) Bump to 1.7 with a second round of bug fixes
+2026-11-08 23:34:44 | 🚀 kennethreitz pushed to kennethreitz/pytheory
+    - [8792f4b] (expanded) Release v0.58.0
+2026-11-08 23:02:36 | ⭐️ ayushd718 starred Junjie-Zhu/IDPFold2
+2026-11-08 22:50:43 | 🚀 gitesei pushed to gitesei/MEM-CALVADOS
+    - [5326f48] (expanded) Update version
+2026-11-08 20:52:07 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [d92923c] (expanded) fix(scientist): preserve rejected models and provide focused source diagnostics
+2026-11-08 20:22:28 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [a3e5447] (expanded) ci(security): group dependency updates and retain audit evidence
+2026-11-08 20:17:19 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [54d5668] (expanded) fix(researcher): preserve per-report budgets across resume
+2026-11-08 19:20:32 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [ee9c9ca] (expanded) ci(harness): verify protocol boundaries in an isolated environment
+2026-11-08 18:08:20 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [02bca1d] (expanded) fix(scientist): resolve repaired writes and guide experiment lineage
+2026-11-08 17:32:50 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [60b7e40] (expanded) fix(harness): retain content-free response completion evidence
+2026-11-08 17:12:01 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [4e7a2d3] (expanded) fix(scientist): keep internal repair requests in the research loop
+2026-11-08 16:51:02 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [bd553db] (expanded) fix(scientist): plan concrete methods and matched comparisons
+2026-11-08 16:15:30 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [f2700d4] (expanded) fix(scientist): preview table schemas before full-data analysis
+2026-11-08 15:50:00 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [83f31cd] (expanded) test: isolate simulated downloads and record security validation
+2026-11-08 14:07:28 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [64d7309] (expanded) fix(scientist): distinguish training tables from evaluation references
+2026-11-08 13:18:24 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [a2b2025] (expanded) feat(researcher): review source evidence and export research dossiers
