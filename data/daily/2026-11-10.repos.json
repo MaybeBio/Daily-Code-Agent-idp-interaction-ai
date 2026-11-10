@@ -1,0 +1,234 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "0xBEEBAD",
+      "23xxCh",
+      "Andres0258",
+      "BGFGB",
+      "Banana-llama8686",
+      "GaolengYan",
+      "KeyWaveTree",
+      "OpenSesh95",
+      "RamiliRindra",
+      "TranquilityTech",
+      "Zlorideee",
+      "alexisvalentino",
+      "closiy",
+      "connorburgess",
+      "dagang2017",
+      "halthinks",
+      "hsaeed3",
+      "ink7412",
+      "jhonypachecop",
+      "mcallzbl",
+      "netxfly",
+      "ontichiscwit",
+      "southwestCat",
+      "tool-jx3"
+    ],
+    "event": "mixed",
+    "stars": 16967,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "kennethreitz/responder",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 3617,
+    "language": "Python",
+    "description": "A familiar HTTP Service Framework for Python.",
+    "url": "https://github.com/kennethreitz/responder"
+  },
+  {
+    "full_name": "kennethreitz/pytheory",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 1664,
+    "language": "Python",
+    "description": "Music Theory for Humans.",
+    "url": "https://github.com/kennethreitz/pytheory"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "felixpernegger"
+    ],
+    "event": "other",
+    "stars": 1356,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "ghghghasdf"
+    ],
+    "event": "star",
+    "stars": 460,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "r-lib/httr2",
+    "who": [
+      "hadley"
+    ],
+    "event": "push",
+    "stars": 274,
+    "language": "R",
+    "description": "Make HTTP requests and process their responses. A modern reimagining of httr.",
+    "url": "https://github.com/r-lib/httr2"
+  },
+  {
+    "full_name": "ai4protein/VenusFactory2",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 253,
+    "language": "Python",
+    "description": "🏭 AI agent platform with skills for protein engineering, the noob-friendly AI tutorial tool for life science professionals. (ACL Demo2025, arXiv 2026)",
+    "url": "https://github.com/ai4protein/VenusFactory2"
+  },
+  {
+    "full_name": "tidyverse/data-dict",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 113,
+    "language": "Rust",
+    "description": "",
+    "url": "https://github.com/tidyverse/data-dict"
+  },
+  {
+    "full_name": "kennethreitz/fetch.py",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 18,
+    "language": "Python",
+    "description": "Requests energy for when the dependency is the problem.",
+    "url": "https://github.com/kennethreitz/fetch.py"
+  },
+  {
+    "full_name": "kennethreitz/kennethreitz.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "pr",
+    "stars": 16,
+    "language": "Python",
+    "description": "The source code of kennethreitz.org.",
+    "url": "https://github.com/kennethreitz/kennethreitz.org"
+  },
+  {
+    "full_name": "tsubo-lab/monoyield-predictor",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 14,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/tsubo-lab/monoyield-predictor"
+  },
+  {
+    "full_name": "THGLab/CAFE",
+    "who": [
+      "dingye18"
+    ],
+    "event": "star",
+    "stars": 11,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/THGLab/CAFE"
+  },
+  {
+    "full_name": "kennethreitz/noodler",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 7,
+    "language": "Python",
+    "description": "A modular music environment where theory itself is patchable. Eurorack-inspired, built in Python around PyTheory.",
+    "url": "https://github.com/kennethreitz/noodler"
+  },
+  {
+    "full_name": "kennethreitz/rhymepad.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 6,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/kennethreitz/rhymepad.org"
+  },
+  {
+    "full_name": "kennethreitz/pytheory-playground",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "pr",
+    "stars": 2,
+    "language": "JavaScript",
+    "description": "Interactive music theory toolbox powered by pytheory",
+    "url": "https://github.com/kennethreitz/pytheory-playground"
+  },
+  {
+    "full_name": "kennethreitz/requeststoken.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "pr",
+    "stars": 2,
+    "language": "Python",
+    "description": "requests coin site — built with Responder",
+    "url": "https://github.com/kennethreitz/requeststoken.org"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "kennethreitz/responder-httpbin",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "pr",
+    "stars": 0,
+    "language": "Python",
+    "description": "HTTP Request & Response Service, written in Python + Responder.",
+    "url": "https://github.com/kennethreitz/responder-httpbin"
+  }
+]
