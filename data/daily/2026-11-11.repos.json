@@ -1,0 +1,201 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "175PRE",
+      "Abdulltif05",
+      "Ajdi-Reda",
+      "Falyaqout",
+      "Kareemkiller",
+      "Omarezz4",
+      "QiuXidi",
+      "adjo0101",
+      "alciobi",
+      "fkrn75",
+      "hii0608",
+      "khairm",
+      "mangeshraut712",
+      "mr-turna",
+      "ojibona1",
+      "omidkafar2002-pixel",
+      "protonew67",
+      "tbongkim03",
+      "wjh2020"
+    ],
+    "event": "mixed",
+    "stars": 17355,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "kennethreitz/responder",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 3618,
+    "language": "Python",
+    "description": "A familiar HTTP Service Framework for Python.",
+    "url": "https://github.com/kennethreitz/responder"
+  },
+  {
+    "full_name": "google-deepmind/optax",
+    "who": [
+      "copybara-service",
+      "google-cla"
+    ],
+    "event": "mixed",
+    "stars": 2366,
+    "language": "Python",
+    "description": "Optax is a gradient processing and optimization library for JAX.",
+    "url": "https://github.com/google-deepmind/optax"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "bocowgill",
+      "carlostoledo1891"
+    ],
+    "event": "mixed",
+    "stars": 1358,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "RConsortium/S7",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 496,
+    "language": "R",
+    "description": "S7: a new OO system for R",
+    "url": "https://github.com/RConsortium/S7"
+  },
+  {
+    "full_name": "ai4protein/VenusFactory2",
+    "who": [
+      "tyang816"
+    ],
+    "event": "mixed",
+    "stars": 253,
+    "language": "Python",
+    "description": "🏭 AI agent platform with skills for protein engineering, the noob-friendly AI tutorial tool for life science professionals. (ACL Demo2025, arXiv 2026)",
+    "url": "https://github.com/ai4protein/VenusFactory2"
+  },
+  {
+    "full_name": "KULL-Centre/CALVADOS",
+    "who": [
+      "yaseminsucu"
+    ],
+    "event": "star",
+    "stars": 107,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/CALVADOS"
+  },
+  {
+    "full_name": "google-deepmind/code-verification",
+    "who": [
+      "ddigrado",
+      "diegode",
+      "gbennett71",
+      "gopihc"
+    ],
+    "event": "mixed",
+    "stars": 92,
+    "language": "Lean",
+    "description": "Verifying Signal's security at the machine-code level",
+    "url": "https://github.com/google-deepmind/code-verification"
+  },
+  {
+    "full_name": "THGLab/HiQBind",
+    "who": [
+      "ZidongS"
+    ],
+    "event": "star",
+    "stars": 91,
+    "language": "Jupyter Notebook",
+    "description": "Workflow to clean up and fix structural problems in protein-ligand binding datasets",
+    "url": "https://github.com/THGLab/HiQBind"
+  },
+  {
+    "full_name": "blt2114/MotifBench",
+    "who": [
+      "Immortals-33"
+    ],
+    "event": "push",
+    "stars": 84,
+    "language": "Jupyter Notebook",
+    "description": "A standardized protein design benchmark for motif-scaffolding problems",
+    "url": "https://github.com/blt2114/MotifBench"
+  },
+  {
+    "full_name": "julia-wrobel/registr",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 18,
+    "language": "HTML",
+    "description": "Register exponential family curves",
+    "url": "https://github.com/julia-wrobel/registr"
+  },
+  {
+    "full_name": "kennethreitz/kennethreitz.org",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 16,
+    "language": "Python",
+    "description": "The source code of kennethreitz.org.",
+    "url": "https://github.com/kennethreitz/kennethreitz.org"
+  },
+  {
+    "full_name": "kennethreitz/pytheory-playground",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "branch",
+    "stars": 2,
+    "language": "JavaScript",
+    "description": "Interactive music theory toolbox powered by pytheory",
+    "url": "https://github.com/kennethreitz/pytheory-playground"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "kennethreitz/responder-httpbin",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "HTTP Request & Response Service, written in Python + Responder.",
+    "url": "https://github.com/kennethreitz/responder-httpbin"
+  }
+]
