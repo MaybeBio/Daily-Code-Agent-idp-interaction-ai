@@ -1,0 +1,133 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "AousuoA",
+      "aning35",
+      "arm1383",
+      "chbaaic",
+      "decster",
+      "noguchisatoshi",
+      "tsinovoi"
+    ],
+    "event": "star",
+    "stars": 17650,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "0xZackary"
+    ],
+    "event": "star",
+    "stars": 4350,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "google-deepmind/open_x_embodiment",
+    "who": [
+      "simaihub"
+    ],
+    "event": "star",
+    "stars": 2096,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/open_x_embodiment"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "johnnynunez",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1627,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Nas01010101",
+      "github-actions",
+      "mo271",
+      "tombudd"
+    ],
+    "event": "mixed",
+    "stars": 1359,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/representations4d",
+    "who": [
+      "RuskiNuggetz"
+    ],
+    "event": "star",
+    "stars": 423,
+    "language": "Jupyter Notebook",
+    "description": "Foundation models for 4D spatial and temporal vision tasks.",
+    "url": "https://github.com/google-deepmind/representations4d"
+  },
+  {
+    "full_name": "google-deepmind/code-verification",
+    "who": [
+      "zhengyao-lin"
+    ],
+    "event": "star",
+    "stars": 167,
+    "language": "Lean",
+    "description": "Verifying Signal's security at the machine-code level",
+    "url": "https://github.com/google-deepmind/code-verification"
+  },
+  {
+    "full_name": "idptools/sparrow",
+    "who": [
+      "ym3141"
+    ],
+    "event": "star",
+    "stars": 46,
+    "language": "Python",
+    "description": "Next generation sequence parameter library for proteins",
+    "url": "https://github.com/idptools/sparrow"
+  },
+  {
+    "full_name": "THGLab/ecenet",
+    "who": [
+      "ysf-s"
+    ],
+    "event": "star",
+    "stars": 11,
+    "language": "Python",
+    "description": "SO(3)-equivariant interatomic potential (MLIP) using per-edge SO(2) features",
+    "url": "https://github.com/THGLab/ecenet"
+  },
+  {
+    "full_name": "google-deepmind/corr_faith",
+    "who": [
+      "taaranarimani-sys"
+    ],
+    "event": "star",
+    "stars": 5,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/corr_faith"
+  },
+  {
+    "full_name": "idptools/tadatorch",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "Python",
+    "description": "tadatorch is a PyTorch implementation of the TADA activation domain predictor that uses sparrow for parameter predictions. ",
+    "url": "https://github.com/idptools/tadatorch"
+  }
+]

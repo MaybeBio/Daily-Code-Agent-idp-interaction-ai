@@ -1,0 +1,3 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-12 06:12:37 | 💬 alexholehouse created issue 'Cannot import vectorized from sparrow.patterning' in idptools/tadatorch

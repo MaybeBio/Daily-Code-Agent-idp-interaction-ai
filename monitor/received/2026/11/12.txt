@@ -1,0 +1,32 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-12 09:54:45 | ⭐️ chbaaic starred google-deepmind/mujoco
+2026-11-12 09:54:14 | ⭐️ 0xZackary starred google-deepmind/mujoco_menagerie
+2026-11-12 09:48:43 | ⭐️ tsinovoi starred google-deepmind/mujoco
+2026-11-12 09:47:42 | ⭐️ zhengyao-lin starred google-deepmind/code-verification
+2026-11-12 09:46:45 | ⭐️ arm1383 starred google-deepmind/mujoco
+2026-11-12 09:38:35 | ⭐️ RuskiNuggetz starred google-deepmind/representations4d
+2026-11-12 09:27:15 | 🔹 thowell performed PullRequestReviewEvent on google-deepmind/mujoco_warp
+2026-11-12 09:25:08 | ⭐️ aning35 starred google-deepmind/mujoco
+2026-11-12 09:25:00 | 💬 thowell created issue 'Fix put_data's sparse Jacobian and compact constraint force' in google-deepmind/mujoco_warp
+2026-11-12 09:24:25 | ⭐️ AousuoA starred google-deepmind/mujoco
+2026-11-12 09:20:35 | 💬 johnnynunez created issue 'Sort contacts and constraint rows with fewer moves' in google-deepmind/mujoco_warp
+2026-11-12 09:20:32 | 💬 johnnynunez created issue 'Gather applied forces per dof in deterministic steps' in google-deepmind/mujoco_warp
+2026-11-12 09:20:29 | 💬 johnnynunez created issue 'Avoid atomics in the deterministic solver kernels' in google-deepmind/mujoco_warp
+2026-11-12 09:20:27 | 💬 johnnynunez created issue 'Avoid atomics in deterministic actuator and sparse contact kernels' in google-deepmind/mujoco_warp
+2026-11-12 09:20:25 | 💬 johnnynunez created issue 'Skip interpolated flexes in the flex elasticity kernel' in google-deepmind/mujoco_warp
+2026-11-12 09:16:06 | ⭐️ simaihub starred google-deepmind/open_x_embodiment
+2026-11-12 09:10:15 | 🔹 thowell performed PullRequestReviewEvent on google-deepmind/mujoco_warp
+2026-11-12 09:08:18 | 🔹 thowell performed PullRequestReviewEvent on google-deepmind/mujoco_warp
+2026-11-12 09:06:24 | 🔹 thowell performed PullRequestReviewEvent on google-deepmind/mujoco_warp
+2026-11-12 09:02:25 | 🐛 mo271 closed issue in google-deepmind/formal-conjectures: 'Erdős Problem 739'
+2026-11-12 09:02:21 | 🔀 Nas01010101 merged PR in google-deepmind/formal-conjectures
+2026-11-12 08:59:54 | ⭐️ decster starred google-deepmind/mujoco
+2026-11-12 08:59:29 | 🐛 thowell closed issue in google-deepmind/mujoco_warp: 'Connect constraint anchor computation does not account for joint reference positions.  Affects MuJoCo CPU and MuJoCo Warp.'
+2026-11-12 08:58:53 | 🐛 thowell closed issue in google-deepmind/mujoco_warp: 'Short sphere-capsule contacts are missed because segment projection adds a fixed epsilon'
+2026-11-12 08:55:20 | 🐛 mo271 closed issue in google-deepmind/formal-conjectures: 'Erdős Problem 297'
+2026-11-12 08:55:17 | 🔀 Nas01010101 merged PR in google-deepmind/formal-conjectures
+2026-11-12 08:54:13 | ⭐️ noguchisatoshi starred google-deepmind/mujoco
+2026-11-12 08:54:03 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-12 08:54:03 | 🔀 tombudd opened PR in google-deepmind/formal-conjectures
+2026-11-12 08:23:09 | ⭐️ taaranarimani-sys starred google-deepmind/corr_faith
