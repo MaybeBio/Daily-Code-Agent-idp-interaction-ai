@@ -1,0 +1,97 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "Bennyyunz",
+      "COST-97",
+      "M-Colley",
+      "annycarolinne",
+      "tongzhou1215",
+      "vroy007",
+      "yunngun",
+      "zhouyihangpm-afk"
+    ],
+    "event": "mixed",
+    "stars": 17770,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "thowell"
+    ],
+    "event": "issue",
+    "stars": 1630,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "mo271"
+    ],
+    "event": "issue",
+    "stars": 1360,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "CaffeineThief"
+    ],
+    "event": "star",
+    "stars": 477,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "google-deepmind/code-verification",
+    "who": [
+      "xupingai001"
+    ],
+    "event": "star",
+    "stars": 204,
+    "language": "Lean",
+    "description": "Verifying Signal's security at the machine-code level",
+    "url": "https://github.com/google-deepmind/code-verification"
+  },
+  {
+    "full_name": "tyang816/Awesome-TCM-LLM",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 138,
+    "language": "Python",
+    "description": "开源中医大模型、数据、新闻、专利、导师合集 (Open-source Traditional Chinese Medical Large Language Models, Datasets, News and Patents hub.)",
+    "url": "https://github.com/tyang816/Awesome-TCM-LLM"
+  },
+  {
+    "full_name": "idptools/sparrow",
+    "who": [
+      "ym3141"
+    ],
+    "event": "star",
+    "stars": 46,
+    "language": "Python",
+    "description": "Next generation sequence parameter library for proteins",
+    "url": "https://github.com/idptools/sparrow"
+  },
+  {
+    "full_name": "idptools/tadatorch",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "issue",
+    "stars": 0,
+    "language": "Python",
+    "description": "tadatorch is a PyTorch implementation of the TADA activation domain predictor that uses sparrow for parameter predictions. ",
+    "url": "https://github.com/idptools/tadatorch"
+  }
+]
