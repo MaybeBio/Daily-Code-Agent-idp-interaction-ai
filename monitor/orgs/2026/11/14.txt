@@ -1,0 +1,4 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-11-14 04:19:14 | 🚀 alexholehouse pushed to idptools/metapredict
+    - [76beca9] (expanded) Updated names

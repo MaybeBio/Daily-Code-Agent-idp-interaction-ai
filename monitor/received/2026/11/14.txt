@@ -1,0 +1,43 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-14 09:08:02 | 🍴 felixomahony forked google-deepmind/physics-IQ-benchmark
+2026-11-14 08:45:11 | 💬 declangessel created issue 'solve(ErdosProblems): link formal refutation of 488' in google-deepmind/formal-conjectures
+2026-11-14 08:35:37 | ⭐️ lanzegabber-pixel starred google-deepmind/mujoco
+2026-11-14 08:27:51 | ⭐️ myself-aas starred google-deepmind/mujoco
+2026-11-14 08:23:04 | ⭐️ kimjinhyuk starred google-deepmind/mujoco
+2026-11-14 08:16:12 | ⭐️ sakshi79 starred google-deepmind/mujoco
+2026-11-14 08:12:44 | 🔀 StafaH merged PR in google-deepmind/mujoco_warp
+2026-11-14 08:12:35 | 🔹 thowell performed PullRequestReviewEvent on google-deepmind/mujoco_warp
+2026-11-14 08:10:16 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-14 08:10:16 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-14 08:10:16 | 🔀 aryanamol10 opened PR in google-deepmind/formal-conjectures
+2026-11-14 07:47:34 | ⭐️ hopo55 starred google-deepmind/detectorscope
+2026-11-14 07:41:52 | ⭐️ sintamoedanojairodaniel7-hue starred google-deepmind/science-skills
+2026-11-14 07:36:41 | ⭐️ log43ve starred google-deepmind/mujoco
+2026-11-14 07:35:39 | ⭐️ Alpslee starred google-deepmind/mujoco_playground
+2026-11-14 07:31:14 | 🔀 dependabot labeled PR in google-deepmind/amplio
+2026-11-14 07:31:14 | 🔀 dependabot labeled PR in google-deepmind/amplio
+2026-11-14 07:31:12 | 🔀 dependabot opened PR in google-deepmind/amplio
+2026-11-14 07:31:03 | 💬 dependabot created issue 'Bump @sveltejs/kit, @sveltejs/adapter-auto and @sveltejs/adapter-static in /frontend' in google-deepmind/amplio
+2026-11-14 07:30:49 | 🔀 dependabot labeled PR in google-deepmind/amplio
+2026-11-14 07:30:49 | 🔀 dependabot labeled PR in google-deepmind/amplio
+2026-11-14 07:30:47 | 🔀 dependabot opened PR in google-deepmind/amplio
+2026-11-14 07:30:12 | 🔀 dependabot closed PR in google-deepmind/amplio
+2026-11-14 07:25:46 | ⭐️ Joner1598 starred google-deepmind/mujoco
+2026-11-14 07:12:20 | ⭐️ tinovyatkin starred google-deepmind/synthid-text
+2026-11-14 07:11:31 | ⭐️ alviyanhusna starred google-deepmind/mujoco
+2026-11-14 07:08:14 | 💬 hadley created issue 'Address mocking leakage' in r-lib/httr2
+2026-11-14 06:41:07 | 🐛 hadley closed issue in r-lib/httr2: '`check_content_type()` never shows the "Override check with `check_type = FALSE`" hint'
+2026-11-14 06:41:04 | 🔀 hadley merged PR in r-lib/httr2
+2026-11-14 06:37:52 | 🔀 hadley merged PR in r-lib/httr2
+2026-11-14 06:34:14 | 🐛 hadley closed issue in r-lib/httr2: 'Harden on-disk token cache format: AES-GCM + JSON instead of AES-CTR + RDS'
+2026-11-14 06:34:13 | 💬 hadley created issue 'Harden on-disk token cache format: AES-GCM + JSON instead of AES-CTR + RDS' in r-lib/httr2
+2026-11-14 06:30:33 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-14 06:29:45 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-14 06:28:56 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-14 05:36:12 | 💬 hadley created issue 'Tags in GCM aren't verified on decryption' in jeroen/openssl
+2026-11-14 05:32:08 | 🔀 hadley opened PR in r-lib/httr2
+2026-11-14 04:19:14 | 🚀 alexholehouse pushed to idptools/metapredict
+    - [76beca9] (expanded) Updated names
+2026-11-14 02:05:33 | 🐛 hadley opened issue in r-lib/httr2: '`check_content_type()` never shows the "Override check with `check_type = FALSE`" hint'
+2026-11-14 01:15:32 | 💬 thowell created issue 'render improvements' in google-deepmind/mujoco_warp

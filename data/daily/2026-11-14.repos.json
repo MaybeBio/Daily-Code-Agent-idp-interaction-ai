@@ -1,0 +1,155 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "Joner1598",
+      "alviyanhusna",
+      "kimjinhyuk",
+      "lanzegabber-pixel",
+      "log43ve",
+      "myself-aas",
+      "sakshi79"
+    ],
+    "event": "star",
+    "stars": 17874,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "sintamoedanojairodaniel7-hue"
+    ],
+    "event": "star",
+    "stars": 3472,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_playground",
+    "who": [
+      "Alpslee"
+    ],
+    "event": "star",
+    "stars": 2304,
+    "language": "Python",
+    "description": "An open-source library for sim and real robot demos on top of MuJoCo.",
+    "url": "https://github.com/google-deepmind/mujoco_playground"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "StafaH",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1631,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "pixeltris/YgoMaster",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 1412,
+    "language": "C#",
+    "description": "Offline Yu-Gi-Oh! Master Duel",
+    "url": "https://github.com/pixeltris/YgoMaster"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "aryanamol10",
+      "declangessel",
+      "felixpernegger",
+      "github-actions"
+    ],
+    "event": "mixed",
+    "stars": 1358,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/synthid-text",
+    "who": [
+      "tinovyatkin"
+    ],
+    "event": "star",
+    "stars": 1251,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/synthid-text"
+  },
+  {
+    "full_name": "google-deepmind/detectorscope",
+    "who": [
+      "hopo55"
+    ],
+    "event": "star",
+    "stars": 480,
+    "language": "Python",
+    "description": "Build AI text detectors whose decisions are mechanistically grounded and human-auditable (EMNLP 2026)",
+    "url": "https://github.com/google-deepmind/detectorscope"
+  },
+  {
+    "full_name": "google-deepmind/physics-IQ-benchmark",
+    "who": [
+      "felixomahony"
+    ],
+    "event": "fork",
+    "stars": 391,
+    "language": "Python",
+    "description": "Benchmarking physical understanding in generative video models",
+    "url": "https://github.com/google-deepmind/physics-IQ-benchmark"
+  },
+  {
+    "full_name": "r-lib/httr2",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 274,
+    "language": "R",
+    "description": "Make HTTP requests and process their responses. A modern reimagining of httr.",
+    "url": "https://github.com/r-lib/httr2"
+  },
+  {
+    "full_name": "google-deepmind/amplio",
+    "who": [
+      "dependabot"
+    ],
+    "event": "mixed",
+    "stars": 103,
+    "language": "Go",
+    "description": "Amplio: A Lightweight Agent Harness for Robust and Long-Horizon Runs",
+    "url": "https://github.com/google-deepmind/amplio"
+  },
+  {
+    "full_name": "jeroen/openssl",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 68,
+    "language": "R",
+    "description": "OpenSSL bindings for R",
+    "url": "https://github.com/jeroen/openssl"
+  },
+  {
+    "full_name": "idptools/metapredict",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 34,
+    "language": "Python",
+    "description": "A machine learning based protein disorder predictor.",
+    "url": "https://github.com/idptools/metapredict"
+  }
+]
