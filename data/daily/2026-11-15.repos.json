@@ -1,0 +1,80 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "anight",
+      "shireygrady-cell"
+    ],
+    "event": "star",
+    "stars": 17981,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "r-lib/httr2",
+    "who": [
+      "hadley"
+    ],
+    "event": "push",
+    "stars": 274,
+    "language": "R",
+    "description": "Make HTTP requests and process their responses. A modern reimagining of httr.",
+    "url": "https://github.com/r-lib/httr2"
+  },
+  {
+    "full_name": "ai4protein/VenusFactory2",
+    "who": [
+      "tyang816"
+    ],
+    "event": "other",
+    "stars": 253,
+    "language": "Python",
+    "description": "🏭 AI agent platform with skills for protein engineering, the noob-friendly AI tutorial tool for life science professionals. (ACL Demo2025, arXiv 2026)",
+    "url": "https://github.com/ai4protein/VenusFactory2"
+  },
+  {
+    "full_name": "THGLab/SynLlama",
+    "who": [
+      "srn0621-Bob"
+    ],
+    "event": "fork",
+    "stars": 50,
+    "language": "Python",
+    "description": "Code Space of SynLlama",
+    "url": "https://github.com/THGLab/SynLlama"
+  },
+  {
+    "full_name": "idptools/metapredict",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 34,
+    "language": "Python",
+    "description": "A machine learning based protein disorder predictor.",
+    "url": "https://github.com/idptools/metapredict"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "branch",
+    "stars": 22,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  }
+]
