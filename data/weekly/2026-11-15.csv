@@ -1,0 +1,253 @@
+repo,url,language,stars,last_commit,score,one_liner
+torvalds/linux,https://github.com/torvalds/linux,C,255712,2026-11-14T19:01:00Z,0,Linux内核仓库，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+google-deepmind/mujoco,https://github.com/google-deepmind/mujoco,C++,17993,2026-11-13T17:42:32Z,0,MuJoCo 是通用机器人/刚体动力学物理引擎，与 IDP/IDR 分子互作建模完全无关，无可迁移的分子互作机制建模思路。
+google-deepmind/alphafold,https://github.com/google-deepmind/alphafold,Python,14940,2026-04-22T17:58:21Z,4,AlphaFold是蛋白质结构预测工具，虽非面向IDP/IDR互作，但其AI建模方法可迁移至无序蛋白互作研究。
+google-deepmind/alphafold3,https://github.com/google-deepmind/alphafold3,Python,8776,2026-11-13T15:55:23Z,7,AlphaFold 3 是面向生物分子互作结构预测的深度学习工具，虽非专门针对 IDP/IDR，但其互作建模能力对无序蛋白参与的分子互作研究具有重要参考和迁移价值。
+google-deepmind/pysc2,https://github.com/google-deepmind/pysc2,Python,8337,2024-07-23T16:54:42Z,0,该仓库是DeepMind的星际争霸II强化学习环境PySC2，与无序蛋白分子互作建模完全无关。
+google-deepmind/mujoco_menagerie,https://github.com/google-deepmind/mujoco_menagerie,Python,4369,2026-11-10T20:21:12Z,0,该仓库是 MuJoCo 物理引擎的机器人模型集合，与 IDP/IDR 分子互作建模完全无关。
+kennethreitz/responder,https://github.com/kennethreitz/responder,Python,3618,2026-11-10T02:22:42Z,0,这是一个Python HTTP服务框架，与IDP/IDR分子互作、AI或物理模拟完全无关。
+google-deepmind/science-skills,https://github.com/google-deepmind/science-skills,Python,3475,2026-11-10T18:46:47Z,1,这是一个科学任务AI代理技能集合，涵盖基因组学、结构生物学等，但未涉及IDP/IDR分子互作或相关建模方法，与课题无关。
+google-deepmind/optax,https://github.com/google-deepmind/optax,Python,2366,2026-11-14T17:53:21Z,0,Optax 是 JAX 的梯度处理与优化库，与 IDP/IDR 分子互作建模完全无关，无可迁移的互作机制或 AI/模拟方法。
+google-deepmind/mujoco_playground,https://github.com/google-deepmind/mujoco_playground,Python,2307,2026-11-14T00:12:39Z,0,该仓库是机器人强化学习与仿真环境套件，与IDP/IDR分子互作建模完全无关。
+google-deepmind/open_x_embodiment,https://github.com/google-deepmind/open_x_embodiment,Jupyter Notebook,2098,2025-11-05T23:45:27Z,0,该仓库是机器人学习数据集与RT-X模型，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+ai4s-research/awesome-ai-for-science,https://github.com/ai4s-research/awesome-ai-for-science,,2093,2026-11-14T08:35:00Z,1,这是一个AI for Science的通用资源列表，涵盖各学科工具，与IDP/IDR分子互作建模无直接关联，仅可能包含少量可迁移的通用AI方法。
+kennethreitz/pytheory,https://github.com/kennethreitz/pytheory,Python,1668,2026-11-10T01:28:45Z,0,这是一个音乐理论与作曲的Python库，与无序蛋白分子互作建模完全无关。
+google-deepmind/mujoco_warp,https://github.com/google-deepmind/mujoco_warp,Python,1633,2026-11-14T23:06:49Z,0,这是一个面向机器人学的GPU加速物理模拟器，与IDP/IDR分子互作建模完全无关。
+sail-sg/envpool,https://github.com/sail-sg/envpool,C++,1535,2026-11-08T03:40:05Z,0,EnvPool 是强化学习环境并行加速库，与 IDP/IDR 分子互作建模完全无关。
+Vincentqyw/cv-arxiv-daily,https://github.com/Vincentqyw/cv-arxiv-daily,Python,1519,2026-11-11T04:35:34Z,,[llm failed]
+pixeltris/YgoMaster,https://github.com/pixeltris/YgoMaster,C#,1414,2026-11-11T01:21:09Z,,[llm failed]
+google-deepmind/formal-conjectures,https://github.com/google-deepmind/formal-conjectures,Lean,1360,2026-11-14T20:30:23Z,,[llm failed]
+google-deepmind/android_env,https://github.com/google-deepmind/android_env,Python,1262,2026-11-13T19:41:23Z,0,AndroidEnv 是用于 Android 设备交互与强化学习的平台，与 IDP/IDR 分子互作建模完全无关。
+google-deepmind/synthid-text,https://github.com/google-deepmind/synthid-text,Python,1251,2026-10-26T10:57:23Z,0,该仓库是SynthID文本水印技术的参考实现，与IDP/IDR分子互作建模完全无关。
+Soulmate-Halo/heterogeneous-gpu-pd-lab,https://github.com/Soulmate-Halo/heterogeneous-gpu-pd-lab,C++,1229,2026-11-10T05:42:05Z,0,该仓库专注于异构GPU集群上的大语言模型推理加速与部署，与IDP/IDR分子互作建模完全无关。
+google-deepmind/torax,https://github.com/google-deepmind/torax,Python,755,2026-11-13T10:25:21Z,0,TORAX 是托卡马克等离子体输运模拟器，与 IDP/IDR 分子互作及 AI/物理模拟方法完全无关。
+r-lib/cli,https://github.com/r-lib/cli,R,729,2026-11-07T19:41:41Z,0,这是一个用于开发命令行界面的R包，与IDP/IDR分子互作建模完全无关。
+JuliaMolSim/Molly.jl,https://github.com/JuliaMolSim/Molly.jl,Julia,502,2026-11-13T11:49:26Z,6,Molly.jl 是一个通用分子动力学模拟的 Julia 包，支持可微模拟和多种力场，虽不专门针对 IDP/IDR 互作，但其物理模拟方法可迁移用于无序蛋白的机制建模。
+RConsortium/S7,https://github.com/RConsortium/S7,R,497,2026-11-10T15:51:54Z,0,该仓库是R语言S7面向对象编程系统，与IDP/IDR分子互作及AI/物理模拟方法完全无关。
+google-deepmind/detectorscope,https://github.com/google-deepmind/detectorscope,Python,482,2026-10-24T13:43:09Z,,[llm failed]
+google-deepmind/representations4d,https://github.com/google-deepmind/representations4d,Jupyter Notebook,424,2026-11-10T16:47:22Z,0,该仓库是Google DeepMind的4D视觉表示学习项目，聚焦视频自监督学习、相机位姿估计、深度估计等计算机视觉任务，与IDP/IDR分子互作建模完全无关。
+google-deepmind/physics-IQ-benchmark,https://github.com/google-deepmind/physics-IQ-benchmark,Python,391,2026-10-20T14:11:58Z,0,该仓库是用于评估生成视频模型物理理解能力的基准数据集，与IDP/IDR分子互作建模完全无关。
+Beliavsky/Fortran-code-on-GitHub,https://github.com/Beliavsky/Fortran-code-on-GitHub,,390,2026-11-14T21:33:15Z,0,这是一个Fortran语言代码仓库索引，涵盖多个领域，但与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+r-lib/covr,https://github.com/r-lib/covr,R,349,2026-11-15T02:22:16Z,0,这是一个R包代码覆盖率测试工具，与IDP/IDR分子互作建模完全无关。
+AspirinCode/awesome-AI4MolConformation-MD,https://github.com/AspirinCode/awesome-AI4MolConformation-MD,,307,2026-11-14T11:17:36Z,6,这是一个AI4分子构象与分子动力学方法的资源列表仓库，涵盖IDP构象集成与分子互作相关综述，但缺乏实质算法实现，属于可参考的资源清单。
+r-lib/httr2,https://github.com/r-lib/httr2,R,274,2026-11-14T23:26:08Z,0,这是一个R语言的HTTP客户端库，与IDP/IDR分子互作、AI或物理模拟完全无关。
+ai4protein/VenusFactory2,https://github.com/ai4protein/VenusFactory2,Python,253,2026-11-14T04:11:09Z,2,这是一个面向蛋白质工程的AI智能体平台，提供通用蛋白预测与设计工具，但未涉及IDP/IDR分子互作机制建模，与课题方向关联微弱。
+google-deepmind/code-verification,https://github.com/google-deepmind/code-verification,Lean,245,2026-11-11T15:43:56Z,0,该仓库是Signal协议AArch64机器码的Lean形式化安全验证项目，与IDP/IDR分子互作建模完全无关。
+AI-in-Transportation-Lab/awesome-mechanistic-interpretability,https://github.com/AI-in-Transportation-Lab/awesome-mechanistic-interpretability,JavaScript,177,2026-11-14T04:36:39Z,0,该仓库是机械可解释性（AI模型内部机制）的资源汇总，与IDP/IDR分子互作建模完全无关。
+eliocamp/metR,https://github.com/eliocamp/metR,R,158,2026-11-07T14:50:58Z,0,metR 是用于气象数据分析和可视化的 R 工具包，与 IDP/IDR 分子互作建模完全无关。
+tyang816/Awesome-TCM-LLM,https://github.com/tyang816/Awesome-TCM-LLM,Python,140,2026-11-13T15:27:30Z,0,该仓库是开源中医大模型、数据、论文和导师的资源汇总，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+google-deepmind/habermas_machine,https://github.com/google-deepmind/habermas_machine,Python,122,2025-01-21T15:29:16Z,0,该仓库是用于民主协商的AI数据集和模型，与无序蛋白分子互作研究完全无关。
+tidyverse/data-dict,https://github.com/tidyverse/data-dict,Rust,114,2026-09-11T19:01:00Z,0,这是一个数据字典规范与验证工具，与无序蛋白分子互作建模完全无关。
+KULL-Centre/CALVADOS,https://github.com/KULL-Centre/CALVADOS,Python,107,2026-11-06T11:07:52Z,8,CALVADOS 是面向 IDP 的粗粒化隐式溶剂模拟工具，基于 OpenMM 实现，用于预测无序蛋白的相分离和单链性质，虽侧重 LLPS 但核心是 IDP 分子互作建模，方法为物理模拟，可直接使用。
+google-deepmind/amplio,https://github.com/google-deepmind/amplio,Go,103,2026-11-13T23:53:29Z,,[llm failed]
+THGLab/HiQBind,https://github.com/THGLab/HiQBind,Jupyter Notebook,91,2026-03-18T22:59:57Z,,[llm failed]
+blt2114/MotifBench,https://github.com/blt2114/MotifBench,Jupyter Notebook,84,2026-11-13T09:24:40Z,2,MotifBench 是面向折叠蛋白 motif-scaffolding 设计的基准测试，不涉及 IDP/IDR 或无序分子互作，仅方法上可部分迁移。
+THGLab/LP-PDBBind,https://github.com/THGLab/LP-PDBBind,Jupyter Notebook,76,2025-07-13T13:19:27Z,2,该仓库聚焦PDBbind数据集清洗与打分函数重训练，面向折叠蛋白-小分子对接，与IDP/IDR分子互作机制建模无关。
+google-deepmind/cryptids,https://github.com/google-deepmind/cryptids,Lean,74,2026-11-12T15:39:53Z,0,该仓库是Lean 4形式化验证的图灵机与忙碌海狸问题库，与无序蛋白分子互作及AI/物理模拟方法完全无关。
+jeroen/openssl,https://github.com/jeroen/openssl,R,68,2026-11-14T23:49:46Z,0,该仓库是R语言OpenSSL加密工具包，与IDP/IDR分子互作建模完全无关。
+zhaisilong/awesome-peptide,https://github.com/zhaisilong/awesome-peptide,Python,54,2026-11-11T14:04:22Z,2,这是一个肽研究论文资源列表，涵盖设计、递送、生物材料等广泛主题，但未聚焦IDP/IDR分子互作机制建模，也无实质算法或模拟代码。
+idptools/finches,https://github.com/idptools/finches,Jupyter Notebook,52,2026-11-07T19:24:32Z,9,FINCHES 是一个基于物理模型（Mpipi-GG 和 CALVADOS 力场）从序列预测无序蛋白区域（IDR）介导的分子间相互作用的软件包，直接面向 IDP/IDR 互作机制建模，并提供可用的代码和工具。
+google-deepmind/alphaevolve,https://github.com/google-deepmind/alphaevolve,Jupyter Notebook,51,2026-11-11T12:20:16Z,0,AlphaEvolve 是一个用于科学和算法发现的编码代理，专注于矩阵乘法指数和数学问题，与 IDP/IDR 分子互作完全无关。
+idptools/sparrow,https://github.com/idptools/sparrow,Python,46,2026-11-03T19:40:55Z,6,SPARROW 是一个面向 IDR 的序列参数计算与构象性质预测工具包，虽不直接建模分子互作，但其 IDR 相关预测和可扩展设计对无序蛋白互作研究有参考价值。
+julie-forman-kay-lab/IDPConformerGenerator,https://github.com/julie-forman-kay-lab/IDPConformerGenerator,Python,36,2026-11-13T07:03:18Z,8,IDPConformerGenerator 是面向固有无序蛋白构象采样的工具，通过生成无序蛋白构象池支持后续互作建模，与 IDP/IDR 分子互作机制建模高度相关。
+idptools/metapredict,https://github.com/idptools/metapredict,Python,34,2026-11-13T20:19:13Z,6,metapredict 是基于机器学习的蛋白质无序预测工具，直接面向 IDP/IDR 对象，但仅预测无序属性，不涉及分子互作机制建模，方法上为深度学习但缺乏互作相关功能。
+YuzeHao2023/daily-arxiv-ai4chem,https://github.com/YuzeHao2023/daily-arxiv-ai4chem,Python,32,2026-11-09T18:22:24Z,,[llm failed]
+Junjie-Zhu/IDPFold2,https://github.com/Junjie-Zhu/IDPFold2,Python,31,2026-10-01T06:45:42Z,,[llm failed]
+tfatykhov/awesome-agent-memory,https://github.com/tfatykhov/awesome-agent-memory,,25,2026-11-12T15:04:08Z,0,该仓库是LLM智能体记忆系统的论文资源列表，与IDP/IDR分子互作建模完全无关。
+kennethreitz/RetroVault,https://github.com/kennethreitz/RetroVault,Swift,23,2026-11-09T09:35:20Z,0,RetroVault 是一个 macOS 游戏库和模拟器前端，与 IDP/IDR 分子互作、AI 或物理模拟完全无关。
+PeptoneLtd/peptonebench,https://github.com/PeptoneLtd/peptonebench,Jupyter Notebook,22,2026-11-11T16:45:14Z,8,PeptoneBench 是一个评估蛋白质系综预测的基准工具，覆盖从有序到无序蛋白的连续谱，通过重加权和实验数据对比来评估无序蛋白构象系综，与 IDP 分子互作机制建模相关但非直接互作预测。
+zeleny-ondrej/STNN-Weekly-Arxiv,https://github.com/zeleny-ondrej/STNN-Weekly-Arxiv,Python,20,2026-11-10T03:53:44Z,0,该仓库是时空神经网络相关论文的泛 arXiv 汇总列表，与 IDP/IDR 分子互作及 AI/物理模拟方法完全无关。
+YuzeHao2023/daily-arxiv-ai4bio,https://github.com/YuzeHao2023/daily-arxiv-ai4bio,Python,20,2026-11-09T18:30:36Z,2,这是一个泛化的生物信息学论文列表仓库，包含蛋白质结构、抗体、基因组学等主题，但未聚焦IDP/IDR分子互作，且无实质算法或工具实现。
+rotemTsafrir/antenna_sim,https://github.com/rotemTsafrir/antenna_sim,JavaScript,19,2026-11-09T18:00:06Z,0,这是一个电磁天线场模拟器，与无序蛋白分子互作及AI/物理模拟方法完全无关。
+kennethreitz/fetch.py,https://github.com/kennethreitz/fetch.py,Python,18,2026-11-09T14:49:12Z,0,这是一个单文件HTTP客户端库，与IDP/IDR分子互作、AI或物理模拟完全无关。
+julia-wrobel/registr,https://github.com/julia-wrobel/registr,HTML,18,2026-11-10T16:32:35Z,0,这是一个用于指数族函数型数据配准的R包，与IDP/IDR分子互作建模完全无关。
+tsubo-lab/monoyield-predictor,https://github.com/tsubo-lab/monoyield-predictor,Python,17,2026-11-06T05:25:17Z,1,该仓库是预测大肠杆菌中单体蛋白表达产量的蛋白语言模型工具，与IDP/IDR分子互作机制建模无关。
+kennethreitz/kennethreitz.org,https://github.com/kennethreitz/kennethreitz.org,Python,16,2026-11-10T02:48:22Z,0,这是一个个人网站/数字花园项目，与IDP/IDR分子互作、AI或物理模拟方法完全无关。
+YuzeHao2023/daily-arxiv-ai4physics,https://github.com/YuzeHao2023/daily-arxiv-ai4physics,Python,16,2026-11-09T17:52:32Z,0,该仓库是科学机器学习与PDE学习的论文列表，不涉及IDP/IDR或分子互作，与课题无关。
+YuzeHao2023/daily-arxiv-ai4cheme,https://github.com/YuzeHao2023/daily-arxiv-ai4cheme,Python,14,2026-11-09T18:34:00Z,0,该仓库是化学工程领域论文与代码的汇总列表，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+chemgame/BEER,https://github.com/chemgame/BEER,Python,13,2026-11-10T06:25:27Z,7,BEER 是一个集成多种生物物理分析（含无序预测、RNA结合倾向、相分离指标）的桌面工具，基于ESM蛋白语言模型和BiLSTM预测头，面向序列级属性分析而非直接建模IDP/IDR参与的分子互作机制，但无序相关预测和互作数据库集成对课题有参考价值。
+THGLab/CAFE,https://github.com/THGLab/CAFE,Python,11,2026-07-20T01:59:57Z,2,该仓库是面向折叠蛋白（激酶等）的变构/隐蔽口袋片段探索工作流，利用Boltz共折叠和几何定位，不涉及IDP/IDR或无序分子互作，互作建模思路可迁移性有限。
+THGLab/ecenet,https://github.com/THGLab/ecenet,Python,11,2026-09-10T17:41:57Z,,[llm failed]
+bio-phys/BRMSD,https://github.com/bio-phys/BRMSD,Python,10,2026-11-10T10:18:28Z,,[llm failed]
+Franculino/microBlooM,https://github.com/Franculino/microBlooM,Python,10,2026-11-13T15:13:40Z,0,该仓库是微血管血流模拟框架，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+getwilds/wilds-docker-library,https://github.com/getwilds/wilds-docker-library,Dockerfile,9,2026-11-13T00:32:08Z,1,这是一个生物信息学Docker镜像集合仓库，虽包含STARLING等无序蛋白预测工具，但本质是通用容器环境，不面向IDP/IDR分子互作机制建模。
+kennethreitz/noodler,https://github.com/kennethreitz/noodler,Python,8,2026-11-10T01:50:28Z,0,这是一个模块化音乐合成器项目，与IDP/IDR分子互作及AI/物理模拟方法完全无关。
+holehouse-lab/xdrf,https://github.com/holehouse-lab/xdrf,M4,7,2026-11-08T15:41:19Z,0,这是一个用于读写XDR格式数据的C/C++/Fortran库，与IDP/IDR分子互作建模完全无关。
+BioComputingUP/idpo,https://github.com/BioComputingUP/idpo,Makefile,7,2026-11-12T11:52:26Z,,[llm failed]
+kennethreitz/rhymepad.org,https://github.com/kennethreitz/rhymepad.org,Python,6,2026-11-10T02:28:41Z,,[llm failed]
+lnaworsk/plm_interp,https://github.com/lnaworsk/plm_interp,Python,6,2026-11-09T17:37:35Z,6,该仓库分析ESM-2蛋白语言模型对固有无序蛋白的可解释性，涉及IDP属性预测与接触图分析，但未聚焦无序蛋白介导的分子互作机制建模。
+polyidoit/Arxiv-TQFT,https://github.com/polyidoit/Arxiv-TQFT,Python,6,2026-11-14T04:19:42Z,0,该仓库是拓扑序、广义对称性等理论物理方向的arXiv论文自动更新列表，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+google-deepmind/corr_faith,https://github.com/google-deepmind/corr_faith,Python,5,2026-04-29T10:54:06Z,0,该仓库研究LLM自我解释的忠实性，与IDP/IDR分子互作建模完全无关。
+HolobiomicsLab/Magnolia-AI,https://github.com/HolobiomicsLab/Magnolia-AI,Python,5,2026-11-13T22:35:21Z,2,这是一个面向计算化学研究的AI代理框架，侧重实验记录与记忆管理，虽集成对接和MD工具但非IDP/IDR互作机制建模工具，与课题核心方向关联微弱。
+smaniches/alphafold-sovereign-mcp,https://github.com/smaniches/alphafold-sovereign-mcp,Python,5,2026-11-14T07:10:53Z,2,这是一个封装AlphaFold DB等公共数据库的MCP服务器，用于结构生物学数据查询与整合，不涉及IDP/IDR分子互作机制建模或相关AI/模拟方法。
+PeptoneLtd/IDP-o,https://github.com/PeptoneLtd/IDP-o,Python,5,2026-11-11T16:46:02Z,7,IDP-o 是基于片段拼接的固有无序蛋白构象系综生成工具，直接面向 IDP 结构建模，但未聚焦分子互作机制，方法上依赖结构数据库搜索而非 AI/物理模拟。
+ELELAB/MAVISp_automatization,https://github.com/ELELAB/MAVISp_automatization,PostScript,4,2026-11-11T15:31:04Z,6,该仓库是MAVISp自动化Snakemake流程，用于癌症蛋白突变效应分析，包含IDP专用目标规则，但核心是突变分类而非无序蛋白互作机制建模。
+exopoiesis/arxiv-radar-chemistry,https://github.com/exopoiesis/arxiv-radar-chemistry,Python,3,2026-11-14T05:22:33Z,2,这是一个分子/材料科学AI论文的自动汇总列表，涵盖分子表示、性质预测、力场等广泛主题，但完全不涉及IDP/IDR或无序蛋白分子互作，且无实质代码实现。
+hyperpolymath/boinc-boinc,https://github.com/hyperpolymath/boinc-boinc,Rust,3,2026-11-13T20:38:05Z,0,该仓库是一个编程语言项目，与IDP/IDR分子互作及AI/物理模拟方法完全无关。
+SeoulTechPSE/laplace-fourier-operators,https://github.com/SeoulTechPSE/laplace-fourier-operators,Python,3,2026-11-12T00:32:48Z,0,该仓库是Laplace-Fourier神经算子的研究代码，面向偏微分方程求解，与IDP/IDR分子互作建模完全无关。
+menes97/ayran-mini-fabrika,https://github.com/menes97/ayran-mini-fabrika,JavaScript,3,2026-11-10T12:53:32Z,0,该仓库是一个基于PLC和Modbus的酸奶饮料工厂3D仿真项目，与无序蛋白分子互作及AI/物理模拟方法完全无关。
+kennethreitz/requeststoken.org,https://github.com/kennethreitz/requeststoken.org,Python,2,2026-11-10T00:59:32Z,0,这是一个关于Solana加密货币代币的网站，与IDP/IDR分子互作研究完全无关。
+gitesei/MEM-CALVADOS,https://github.com/gitesei/MEM-CALVADOS,Python,2,2026-11-13T16:19:02Z,8,MEM-CALVADOS 是面向膜界面柔性蛋白的粗粒化模拟工具，基于 CALVADOS 模型，直接支持 IDP/IDR 在膜环境中的构象与互作模拟，方法为物理模拟，对象与领域高度匹配。
+kennethreitz/pytheory-playground,https://github.com/kennethreitz/pytheory-playground,JavaScript,2,2026-11-10T01:43:51Z,0,这是一个音乐理论工具箱，与IDP/IDR分子互作建模完全无关。
+txingxie/IDPInterp,https://github.com/txingxie/IDPInterp,Python,2,2026-11-08T20:47:01Z,6,该仓库训练并解释蛋白语言模型中的无序特征，聚焦IDP/IDR表征分析，但未直接建模无序分子互作机制，方法可迁移但对象与互作轴偏弱。
+dutykh/computational-etudes,https://github.com/dutykh/computational-etudes,TeX,2,2026-11-14T22:45:09Z,0,该仓库是一本关于微分方程谱方法的数值计算教材，与IDP/IDR分子互作、AI或物理模拟建模完全无关。
+nnennandukwe/threadloop,https://github.com/nnennandukwe/threadloop,TypeScript,2,2026-11-14T18:53:25Z,0,ThreadLoop 是一个软件交付任务生命周期管理工具，与 IDP/IDR 分子互作建模完全无关。
+guozhihuan01-hash/embodied-nav-papers,https://github.com/guozhihuan01-hash/embodied-nav-papers,Python,2,2026-11-14T11:15:42Z,0,该仓库是具身导航（Vision-Language Navigation）论文列表，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+nicetone9/OpenPhase,https://github.com/nicetone9/OpenPhase,HTML,2,2026-11-13T22:23:28Z,7,OpenPhase 是一个面向液-液相分离（LLPS）的条件感知数据集与平台，包含蛋白-RNA/DNA互作数据及扩散模型，虽聚焦相分离子场景，但为无序蛋白介导的核酸互作建模提供了可迁移的数据与工具。
+kennethreitz/cannoli,https://github.com/kennethreitz/cannoli,Kotlin,1,2026-11-08T18:20:02Z,0,该仓库是Android复古游戏前端，与IDP/IDR分子互作建模完全无关。
+chunqing403/protein-design-radar,https://github.com/chunqing403/protein-design-radar,HTML,1,2026-11-14T06:40:06Z,2,这是一个深度学习蛋白质设计论文的每日雷达/文献汇总仓库，仅列出论文标题和分类，无实质代码或工具，且不聚焦IDP/IDR分子互作机制建模。
+patjiang/Biophysical-Transformer,https://github.com/patjiang/Biophysical-Transformer,Python,1,2026-11-13T22:01:41Z,6,该仓库提出以静电物理场为预训练目标的蛋白语言模型BioT，在CAID无序预测和PPI互作基准上验证了物理场预训练对无序蛋白及互作预测的增益，但核心对象并非IDP/IDR互作机制建模，而是通用蛋白表征学习。
+COSBlab/bAIes-IDP-OpenMM,https://github.com/COSBlab/bAIes-IDP-OpenMM,,1,2026-11-13T12:25:47Z,8,该仓库实现基于AI结构预测器（AlphaFold）生成IDP原子分辨率系综的OpenMM工具，直接面向IDP构象系综建模，但未明确聚焦分子互作机制。
+CultureBotAI/proteintraitsmech,https://github.com/CultureBotAI/proteintraitsmech,Python,1,2026-11-11T23:05:50Z,2,这是一个蛋白质序列/结构特征的知识库与策展框架，虽提及无序区域但仅作为序列特征之一，不涉及IDP/IDR分子互作建模或AI/物理模拟方法，与课题核心方向基本无关。
+azizsimx/IDP_pdb,https://github.com/azizsimx/IDP_pdb,Jupyter Notebook,1,2026-11-11T11:08:57Z,6,该仓库提供IDP结构数据与MD分析笔记本，面向无序蛋白聚集的物理模拟，但缺乏互作机制建模的深度工具。
+genmnz/jean-by-melad-labs,https://github.com/genmnz/jean-by-melad-labs,Python,1,2026-11-13T14:39:49Z,1,这是一个面向通用生物信息学与生物技术实验设计的MCP工具套件，不涉及IDP/IDR分子互作或相关AI/模拟建模，与课题方向基本无关。
+mrthnkzlrmk865-cmd/Quantum-Schrodinger-PINN,https://github.com/mrthnkzlrmk865-cmd/Quantum-Schrodinger-PINN,HTML,1,2026-11-14T12:55:37Z,0,该仓库是量子物理中无序势场中波包动力学的计算项目，与IDP/IDR分子互作完全无关。
+aluinn/biotech-project,https://github.com/aluinn/biotech-project,JavaScript,1,2026-11-09T23:08:32Z,2,这是一个基于AlphaFold预测结构、按pLDDT着色的蛋白质3D结构可视化教育工具，仅展示单蛋白结构，不涉及IDP/IDR分子互作建模或AI/模拟方法实现。
+luizdione/Platform_ppi_docking,https://github.com/luizdione/Platform_ppi_docking,Python,1,2026-11-09T00:38:40Z,6,该仓库实现了一个基于AI预测复合物（如Boltz-2）与HADDOCK3柔性精修的置信漏斗，用于筛选和准备蛋白-蛋白复合物以进行分子动力学模拟，虽不直接针对IDP/IDR，但其互作界面评估与精修流程可迁移至无序蛋白互作建模。
+exopoiesis/arxiv-radar-electrochemistry,https://github.com/exopoiesis/arxiv-radar-electrochemistry,Python,1,2026-11-14T07:27:18Z,0,该仓库是电化学、CO2还原、矿物表面等主题的arXiv论文汇总列表，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+deepikagupta8050/deepikagupta8050,https://github.com/deepikagupta8050/deepikagupta8050,,1,2026-11-10T05:51:20Z,0,这是一个个人简历/作品集仓库，展示全栈开发与AI/ML技能，与IDP/IDR分子互作建模方向无关。
+Geckos-Ink/trech,https://github.com/Geckos-Ink/trech,Python,1,2026-11-14T19:17:55Z,1,TRECH 是一个基于 Geant4 的多尺度物理模拟与学习工具包，面向粒子输运、流体、化学等场景，不涉及 IDP/IDR 或无序蛋白分子互作建模。
+SihoonSung/Daily-Paper-Summary,https://github.com/SihoonSung/Daily-Paper-Summary,Python,1,2026-11-14T16:23:54Z,0,这是一个跨领域的每日论文摘要归档仓库，内容涵盖航天、材料、机器人等，与IDP/IDR分子互作及AI/模拟方法完全无关。
+xdd550/NCRF,https://github.com/xdd550/NCRF,Python,1,2026-11-14T14:00:44Z,4,该仓库是预测受控相分离演化的双尺度卷积循环模型，虽涉及相分离但未聚焦IDP/IDR分子互作机制，且方法为通用预测而非互作建模，相关性有限。
+emberian/intmat,https://github.com/emberian/intmat,HTML,1,2026-11-13T23:15:17Z,0,该仓库是物质演化与细胞生态的Julia模拟项目，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+Risho11/NIPS-pipeline,https://github.com/Risho11/NIPS-pipeline,HTML,1,2026-11-13T20:03:00Z,0,该仓库是聚合物膜自动化制备与表征系统，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+kabe89/BioLabCalc,https://github.com/kabe89/BioLabCalc,Python,1,2026-11-13T16:32:10Z,0,这是一个面向湿实验的实验室计算与电子实验记录本套件，与IDP/IDR分子互作建模完全无关。
+hhchoi1022/7DT_calculator,https://github.com/hhchoi1022/7DT_calculator,Python,1,2026-11-13T12:55:44Z,0,该仓库是7维望远镜观测计算工具，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+ireneghioni-glitch/AI-UV-Curing-Showcase,https://github.com/ireneghioni-glitch/AI-UV-Curing-Showcase,,1,2026-11-12T22:24:56Z,0,该仓库是UV固化预测与光引发剂发现平台，面向光化学与材料配方，与IDP/IDR分子互作及无序蛋白机制建模完全无关。
+tensorpackai/tensorpackai-community,https://github.com/tensorpackai/tensorpackai-community,Python,1,2026-11-11T17:00:14Z,0,该仓库是面向LLM推理的GPU能耗优化工具，与IDP/IDR分子互作建模完全无关。
+osqzss/pluto-crpa,https://github.com/osqzss/pluto-crpa,Python,1,2026-11-11T07:22:03Z,0,该仓库是GPS抗干扰天线阵列的FPGA原型，与无序蛋白分子互作课题完全无关。
+dietmarwo/autoresearch-circuit,https://github.com/dietmarwo/autoresearch-circuit,Python,1,2026-11-08T10:43:18Z,0,该仓库是随机生化电路（振荡器）的自动化设计工具，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+NacreCraftDev/NacreCraft,https://github.com/NacreCraftDev/NacreCraft,C#,1,2026-11-08T07:10:55Z,0,这是一个用C#重写的Minecraft服务器/客户端项目，与IDP/IDR分子互作、AI或物理模拟完全无关。
+BioComputingUP/BioComp_resource_monitor,https://github.com/BioComputingUP/BioComp_resource_monitor,Python,0,2026-11-15T03:15:38Z,0,这是一个生物计算资源监控仓库，仅做网站/API可用性检查，与IDP/IDR分子互作建模完全无关。
+BioComputingUP/dome-tracking,https://github.com/BioComputingUP/dome-tracking,Python,0,2026-11-15T03:12:07Z,0,该仓库是DOME生态系统的网站可用性与代码活动监控工具，与IDP/IDR分子互作建模完全无关。
+fuxialexander/cd200_manuscript_bundle,https://github.com/fuxialexander/cd200_manuscript_bundle,Python,0,2026-11-07T14:26:02Z,1,该仓库是CD200基因的染色质可及性预测模型（MoDL），基于DNA序列和ATAC数据，与IDP/IDR分子互作机制建模无关。
+boscoh/gigmap,https://github.com/boscoh/gigmap,Python,0,2026-11-11T08:46:39Z,0,这是一个墨尔本演出活动地图与数据聚合工具，与无序蛋白分子互作研究完全无关。
+kennethreitz/gen1recomp-mod-index,https://github.com/kennethreitz/gen1recomp-mod-index,,0,2026-11-08T17:03:23Z,0,该仓库是游戏模组索引，与IDP/IDR分子互作及AI/物理模拟方法完全无关。
+kennethreitz/responder-httpbin,https://github.com/kennethreitz/responder-httpbin,Python,0,2026-11-10T02:29:37Z,0,这是一个基于responder框架重写的httpbin HTTP请求/响应测试服务，与IDP/IDR分子互作建模完全无关。
+idptools/tadatorch,https://github.com/idptools/tadatorch,Python,0,2026-11-11T22:28:00Z,2,该仓库是预测转录激活域（TAD）的神经网络工具，虽涉及无序蛋白相关功能域，但核心是转录激活预测而非分子互作机制建模，与课题方向关联较弱。
+sophialiuhk2007/sophialiuhk2007,https://github.com/sophialiuhk2007/sophialiuhk2007,,0,2026-11-14T21:15:15Z,1,这是一个个人主页/项目列表仓库，仅提及一个私有的无序蛋白区域流匹配研究，无任何可用的互作建模工具或代码，与课题核心几乎无关。
+TheMashaghiLab/Publication_Multimodal_conformational_landscape_and_thermodynamics_of_folding_and_binding_in_an_IDR,https://github.com/TheMashaghiLab/Publication_Multimodal_conformational_landscape_and_thermodynamics_of_folding_and_binding_in_an_IDR,Jupyter Notebook,0,2026-11-14T16:05:59Z,8,该仓库提供与IDR耦合折叠与结合研究相关的材料，直接面向无序蛋白互作机制，但缺少可运行的算法或模拟代码，故评8分。
+Schtumpfnagel/global-regulatory-index,https://github.com/Schtumpfnagel/global-regulatory-index,,0,2026-11-14T16:05:45Z,0,该仓库是政府法规与法定文件的元数据索引，与无序蛋白分子互作及AI/物理模拟方法完全无关。
+mb-group/mdSAM,https://github.com/mb-group/mdSAM,Jupyter Notebook,0,2026-11-14T14:38:03Z,7,该仓库提供识别膜蛋白无序区域中自组装基序（mdSAM）的随机森林分类器及分析流程，聚焦IDR介导的膜蛋白自组装与聚集，虽非直接互作预测工具，但方法可迁移至无序蛋白互作机制建模。
+soumyajitmandal06-gif/unippi-owl,https://github.com/soumyajitmandal06-gif/unippi-owl,HTML,0,2026-11-14T12:09:04Z,6,UniPPI-OWL 是一个面向蛋白-蛋白复合物结构-亲和力预测、突变/PTM/金属离子效应评估的通用工具，虽非专门针对 IDP/IDR，但其无序环伪影过滤和互作界面分析思路对无序蛋白互作建模有可迁移价值。
+enhansome/ultimate-enhansome,https://github.com/enhansome/ultimate-enhansome,,0,2026-11-14T08:27:28Z,0,这是一个自动生成的各类awesome列表的索引仓库，与IDP/IDR分子互作及AI/物理模拟方法完全无关。
+enhansome/enhansome-ai-for-science,https://github.com/enhansome/enhansome-ai-for-science,,0,2026-11-14T06:03:49Z,1,这是一个AI for Science的通用资源汇总列表，涵盖文献管理、数据分析和科研工具，与IDP/IDR分子互作建模无直接关联。
+flatironinstitute/ELF3,https://github.com/flatironinstitute/ELF3,Python,0,2026-11-13T22:25:35Z,7,该仓库提供ELF3无序结构域相分离与凝聚体分子动力学模拟的分析脚本和数据，聚焦IDP相分离场景，但互作机制建模深度有限。
+Nani1998-sys/Alpha,https://github.com/Nani1998-sys/Alpha,HTML,0,2026-11-13T19:31:25Z,1,该仓库是面向小分子药物的PK/PD药代动力学模拟平台，不涉及IDP/IDR或无序蛋白分子互作机制建模，与课题方向基本无关。
+azizsimx/azizsimx,https://github.com/azizsimx/azizsimx,,0,2026-11-14T17:43:20Z,4,该仓库是个人学术主页，虽提及IDP和MD/增强采样等方向，但无实质工具或代码，仅作为个人简介和资源索引，与课题核心匹配度低。
+Kiran-bioinfo/kinase-disorder-scan,https://github.com/Kiran-bioinfo/kinase-disorder-scan,Jupyter Notebook,0,2026-11-13T06:22:47Z,4,该仓库分析人类激酶家族的无序含量与电荷-水化关系，虽涉及IDP但仅做统计描述，不涉及分子互作建模或AI/模拟方法，与课题核心关联较弱。
+AnitaCLC/Src-Kinase-State-Specific-Docking-and-MD,https://github.com/AnitaCLC/Src-Kinase-State-Specific-Docking-and-MD,,0,2026-11-13T03:55:04Z,3,该仓库是Src激酶磷酸化状态特异性MD-ensemble对接工作流，面向折叠激酶而非IDP/IDR，且互作机制建模深度有限，与课题方向关联较弱。
+Sabian98/BENDER,https://github.com/Sabian98/BENDER,Python,0,2026-11-13T00:01:37Z,7,BENDER 提供跨物种无序蛋白的粗粒化模拟轨迹与序列属性数据，聚焦 IDP 构象系综而非直接互作机制建模，但方法可迁移至无序分子互作研究。
+ayan-goel/progen-gflownets-v1,https://github.com/ayan-goel/progen-gflownets-v1,Python,0,2026-11-12T22:22:16Z,7,该仓库利用GFlowNet引导冻结的ProGen2生成具有指定性质的固有无序区域（IDR），聚焦IDR序列生成而非直接互作机制建模，但方法可迁移至无序蛋白互作相关序列设计。
+aadityageddam-ux/Bioinformatics-Final,https://github.com/aadityageddam-ux/Bioinformatics-Final,Python,0,2026-11-12T18:44:27Z,3,该仓库是对SOX17无序尾部删除实验数据的统计分析，虽涉及IDR但仅做相关性分析，无分子互作机制建模或AI/模拟方法，与课题核心方向关联较弱。
+miritiede/Tardigrade-Dsup,https://github.com/miritiede/Tardigrade-Dsup,Jupyter Notebook,0,2026-11-12T17:57:38Z,4,一个面向水熊虫Dsup蛋白的业余分析项目，涉及IDP电荷分布和AlphaFold pLDDT无序性评估，但尚未实现分子互作建模或AI/模拟方法，仅处于初步探索阶段。
+Onufriev-Lab/H4_tail_benchmarking,https://github.com/Onufriev-Lab/H4_tail_benchmarking,MATLAB,0,2026-11-12T04:24:49Z,8,该仓库提供工具和教程，将IDP的MD结构系综与SAXS数据结合，通过EOM/GAJOE优化系综以分析无序蛋白构象变化，直接面向IDP分子互作的结构机制建模。
+mattyb4/Cluster-Scout,https://github.com/mattyb4/Cluster-Scout,Python,0,2026-11-11T19:35:53Z,2,该仓库是癌症突变与PTM位点3D邻近分析工具，不涉及IDP/IDR分子互作机制建模，仅使用AlphaFold结构做距离计算，与课题方向无关。
+erschumb/evolutionary_RG_signal_classifier,https://github.com/erschumb/evolutionary_RG_signal_classifier,Python,0,2026-11-11T17:40:32Z,6,该仓库利用群体遗传约束和随机森林分类器预测无序区域中功能性RG基序及新型RNA结合蛋白，面向IDR介导的RNA互作，但方法为传统机器学习而非AI/物理模拟，互作机制建模深度有限。
+romz-pl/NIMBLE-a-large-scale-Hartree-Fock-program,https://github.com/romz-pl/NIMBLE-a-large-scale-Hartree-Fock-program,Python,0,2026-11-11T16:17:51Z,2,NIMBLE 是一个面向百万原子级生物系统的大规模 Hartree-Fock 电子结构计算程序，与 IDP/IDR 分子互作建模无直接关联，仅提供可迁移的物理模拟思路。
+antepontem/DARUMA-binding,https://github.com/antepontem/DARUMA-binding,Python,0,2026-11-11T10:41:53Z,9,DARUMA-binding 是一个面向 IDR 结合位点预测的深度学习工具，直接命中无序蛋白分子互作机制建模，方法为 AI 模型，三轴匹配度高。
+alexpmagalhaes/TESSERA-IDR,https://github.com/alexpmagalhaes/TESSERA-IDR,Jupyter Notebook,0,2026-11-11T10:29:27Z,6,TESSERA-IDR 是一个将人类 IDR 序列分配到 GIN 质心的工具，核心面向 IDP/IDR 序列特征分析，但主要聚焦于序列分类而非分子互作机制建模，方法上基于特征统计而非 AI/物理模拟。
+aryanthepain/Bioinformatics_server,https://github.com/aryanthepain/Bioinformatics_server,Jupyter Notebook,0,2026-11-11T10:22:15Z,3,ProtFunc 是一个多层级蛋白质功能预测平台，虽涉及 p53 等含无序区域的蛋白，但核心是通用功能注释而非 IDP/IDR 分子互作机制建模，且无针对无序互作的 AI/模拟方法。
+djokerdude/protein_structure_tractability,https://github.com/djokerdude/protein_structure_tractability,Python,0,2026-11-11T09:21:56Z,2,该仓库是一个评估蛋白质实验结构测定可行性的LLM代理工具，虽涉及无序区域但仅作为打分惩罚项，不面向IDP/IDR分子互作机制建模，也无AI/模拟互作方法。
+Sudheesh02/chaperone-mrna-thermal-adaptation,https://github.com/Sudheesh02/chaperone-mrna-thermal-adaptation,Python,0,2026-11-10T23:36:51Z,2,该仓库研究细菌伴侣蛋白mRNA二级结构与热适应，虽涉及GroEL无序C端尾巴，但核心是进化比较分析，不涉及IDP/IDR分子互作建模或AI/物理模拟方法。
+bioinfbrad/enzywizard-mut-batch,https://github.com/bioinfbrad/enzywizard-mut-batch,Python,0,2026-11-10T10:14:47Z,3,该仓库是面向酶突变体分析的批处理工作流工具，虽包含无序预测和分子对接，但核心是酶-底物互作与突变效应，而非IDP/IDR介导的分子互作机制建模。
+bioinfbrad/enzywizard-batch,https://github.com/bioinfbrad/enzywizard-batch,Python,0,2026-11-10T10:10:44Z,5,EnzyWizard-Batch 是一个酶-底物互作分析工作流工具，包含无序区域检测和分子对接，但核心面向酶催化而非 IDP/IDR 介导的互作机制建模。
+Mingkai14/enzywizard-mut-batch,https://github.com/Mingkai14/enzywizard-mut-batch,Python,0,2026-11-10T09:55:47Z,3,该仓库是面向酶突变体分析的批处理工作流工具，虽包含无序预测和分子对接，但核心是酶-底物互作而非IDP/IDR介导的分子互作机制建模。
+Mingkai14/enzywizard-batch,https://github.com/Mingkai14/enzywizard-batch,Python,0,2026-11-10T09:49:16Z,6,EnzyWizard-Batch 是一个酶-底物互作分析工作流工具，包含无序区域检测和分子对接，但核心面向酶催化而非 IDP/IDR 互作机制建模。
+syedaftab-dev/sppider-seq,https://github.com/syedaftab-dev/sppider-seq,Python,0,2026-11-10T05:50:22Z,9,SPPIDER-seq 是一个基于 ESM-2 蛋白语言模型和交叉注意力网络的序列级 PPI 位点预测工具，专门针对 IDR/SLiM 中的伴侣依赖性互作界面建模，与课题高度匹配。
+Jonahnki/Pocketscribe,https://github.com/Jonahnki/Pocketscribe,HTML,0,2026-11-10T00:06:37Z,3,Pocketscribe 是面向预测蛋白结构的结合口袋筛选与 MD 准备工具，虽涉及分子互作相关口袋分析，但核心针对折叠蛋白和小分子药物靶点，不面向 IDP/IDR 或无序介导的互作机制建模。
+alexpmagalhaes/FPCaller,https://github.com/alexpmagalhaes/FPCaller,Python,0,2026-11-09T23:19:39Z,2,FPCaller 是用于从染色质分选数据中识别核仁/斑点相关结构域的生物信息学工具，与 IDP/IDR 分子互作机制建模无关。
+alexpmagalhaes/NuFANCI_analysis,https://github.com/alexpmagalhaes/NuFANCI_analysis,Jupyter Notebook,0,2026-11-09T21:47:44Z,3,该仓库是NuFANCI研究的组学数据分析脚本，虽涉及IDR相关凝聚体定位，但核心是DNA/RNA/蛋白组学数据处理，不包含分子互作机制建模或AI/物理模拟方法。
+AmarJaglan/CFTR,https://github.com/AmarJaglan/CFTR,Python,0,2026-11-09T16:40:40Z,2,该仓库是CFTR变异的结构上下文分析平台，聚焦折叠蛋白CFTR的变异与结构注释，不涉及IDP/IDR分子互作建模，与课题方向无关。
+cynch-L/adcsim_conjugation_model,https://github.com/cynch-L/adcsim_conjugation_model,Python,0,2026-11-08T08:20:01Z,2,该仓库是IgG1抗体半胱氨酸偶联的DAR预测模型，涉及抗体结构、MD暴露和过程条件，但与IDP/IDR分子互作机制建模无关，仅偶联位点位于无序铰链区，无可迁移的互作建模思路。
+julkuhn/idp_thesis,https://github.com/julkuhn/idp_thesis,Python,0,2026-11-14T16:24:17Z,8,该仓库是面向无序蛋白的自动化结合物设计工具，基于BindCraft改造并集成CALVADOS验证，直接针对IDP分子互作机制建模。
+Mkhurana3/Mkhurana3,https://github.com/Mkhurana3/Mkhurana3,Python,0,2026-11-14T06:58:51Z,1,这是一个个人 GitHub 主页 README，仅提及一个与折叠/无序蛋白区域相关的早期 AlphaFold 后续项目，但无实质 IDP/IDR 分子互作建模工具或方法。
+LeTanPhuc-01/LeTanPhuc-01,https://github.com/LeTanPhuc-01/LeTanPhuc-01,,0,2026-11-14T04:37:54Z,1,该仓库是个人主页，仅提及一个半无序蛋白预测项目，但无IDP/IDR分子互作机制建模或可迁移的互作方法，与课题基本无关。
+hyperorganism/viability,https://github.com/hyperorganism/viability,,0,2026-11-13T22:06:11Z,1,该仓库是生命维持、休眠、衰老等生物学主题的文献综述，仅提及水熊虫无序蛋白作为耐干燥机制，不涉及IDP/IDR分子互作建模或AI/模拟方法。
+holehouse-lab/bio5000,https://github.com/holehouse-lab/bio5000,Python,0,2026-11-13T20:13:29Z,1,这是一个期刊俱乐部网站，仅提供课程页面，不包含IDP/IDR分子互作相关的工具、模型或代码，与课题无关。
+BillApostolu/Structural_Bio_Arity,https://github.com/BillApostolu/Structural_Bio_Arity,Python,0,2026-11-12T17:52:50Z,3,该仓库比较AlphaFold 2预测与实验PDB结构的Cα堆积签名，不涉及IDP/IDR或分子互作机制建模，仅间接评估结构预测质量。
+lauricella/openmm-lbm,https://github.com/lauricella/openmm-lbm,C++,0,2026-11-11T22:18:43Z,4,OpenMM的格子玻尔兹曼流体插件，用于粗粒化模拟中的流体动力学，虽可模拟无序蛋白扩散，但非面向IDP/IDR分子互作机制建模。
+enhansome/enhansome-computational-biology,https://github.com/enhansome/enhansome-computational-biology,,0,2026-11-14T14:08:42Z,2,这是一个广泛的计算生物学资源汇总仓库，涵盖数据库、方法和模型，但未聚焦IDP/IDR分子互作，也无实质算法实现，与课题相关性低。
+szsctt/cdkl5-variants,https://github.com/szsctt/cdkl5-variants,JavaScript,0,2026-11-11T04:37:16Z,1,这是一个展示CDKL5临床变体的交互式网页，虽提及无序C端区域，但仅作注释展示，不涉及无序蛋白分子互作的建模或预测，与课题方向无关。
+hazixity-blip/DISC1-Study,https://github.com/hazixity-blip/DISC1-Study,HTML,0,2026-11-10T07:52:47Z,2,这是一个基于公开数据库的DISC1基因敲除表型预测学习项目，虽涉及无序蛋白但未聚焦IDP/IDR分子互作机制建模，且无AI或物理模拟方法实现。
+aamirmalik-dr/stem-defect-segmentation,https://github.com/aamirmalik-dr/stem-defect-segmentation,Jupyter Notebook,0,2026-11-10T07:27:36Z,0,该仓库是STEM图像中点缺陷分割的计算机视觉项目，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+BMS-chem/DomainMapper,https://github.com/BMS-chem/DomainMapper,HTML,0,2026-11-09T09:54:41Z,2,这是一个用于绘制蛋白质结构域示意图的交互式可视化工具，仅支持标注无序区域，不涉及IDP/IDR分子互作建模或AI/模拟方法，与课题方向基本无关。
+EtienneReboul/NanoPulldown,https://github.com/EtienneReboul/NanoPulldown,Python,0,2026-11-14T01:23:24Z,7,nanopulldown 是一个基于 ESMFold2 的蛋白-蛋白互作筛选流水线，虽非专门针对 IDP/IDR，但整合了无序区域注释（AIUPred、MoRF、ELM）和互作建模，方法可迁移至无序蛋白互作研究。
+Zamprini/PriorSLiM,https://github.com/Zamprini/PriorSLiM,Python,0,2026-11-13T18:49:36Z,9,PriorSLiM 是一个利用生物先验和稀疏预训练特征预测固有无序蛋白中短线性基序（SLiM）的工具，直接面向 IDP/IDR 介导的分子互作位点预测，并集成了 ESM2、MotifAE 等 AI 方法。
+PeptoneLtd/ADOPT2g,https://github.com/PeptoneLtd/ADOPT2g,Jupyter Notebook,0,2026-11-11T10:32:37Z,4,ADOPT2g 是基于 ESM2 和对比学习的无序蛋白预测器，虽直接面向 IDP 但仅预测无序性，不涉及分子互作机制建模，方法可迁移性有限。
+aamirmalik-dr/stem-denoising-restoration,https://github.com/aamirmalik-dr/stem-denoising-restoration,Jupyter Notebook,0,2026-11-10T07:27:53Z,0,该仓库是低剂量HAADF-STEM图像去噪恢复项目，与IDP/IDR分子互作建模完全无关。
+aamirmalik-dr/stem-atom-finder,https://github.com/aamirmalik-dr/stem-atom-finder,Jupyter Notebook,0,2026-11-10T07:27:18Z,0,该仓库是用于HAADF-STEM图像中原子柱检测的基准测试和工具包，与IDP/IDR分子互作建模完全无关。
+aamirmalik-dr/eels-spectrum-unmixing,https://github.com/aamirmalik-dr/eels-spectrum-unmixing,Jupyter Notebook,0,2026-11-10T07:23:13Z,0,该仓库是电子能量损失谱（EELS）光谱解混的基准测试工具，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+aamirmalik-dr/diffraction-structure-classifier,https://github.com/aamirmalik-dr/diffraction-structure-classifier,Jupyter Notebook,0,2026-11-10T07:23:01Z,0,该仓库是电子衍射图谱晶体结构分类的模拟与基准测试项目，与IDP/IDR分子互作建模完全无关。
+aamirmalik-dr/active-learning-microscopy,https://github.com/aamirmalik-dr/active-learning-microscopy,Jupyter Notebook,0,2026-11-10T07:21:39Z,0,该仓库是主动学习显微镜模拟研究，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+aamirmalik-dr/4d-stem-orientation-mapping,https://github.com/aamirmalik-dr/4d-stem-orientation-mapping,Jupyter Notebook,0,2026-11-10T07:21:18Z,0,该仓库是4D-STEM电子显微数据的取向与相映射工具，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+VoltLabs-Research/structure-identification,https://github.com/VoltLabs-Research/structure-identification,C++,0,2026-11-09T03:34:00Z,0,这是一个内部共享库，用于CNA、PTM等分析插件，与IDP/IDR分子互作建模完全无关。
+zhanxw/Literature,https://github.com/zhanxw/Literature,Python,0,2026-11-14T05:44:32Z,0,该仓库是文献摘要列表，内容涵盖微生物组、抗生素耐药性等，与IDP/IDR分子互作建模完全无关。
+exopoiesis/arxiv-radar-polymer,https://github.com/exopoiesis/arxiv-radar-polymer,Python,0,2026-11-14T04:40:51Z,2,这是一个聚合物AI/材料信息学论文列表仓库，不涉及IDP/IDR或无序蛋白分子互作，仅部分方法（如GNN、MD）可迁移但对象不匹配。
+dbolser/dcGO-2.0,https://github.com/dbolser/dcGO-2.0,Python,0,2026-11-13T11:50:36Z,,[llm failed]
+comphy-lab/coalescence-non-Newtonian,https://github.com/comphy-lab/coalescence-non-Newtonian,Python,0,2026-11-13T03:05:06Z,0,该仓库是液滴聚结的非牛顿流体力学有限元/边界元模拟，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+Chanistics/chan-rim-neuroscience,https://github.com/Chanistics/chan-rim-neuroscience,HTML,0,2026-11-10T02:06:35Z,0,这是一个个人研究投资组合网站，与IDP/IDR分子互作或AI/物理模拟方法完全无关。
+ta-rekt/Droplet,https://github.com/ta-rekt/Droplet,Jupyter Notebook,0,2026-11-09T01:54:36Z,,[llm failed]
+k-luecke/tonic-gating,https://github.com/k-luecke/tonic-gating,Python,0,2026-11-14T23:01:38Z,,[llm failed]
+elcoosp/sourcier,https://github.com/elcoosp/sourcier,Rust,0,2026-11-14T21:57:37Z,0,这是一个用Rust编写的源代码文件位置映射工具，与IDP/IDR分子互作建模完全无关。
+reifam-dev/daily-python-practice,https://github.com/reifam-dev/daily-python-practice,Python,0,2026-11-14T21:52:35Z,0,该仓库是日常Python编程练习日志，与IDP/IDR分子互作建模完全无关。
+ktwyw/onsager-variational-methods,https://github.com/ktwyw/onsager-variational-methods,Jupyter Notebook,0,2026-11-14T20:20:39Z,0,该仓库是软物质物理中Onsager变分原理的开放教材，与IDP/IDR分子互作及AI/物理模拟建模无关。
+ecsszilard/sc-jahn-teller-d4h-symmetry,https://github.com/ecsszilard/sc-jahn-teller-d4h-symmetry,Python,0,2026-11-14T20:07:25Z,0,该仓库实现强关联自旋轨道耦合电荷转移绝缘体中的超导触发Jahn-Teller畸变平均场理论，与IDP/IDR分子互作建模完全无关。
+Ayka11/reality_engine,https://github.com/Ayka11/reality_engine,TypeScript,0,2026-11-14T19:32:24Z,0,该仓库是一个交互式物理沙盒模拟器，模拟宇宙规则演化与文明，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+dovvnloading/loops-research-archive,https://github.com/dovvnloading/loops-research-archive,TeX,0,2026-11-14T16:43:06Z,0,该仓库是关于Mandelbrot局部连通性猜想的数学研究档案，与无序蛋白分子互作课题完全无关。
+MetopRBr/metop-constellation,https://github.com/MetopRBr/metop-constellation,HTML,0,2026-11-14T16:23:33Z,0,该仓库是气象卫星星座图自动更新工具，与无序蛋白分子互作课题完全无关。
+Hinna0818/wet2R,https://github.com/Hinna0818/wet2R,R,0,2026-11-14T14:20:45Z,0,该仓库是湿实验协议和qPCR分析工具，与IDP/IDR分子互作建模完全无关。
+michaelrendier/BulletCluster,https://github.com/michaelrendier/BulletCluster,Python,0,2026-11-14T10:21:41Z,0,该仓库是关于暗物质为Abrikosov涡旋晶格的宇宙学猜想，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+igorlucas/AI-Driven-Software-Quality-Engineering-Template,https://github.com/igorlucas/AI-Driven-Software-Quality-Engineering-Template,Python,0,2026-11-14T02:16:57Z,0,该仓库是软件工程与质量框架，与IDP/IDR分子互作建模完全无关。
+c2fd/LLPS-GPU-Simulator,https://github.com/c2fd/LLPS-GPU-Simulator,C++,0,2026-11-14T01:42:43Z,6,该仓库是面向液-液相分离（LLPS）的GPU模拟器，虽涉及无序蛋白相关凝聚体场景，但未明确聚焦IDP/IDR分子互作机制建模，方法上偏向物理模拟，对象和领域匹配中等。
+Farhan-Ali404/Industrial-Methanol-Production-Plant-DWSIM,https://github.com/Farhan-Ali404/Industrial-Methanol-Production-Plant-DWSIM,,0,2026-11-13T18:08:31Z,0,该仓库是工业甲醇生产过程的化工流程模拟与优化项目，与无序蛋白分子互作及AI/物理模拟方法完全无关。
+leandrokrott/Synapsin-simulations,https://github.com/leandrokrott/Synapsin-simulations,,0,2026-11-13T15:05:04Z,7,该仓库使用CALVADOS 3.0粗粒化模型对Synapsin I蛋白凝聚体进行多尺度模拟，通过PMF计算和有效势参数化研究相分离行为，虽聚焦LLPS但涉及无序蛋白互作机制建模，方法上以物理模拟为主。
+RizzWan-Codes/FuelGuard,https://github.com/RizzWan-Codes/FuelGuard,JavaScript,0,2026-11-13T14:29:15Z,0,该仓库是燃油质量监测的物联网项目，与无序蛋白分子互作及AI/物理模拟方法完全无关。
+kirchherr/TUC,https://github.com/kirchherr/TUC,Python,0,2026-11-13T15:29:39Z,0,该仓库是硬件无关计算意图与后端能力规划的编译器原型，与无序蛋白分子互作建模完全无关。
+Praviadari/Igccst,https://github.com/Praviadari/Igccst,JavaScript,0,2026-11-13T08:48:39Z,0,该仓库是低温工程会议交互模拟门户，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+gbrandani/NICG_chromatin_model,https://github.com/gbrandani/NICG_chromatin_model,Python,0,2026-11-13T08:15:05Z,2,该仓库构建核小体分辨率的染色质粗粒化模型，面向染色质纤维结构而非IDP/IDR分子互作，与课题方向无关。
+ajaynalla/distributed-rate-limiter,https://github.com/ajaynalla/distributed-rate-limiter,Java,0,2026-11-13T05:48:03Z,0,这是一个分布式限流器项目，与无序蛋白、分子互作或AI/物理模拟方法完全无关。
+manu-mannattil/emps,https://github.com/manu-mannattil/emps,Python,0,2026-11-13T02:37:39Z,0,该仓库研究弹性体中的微相分离理论，与IDP/IDR分子互作及AI/物理模拟建模无关。
+opelo1209/dsbm-ga-evolutivo,https://github.com/opelo1209/dsbm-ga-evolutivo,C,0,2026-11-13T01:24:49Z,0,该仓库实现用于多孔网络构建的约束感知进化算法，与IDP/IDR分子互作建模完全无关。
+sjoonkwon0531/Phys-chem2,https://github.com/sjoonkwon0531/Phys-chem2,JavaScript,0,2026-11-13T00:24:32Z,0,该仓库是物理化学本科课程的交互式学习网页应用，涵盖量子力学、统计热力学等教学模拟，与IDP/IDR分子互作建模完全无关。
+merrypranxter/hyperbolica,https://github.com/merrypranxter/hyperbolica,HTML,0,2026-11-13T00:12:48Z,0,这是一个数学艺术/着色器视觉实验室，与IDP/IDR分子互作、AI或物理模拟建模完全无关。
+opelo1209/dsbm-porous-network-ga,https://github.com/opelo1209/dsbm-porous-network-ga,C,0,2026-11-12T21:50:50Z,,[llm failed]
+UmarIqbal000/carbon-aware-llm-scheduling,https://github.com/UmarIqbal000/carbon-aware-llm-scheduling,Python,0,2026-11-12T13:14:37Z,0,该仓库是关于云平台和Serverless环境中LLM推理的碳感知调度综述与模拟，与IDP/IDR分子互作建模完全无关。
+matheusMNa/small-world,https://github.com/matheusMNa/small-world,Python,0,2026-11-13T17:39:31Z,0,该仓库实现疾病传播的元胞自动机模型，与无序蛋白分子互作及AI/物理模拟方法完全无关。
+prosium/JournalClub,https://github.com/prosium/JournalClub,,0,2026-11-12T07:31:51Z,0,该仓库是韩国KRIBB实验室的期刊俱乐部阅读列表，仅汇总论文链接，与IDP/IDR分子互作建模完全无关。
+Paratra/PALS_SIM_recon,https://github.com/Paratra/PALS_SIM_recon,Python,0,2026-11-12T07:27:07Z,0,该仓库是2D结构光照明显微镜（SIM）图像重建代码，与无序蛋白分子互作及AI/物理模拟建模完全无关。
+nexusai-kevin/thermo-physics,https://github.com/nexusai-kevin/thermo-physics,HTML,0,2026-11-12T02:02:58Z,0,该仓库是热力学计算与能量模型的参考实现，涉及Ising模型、Block Gibbs采样等，但与IDP/IDR分子互作完全无关，无可迁移的互作建模思路。
+CollepardoLab/Chromatin_MSM,https://github.com/CollepardoLab/Chromatin_MSM,Jupyter Notebook,0,2026-11-11T20:30:18Z,3,该仓库是染色质结构采样的自适应MSM工具，面向染色质多尺度构象而非IDP/IDR分子互作，虽用物理模拟但对象与课题核心不匹配。
+AyrtonAlmada/PowerGridREserach,https://github.com/AyrtonAlmada/PowerGridREserach,Julia,0,2026-11-11T15:28:54Z,0,该仓库是电力系统动态应急筛选与随机机电仿真的Julia工具，与IDP/IDR分子互作、AI/物理模拟建模完全无关。
+XueHaoxin/STAM-simulation-analysis,https://github.com/XueHaoxin/STAM-simulation-analysis,Python,0,2026-11-11T10:32:52Z,7,该仓库提供STAM蛋白相分离凝聚体与膜互作模拟的分析脚本，面向无序蛋白介导的凝聚体-膜互作机制，但未直接聚焦IDP/IDR分子互作预测建模。
+mbaffour/killcurveplot,https://github.com/mbaffour/killcurveplot,R,0,2026-11-10T22:01:04Z,0,这是一个用于噬菌体裂解曲线OD数据可视化的R Shiny应用，与IDP/IDR分子互作建模完全无关。
+zvmsepd24/GenMicroConditional,https://github.com/zvmsepd24/GenMicroConditional,Python,0,2026-11-10T20:33:32Z,0,该仓库是材料微结构（高斯随机场、Cahn-Hilliard相分离、Potts晶粒生长）的模拟与流匹配研究代码，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+Crystal-Bell/pod_mods_-,https://github.com/Crystal-Bell/pod_mods_-,,0,2026-11-10T19:29:44Z,0,该仓库是关于海洋石油泄漏清理和船舶舱底油污处理的硬件/机器人方案，与无序蛋白分子互作及AI/物理模拟建模完全无关。
+alwendt/sharpen,https://github.com/alwendt/sharpen,Python,0,2026-11-10T17:53:00Z,0,该仓库是图像去模糊/二值化工具，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+Mahalanobis-Systems/aot-kit,https://github.com/Mahalanobis-Systems/aot-kit,Python,0,2026-11-10T17:17:39Z,0,该仓库是Claude Code代理优化工具包，与IDP/IDR分子互作建模完全无关。
+RaneCCC/personal-website,https://github.com/RaneCCC/personal-website,HTML,0,2026-11-10T15:41:23Z,0,该仓库是个人学术网站，介绍HPC与材料建模研究，与IDP/IDR分子互作及AI/物理模拟方法无关。
+kristianDKAndersen/advisor,https://github.com/kristianDKAndersen/advisor,JavaScript,0,2026-11-10T07:30:11Z,0,这是一个多智能体任务编排框架，与无序蛋白分子互作建模完全无关。
+m9aj/arch_install,https://github.com/m9aj/arch_install,Python,0,2026-11-11T23:27:21Z,0,这是一个Arch Linux自动化安装与系统配置工具，与IDP/IDR分子互作建模完全无关。
+sksmagr23/Microbubble-analyzer,https://github.com/sksmagr23/Microbubble-analyzer,JavaScript,0,2026-11-10T04:40:44Z,0,该仓库是微泡/乳液稳定性分析平台，涉及计算机视觉和动力学建模，与IDP/IDR分子互作及AI/物理模拟方法完全无关。
+outsiderervs/ERVS-Mechanobiology,https://github.com/outsiderervs/ERVS-Mechanobiology,Python,0,2026-11-10T03:05:41Z,0,该仓库提出一个关于核糖体在机械应力下形成相锁晶格的理论模型，与IDP/IDR分子互作及AI/物理模拟方法无关。
+Nolexnol/Quantum_Simulation_BEC,https://github.com/Nolexnol/Quantum_Simulation_BEC,Python,0,2026-11-10T01:30:04Z,0,该仓库是量子气体（玻色-爱因斯坦凝聚体）的数值模拟工具包，与无序蛋白分子互作方向完全无关。
+maria-pro/finagent,https://github.com/maria-pro/finagent,Python,0,2026-11-10T00:22:12Z,0,FinAgent 是一个面向金融股票研究的 AI 多智能体教学项目，与 IDP/IDR 分子互作建模完全无关。
+gwario/mindmirror,https://github.com/gwario/mindmirror,Python,0,2026-11-09T20:36:09Z,0,该仓库是分布式实时AI语音助手流水线，与IDP/IDR分子互作建模完全无关。
+CHB-Bohrer/chromatin-studio,https://github.com/CHB-Bohrer/chromatin-studio,Python,0,2026-11-12T16:15:15Z,3,该仓库是染色质结构与转录调控的模拟器，虽支持IDR链表示和分子互作，但核心面向染色质组装而非IDP/IDR介导的互作机制建模，且无AI或互作预测方法。
+2411415626/cv-arxiv-daily,https://github.com/2411415626/cv-arxiv-daily,Python,0,2026-11-09T17:51:37Z,0,该仓库是音频/视频/图像压缩与编解码领域的论文列表，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+Sudiphys/Phase-separation-by-polar-active-transport,https://github.com/Sudiphys/Phase-separation-by-polar-active-transport,Fortran,0,2026-11-09T16:29:06Z,3,该仓库提供微管-马达系统中极性主动运输驱动的相分离模拟代码，虽涉及相分离但非IDP/IDR分子互作，且无AI或互作机制建模，仅边缘相关。
+joepetrassem/mech-cpm,https://github.com/joepetrassem/mech-cpm,MATLAB,0,2026-11-09T15:23:26Z,0,该仓库是电池电极颗粒相变过程的化学-力学耦合模拟MATLAB代码，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+LawrieV/DubaiMate-Cahn-Hilliard,https://github.com/LawrieV/DubaiMate-Cahn-Hilliard,Python,0,2026-11-09T10:45:50Z,2,该仓库实现Cahn-Hilliard相分离模型，属于LLPS相关子场景，但未涉及IDP/IDR、分子互作或AI/物理模拟方法，与课题核心方向关联微弱。
+SSchwartzkopff/lips-sim-xrd,https://github.com/SSchwartzkopff/lips-sim-xrd,Python,0,2026-11-09T10:06:35Z,0,该仓库是钙钛矿材料中卤化物相分离的蒙特卡洛模拟代码，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+sub-surface/avatar-visualiser,https://github.com/sub-surface/avatar-visualiser,JavaScript,0,2026-11-09T08:26:25Z,0,这是一个音频反应式3D视觉艺术工具，与IDP/IDR分子互作建模完全无关。
+caochch/RBM15_Project,https://github.com/caochch/RBM15_Project,Jupyter Notebook,0,2026-11-09T01:28:01Z,2,该仓库是特定论文的图生成代码，聚焦RBM15相分离与表观遗传调控，不涉及IDP/IDR分子互作建模或AI/模拟方法，与课题方向关联极弱。
+imumbere/Sulphur_-phase_separation_prediction,https://github.com/imumbere/Sulphur_-phase_separation_prediction,Python,0,2026-11-09T01:18:03Z,,[llm failed]
+A7MEDALFATEH/Qatoor,https://github.com/A7MEDALFATEH/Qatoor,GDScript,0,2026-11-08T21:34:29Z,,[llm failed]
+Matthewtershi/apple_accelerator,https://github.com/Matthewtershi/apple_accelerator,C++,0,2026-11-08T20:44:41Z,0,该仓库是个人本地AI推理栈的技术目录，与IDP/IDR分子互作建模完全无关。
+chemist2coder/plexon-phase-transitions,https://github.com/chemist2coder/plexon-phase-transitions,Jupyter Notebook,0,2026-11-08T19:50:11Z,0,该仓库是宇宙学中星系团与宇宙网形成的2D蒙特卡洛模拟，与IDP/IDR分子互作及相分离课题完全无关。
+astitwasi-11/biodiesel-process-quality-analyzer,https://github.com/astitwasi-11/biodiesel-process-quality-analyzer,JavaScript,0,2026-11-08T19:11:28Z,0,该仓库是关于废弃食用油生产生物柴油的化学工程流程模拟与质量分析项目，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+JiYang118/Polymer-phase-separation-analysis,https://github.com/JiYang118/Polymer-phase-separation-analysis,Python,0,2026-11-08T18:08:48Z,4,该仓库提供计算聚合物相分离结构因子和混合度指标的代码，面向通用CG聚合物共混物，与IDP/IDR分子互作机制建模无直接关联，但相分离分析思路可部分迁移。
+maximilianDeveloper/cephalo,https://github.com/maximilianDeveloper/cephalo,Python,0,2026-11-14T23:50:54Z,0,这是一个用于学术写作的多智能体系统，与IDP/IDR分子互作建模完全无关。
+sanjanareddy2607-a11y/aurasense,https://github.com/sanjanareddy2607-a11y/aurasense,Python,0,2026-11-08T15:47:07Z,0,该仓库是面向生理信号（ECG/EDA等）的压力模式分析平台，与IDP/IDR分子互作及AI/物理模拟建模完全无关。
+zidan0x266/Polymerization,https://github.com/zidan0x266/Polymerization,C++,0,2026-11-08T07:29:04Z,1,该仓库是聚合物聚合与网络形成的模拟工具包，与IDP/IDR分子互作及无序蛋白机制建模无关。
+ZengLLQ/chrono-lattice,https://github.com/ZengLLQ/chrono-lattice,Python,0,2026-11-08T05:37:51Z,0,该仓库是纯Python实现的格子玻尔兹曼流体动力学模拟器，与IDP/IDR分子互作及AI/物理模拟建模完全无关。

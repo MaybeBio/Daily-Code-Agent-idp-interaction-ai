@@ -1,0 +1,17 @@
+# PeptoneLtd/IDP-o
+
+- [IDP-o Overview](00-idp-o-overview.md)
+- [Getting Started](01-getting-started.md)
+- [Key Concepts and Terminology](02-key-concepts-and-terminology.md)
+- [Pipeline Architecture](03-pipeline-architecture.md)
+- [Database Preparation: prepare_foldcomp_fasta.py](04-database-preparation-prepare_foldcomp_fasta-py.md)
+- [Fragment Search: fasta_search_in_foldcomp_database.py](05-fragment-search-fasta_search_in_foldcomp_database-py.md)
+- [Structure Extraction: extract_structures_from_foldcomp_database.py](06-structure-extraction-extract_structures_from_foldcomp_database-py.md)
+- [Fragment Assembly: join_fragments.py](07-fragment-assembly-join_fragments-py.md)
+- [Entrypoints and Batch Processing](08-entrypoints-and-batch-processing.md)
+- [Single-Sequence Ensemble Builder: build_ensemble.py](09-single-sequence-ensemble-builder-build_ensemble-py.md)
+- [Batch Dataset Generator: generate_dataset.py](10-batch-dataset-generator-generate_dataset-py.md)
+- [Infrastructure and Deployment](11-infrastructure-and-deployment.md)
+- [Docker Container](12-docker-container.md)
+- [Development Environment and Repository Layout](13-development-environment-and-repository-layout.md)
+- [Glossary](14-glossary.md)

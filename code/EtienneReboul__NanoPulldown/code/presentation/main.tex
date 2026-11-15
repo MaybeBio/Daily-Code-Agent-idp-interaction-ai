@@ -1,0 +1,592 @@
+% Build:  cd presentation && tectonic main.tex
+% (needs the `nanopulldown-presentation` conda env — see ../envs/presentation.yaml)
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{default}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit}
+\usepackage{booktabs}
+\usepackage[round]{natbib}
+\usepackage{bibentry}
+\nobibliography{refs}
+\bibliographystyle{plainnat}
+% centered (horizontally + vertically) multi-line table cell, no array.sty needed
+\newcommand{\cc}[1]{\begin{tabular}[c]{@{}c@{}}#1\end{tabular}}
+\usepackage{graphicx}
+\usepackage{multicol}
+\setbeamerfont{footnote}{size=\tiny}
+\setbeamercolor{footnote}{fg=muted}
+% author-year style footnotes: no number, muted tiny text
+\setbeamertemplate{footnote mark}{}
+\renewcommand{\thefootnote}{}
+\setbeamertemplate{footnote}{%
+  \parindent 0em\noindent\raggedright
+  {\usebeamercolor[fg]{footnote}\insertfootnotetext}\par}
+\graphicspath{{figures/}{figures/logos/}{figures/license/}}
+
+% --- Dark palette: navy / warm-white -------------------------------------
+% Same high-contrast palette as the sibling ab_initio_pipeline deck
+% (WCAG-checked: projector-safe against the navy background).
+%   bg vs fg (body text):    16.95:1 (AAA)
+%   bg vs accent (bullets):   5.79:1 (AA)
+%   bg vs muted (footline):   7.16:1 (AAA)
+%   bg vs substrate (emph):   7.46:1 (AAA)
+\definecolor{bgdark}{HTML}{05171F}
+\definecolor{fgtext}{HTML}{FDF6E3}
+\definecolor{accent}{HTML}{2AA198}   % structure/links/bullets
+\definecolor{muted}{HTML}{8FA6AD}    % footline / secondary text
+\definecolor{substrate}{HTML}{A29CF2} % this deck's "key takeaway" highlight color
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=bgdark}
+\setbeamercolor{normal text}{fg=fgtext, bg=bgdark}
+\setbeamercolor{structure}{fg=accent}
+\setbeamercolor{title}{fg=fgtext}
+\setbeamercolor{subtitle}{fg=muted}
+\setbeamercolor{author}{fg=muted}
+\setbeamercolor{institute}{fg=muted}
+\setbeamercolor{date}{fg=muted}
+\setbeamercolor{frametitle}{fg=fgtext, bg=bgdark}
+\setbeamercolor{itemize item}{fg=accent}
+\setbeamercolor{itemize subitem}{fg=accent}
+\setbeamercolor{enumerate item}{fg=accent}
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}[circle]
+\setbeamercolor{section in toc}{fg=fgtext}
+\setbeamercolor{page number in head/foot}{fg=muted}
+\setbeamerfont{frametitle}{series=\bfseries}
+
+% --- header: section progress, no per-slide dots -------------------------
+\setbeamercolor{section in head/foot}{fg=bgdark, bg=accent}
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth, ht=2.5ex, dp=0.9ex]{section in head/foot}
+    \usebeamerfont{section in head/foot}\insertsectionnavigationhorizontal{\paperwidth}{}{}
+  \end{beamercolorbox}%
+}
+
+% --- current subsection name, tracked by hand ----------------------------
+\newcommand{\currentsubsectionname}{}
+\newcommand{\emptysubsectionname}{}
+\let\origsubsection\subsection
+\renewcommand{\subsection}[1]{\origsubsection{#1}\gdef\currentsubsectionname{#1}}
+
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \begin{beamercolorbox}[wd=\paperwidth, sep=0.3cm]{frametitle}
+    \usebeamerfont{frametitle}\insertframetitle\hfill
+    \ifx\currentsubsectionname\emptysubsectionname\else
+      {\normalfont\footnotesize\color{muted}\currentsubsectionname}%
+    \fi
+    \strut
+  \end{beamercolorbox}%
+}
+% --- section-divider frame: big centered section name --------------------
+\newcommand{\sectiondivider}[1]{%
+  {\setbeamertemplate{frametitle}{}%
+  \begin{frame}
+    \vfill
+    \begin{center}
+      {\color{accent}\rule{0.35\textwidth}{0.6pt}}\\[1.1em]
+      {\color{fgtext}\Huge\bfseries #1}\\[1.1em]
+      {\color{accent}\rule{0.35\textwidth}{0.6pt}}
+    \end{center}
+    \vfill
+  \end{frame}}%
+}
+
+\setbeamercolor{footlineright}{fg=muted, bg=bgdark}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=\paperwidth, ht=2.6ex, dp=1.2ex, right, rightskip=0.3cm]{footlineright}
+      \usebeamerfont{footline}\tiny CC BY 4.0~\raisebox{-0.15em}{\includegraphics[height=1.4ex]{by-4.0-88x31.pdf}}\hspace{0.4em}\insertframenumber\,/\,\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+\makeatletter
+\AtBeginDocument{%
+  \g@addto@macro{\@listi}{\setlength{\itemsep}{0.5em}\setlength{\topsep}{0.5em}}
+  \g@addto@macro{\@listii}{\setlength{\itemsep}{0.5em}\setlength{\topsep}{0.5em}}
+}
+\makeatother
+\setbeamertemplate{sections/subsections in toc}[sections numbered]
+
+\title{NanoPulldown: a Local \textit{In Silico} Pulldown Screen}
+\subtitle{AlphaPulldown-style bait/prey screening with ESMFold2-Fast on a single Apple Silicon Mac Studio}
+\author{Etienne Reboul}
+\institute{Groupe Gibbérellines et adaptation à l'environnement\\
+Institut de Biologie Moléculaire des Plantes (IBMP), Strasbourg}
+\date{\today}
+
+\begin{document}
+
+{\setbeamercolor{blank head}{bg=bgdark}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth, ht=2.5ex, dp=0.9ex]{blank head}\end{beamercolorbox}%
+}
+\begin{frame}
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[anchor=north] at ([yshift=-0.5cm]current page.north) {
+      \includegraphics[height=0.8cm]{cnrs-white.png}%
+      \hspace{1.4cm}%
+      {\setlength{\fboxsep}{4pt}\colorbox{white}{\includegraphics[height=0.7cm]{ibmp-color.png}}}%
+      \hspace{1.4cm}%
+      \includegraphics[height=0.8cm]{anr-white.png}
+    };
+  \end{tikzpicture}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \footnotesize
+  \begin{multicols}{2}
+    \tableofcontents
+  \end{multicols}
+\end{frame}
+}
+
+% ---------------------------------------------------------------------
+\section{Introduction}
+% ---------------------------------------------------------------------
+\gdef\currentsubsectionname{}
+\sectiondivider{Introduction}
+
+% ---- Part 1: pull-down background -----------------------------------------
+\subsection{Background}
+
+\begin{frame}{Pull-down assay: finding what binds a bait}
+  \begin{columns}[c]
+    \begin{column}{0.56\textwidth}
+      \centering
+      {\setlength{\fboxsep}{3pt}\colorbox{white}{\includegraphics[width=\textwidth]{pulldown.png}}}\\[0.2em]
+      {\tiny\color{muted} Pull-down with tagged proteins (S-tag / FLAG).
+      RaihaT, Wikimedia Commons, CC BY-SA 3.0}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{enumerate}
+        \item \textbf{Pull-down}: tagged \emph{bait} immobilized on
+          beads
+        \item Incubate with \emph{prey} proteins (purified, or a lysate)
+        \item Wash, then elute
+        \item Readout: Western blot, or \textbf{mass spectrometry}
+          (IP-MS) for a proteome-wide list of candidate preys
+      \end{enumerate}
+      \vspace{0.3em}
+      \footnotesize
+      \textcolor{substrate}{\textbf{Limits}}: direct and indirect binders are mixed.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{The AlphaFold2 breakthrough}
+  \centering
+  {\setlength{\fboxsep}{2pt}\colorbox{white}{\includegraphics[width=0.93\textwidth]{af2_pipeline.png}}}\\[0.2em]
+  {\tiny\color{muted} Fig.~1e, cropped; Wikimedia Commons, CC BY 4.0 \citep{jumper2021}\footnote{\bibentry{jumper2021}}}
+
+  \vspace{0.3em}
+  { 
+  $\Rightarrow$ AF2 multimer is a \textbf{protein-protein docking engine} 
+  with confidence scores}
+\end{frame}
+
+\begin{frame}{AlphaPulldown: the workflow}
+  \centering
+  {\setlength{\fboxsep}{3pt}\colorbox{white}{\includegraphics[width=0.78\textwidth]{alphapulldown.jpg}}}\\[0.2em]
+  {\tiny\color{muted} Fig.~1 of the paper; CC BY 4.0 \citep{yu2023}\footnote{\bibentry{yu2023}}}
+
+    \vspace{0.3em}
+  { 
+  $\Rightarrow$ AlphaPulldown automates identification of direct binding partners through the \textbf{in silico pulldown} with AF2-Multimer
+  }
+\end{frame}
+
+% ---- Part 2: Problem statement ------------------------------------------------
+\subsection{Problem statement}
+
+\begin{frame}{Problem statement}
+  \begin{itemize}
+    \item AlphaPulldown is \textbf{great}, but it assumes:
+      \begin{itemize}
+        \item access to a GPU cluster : 
+        \begin{itemize}
+          \item Unmanageable to give access to a large number of users
+          \item Pangloss (ibmp cluster) does not have high-end GPUs for a full screen
+          \item High-end GPUs are expensive (around 12k EUR) currently not available through public procurement
+        \end{itemize}
+        \item MSA building :
+        \begin{itemize}
+          \item Typically a slow process with Jackhmmer and HHblits
+          \item Requires large sequence databases (UniRef90, MGnify, BFD, PDB70, etc.)
+          \item Not feasible on a laptop
+        \end{itemize}
+        \item AlphaFold models as docking engine :
+        \begin{itemize}
+          \item  AF2 multimer is no longer State-of-the-Art (SOTA) for protein-protein docking
+          \item  AF3 weights are available on demand but have specific licensing restrictions
+        \end{itemize}
+      \end{itemize}
+    \item[$\Rightarrow$] Can we run the same screen on a single MacStudio (range price : 3k-9k EUR)?
+  \end{itemize}
+\end{frame}
+
+% ---- Part 3: language-model folding ---------------------------------------
+\subsection{Language-model folding}
+
+\begin{frame}{Protein LM as alternative folding engines}
+  \normalsize
+  \centering
+  {\small Protein LMs (e.g.\ ESMFold, \citealp{lin2023}\footnote{\bibentry{lin2023}}):
+  \textbf{LLM-style transformers} trained on proteins.}
+
+  \vspace{0.8em}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{\hspace{0.6em}}c|c|c@{\hspace{0.6em}}}
+    \toprule
+     & \cc{\textbf{AF2-Multimer}} & \cc{\textbf{ESMFold-type (protein LM)}} \\
+    \midrule
+    \cc{Input} & \cc{sequence + \textbf{MSA} + templates}
+      & \cc{\textbf{single sequence}} \\
+    \midrule
+    \cc{Evolutionary\\signal} & \cc{read from the alignment\\at inference}
+      & \cc{\textbf{learned in the weights}\\during pre-training} \\
+    \midrule
+    \cc{Pre-processing} & \cc{database searches (slow, heavy)} & \cc{none} \\
+    \midrule
+    % Structure head & Evoformer + structure module & folding trunk on LM
+    %   embeddings $\to$ structure module / diffusion \\
+    \cc{Weak spot} & \cc{few homologs $\Rightarrow$ poor MSA}
+      & \cc{orphan / novel sequences} \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+\begin{frame}{ESMFold2-Fast}
+  \footnotesize
+  \centering
+  {\setlength{\fboxsep}{2pt}\colorbox{white}{\includegraphics[width=0.85\textwidth]{esmfold2_arch.png}}}\\[0.1em]
+  {\tiny\color{muted} Fig.~2A, cropped, CC BY 4.0 \citep{candido2026}\footnote{\bibentry{candido2026}}}
+
+  \raggedright
+  \begin{itemize}\scriptsize
+    \item \textbf{ESMFold2-Fast} is designed for \textbf{high-throughput screening} and \textbf{design} of protein sequences
+    \item \textbf{Simplified architecture}: 24 folding layers instead of 48 to reduce memory footprint and inference time
+    \item \textbf{No MSA}: sequence-only prediction competitive with MSA-based methods (slightly worse than AF3)
+    \item $\sim$9.4~s for 1\,024 residues on one H100 (reported 1.3$\times$
+      faster than AF3)
+    \item[$\Rightarrow$] \textcolor{substrate}{\textbf{This is what makes a
+      high-throughput pulldown screen on a Mac Studio feasible}}
+  \end{itemize}
+\end{frame}
+
+\subsection{Project Outline}
+\begin{frame}{Goal}
+  \begin{itemize}
+    \item Primary goal: Running a pulldown screen with ESMFold2-Fast on a single Apple Silicon Mac Studio
+    \item Secondary technical goals:
+    \begin{itemize}
+      \item Reproducable and scalable pipeline using Snakemake (workflow management system)
+      \item Easy-to-use configuration for adding new bait/prey pairs
+      \item Easy-to-run on a single machine (no cluster, no HPC scheduler)
+      \item Easy-to-read report with all the relevant metrics and figures
+    \end{itemize}
+    \item Test case: BPM6 screen over the PXD013906 prey list and compare ranking against the PNAS Dataset~S1 known / significant interactors \citep{chico2020}\footnote{\bibentry{chico2020}}
+  \end{itemize}
+\end{frame}
+
+
+
+% ---------------------------------------------------------------------
+\section{Pipeline}
+% ---------------------------------------------------------------------
+\gdef\currentsubsectionname{}
+\sectiondivider{Pipeline}
+
+\subsection{Pipeline overview}
+\begin{frame}{Test case: what the BPM6 pulldown found}
+  \footnotesize
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      \centering
+      {\setlength{\fboxsep}{2pt}\colorbox{white}{\includegraphics[width=\linewidth]{chico_fig1d.png}}}\\[0.1em]
+      {\tiny\color{muted} Reproduction of Fig.~1D from Dataset~S1 data, CC BY \citep{chico2020}\footnote{\bibentry{chico2020}}}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{itemize}\scriptsize
+        \item \textbf{Experiment}: GFP-BPM6 immuno-precipitation from \textit{A.\ thaliana} seedlings, LC-MS/MS (PXD013906)
+        \item \textbf{Tested}: 1243 of the 1642 proteins in Dataset~S1 paired with BPM6 (pairs $>1000$ residues excluded)
+        \item \textcolor{substrate}{\textbf{Green}}: BPM paralogs (bait BPM6, BPM1/2/4/5) $\to$ heterodimers
+        \item \textcolor{red}{\textbf{Red}}: MYC2, MYC3, MYC4, JAZ1, NINJA $\to$ candidate substrates
+        \item[$\Rightarrow$] \textcolor{substrate}{\textbf{Our benchmark}:  can we find the same top interactants in the \texttt{in silico} screen?}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{}
+  \centering
+  \begin{tikzpicture}[
+      every node/.style={text=fgtext},
+      stage/.style={draw=accent, thick, rounded corners, minimum width=10.5cm, minimum height=1.05cm,
+                     align=center, font=\footnotesize, inner sep=3pt},
+      arr/.style={-{Stealth[length=2.5mm]}, thick, draw=accent},
+      lbl/.style={font=\tiny, text=muted, align=left}
+    ]
+    \node[stage, fill=blue!25!bgdark] (pre)  {\textbf{Stage 1 : Preprocessing} (local, needs internet)\\
+                                        UniProt fetch $\to$ domains (ScanProsite, InterPro) $\to$ disorder + MoRF (AIUPred)};
+    \node[stage, fill=orange!25!bgdark, below=1.05cm of pre] (fold) {\textbf{Stage 2 : Folding} (Apple Silicon GPU, MLX/Metal)\\
+                                        ESMFold2-Fast $\to$ metadata compression $\to$ OpenMM minimization};
+    \node[stage, fill=green!25!bgdark, below=1.05cm of fold] (post) {\textbf{Rescoring \& report} (local)\\
+                                        ipSAE / iLIS / Pinc $\to$ PLIP contacts $\to$ \texttt{reports/report.zip}};
+    \draw[arr] (pre) -- (fold);
+    \draw[arr] (fold) -- (post);
+  \end{tikzpicture}
+
+  \vspace{0.5em}
+  {\footnotesize\textcolor{substrate}{\textbf{Everything runs on one machine, in one Snakemake call.}}}\par
+\end{frame}
+
+\subsection{Input}
+\begin{frame}{Input: bait and prey lists}
+  \begin{columns}[c]
+    \begin{column}{0.46\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \node[draw=muted, rounded corners, fill=black!35!bgdark, inner sep=8pt,
+              text=fgtext, font=\ttfamily\scriptsize, align=left] {%
+          {\color{muted}\$ head configs/preys.txt}\\[0.3em]
+          A0A1I9LLD2\\ A0A1I9LMI7\\ A0A1I9LNN0\\ A0A1I9LPP1\\
+          A0A1I9LPQ2\\ A0A1I9LPZ1\\ A0A1I9LQ33\\ A0A1I9LR66\\
+          {\color{muted}\dots}
+        };
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \begin{itemize}\small
+        \item two text files of UniProt accessions: \texttt{baits.txt}, \texttt{preys.txt}
+        \item prey list from an \textbf{IP-MS experiment} or from a \textbf{UniProt filter}
+          \begin{itemize}\footnotesize
+            \item under investigation with Filippo BATTAGLIA: DRM2 vs.\ nuclear E3 ligases + F-box proteins
+          \end{itemize}
+        \item a script generates all the bait $\times$ prey pairs config files (yaml)
+        \item[$\Rightarrow$] \textcolor{substrate}{\textbf{simple input files and one liner to add a new screen}}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\subsection{Preprocessing}
+\begin{frame}{Preprocessing: domains, disorder and binding regions}
+  \begin{columns}[c]
+    \begin{column}{0.60\textwidth}
+      \centering
+      {\setlength{\fboxsep}{2pt}\colorbox{white}{\includegraphics[width=\linewidth]{pipe_domain_bar_B.png}}}\\[0.1em]
+      {\tiny\color{muted} F4HR18 (prey of Q9M548): AIUPred disorder / binding / linker + domain map}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \begin{itemize}\scriptsize
+        \item Automatic preprocessing of all unique sequences (baits + preys) : Domain annotation and  IDR / MoRF prediction
+        \item  \textbf{IDR:} intrinsically disordered regions (long, flexible)
+        \item  \textbf{MoRF:} short disordered regions that fold upon binding
+        \item[$\Rightarrow$]  sequence are annotated to characterize the binding regions in interface analysis
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\subsection{Folding}
+\begin{frame}{Folding with ESMFold2-Fast on Apple Silicon}
+  \begin{itemize}
+    \item Folding with \textbf{ESMFold2-Fast} with lower computational requirements:
+     \begin{itemize}
+       \item 10 loops
+       \item 100 sampling steps
+       \item 1 seed
+       \item 1 diffusion sample
+     \end{itemize}
+    \item \textbf{Memory usage} is the main bottleneck for folding on Apple Silicon (M1/M2/M4)
+    \item force a \textbf{Token limit}: peak memory grows $\sim n^{2.2}$; on a 36~GB
+      M4 Max, 1\,000 tokens $\approx$ 29~GB, 145~s (\texttt{max\_tokens: 1000})
+    \item Metadata compression to reduce disk footprint
+  \end{itemize}
+\end{frame}
+
+\subsection{Postprocessing}
+\begin{frame}{Minimization removes the steric clashes}
+  \begin{columns}[c]
+    \begin{column}{0.56\textwidth}
+      \centering
+      {\setlength{\fboxsep}{2pt}\colorbox{white}{\includegraphics[width=\linewidth]{pipe_clash_test.png}}}\\[0.1em]
+      {\tiny\color{muted} Clash count per model, raw vs.\ minimized (n=1\,243)}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{itemize}\scriptsize
+        \item Done with \textbf{OpenMM} (\texttt{amber14} + GBn2 implicit solvent;
+          OpenCL with CPU fallback)
+        \item Automatic Quality Control : check for divergence, NaN, or energy increase $\to$ discard the sample
+        \item Clashes drop to $\approx 0$ for nearly all models, inter-chain
+          included (Wilcoxon $p<10^{-190}$)
+        \item[$\Rightarrow$] \textcolor{substrate}{\textbf{Prevent false positives induced by steric clashes in the contact analysis}}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Rescoring the interface}
+  \begin{center}
+    \includegraphics[height=0.62\textheight,width=\linewidth,keepaspectratio]{pipe_metric_violins.png}\\[0.1em]
+    {\tiny\color{muted} Distributions of the implemented SOTA interface metrics (ipSAE, iLIS, Pinc, pair ipTM, \dots) over all pairs, samples and chain pairs}\\[0.6em]
+    {\small $\Rightarrow$ \textcolor{substrate}{\textbf{Used to rank preys per bait}}}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Characterizing the interface with PLIP}
+  \begin{columns}[c]
+    \begin{column}{0.46\textwidth}
+      \centering
+      {\setlength{\fboxsep}{2pt}\colorbox{white}{\includegraphics[width=\linewidth]{pipe_plip_contacts.png}}}\\[0.1em]
+      {\tiny\color{muted} BPM6 $\times$ BPM5 (top interactor): PLIP domain $\times$ domain contacts}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \begin{itemize}\small
+        \item \textbf{PLIP} : Protein-Ligand Interaction Profiler, detects non-covalent contacts in protein-protein interfaces
+        \item Aggregated per \textbf{domain pair}, using the  automatically annotated domains from the preprocessing stage
+        \item \textbf{Contact types}: hydrogen bonds, hydrophobic contacts, salt bridges
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{In silico pulldown results vs. BPM6 pulldown}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \centering
+      {\setlength{\fboxsep}{2pt}\colorbox{white}{\includegraphics[width=\linewidth]{myc_rank_vs_pulldown.png}}}\\[0.1em]
+      {\tiny\color{muted} 1\,243 BPM6 $\times$ prey pairs; enrichment from \citep{chico2020}}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{itemize}\scriptsize
+        \item \textbf{Pulldown}: MYC2/3/4 strongly enriched ($\log_2$FC $\approx 6$)
+        \item \textbf{Models}: mean rank MYC3 351, MYC2 474, MYC4 606; none in the
+          top 50 on any metric; ipSAE = iLIS = 0 for all three
+        \item PLIP contacts mid-pack (26--37, median 28); top counts: BPM paralogs
+        \item \textcolor{substrate}{\textbf{Possible explanation, untested}}:
+          BPM6 binds MYC2/3 only \emph{very weakly} in yeast two-hybrid
+          \citep{chico2020}; the co-IP may be bridged by other BPMs
+        \item \textbf{Caveats}: Y2H is limited by MYC/BPM toxicity in yeast;
+          MBP pulldown still detects BPM6--MYC. Only BPM6 run as bait
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\sectiondivider{Interactive demo}
+
+\begin{frame}[fragile]{Running it}
+
+  Running the pipeline is a single Snakemake command, after creating the conda env and generating the pair configs:
+  \vspace{0.4em}
+  \small
+  {\ttfamily\scriptsize
+  \begin{flushleft}
+  conda env create -f envs/controller.yaml\\
+  python scripts/expand\_pairs.py\ \ \ \ \# baits x preys -> configs/<pair>.yaml\\
+  \# add the new pair stems to config.yaml's pairs: list\\
+  snakemake --use-conda --cores 4 --resources gpu=1 docker\_heavy=3\\
+  \end{flushleft}
+  }
+  \vspace{0.4em}
+  $\Rightarrow$ \textcolor{substrate}{\textbf{Output: one
+      \texttt{reports/report.zip}}}
+
+\end{frame}
+
+% ---------------------------------------------------------------------
+\section{Conclusion \& perspective}
+% ---------------------------------------------------------------------
+\gdef\currentsubsectionname{}
+\sectiondivider{Conclusion \& perspective}
+
+\subsection{Conclusion}
+\begin{frame}{Conclusion}
+  \begin{itemize}
+    \item A \textbf{local, MSA-free pulldown pipeline}: run on a single Apple Silicon Mac Studio, no cluster required
+    \item A \textbf{complete workflow}: Preprocessing $\to$ ESMFold2-Fast $\to$ OpenMM $\to$ rescoring
+      $\to$ PLIP, summarized in a single zipped report
+    \item 1\,243 BPM6 $\times$ prey pairs folded and minimized end to end in $\sim$ 2.5 days on a M4 Max (36~GB) with 4 CPU cores + 1 GPU
+    \item Adding a screen = editing the bait / prey lists + 2 or 3 commands
+  \end{itemize}
+\end{frame}
+
+\subsection{Perspective}
+\begin{frame}{Perspective}
+  \begin{itemize}
+    \item Confirm with different bait / prey pairs, and with other known interactors
+    \item  An experimental validation of novel interactors is needed to confirm the predictions
+    \item To expand the pipeline capabilities, we need better hardware (more GPU memory, more CPU cores) to run larger screens and longer sequences
+  \end{itemize}
+\end{frame}
+
+\gdef\currentsubsectionname{}
+\begin{frame}{Thank you for your attention}
+  \tiny
+  \begin{columns}[T]
+    \begin{column}{0.27\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{team_dinner.jpg}
+    \end{column}
+    \begin{column}{0.28\textwidth}
+      {\scriptsize\color{accent}\textbf{Team members}}\\[0.4em]
+      Patrick ACHARD\\
+      Jean-Michel DAVIÈRE\\
+      Lali ACHARD\\
+      Olivia LEDIEU\\
+      Hans RIOS\\
+      Antoine DAVID\\
+      Étienne REBOUL\\[1.2em]
+      {\scriptsize\color{accent}\textbf{IBMP bioinformatic facility}}\\[0.4em]
+      Valérie COGNAT\\
+      David PFIEGER\\
+      Stéfanie GRAINDORGE
+    \end{column}
+    \begin{column}{0.41\textwidth}
+      {\scriptsize\color{accent}\textbf{Collaborators}}\\[0.4em]
+      {\color{muted}Team: Rôle de l'ubiquitine dans la régulation cellulaire}\\[0.3em]
+      \begin{minipage}[t]{0.5\linewidth}
+        Filippo BATTAGLIA\\
+        Cyriaque CRETON\\
+        Marie-Claire CRIQUI\\
+        Pascal GENSCHIK\\
+        Esther LECHNER\\
+        Sandra NOIR
+      \end{minipage}\hfill
+      \begin{minipage}[t]{0.5\linewidth}
+        Thomas POTUSCHAK\\
+        Marlène SCHIAFFINI\\
+        Wen Hui SHEN\\
+        Vishal VARSHNEY\\
+        Agathe VERCELLETTO
+      \end{minipage}
+    \end{column}
+  \end{columns}
+  \vspace{1.2em}
+  \begin{center}
+    \includegraphics[height=0.7cm]{cnrs-white.png}\hspace{1.2em}%
+    {\setlength{\fboxsep}{3pt}\colorbox{white}{\includegraphics[height=0.5cm]{ibmp-color.png}}}\hspace{1.2em}%
+    \includegraphics[height=0.7cm]{anr-white.png}\hspace{1.2em}%
+    \includegraphics[height=0.85cm]{ifb-white.png}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \centering
+  \Huge Questions?
+\end{frame}
+
+% register citations for \citep (and run bibtex) without printing a reference list
+\setbox0\vbox{\bibliography{refs}}
+
+\end{document}

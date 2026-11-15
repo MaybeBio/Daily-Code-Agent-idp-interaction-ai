@@ -1,0 +1,7 @@
+dataset_dir: data/datasets
+embedding_dir: data/embeddings
+cache_dir: data/.cache
+checkpoint_dir: data/sae_checkpoints
+output_dir: outputs
+# Local scratch for large ephemeral Phase-3 activation caches.
+scratch_dir: data/.scratch

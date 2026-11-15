@@ -78,6 +78,8 @@ footer a{ color:var(--mute); }
     <p class="sub">Condition-aware exploration of biomolecular phase separation</p>
     <nav class="links" aria-label="Links">
       <a href="records_space/">Explorer (P)</a>
+      <a href="records_space/#mode=systems">Multi-protein systems</a>
+      <a href="records_space/#mode=guidance">Guidance (Task 3)</a>
       <a href="records_space/negatives/">Negatives and unlabelled (N + U)</a>
       <a href="https://github.com/nicetone9/OpenPhase">GitHub</a>
     </nav>
@@ -87,15 +89,22 @@ footer a{ color:var(--mute); }
   <figure class="hero"><img src="assets/openphase-main.webp" alt="OpenPhase: from a system and its conditions to prediction, phase diagram and generation" width="1672" height="941"></figure>
 
   <section aria-labelledby="h-systems">
-    <h2 id="h-systems">Two systems</h2>
-    <p class="lead">One map holds the experiments and the proteins the tools list as positives; the other holds the negatives and unlabelled proteins. They are kept apart on purpose.</p>
+    <h2 id="h-systems">Three maps</h2>
+    <p class="lead">One map holds the single-protein experiments and the proteins the tools list as positives; one holds the systems with two or more proteins; one holds the negatives and unlabelled proteins. They are kept apart on purpose.</p>
     <div class="cards">
       <article class="card">
         <span class="tag">P</span>
         <h3>Records and the protein universe</h3>
         <p>Every single-protein experiment in the dataset in one map, with the proteins that the tools list as positives but that have no record drawn as hollow rings. Colour by protein, conditions, readout or source; try your own sequence and conditions.</p>
         <div class="stats"><span>11,439 records</span><span>419 papers and datasets</span><span>6,338 tool proteins without conditions</span></div>
-        <div class="acts"><a class="btn primary" href="records_space/">Open the explorer</a><a class="btn" href="records_space/#lens=umap_universe">Protein universe view</a></div>
+        <div class="acts"><a class="btn primary" href="records_space/">Open the explorer</a><a class="btn" href="records_space/#lens=umap_universe">Protein universe view</a><a class="btn" href="records_space/#mode=guidance">Guidance tab</a></div>
+      </article>
+      <article class="card">
+        <span class="tag">P</span>
+        <h3>Systems with two or more proteins</h3>
+        <p>The Systems mode of the same explorer. Pick a system type in the bar on top: single-protein types filter the records map, the others open their own map, one dot per unique system, placed by the ESMC embeddings of its components. Colour by the most frequent component, system type, the share of labelled records that phase-separate, or the number of records.</p>
+        <div class="stats"><span>1,258 systems</span><span>5,499 records</span><span>7 maps</span></div>
+        <div class="acts"><a class="btn primary" href="records_space/#mode=systems">Open the system maps</a></div>
       </article>
       <article class="card">
         <span class="tag">N + U</span>
@@ -112,39 +121,40 @@ footer a{ color:var(--mute); }
     <p class="lead">Single-protein systems, protein(1). Click a part of the figure to open the explorer on it: a panel in the lower row filters the explorer to that system, a circle highlights that source, FUS jumps to FUS.</p>
     <div class="paper">
       <img src="assets/fig-protein1-systems.webp" alt="Records of the protein(1) systems: circles by source and protein, FUS, and four t-SNE panels by system type" width="2000" height="1793">
-      <a class="hs" style="left:2.60%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#na=none&csat=hide" data-label="protein(1): protein only, 7,490 records → open" aria-label="protein(1): protein only, 7,490 records"></a>
-      <a class="hs" style="left:26.65%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#na=RNA&csat=hide" data-label="protein(1) + RNA, 2,511 records → open" aria-label="protein(1) + RNA, 2,511 records"></a>
-      <a class="hs" style="left:50.65%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#na=DNA&csat=hide" data-label="protein(1) + DNA, 662 records → open" aria-label="protein(1) + DNA, 662 records"></a>
-      <a class="hs" style="left:74.65%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#csat=only" data-label="protein(1), Csat pool, 776 records → open" aria-label="protein(1), Csat pool, 776 records"></a>
-      <a class="hs" style="left:66.75%;top:8.37%;width:26.75%;height:30.67%" href="records_space/#protein=FUS" data-label="FUS: 836 records, 46 papers → open" aria-label="FUS: 836 records, 46 papers"></a>
-      <a class="hs round" style="left:21.65%;top:10.76%;width:17.20%;height:19.19%" href="records_space/#hl=llpsdb&na=none&csat=hide" data-label="LLPSDB v2, protein only → open" aria-label="LLPSDB v2, protein only"></a>
-      <a class="hs round" style="left:39.65%;top:18.57%;width:7.50%;height:8.37%" href="records_space/#hl=phasepdb3&na=none" data-label="PhaSepDB 3 (pilot), protein only → open" aria-label="PhaSepDB 3 (pilot), protein only"></a>
-      <a class="hs round" style="left:35.25%;top:26.49%;width:9.50%;height:10.60%" href="records_space/#hl=llpsense&na=none" data-label="LLPSense → open" aria-label="LLPSense"></a>
-      <a class="hs round" style="left:42.75%;top:34.58%;width:12.50%;height:13.94%" href="records_space/#hl=llpsdb&na=RNA" data-label="LLPSDB v2, + RNA → open" aria-label="LLPSDB v2, + RNA"></a>
-      <a class="hs round" style="left:55.75%;top:38.48%;width:5.50%;height:6.13%" href="records_space/#hl=phasepdb3&na=RNA" data-label="PhaSepDB 3 (pilot), + RNA → open" aria-label="PhaSepDB 3 (pilot), + RNA"></a>
-      <a class="hs round" style="left:51.75%;top:45.01%;width:11.50%;height:12.83%" href="records_space/#hl=rnapsec" data-label="RNAPSEC → open" aria-label="RNAPSEC"></a>
-      <a class="hs round" style="left:25.00%;top:42.50%;width:10.00%;height:11.15%" href="records_space/#hl=llpsdb&na=DNA" data-label="LLPSDB v2, + DNA → open" aria-label="LLPSDB v2, + DNA"></a>
-      <a class="hs round" style="left:32.90%;top:51.31%;width:5.20%;height:5.80%" href="records_space/#hl=phasepdb3&na=DNA" data-label="PhaSepDB 3 (pilot), + DNA → open" aria-label="PhaSepDB 3 (pilot), + DNA"></a>
-      <a class="hs round" style="left:54.35%;top:11.43%;width:8.50%;height:9.48%" href="records_space/#hl=ausserwoger&csat=only" data-label="Ausserwöger 2025, Csat → open" aria-label="Ausserwöger 2025, Csat"></a>
-      <a class="hs round" style="left:56.35%;top:22.14%;width:6.80%;height:7.59%" href="records_space/#hl=bremer&csat=only" data-label="Bremer 2022, Csat → open" aria-label="Bremer 2022, Csat"></a>
+      <a class="hs" style="left:2.60%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#na=none&csat=hide&by=system" data-label="protein(1): protein only, 7,490 records → open" aria-label="protein(1): protein only, 7,490 records"></a>
+      <a class="hs" style="left:26.65%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#na=RNA&csat=hide&by=system" data-label="protein(1) + RNA, 2,511 records → open" aria-label="protein(1) + RNA, 2,511 records"></a>
+      <a class="hs" style="left:50.65%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#na=DNA&csat=hide&by=system" data-label="protein(1) + DNA, 662 records → open" aria-label="protein(1) + DNA, 662 records"></a>
+      <a class="hs" style="left:74.65%;top:64.58%;width:22.70%;height:26.99%" href="records_space/#csat=only&by=system" data-label="protein(1), Csat pool, 776 records → open" aria-label="protein(1), Csat pool, 776 records"></a>
+      <a class="hs" style="left:66.75%;top:8.37%;width:26.75%;height:30.67%" href="records_space/#protein=FUS&by=system" data-label="FUS: 836 records, 46 papers → open" aria-label="FUS: 836 records, 46 papers"></a>
+      <a class="hs round" style="left:21.65%;top:10.76%;width:17.20%;height:19.19%" href="records_space/#hl=llpsdb&na=none&csat=hide&by=system" data-label="LLPSDB v2, protein only → open" aria-label="LLPSDB v2, protein only"></a>
+      <a class="hs round" style="left:39.65%;top:18.57%;width:7.50%;height:8.37%" href="records_space/#hl=phasepdb3&na=none&by=system" data-label="PhaSepDB 3 (pilot), protein only → open" aria-label="PhaSepDB 3 (pilot), protein only"></a>
+      <a class="hs round" style="left:35.25%;top:26.49%;width:9.50%;height:10.60%" href="records_space/#hl=llpsense&na=none&by=system" data-label="LLPSense → open" aria-label="LLPSense"></a>
+      <a class="hs round" style="left:42.75%;top:34.58%;width:12.50%;height:13.94%" href="records_space/#hl=llpsdb&na=RNA&by=system" data-label="LLPSDB v2, + RNA → open" aria-label="LLPSDB v2, + RNA"></a>
+      <a class="hs round" style="left:55.75%;top:38.48%;width:5.50%;height:6.13%" href="records_space/#hl=phasepdb3&na=RNA&by=system" data-label="PhaSepDB 3 (pilot), + RNA → open" aria-label="PhaSepDB 3 (pilot), + RNA"></a>
+      <a class="hs round" style="left:51.75%;top:45.01%;width:11.50%;height:12.83%" href="records_space/#hl=rnapsec&by=system" data-label="RNAPSEC → open" aria-label="RNAPSEC"></a>
+      <a class="hs round" style="left:25.00%;top:42.50%;width:10.00%;height:11.15%" href="records_space/#hl=llpsdb&na=DNA&by=system" data-label="LLPSDB v2, + DNA → open" aria-label="LLPSDB v2, + DNA"></a>
+      <a class="hs round" style="left:32.90%;top:51.31%;width:5.20%;height:5.80%" href="records_space/#hl=phasepdb3&na=DNA&by=system" data-label="PhaSepDB 3 (pilot), + DNA → open" aria-label="PhaSepDB 3 (pilot), + DNA"></a>
+      <a class="hs round" style="left:54.35%;top:11.43%;width:8.50%;height:9.48%" href="records_space/#hl=ausserwoger&csat=only&by=system" data-label="Ausserwöger 2025, Csat → open" aria-label="Ausserwöger 2025, Csat"></a>
+      <a class="hs round" style="left:56.35%;top:22.14%;width:6.80%;height:7.59%" href="records_space/#hl=bremer&csat=only&by=system" data-label="Bremer 2022, Csat → open" aria-label="Bremer 2022, Csat"></a>
     </div>
-    <div class="chips" aria-label="Shortcuts"><a class="chip" href="records_space/#na=none&csat=hide">Protein only</a><a class="chip" href="records_space/#na=RNA&csat=hide">+ RNA</a><a class="chip" href="records_space/#na=DNA&csat=hide">+ DNA</a><a class="chip" href="records_space/#csat=only">Csat pool</a><a class="chip" href="records_space/#protein=FUS">FUS</a><a class="chip" href="records_space/#hl=llpsdb">LLPSDB v2</a><a class="chip" href="records_space/#hl=llpsense">LLPSense</a><a class="chip" href="records_space/#hl=rnapsec">RNAPSEC</a><a class="chip" href="records_space/#hl=phasepdb3">PhaSepDB 3</a><a class="chip" href="records_space/#hl=bremer&csat=only">Bremer 2022</a><a class="chip" href="records_space/#hl=ausserwoger&csat=only">Ausserwöger 2025</a></div>
+    <div class="chips" aria-label="Shortcuts"><a class="chip" href="records_space/#na=none&csat=hide&by=system">Protein only</a><a class="chip" href="records_space/#na=RNA&csat=hide&by=system">+ RNA</a><a class="chip" href="records_space/#na=DNA&csat=hide&by=system">+ DNA</a><a class="chip" href="records_space/#csat=only&by=system">Csat pool</a><a class="chip" href="records_space/#protein=FUS&by=system">FUS</a><a class="chip" href="records_space/#hl=llpsdb&by=system">LLPSDB v2</a><a class="chip" href="records_space/#hl=llpsense&by=system">LLPSense</a><a class="chip" href="records_space/#hl=rnapsec&by=system">RNAPSEC</a><a class="chip" href="records_space/#hl=phasepdb3&by=system">PhaSepDB 3</a><a class="chip" href="records_space/#hl=bremer&csat=only&by=system">Bremer 2022</a><a class="chip" href="records_space/#hl=ausserwoger&csat=only&by=system">Ausserwöger 2025</a></div>
     <p class="cap">Circles: one source and one system type (area follows the number of records). Lower row: the same embedding in all four panels.</p>
   </section>
 
   <section aria-labelledby="h-multi">
     <h2 id="h-multi">Multi-protein systems</h2>
-    <p class="lead">Systems with two or more proteins, with or without nucleic acids, and complexes. They are not in the explorer yet.</p>
+    <p class="lead">Systems with two or more proteins, with or without nucleic acids, and complexes. Click a panel to open the map of that system type: one dot per unique system.</p>
     <div class="paper">
       <img src="assets/fig-multi-protein-systems.webp" alt="Maps of the multi-protein systems: protein(2), protein(3), protein(4 or more), with RNA, with DNA, with nucleic acid, and complexes" width="2000" height="1475">
-      <span class="hs off" style="left:1.50%;top:11.19%;width:24.50%;height:37.63%" data-label="protein(2): 953 systems, 4,406 records · not built yet" aria-label="protein(2): 953 systems, 4,406 records, not built yet"></span>
-      <span class="hs off" style="left:26.00%;top:11.19%;width:24.00%;height:37.63%" data-label="protein(3): 114 systems, 547 records · not built yet" aria-label="protein(3): 114 systems, 547 records, not built yet"></span>
-      <span class="hs off" style="left:50.00%;top:11.19%;width:24.00%;height:37.63%" data-label="protein(≥4): 47 systems, 167 records · not built yet" aria-label="protein(≥4): 47 systems, 167 records, not built yet"></span>
-      <span class="hs off" style="left:74.00%;top:11.19%;width:24.25%;height:37.63%" data-label="protein(2) + RNA: 88 systems, 313 records · not built yet" aria-label="protein(2) + RNA: 88 systems, 313 records, not built yet"></span>
-      <span class="hs off" style="left:1.50%;top:51.86%;width:24.50%;height:37.63%" data-label="protein(2) + DNA: 24 systems, 38 records · not built yet" aria-label="protein(2) + DNA: 24 systems, 38 records, not built yet"></span>
-      <span class="hs off" style="left:26.00%;top:51.86%;width:24.00%;height:37.63%" data-label="protein(3) + NA: 21 systems, 156 records · not built yet" aria-label="protein(3) + NA: 21 systems, 156 records, not built yet"></span>
-      <span class="hs off" style="left:50.00%;top:51.86%;width:24.00%;height:37.63%" data-label="With complex: 15 systems, 57 records · not built yet" aria-label="With complex: 15 systems, 57 records, not built yet"></span>
+      <a class="hs" style="left:1.50%;top:11.19%;width:24.50%;height:37.63%" href="records_space/#mode=systems&g=p2" data-label="protein(2): 953 systems, 4,406 records → open" aria-label="protein(2): 953 systems, 4,406 records"></a>
+      <a class="hs" style="left:26.00%;top:11.19%;width:24.00%;height:37.63%" href="records_space/#mode=systems&g=p3" data-label="protein(3): 114 systems, 547 records → open" aria-label="protein(3): 114 systems, 547 records"></a>
+      <a class="hs" style="left:50.00%;top:11.19%;width:24.00%;height:37.63%" href="records_space/#mode=systems&g=p4" data-label="protein(≥4): 47 systems, 167 records → open" aria-label="protein(≥4): 47 systems, 167 records"></a>
+      <a class="hs" style="left:74.00%;top:11.19%;width:24.25%;height:37.63%" href="records_space/#mode=systems&g=p2r" data-label="protein(2) + RNA: 88 systems, 313 records → open" aria-label="protein(2) + RNA: 88 systems, 313 records"></a>
+      <a class="hs" style="left:1.50%;top:51.86%;width:24.50%;height:37.63%" href="records_space/#mode=systems&g=p2d" data-label="protein(2) + DNA: 24 systems, 38 records → open" aria-label="protein(2) + DNA: 24 systems, 38 records"></a>
+      <a class="hs" style="left:26.00%;top:51.86%;width:24.00%;height:37.63%" href="records_space/#mode=systems&g=p3na" data-label="protein(3) + NA: 21 systems, 156 records → open" aria-label="protein(3) + NA: 21 systems, 156 records"></a>
+      <a class="hs" style="left:50.00%;top:51.86%;width:24.00%;height:37.63%" href="records_space/#mode=systems&g=cx" data-label="With complex: 15 systems, 57 records → open" aria-label="With complex: 15 systems, 57 records"></a>
     </div>
+    <div class="chips" aria-label="Shortcuts to the multi-protein maps"><a class="chip" href="records_space/#mode=systems&g=p2">protein(2)</a><a class="chip" href="records_space/#mode=systems&g=p3">protein(3)</a><a class="chip" href="records_space/#mode=systems&g=p4">protein(≥4)</a><a class="chip" href="records_space/#mode=systems&g=p2r">protein(2) + RNA</a><a class="chip" href="records_space/#mode=systems&g=p2d">protein(2) + DNA</a><a class="chip" href="records_space/#mode=systems&g=p3na">protein(3) + NA</a><a class="chip" href="records_space/#mode=systems&g=cx">With complex</a></div>
     <p class="cap">Each panel is its own t-SNE of ESMC-600M component embeddings; axes are not comparable across panels.</p>
   </section>
 

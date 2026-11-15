@@ -23,10 +23,10 @@ from collections.abc import Collection, Mapping, MutableMapping, Sequence
 import dataclasses
 import datetime
 import enum
-import functools
 import itertools
 from typing import TypeAlias
 
+from alphafold3.common import thread_safe
 from alphafold3.constants import chemical_components
 from alphafold3.constants import mmcif_names
 from alphafold3.constants import residue_names
@@ -134,7 +134,7 @@ def _get_representative_atom(
       raise ValueError(sequence_format)
 
 
-@functools.lru_cache(maxsize=128)
+@thread_safe.thread_local_lru_cache(maxsize=128)
 def _get_first_non_leaving_atom(
     ccd: chemical_components.Ccd, res_name: str
 ) -> str:
@@ -1624,10 +1624,13 @@ def get_tables(
   )
 
   if fix_mse_residues:
-    met_residues_mask = (residues.name == 'MET')[atom_res_key]
-    unfixed_mse_selenium_mask = met_residues_mask & (label_atom_ids == 'SE')
-    label_atom_ids[unfixed_mse_selenium_mask] = 'SD'
-    type_symbols[unfixed_mse_selenium_mask] = 'S'
+    mse_res_mask = res_label_comp_ids == 'MSE'
+    if np.any(mse_res_mask):
+      unfixed_mse_selenium_mask = np.repeat(
+          mse_res_mask, repeats=res_lengths
+      ) & (label_atom_ids == 'SE')
+      label_atom_ids[unfixed_mse_selenium_mask] = 'SD'
+      type_symbols[unfixed_mse_selenium_mask] = 'S'
 
   atoms = structure_tables.Atoms(
       key=atom_site_first_model,

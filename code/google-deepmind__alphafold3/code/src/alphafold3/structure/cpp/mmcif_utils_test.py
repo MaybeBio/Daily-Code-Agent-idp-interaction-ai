@@ -17,6 +17,7 @@
 # if received directly from Google. Use is subject to terms of use available at
 # https://github.com/google-deepmind/alphafold3/blob/main/WEIGHTS_TERMS_OF_USE.md
 
+from collections.abc import Sequence
 from concurrent import futures
 
 from absl.testing import absltest
@@ -52,6 +53,26 @@ def _atom_site_str_array(
     cif: cif_dict.CifDict, column: str, gather
 ) -> np.ndarray:
   return cif.get_array(f'_atom_site.{column}', dtype=object, gather=gather)
+
+
+def _make_cif(**overrides: Sequence[str]) -> cif_dict.CifDict:
+  return cif_dict.CifDict(
+      {
+          '_entity.id': ['1'],
+          '_entity.type': ['non-polymer'],
+          '_struct_asym.id': ['A'],
+          '_struct_asym.entity_id': ['1'],
+          '_atom_site.id': ['1'],
+          '_atom_site.pdbx_PDB_model_num': ['1'],
+          '_atom_site.label_asym_id': ['A'],
+          '_atom_site.label_seq_id': ['.'],
+          '_atom_site.label_comp_id': ['LIG'],
+          '_atom_site.label_atom_id': ['C1'],
+          '_atom_site.label_alt_id': ['.'],
+          '_atom_site.occupancy': ['1.0'],
+      }
+      | overrides
+  )
 
 
 class MmcifToArraysTest(parameterized.TestCase):
@@ -579,6 +600,69 @@ class MmcifToArraysTest(parameterized.TestCase):
         strict=True,
     ):
       np.testing.assert_array_equal(got, want, strict=True)
+
+  @parameterized.parameters(
+      'id',
+      'pdbx_PDB_model_num',
+      'label_asym_id',
+      'label_seq_id',
+      'label_comp_id',
+      'label_alt_id',
+      'occupancy',
+  )
+  def test_filter_rejects_empty_atom_site_values(self, col_name):
+    cif = _make_cif(**{f'_atom_site.{col_name}': ['']})
+    with self.assertRaisesRegex(
+        ValueError, f"Invalid '_atom_site.{col_name}': contains empty string."
+    ):
+      mmcif_utils.filter(cif, include_nucleotides=False)
+
+  def test_filter_allows_empty_label_atom_id_for_smiles_ligands(self):
+    cif = _make_cif(**{'_atom_site.label_atom_id': ['']})
+    index, wanted_chain_ids, layout = mmcif_utils.filter(
+        cif, include_nucleotides=False, include_ligands=True
+    )
+    self.assertEqual(index.shape, (1, 1))
+    self.assertEqual(wanted_chain_ids, {'A'})
+    self.assertEqual(layout.num_atoms(), 1)
+
+  def test_filter_rejects_mismatched_struct_asym_columns(self):
+    cif = _make_cif(**{'_struct_asym.entity_id': []})
+    with self.assertRaisesRegex(ValueError, "Invalid '_struct_asym.' loop"):
+      mmcif_utils.filter(cif, include_nucleotides=False)
+
+  def test_filter_rejects_unknown_struct_asym_entity_id(self):
+    cif = _make_cif(**{'_struct_asym.entity_id': ['999']})
+    with self.assertRaisesRegex(
+        ValueError, "Unknown '_struct_asym.entity_id': 999"
+    ):
+      mmcif_utils.filter(cif, include_nucleotides=False, include_ligands=True)
+
+  def test_filter_multi_model_empty_selection_does_not_crash(self):
+    cif = cif_dict.from_string(r"""
+        data_t
+        _entity.id 1
+        _entity.type water
+        _struct_asym.id A
+        _struct_asym.entity_id 1
+        loop_
+        _atom_site.id
+        _atom_site.pdbx_PDB_model_num
+        _atom_site.label_asym_id
+        _atom_site.label_seq_id
+        _atom_site.label_comp_id
+        _atom_site.label_atom_id
+        _atom_site.label_alt_id
+        _atom_site.occupancy
+        1 1 A . HOH O . 1.0
+        2 2 A . HOH O . 1.0
+    """)
+    index, wanted_chain_ids, layout = mmcif_utils.filter(
+        cif, include_nucleotides=False
+    )
+    self.assertEqual(index.shape, (2, 0))
+    self.assertEmpty(wanted_chain_ids)
+    self.assertEqual(layout.num_atoms(), 0)
 
 
 if __name__ == '__main__':

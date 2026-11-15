@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unippi-owl"
+version = "1.8.0"
+description = "Universal Structure-to-Affinity, Interface Auditing, PTM/Metal Gating, and Mutational Screening Engine"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "BSD-3-Clause"}
+authors = [
+    {name = "Soumyajit Mandal", email = "soumyajitmandal06@gmail.com"}
+]
+dependencies = []
+
+[project.scripts]
+unippi-cli = "unippi_cli:main"
+
+[tool.setuptools]
+py-modules = ["unippi_cli"]

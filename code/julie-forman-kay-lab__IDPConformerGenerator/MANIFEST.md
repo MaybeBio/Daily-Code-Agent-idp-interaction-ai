@@ -1,20 +1,20 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/julie-forman-kay-lab/IDPConformerGenerator
-- 快照日期: 2026-11-01
-- 快照 commit: [`021146be9a2d`](https://github.com/julie-forman-kay-lab/IDPConformerGenerator/commit/021146be9a2dba2dc6363a00a51243162fe50de9)
+- 快照日期: 2026-11-15
+- 快照 commit: [`dde97bdcb0f2`](https://github.com/julie-forman-kay-lab/IDPConformerGenerator/commit/dde97bdcb0f2a0cf66b99a1c888b3747a3c42787)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (180 个文件, 1.3 MB)
+## 保留 (181 个文件, 1.4 MB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| 源码 | 116 | 1.2 MB |
-| 文档 | 35 | 70.6 KB |
-| README | 14 | 43.9 KB |
+| 源码 | 117 | 1.2 MB |
+| 文档 | 35 | 70.9 KB |
+| README | 14 | 44.2 KB |
 | 构建/配置 | 15 | 15.4 KB |
 
-按后缀: `.py` 112 (1.1 MB)、`.cpp` 1 (138.7 KB)、`.rst` 42 (96.9 KB)、`无后缀` 4 (14.5 KB)、`.yml` 8 (6.8 KB)、`.ini` 1 (3.8 KB)、`.md` 3 (3.1 KB)、`setup.py` 1 (3.0 KB)、`.cfg` 1 (869 B)、`.yaml` 1 (675 B)、`.sh` 3 (394 B)、`.txt` 2 (200 B)、`pyproject.toml` 1 (113 B)
+按后缀: `.py` 113 (1.1 MB)、`.cpp` 1 (138.7 KB)、`.rst` 42 (97.5 KB)、`无后缀` 4 (14.5 KB)、`.yml` 8 (6.8 KB)、`.ini` 1 (3.8 KB)、`.md` 3 (3.1 KB)、`setup.py` 1 (3.0 KB)、`.cfg` 1 (869 B)、`.yaml` 1 (675 B)、`.sh` 3 (394 B)、`.txt` 2 (200 B)、`pyproject.toml` 1 (113 B)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 

@@ -1,0 +1,86 @@
+# Snakemake profile for CAIUS, the Université de Strasbourg mésocentre (SLURM
+# 22.05). From the checkout on hpc-login, inside tmux, after
+# scripts/caius/setup.sh (see README "Running on CAIUS"):
+#
+#   NANOPULLDOWN_RUN_CONFIG=config_<run>.yaml scripts/caius/run.sh
+#
+# Fold jobs take partition / H200 constraint / memory / walltime from
+# config.local.yaml's `hpc:` block (config.caius.yaml.example). Everything else
+# is a CPU job on `public`, sized below. Compute nodes are offline: the one
+# web-calling rule, annotate_domains_batch, is run from the login node by
+# run.sh before this profile takes over.
+executor: slurm
+software-deployment-method: conda   # rule envs prebuilt by scripts/caius/setup.sh
+jobs: 400                    # 150 filled up with GPU minimizations and starved the CPU PLIP jobs (2026-11-01)
+# minimize_cif jobs WAITING for a GPU also count against `jobs`: without a cap
+# they took all 400 slots and PLIP (CPU, `public`) got ~1 (2026-11-02). 120 = the
+# GPUs we can get (~80-100) + a short queue; the other ~280 go to PLIP/post/single steps
+resources:
+  - minslot=120
+# Pack the seconds-long CPU steps (Snakefile "SLURM job packing"): ~6,000 SLURM jobs for
+# 625 pairs on 2026-11-03, now one job per N pairs / proteins. A pack asks for N cpus and
+# N x 4 GB (its members run in parallel) and finishes in about its slowest member's time.
+# Sized to ONE NODE: `public` is CR_SOCKET_MEMORY and every node is one socket, so any job
+# gets a whole node (a 2-cpu pack held 24-28 cores, 2026-11-03). The common node is 24
+# cores / 94 GB (168 of ~350): a pack asks for <= 24 cpus and <= ~90 GB to fit there.
+# Measured per member (58,801 steps, 2026-11-02/03): MaxRSS p99 1.6 GB, max 4.6 GB.
+group-components:
+  - annot=22                 # merge_annotation, 1 pair each: 22 cpus, 88 GB
+  - protein_fig=22           # domain-map / unpaired-MSA figure, 1 protein each: 22 cpus, 88 GB
+  - pair_plip=4              # 4 pairs x 5 samples = 20 PLIP containers at once: 20 cpus, 80 GB
+                             # (the plip_parse step, 20 x 4 GB, is the peak), 180 min
+  - pair_post=22             # metrics / clashes / pyDock / figures, 1 pair x 1 step each: 22 cpus, 88 GB
+  # bait_report: one job per bait already
+latency-wait: 60             # BeeGFS
+retries: 1                   # a timed-out fold chunk resumes: finished pairs are skipped
+keep-going: true
+rerun-incomplete: true
+printshellcmds: true
+# greedy, not the default ILP scheduler: the ILP one writes its MPS file to
+# /tmp, and hpc-login1's root fs (with /tmp) fills up -- the controller died
+# on ENOSPC there (2026-10-22 09:46) and cancelled its 40 jobs
+scheduler: greedy
+
+# No global `gpu=` cap: GPU jobs here claim gres=gpu:1 with gpu=0 (sbatch
+# rejects --gpus, which the plugin emits for any gpu > 0). `jobs:` and SLURM
+# limit them.
+
+default-resources:
+  slurm_account: "ibmp"
+  slurm_partition: "public"
+  mem_mb: 4000
+  runtime: 60                # minutes
+  cpus_per_task: 1
+  tmpdir: "'/tmp'"           # jobs' TMPDIR: node-local, not the controller's ($HOME/tmp, run.sh)
+
+set-resources:
+  annotate_domains_batch:    # normally already done by run.sh on the login node (cache only here)
+    runtime: 120
+  annotate_disorder_batch:   # AIUPred, CPU
+    runtime: 240
+    mem_mb: 16000
+    cpus_per_task: 8
+  minimize_cif:              # OpenMM on a GPU: seconds per sample, vs ~22 min on CPU
+    slurm_partition: "publicgpu"
+    gpu: 0
+    gres: "gpu:1"
+    constraint: "gpua100|gpuh100|gpul40s|gpua40|gpuh200|gpuv100|gpup100"   # drop gpuh200 while large fold
+                             # chunks wait for them; P100 tested 2026-11-02 (OpenCL, same energies)
+    slurm_extra: "--exclude=hpc-n862"   # V100 node with a dead GPU: OpenMM falls back to the CPU
+    minslot: 1               # see `resources:` below
+    runtime: 120             # structures with ~1e11 kJ/mol clashes minimize on the CPU (GPU idle,
+    mem_mb: 8000             # 2 threads busy): 5 min on a quiet node, >30 on a loaded one (2026-10-22)
+    cpus_per_task: 4
+  run_plip:
+    runtime: 60
+    mem_mb: 1500             # measured max 0.6 GB over 764 PLIP runs (2026-11-02/03); was 8000
+  collect_results_table:
+    mem_mb: 16000
+  fig_metric_violins_interactive:
+    mem_mb: 16000
+  bait_tables:
+    mem_mb: 8000
+  datavzrd_bait:
+    mem_mb: 8000
+  datavzrd_folding:
+    mem_mb: 8000

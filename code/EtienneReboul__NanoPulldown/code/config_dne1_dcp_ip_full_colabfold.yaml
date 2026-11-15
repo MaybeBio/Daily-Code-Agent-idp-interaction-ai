@@ -1,0 +1,70 @@
+# Run overlay: the FULL-LENGTH DNE1/DCP1/DCP2 IP screen of
+# config_dne1_dcp_ip_full.yaml (same 543 pairs: positives at tier >= high, no
+# decoys), folded with ColabFold (AlphaFold2-multimer v3) instead of
+# ESMFold2-Fast, on CAIUS, with fast kernels. 5 models x 1 seed = 5 samples per pair, as the
+# ESMFold2 run's 5 seeds x 1 sample. MSAs: local MMseqs2-GPU search (one H200
+# job) on the ColabFold databases; paths in CAIUS's config.local.yaml.
+#   NANOPULLDOWN_RUN_CONFIG=config_dne1_dcp_ip_full_colabfold.yaml scripts/caius/run.sh
+
+run_name: "dne1_dcp_ip_full"            # same inputs table, interactor snapshot (-> positives) and
+                                        # decoy draw as the ESMFold2 run
+pairs_file: configs/pairs_dne1_dcp_ip_full_colabfold.txt   # its own list: the 543 screen + positive
+                                        # pairs + 500 decoys x 5 baits (added 2026-10-27, after the
+                                        # first pass); the ESMFold2 run's list stays decoy-free
+
+fold:
+  engine: colabfold
+
+colabfold:
+  num_models: 5
+  num_seeds: 1
+  max_tokens: 4000                      # raised from the ESMFold2 run's 2,880 (2026-10-28): F4I983 x
+                                        # Q9FR53 (3,976 tokens, the largest) folded on one H200 in
+                                        # ~53 GB, 26 min/model -> the 32 pairs skipped at 2,880 are in
+  pairs_per_load: 30                    # hpc.fold_chunk_minutes (23 h) usually cuts first
+  fast_kernels: true                    # fused Pallas kernels (every GPU below is sm_80+: one backend)
+  gpu_classes:                          # small pairs to any Ampere+ GPU (40-48 GB; nodes have 128 GB+ RAM
+                                        # for 2-4 GPUs), the rest to H200 -- frees the H200s
+    - {constraint: "gpua100|gpuh100|gpul40s|gpua40", max_tokens: 1200, mem_mb: 60000, cpus: 8}
+    - {constraint: "gpuh200|gpu80g", max_tokens: 0, mem_mb: 100000, cpus: 8}  # H200 or any 80 GB
+                                        # GPU (H100/A100 80g): the largest pair peaked at ~53 GB GPU,
+                                        # 61 GiB RSS; 100 GB fits an A100-80g node (128 GB, 4 GPUs)
+                                        # -- the H200s were all taken on 2026-10-30
+  msa:
+    mode: local
+    gpu: 1
+    gpu_server: 0                       # NOT 1: mmseqs waits only 600 s (--gpu-server-wait-timeout) for
+                                        # the gpuserver to load the padded UniRef30 (~134 GB) from BeeGFS,
+                                        # and it took longer -- the job failed at 10:53 (2026-10-26)
+    db_load_mode: 0                     # the databases have no .idx index: colabfold_search reads
+                                        # _seq/_aln and forces 0 anyway
+    slurm: {gpu_model: "h200", mem_mb: 400000, cpus: 32, runtime: 1440}  # ~270 GB of padded
+                                        # sequences (UniRef30 + envdb) stream through one H200; 543
+                                        # pairs took 5.4 h, the decoys' scaling is unmeasured
+
+fragments:
+  enabled: false
+
+plip:
+  max_chain_len: 500                    # down from 700: PLIP segfaulted on 8 of the 25 samples with
+                                        # the 665-residue prey Q9T0J1 (unsplit); split at 500 they pass
+                                        # (F4HSW8__Q9T0J1 sample_0, 2026-11-03)
+
+controls:
+  decoys:
+    enabled: true                       # n: 500 (config.yaml) x 5 baits = 2,500 folds, smallest p = 1/501
+    max_tokens: 2880                    # the draw's fit limit, pinned: the set was drawn (and its MSAs
+                                        # searched) at 2,880, before colabfold.max_tokens was raised
+
+dirs:
+  annotation:  "data/annotation_dne1_dcp_ip_full"   # shared with the ESMFold2 run: same pairs, no re-query
+  postproc:    "results_dne1_dcp_ip_full_colabfold"
+  reports:     "reports_dne1_dcp_ip_full_colabfold"
+  logs:        "logs_dne1_dcp_ip_full_colabfold"
+
+inputs:
+  baits:
+    - list: configs/baits_dne1_dcp_ip.txt
+  preys:
+    - list: configs/preys_dne1_dcp_ip.txt
+    - exclude: [Q9SCK9]

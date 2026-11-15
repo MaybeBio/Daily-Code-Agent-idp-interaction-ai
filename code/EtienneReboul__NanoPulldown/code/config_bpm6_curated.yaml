@@ -1,0 +1,37 @@
+# Run overlay: bait BPM6 (A1L4W5) x the 13 preys of configs/old_preys.txt --
+# the 9 literature-annotated interactors of PXD013906 Table S3 (BPM1/2/4/5,
+# MYC2/3/4, JAZ1, NINJA) + 4 flat background binders as negative controls.
+# A small, curated version of the full A1L4W5 screen in results/.
+# Usage (overlay after config.yaml / config.local.yaml):
+#   NANOPULLDOWN_RUN_CONFIG=config_bpm6_curated.yaml snakemake ...
+# Outputs go to *_bpm6_curated dirs (annotation too, so this run never
+# rewrites the shared annotation cache's .done markers of the main run).
+
+run_name: "bpm6_curated"
+
+dirs:
+  annotation:  "data/annotation_bpm6_curated"
+  postproc:    "results_bpm6_curated"
+  reports:     "reports_bpm6_curated"
+  logs:        "logs_bpm6_curated"
+
+# Proteins: bait list x the curated prey list, with each prey's PXD013906
+# spectral-counting statistics attached (annotate_only: the IP-MS table only
+# adds columns, it does not pull in its other 240+ hits). `expand_pairs.py`
+# writes the pair list to pairs_file, which the Snakefile then runs.
+#   nanopulldown --run-config config_bpm6_curated.yaml inputs expand
+inputs:
+  baits:
+    - list: configs/baits.txt
+  preys:
+    - list: configs/old_preys.txt
+      name: chico2020_curated
+    - ipms:
+        name: pxd013906
+        path: data/pxd013906_uniprot_mapping.csv
+        id_column: uniprot
+        name_column: genes
+        keep_columns: [logfc, adjp]
+        annotate_only: true
+
+pairs_file: configs/pairs_bpm6_curated.txt

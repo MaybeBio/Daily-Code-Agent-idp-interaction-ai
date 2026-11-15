@@ -1,0 +1,7 @@
+name: esm2_150m
+hf_path: facebook/esm2_t30_150M_UR50D
+hidden_dim: 640
+layers_to_extract: [1, 6, 12, 18, 24, 30]
+batch_size_inference: 8
+max_seq_len: 1022
+layer: null

@@ -11,6 +11,9 @@ import struct
 import sys
 from collections import Counter
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rs21_build_systems import build_data as build_systems       # noqa: E402  system-level maps of the multi-protein systems (Systems mode)
+
 csv.field_size_limit(10 ** 9)
 ROOT = "/Users/lynn/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Projects/LLPS/condition_llps/records_space_2026-10-29"
 OUT = f"{ROOT}/out"
@@ -178,6 +181,14 @@ def main():
     up = f"{EXP}/universe_data.json"
     if os.path.exists(up):
         U = json.load(open(up))
+        # rs19：UniProt 注释（RNA-binding / DNA-binding）推断的系统类型，按 accession 对齐到页面里的宇宙蛋白
+        sp = f"{ROOT}/data/universe/universe_system.json"
+        if os.path.exists(sp):
+            S_ = json.load(open(sp)); pos_ = {a: i for i, a in enumerate(S_["order"])}; idx_ = [pos_.get(a, -1) for a in U["acc"]]
+            U["sys"] = "".join(str(S_["sys"][i]) if i >= 0 else "0" for i in idx_)                          # 0 protein(1)，1 + RNA，2 + DNA
+            U["flag"] = "".join(str(S_["rna"][i] + 2 * S_["dna"][i] + 4 * S_["annotated"][i]) if i >= 0 else "0" for i in idx_)   # 位：1 RNA-binding，2 DNA-binding，4 有 UniProt 注释
+            U["sys_eval"] = json.load(open(f"{ROOT}/data/universe/system_eval.json"))
+            print("universe systems", {k: U["sys"].count(str(k)) for k in (0, 1, 2)})
         raw = base64.b64decode(U["xyds"])
         q = struct.unpack("<" + "H" * (len(raw) // 2), raw)
         xs, ys, seen = [], [], Counter()
@@ -193,6 +204,10 @@ def main():
         data["emb_labels"]["umap_universe"] = "Protein universe (UMAP)"
         data["universe"] = U
         print("universe proteins", U["n"], "| records placed", sum(1 for v in xs if v >= 0))
+    data["systems"], _ = build_systems()
+    gdp = f"{ROOT}/guidance_page/guidance_data.json"      # the Guidance tab (scripts/rs130_guidance_assets.py); its GIFs and figures are files next to the page
+    if os.path.exists(gdp):
+        data["guidance"] = json.load(open(gdp, encoding="utf-8"))
     blob = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
     def js(name):
@@ -200,8 +215,12 @@ def main():
         assert "</script" not in t.lower(), name
         return t
     tpl = open(f"{EXP}/explorer_template.html").read()
-    for ph in ("/*__DATA__*/null", "/*__CONDPARSER__*/", "/*__RECORDSSPACE__*/", "/*__TRYPANEL__*/"):
+    for ph in ("/*__DATA__*/null", "/*__CONDPARSER__*/", "/*__RECORDSSPACE__*/", "/*__TRYPANEL__*/", "/*__SYSJS__*/", "/*__SYSCSS__*/", "<!--__SYSHTML__-->", "/*__GDJS__*/", "/*__GDCSS__*/", "<!--__GDHTML__-->"):
         assert tpl.count(ph) == 1, ph
+    sysjs = open(f"{ROOT}/systems_page/sy_pane.js", encoding="utf-8").read(); assert "</script" not in sysjs.lower()
+    tpl = tpl.replace("/*__SYSJS__*/", sysjs).replace("/*__SYSCSS__*/", open(f"{ROOT}/systems_page/sy_pane.css", encoding="utf-8").read()).replace("<!--__SYSHTML__-->", open(f"{ROOT}/systems_page/sy_pane.html", encoding="utf-8").read())
+    gdjs = open(f"{ROOT}/guidance_page/gd_pane.js", encoding="utf-8").read(); assert "</script" not in gdjs.lower()
+    tpl = tpl.replace("/*__GDJS__*/", gdjs).replace("/*__GDCSS__*/", open(f"{ROOT}/guidance_page/gd_pane.css", encoding="utf-8").read()).replace("<!--__GDHTML__-->", open(f"{ROOT}/guidance_page/gd_pane.html", encoding="utf-8").read())
     frag = tpl.replace("/*__CONDPARSER__*/", js("condition_parser.js")).replace("/*__RECORDSSPACE__*/", js("records_space.js")).replace("/*__TRYPANEL__*/", js("try_panel.js")).replace("/*__DATA__*/null", blob)
     open(f"{EXP}/page_fragment.html", "w").write(frag)
     standalone = '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' + \

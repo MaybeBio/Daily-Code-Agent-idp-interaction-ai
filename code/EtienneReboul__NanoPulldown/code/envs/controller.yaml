@@ -1,0 +1,29 @@
+name: nanopulldown
+# Controller environment — drives Snakemake orchestration for both stages.
+# Per-rule compute envs are the other envs/*.yaml, built automatically via
+# --use-conda. The SLURM executor plugin is only used on the IFB cluster
+# (--profile profiles/ifb); there, the existing
+# /shared/projects/npf_abinitio/conda/envs/abcfold-npf-pipeline env (snakemake
+# 9.24 + plugin 2.7.1 + pyarrow) serves as the controller -- see README.
+#
+# Install:
+#   conda env create -f envs/controller.yaml
+#   conda activate nanopulldown
+#   pip install -e .          # optional: the `nanopulldown` command on PATH
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - python=3.11
+  - snakemake>=8.4
+  - snakemake-executor-plugin-slurm>=2.7   # IFB: `gpu` + `gpu_model` resources -> --gpus
+  - snakemake-wrapper-utils>=0.6
+  - datavzrd>=2.36
+  - pyyaml>=6.0
+  - pyarrow>=15.0   # the Snakefile reads configs/pairs.parquet
+  - pandas>=2.0     # nanopulldown inputs expand: IP-MS input tables
+  - openpyxl>=3.1   # ... when they are .xlsx
+  - requests>=2.31  # nanopulldown.services (UniProt, interactors)
+  - conda
+  - mamba

@@ -1,0 +1,8 @@
+dataset_dir: data/datasets
+embedding_dir: data/embeddings
+cache_dir: data/.cache
+checkpoint_dir: data/sae_checkpoints
+output_dir: outputs
+# Ephemeral local NVMe scratch. Holds the embeddings and the activation cache,
+# which are large and regenerable, so they never occupy the persistent volume.
+scratch_dir: /mnt/local-scratch

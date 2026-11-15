@@ -1,0 +1,18 @@
+defaults:
+  - paths: local
+  - dataset: gold_curated
+  - model: esm2_8m
+  - sae: l1_8x
+  - _self_
+
+seed: 42
+
+wandb:
+  enabled: true
+  project: idpinterp
+  entity: null
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null

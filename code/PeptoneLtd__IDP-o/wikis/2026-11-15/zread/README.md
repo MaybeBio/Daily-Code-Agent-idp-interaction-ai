@@ -1,0 +1,15 @@
+# PeptoneLtd/IDP-o
+
+- [Overview](1-overview.md)
+- [Quick Start](2-quick-start.md)
+- [Foldcomp Database Setup](3-foldcomp-database-setup.md)
+- [Architecture Overview](4-architecture-overview.md)
+- [Fragment Generation Strategy](5-fragment-generation-strategy.md)
+- [GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search.md)
+- [Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp.md)
+- [Hierarchical Fragment Joining](8-hierarchical-fragment-joining.md)
+- [Overlap Alignment and Clash Detection](9-overlap-alignment-and-clash-detection.md)
+- [JAX Vectorized Ensemble Computation](10-jax-vectorized-ensemble-computation.md)
+- [Batch Dataset Generation](11-batch-dataset-generation.md)
+- [Output Formats and Downstream Use](12-output-formats-and-downstream-use.md)
+- [Command-Line Configuration Reference](13-command-line-configuration-reference.md)

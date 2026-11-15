@@ -1,0 +1,13 @@
+# L0 sweep reference: L1 SAE with a strong sparsity penalty (10x the original
+# 0.1) to push L0 down for comparison against the TopK variants.
+type: l1
+expansion_factor: 32
+l1_coeff: 1.0
+tag: l1c1.0       # disambiguates run_name across the L0 sweep
+batch_size: 2048
+lr: 1e-4
+total_steps: 200000   # matched to the TopK configs for a fair, economical sweep
+checkpoint_every: 10000
+log_every: 100
+dead_feature_window: 5000
+lr_warmup_frac: 0.05

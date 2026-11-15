@@ -366,7 +366,9 @@ Wang, L., Brasnett, C., Borges-Araújo, L. et al.
 
 
 
-
+* **SimPoly: Simulation of polymers with machine learning force fields derived from first principles** [2026]  
+Simm, G.N.C., Hélie, J., Schulz, H. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-78736-x) | [code](https://github.com/microsoft/simpoly)  
 
 * **Neopep: Reinforcement Learning from Machine-Learned Force Field Energy for Non-Canonical Peptide Structure Prediction** [2026]  
 Dhanya Jagannathan, Philip M. Kim.  
@@ -644,7 +646,9 @@ Barnett, Simon, and John D. Chodera.
 
 
 
-
+* **Multiscale Interpretable Deep-Learning Framework for the Identification and Visualization of Deformation Stages in Molecular Dynamics Trajectory** [2026]  
+Zhengwu Long, Xinyu Wang, Lingyun You.  
+[J. Chem. Inf. Model. (2026)](https://doi.org/10.1021/acs.jcim.6c01426)  
 
 * **Pharmacon: A Molecular Dynamics Simulation Analysis Toolkit** [2026]  
 Kyriakos Georgiou and Antonios Kolocouris.  
@@ -837,6 +841,13 @@ Kevin V. Bigting, Shubhadeep Nag, Yaxin An.
 
 
 
+* **OriDynamics: Towards a World Model for Biomolecular Dynamics** [2026]  
+Jiahao Yang, Dong Liu, Hongliang Li, Ji Chen, Yuehua Liu, Daoyun Ding, Duo An, Jun Li, Jiahua Rao, Ziqiao Zhang, Peicong Lin, Shuangjia Zheng.  
+[arXiv:2611.11958(2026)](https://doi.org/10.48550/arXiv.2611.11958)  
+
+* **AdaptivePy: A Unified Python Framework for Adaptive Sampling in Molecular Dynamics** [2026]  
+Hassan Nadeem, Diego E. Kleiman, Diwakar Shukla.  
+[J. Chem. Theory Comput. (2026)](https://doi.org/10.1021/acs.jctc.6c01596)  
 
 * **DIME: Dynamics Inferred from Monte Carlo Ensembles via Continuous-Time Markov Chains** [2026]  
 Krishna Praneet Mulukutla, Marimuthu Krishnan.  
@@ -1073,8 +1084,21 @@ Wang, Han, Linfeng Zhang, Jiequn Han, and E. Weinan.
 
 
 
+* **Atomistic simulations of electrochemical systems with machine learning potentials** [2026]  
+Marialore Sulpizi, Jörg Behler.  
+  [arXiv:2611.15939(2026)](https://doi.org/10.48550/arXiv.2611.15939)  
 
+* **Distilling Large-Scale Machine Learning Interatomic Potentials to Predict Long-Timescale Electrolyte Transport Properties** [2026]  
+Ishan Amin, Yue Jian, Nitesh Kumar, Christine Zhang, Jianwei Lai, Casey S. Mezerkor, Aaron M. Melemed, Jonathan R. Thurston, Neil P. Dasgupta, J. David Bazak, Ethan J. Crumlin, Samuel Blau, Aditi S. Krishnapriyan.  
+  [arXiv:2610.39513(2026)](https://doi.org/10.48550/arXiv.2610.39513)  
 
+* **A thermodynamic correction layer for machine learning interatomic potentials** [2026]  
+Sarath Menon, Braulio Sanchez Ortega, Ralf Drautz.  
+  [arXiv:2610.34551 (2026)](https://doi.org/10.48550/arXiv.2610.34551)  
+
+* **Energetically Anchored Machine-Learning Interatomic Potential Embeddings for Reliable Hydrogen Evolution Electrocatalyst Prediction** [2026]  
+Ching Lin, Po-Wen Chen, Tien-Hsiang Hsueh.  
+  [J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c01720)  
 
 * **Unconstrained learning of equivariant atomistic properties** [2026]  
 Joseph W. Abbott, Paolo Pegolo, Pol Febrer, Michelangelo Domina, Sandra Saade, Matthias Kellner, Filippo Bigi, Philip Loche, Michele Ceriotti.  
@@ -2460,6 +2484,15 @@ KYuan, E.CY., Kumar, A., Guan, X. et al.
 
 
 
+
+* **Transformer-inspired architectures make machine-learned electron densities accurate and transferable enough to bypass self-consistency** [2026]  
+Jeheon Woo.  
+[arXiv:2610.39687(2026)](https://doi.org/10.48550/arXiv.2610.39687)  
+
+* **Ab Initio Accuracy Beyond the Cutoff: Distributed Message-Passing Equivariant Attention at Tens-of-Millions-of-Atom Scale** [2026]  
+Allex Kan, Ji Zhang, Hao Yin, Hao Li, Owen Fu, Xunxing Chen, Lin Huang, Zion Wang, Lucas Li, Jiajun Cheng, Arthur Jiang, Junping Zhao, Jia Zhang.  
+[arXiv:2611.06122(2026)](https://doi.org/10.48550/arXiv.2611.06122)  
+
 * **Transformer-inspired architectures make machine-learned electron densities accurate and transferable enough to bypass self-consistency** [2026]  
 Jeheon Woo.  
 [arXiv:2610.39687(2026)](https://doi.org/10.48550/arXiv.2610.39687)  
@@ -3675,6 +3708,13 @@ Grambow, Colin A., Hayley Weir, Nathaniel Diamant, Alex Tseng, Tommaso Biancalan
 
 
 
+
+
+
+* **Static Recovery Is Not Dynamic Stability: Dynamics-Aware Benchmarking of Protein Motif Scaffolding** [2026]  
+Emile de Bruyn, Moritz Schäffler, Jannik Schneider, Sebastian R. Schmidt, Chanwoong Hwang, Aleena Siji, Utkarsh Upadhyay, Stefan Bauer, Alexander Schug, Stefan Kesselheim, Artur Yakimovich, Alina Bazarova.  
+[arXiv:2611.07723(2026)](https://doi.org/10.48550/arXiv.2611.07723) | [code](https://github.com/PROFOUND-HFMI/BILBY-MD)  
+
 * **Beyond Static Structures: Linking Protein Dynamics to Function via DynaReason-Pro** [2026]  
 Zhaokang Liang, Mingze Yuan, Quanzheng Li, Wengong Jin.  
 [arXiv:2610.33804(2026)](https://doi.org/10.48550/arXiv.2610.33804)  
@@ -4261,6 +4301,15 @@ Jingtian Xu, Yong Wang.
 
 
 
+
+
+
+
+
+* **Rapid generation of antibody conformational ensembles using machine learning** [2026]  
+Pranav V. Rao, David Sommer, Darcy Davidson, Robert G. Alberstein, Jan Ludwiczak, Joseph Kleinhenz, Bodhi Vani, Eliott Park, Jae Hyeon Lee, Saeed Izadi, James R. Kiefer, Richard Bonneau, Sai Pooja Mahajan, Andrew M. Watkins, Frédéric A. Dreyer.  
+[bioRxiv(2026)](https://doi.org/10.64898/2026.11.06.764889)  
+
 * **AbFlex: Predicting the conformational flexibility of antibody CDRs** [2024]  
 Spoendlin, Fabian C., Wing Ki Wong, Guy Georges, Alexander Bujotzek, and Charlotte Deane.   
 [ICML'24 Workshop ML for Life and Material Science: From Theory to Industry Applications (2024)](https://openreview.net/forum?id=or4tArwd5a) | [code](https://openreview.net/forum?id=or4tArwd5a)
@@ -4534,6 +4583,14 @@ Matteo Pavan, Davide Bassani, Mattia Sturlese, Stefano Moro.
 
 
 
+
+* **SimPoly: Simulation of polymers with machine learning force fields derived from first principles** [2026]  
+Simm, G.N.C., Hélie, J., Schulz, H. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-78736-x) | [code](https://github.com/microsoft/simpoly)  
+
+* **Energetically Anchored Machine-Learning Interatomic Potential Embeddings for Reliable Hydrogen Evolution Electrocatalyst Prediction** [2026]  
+Ching Lin, Po-Wen Chen, Tien-Hsiang Hsueh.  
+  [J. Chem. Inf. Model.(2026)](https://doi.org/10.1021/acs.jcim.6c01720)  
 
 * **Fine-Tuning Universal Machine Learning Potentials Enables Efficient Computation of Li Electrode Potentials in Battery Electrolytes** [2026]  
 Feng Wang, Yu-Hang Tang, Yi-Min Wei, Jun Cheng.  

@@ -1,0 +1,10 @@
+type: topk
+expansion_factor: 8
+k: 32
+batch_size: 2048
+lr: 5e-5
+total_steps: 200000
+checkpoint_every: 10000
+log_every: 100
+dead_feature_window: 5000
+lr_warmup_frac: 0.05

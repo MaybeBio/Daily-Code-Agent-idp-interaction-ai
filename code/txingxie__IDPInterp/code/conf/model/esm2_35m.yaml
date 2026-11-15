@@ -1,0 +1,7 @@
+name: esm2_35m
+hf_path: facebook/esm2_t12_35M_UR50D
+hidden_dim: 480
+layers_to_extract: [1, 3, 6, 9, 10, 12]  # 10 added: matches SeqDance's chosen depth for the isolating comparison
+batch_size_inference: 16
+max_seq_len: 1022
+layer: null

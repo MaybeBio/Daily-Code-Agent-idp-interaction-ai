@@ -1,0 +1,22 @@
+name: priorslim
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - numpy==1.26.4
+      - pandas==3.0.3
+      - scipy==1.17.1
+      - scikit-learn==1.9.0
+      - torch==2.12.1
+      - matplotlib>=3.8
+      - openpyxl>=3.1
+      - biopython>=1.83
+      - lxml>=5
+      - fonttools>=4
+      - Pillow>=10
+      - requests>=2.31
+      - numba>=0.59
+      - gemmi>=0.6
+      - fair-esm

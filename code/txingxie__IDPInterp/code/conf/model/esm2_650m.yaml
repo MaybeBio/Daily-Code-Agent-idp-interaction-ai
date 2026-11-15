@@ -1,0 +1,7 @@
+name: esm2_650m
+hf_path: facebook/esm2_t33_650M_UR50D
+hidden_dim: 1280
+layers_to_extract: [1, 9, 18, 24, 30, 33]
+batch_size_inference: 4
+max_seq_len: 1022
+layer: null

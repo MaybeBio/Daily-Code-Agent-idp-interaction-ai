@@ -1,0 +1,212 @@
+name: "nanopulldown results"
+
+default-view: results
+
+datasets:
+  results:
+    path: "results_table.csv"
+    separator: ","
+  minimize_failures:
+    path: "minimize_failure_rate.csv"
+    separator: ","
+  clash_stats:
+    path: "clash_test_stats.csv"
+    separator: ","
+  clash_counts:
+    path: "clash_counts.csv"
+    separator: ","
+
+views:
+  results:
+    dataset: results
+    desc: |
+      Per bait/prey pair, per ESMFold2-Fast diffusion sample, per bait-prey
+      chain pair: AlphaPulldown-style confidence and interaction scores.
+      `pair_iptm` is ESMFold2's own per-chain-pair ipTM; `ipsae`/`ilis`/
+      `pinc`/`pdockq`/`pdockq2` are ab_initio_pipeline's PAE-based rescoring
+      stack (ipSAE, LIS-family, Pinc), computed identically here.
+      `bait`/`prey` are display names (gene > source name > locus >
+      accession); `prey sources` are the config `inputs:` that selected the
+      prey, and `<source>_<column>` columns carry IP-MS values from them.
+      `<side> CDD sites contacted` counts the bait's / prey's CDD
+      conserved-feature site residues PLIP contacts in the sample; `CDD site
+      enrichment` is the fraction of site residues contacted over the
+      fraction of all the side's residues contacted (> 1: the interface
+      favours the sites); `contacts in CDD` is the share of contacted
+      residues inside CDD domains (nanopulldown.report.cdd).
+    render-table:
+      columns:
+        pair:
+          label: "pair id"
+        bait:
+          label: "bait"
+        prey:
+          label: "prey"
+        prey_name:
+          label: "prey protein"
+        prey_locus:
+          label: "prey locus"
+        bait_uniprot:
+          label: "bait UniProt"
+          link-to-url:
+            UniProt:
+              url: "https://www.uniprot.org/uniprotkb/{value}/entry"
+        prey_uniprot:
+          label: "prey UniProt"
+          link-to-url:
+            UniProt:
+              url: "https://www.uniprot.org/uniprotkb/{value}/entry"
+        prey_sources:
+          label: "prey sources"
+        sample_index:
+          label: "sample"
+        chain_i:
+          label: "chain i"
+        chain_j:
+          label: "chain j"
+        ptm:
+          label: "pTM"
+        iptm:
+          label: "ipTM"
+        pair_iptm:
+          label: "pair ipTM"
+        mean_plddt:
+          label: "mean pLDDT"
+        ipsae:
+          label: "ipSAE"
+        ilis:
+          label: "iLIS"
+        pinc:
+          label: "Pinc"
+        pdockq:
+          label: "pDockQ"
+        pdockq2:
+          label: "pDockQ2"
+        plip_contacts:
+          label: "PLIP contacts"
+        plip_hbond:
+          label: "PLIP H-bonds"
+        plip_hydrophobic:
+          label: "PLIP hydrophobic"
+        plip_salt_bridge:
+          label: "PLIP salt bridges"
+        plip_water_bridge:
+          label: "PLIP water bridges"
+        plip_pi_stacking:
+          label: "PLIP π-stacking"
+        plip_pi_cation:
+          label: "PLIP π-cation"
+        plip_halogen:
+          label: "PLIP halogen"
+        plip_metal:
+          label: "PLIP metal"
+        bait_cdd_sites:
+          label: "bait CDD site residues"
+        bait_cdd_sites_hit:
+          label: "bait CDD sites contacted"
+        bait_cdd_sites_enrich:
+          label: "bait CDD site enrichment"
+        bait_contacts_in_cdd:
+          label: "bait contacts in CDD"
+        prey_cdd_sites:
+          label: "prey CDD site residues"
+        prey_cdd_sites_hit:
+          label: "prey CDD sites contacted"
+        prey_cdd_sites_enrich:
+          label: "prey CDD site enrichment"
+        prey_contacts_in_cdd:
+          label: "prey contacts in CDD"
+        pydock_elec:
+          label: "pyDock elec"
+        pydock_desolv:
+          label: "pyDock desolv"
+        pydock_vdw:
+          label: "pyDock vdW"
+        pydock:
+          label: "pyDock"
+        pydock_1vdw:
+          label: "pyDock-1VDW"
+        af_mc:
+          label: "0.8 ipTM + 0.2 pTM"
+        z_af_pydock_run:
+          label: "Z AF/pyDock (run)"
+        z_af_pydock_pair:
+          label: "Z AF/pyDock (pair)"
+        note:
+          label: "note"
+
+  minimize_failures:
+    dataset: minimize_failures
+    desc: |
+      OpenMM minimization outcome per pair: how many of the
+      `esmfold2.num_diffusion_samples` diffusion samples minimized cleanly
+      vs. diverged (energy -> NaN or past `minimize.max_abs_energy`).
+    render-table:
+      columns:
+        pair:
+          label: "pair id"
+        bait:
+          label: "bait"
+        prey:
+          label: "prey"
+        prey_name:
+          label: "prey protein"
+        num_samples:
+          label: "samples"
+        num_succeeded:
+          label: "succeeded"
+        num_failed:
+          label: "failed"
+        failure_rate:
+          label: "failure rate"
+
+  clash_stats:
+    dataset: clash_stats
+    desc: |
+      Paired Wilcoxon signed-rank test, raw vs OpenMM-minimized structures
+      (H1: raw > minimized by default). `rank_biserial` is the matched-pairs
+      effect size.
+    render-table:
+      columns:
+        metric:
+          label: "metric"
+        alternative:
+          label: "H1"
+        n_pairs:
+          label: "n units"
+        n_nonzero:
+          label: "n non-zero diffs"
+        median_raw:
+          label: "median raw"
+        median_minimized:
+          label: "median minimized"
+        median_diff:
+          label: "median diff"
+        n_improved:
+          label: "improved"
+        n_worse:
+          label: "worse"
+        statistic:
+          label: "W"
+        p_value:
+          label: "p-value"
+        rank_biserial:
+          label: "rank-biserial"
+
+  clash_counts:
+    dataset: clash_counts
+    desc: |
+      Clash counts per (pair, sample) unit with both a raw and a minimized
+      structure; `metric` is `n_clashes` (all) or `n_clashes_interchain`.
+    render-table:
+      columns:
+        metric:
+          label: "metric"
+        pair:
+          label: "pair"
+        sample:
+          label: "sample"
+        raw:
+          label: "raw"
+        minimized:
+          label: "minimized"

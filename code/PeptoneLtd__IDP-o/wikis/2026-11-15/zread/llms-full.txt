@@ -1,0 +1,2502 @@
+# Overview
+
+
+
+**IDP-o** is a fragment-based ensemble generator for Intrinsically Disordered Proteins (IDPs). Given a protein sequence, it produces a **conformational ensemble** — a collection of physically plausible 3D structures — by decomposing the sequence into overlapping fragments, searching for structural homologs in the AlphaFold database, reconstructing their 3D coordinates, and hierarchically stitching them together. Each resulting structure has hydrogens inferred, making it ready for downstream computational biophysics tasks such as NMR chemical shift prediction or molecular dynamics initialization.
+
+![IDP-o workflow](https://github.com/PeptoneLtd/IDP-o/blob/main/assets/idp-o.png?raw=true)
+
+Sources: [README.md](/README.md#L1-L15)
+
+## What Problem Does IDP-o Solve?
+
+Intrinsically disordered proteins (IDPs) do not adopt a single stable fold. Instead, they interconvert among a vast ensemble of conformations in solution. Traditional structure prediction tools (AlphaFold, RoseTTAFold) return a single static structure — a point estimate that fundamentally misrepresents the disordered state. IDP-o addresses this by generating **many structures** that collectively sample the conformational landscape, producing output that captures the structural heterogeneity essential for biophysical analysis of IDPs.
+
+Sources: [README.md](/README.md#L1-L15)
+
+## Core Pipeline at a Glance
+
+IDP-o's pipeline is orchestrated by `build_ensemble.py`, which sequentially invokes three stages. Each stage is a dedicated script that handles one transformation in the sequence-to-ensemble workflow:
+
+```mermaid
+flowchart LR
+    A["Protein<br>Sequence"] --> B["Stage 1:<br>Fragment & Search"]
+    B --> C["Stage 2:<br>Extract & Reconstruct"]
+    C --> D["Stage 3:<br>Join & Ensemble"]
+    D --> E["Conformational<br>Ensemble"]
+
+    subgraph Database
+        F["Foldcomp DB<br>(AlphaFold)"]
+        G["Offset FASTA<br>(byte indices)"]
+    end
+
+    F --- B
+    G --- B
+    F --- C
+```
+
+| Stage | Script | Input | Output | Accelerator |
+|-------|--------|-------|--------|-------------|
+| **1. Fragment & Search** | `fasta_search_in_foldcomp_database.py` | Protein sequence | Pickled hit dictionary (byte offsets + residue indices) | GPU (CuPy) |
+| **2. Extract & Reconstruct** | `extract_structures_from_foldcomp_database.py` | Hit dictionary | Per-fragment `.h5` trajectory files | CPU (JAX JIT) |
+| **3. Join & Ensemble** | `join_fragments.py` | Fragment `.h5` files | Final ensemble file (`.h5`, `.xtc`, `.pdb`, etc.) | GPU (JAX vmap) |
+
+Sources: [scripts/build_ensemble.py](/scripts/build_ensemble.py#L22-L54), [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L1-L194), [scripts/extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L1-L326), [scripts/join_fragments.py](/scripts/join_fragments.py#L1-L348)
+
+## Fragmentation Strategy
+
+IDP-o cuts a protein sequence into **6-residue fragments** with an **overlap of 2 residues** between consecutive fragments. The overlap region provides the structural anchor used during fragment joining — the two shared residues are aligned via affine (Kabsch) superposition to determine the relative placement of adjacent fragments. The final fragment may be shorter than 6 residues, depending on the total sequence length.
+
+For a sequence of length *L*, the number of fragments is approximately ⌈(*L* − 6) / (6 − 2)⌉ + 1 = ⌈(*L* − 6) / 4⌉ + 1. This sliding-window fragmentation ensures every residue is covered by at least one fragment while keeping fragments short enough to have abundant structural homologs in the database.
+
+Sources: [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L117-L126), [README.md](/README.md#L7-L8)
+
+## Structural Database: Foldcomp + AlphaFold
+
+IDP-o relies on the **Foldcomp** compressed representation of the AlphaFold database (`afdb_uniprot_v4`, ~1.1 TB). Foldcomp stores backbone dihedral angles (φ, ψ, ω), bond angles, and sidechain conformations in a discretized binary format rather than full Cartesian coordinates. This compression is critical: it allows IDP-o to perform exhaustive substring search across the entire AlphaFold database (covering the UniProt proteome) and then reconstruct only the relevant 3D structures on demand using JAX-compiled coordinate reconstruction functions.
+
+A specially formatted FASTA file is required, where each header contains the **byte offset** of the corresponding entry in the Foldcomp database file rather than a sequence identifier. The `prepare_foldcomp_fasta.py` script automates the download and creation of this file.
+
+Sources: [scripts/prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L1-L150), [scripts/extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L60-L110), [README.md](/README.md#L20-L28)
+
+## Project Structure
+
+```
+IDP-o/
+├── Dockerfile                          # NVIDIA JAX GPU container definition
+├── LICENSE                             # Apache 2.0
+├── README.md                           # Repository readme with usage examples
+├── assets/
+│   └── idp-o.png                       # Pipeline workflow diagram
+├── generate_dataset.py                 # Batch wrapper: CSV/FASTA → many ensembles
+└── scripts/
+    ├── build_ensemble.py               # Pipeline orchestrator (entrypoint)
+    ├── fasta_search_in_foldcomp_database.py   # Stage 1: GPU substring search
+    ├── extract_structures_from_foldcomp_database.py  # Stage 2: Structure reconstruction
+    ├── join_fragments.py               # Stage 3: Hierarchical fragment joining
+    └── prepare_foldcomp_fasta.py       # Database setup: download + offset FASTA
+```
+
+Sources: [Dockerfile](/Dockerfile#L1-L9), [generate_dataset.py](/generate_dataset.py#L1-L126), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L1-L167)
+
+## Technology Stack
+
+| Layer | Technology | Role in IDP-o |
+|-------|-----------|---------------|
+| **GPU Compute** | JAX (NVIDIA container) | Vectorized fragment joining (`vmap`), JIT-compiled reconstruction |
+| **GPU Search** | CuPy | Parallelized substring matching across the Foldcomp FASTA |
+| **Coordinate Engine** | nerfax (Peptone) | Internal-coordinate → Cartesian reconstruction, sidechain placement, hydrogen inference |
+| **Structure I/O** | MDTraj | Trajectory loading/saving in multiple formats (HDF5, XTC, PDB, DCD) |
+| **Database** | Foldcomp | Compressed AlphaFold DB access, binary angle decoding |
+| **Hashing** | hirola | Fast amino-acid lookup table for sequence encoding |
+| **Deployment** | Docker (NVIDIA JAX 24.10) | Reproducible GPU runtime environment |
+
+Sources: [Dockerfile](/Dockerfile#L1-L9), [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L19-L20), [scripts/join_fragments.py](/scripts/join_fragments.py#L14-L20), [scripts/extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L19-L29)
+
+## Key Outputs
+
+IDP-o generates a **conformational ensemble** saved in any of the following formats, selectable via the `--format` flag:
+
+| Format | Extension | Best For |
+|--------|-----------|----------|
+| HDF5 | `.h5` | Compact, fast random access, native MDTraj |
+| XTC | `.xtc` | GROMACS-compatible, compressed trajectory |
+| PDB | `.pdb` | Human-readable, visualization tools |
+| Compressed PDB | `.pdb.gz` | Storage-efficient PDB |
+| DCD | `.dcd` | CHARMM/NAMD-compatible trajectory |
+
+Each ensemble contains `--max_structures_in_ensemble` structures (default: 100), with hydrogens inferred automatically via MDTraj's standard residue templates, making the output immediately usable for downstream NMR or MD applications.
+
+Sources: [scripts/join_fragments.py](/scripts/join_fragments.py#L299-L330), [generate_dataset.py](/generate_dataset.py#L44-L49), [README.md](/README.md#L35-L46)
+
+> [!TIP]
+> When running in Docker, the `--gpus 1` flag is required — the GPU-accelerated sequence search (Stage 1) and JAX-vectorized fragment joining (Stage 3) both depend on CUDA. Ensure your host has NVIDIA drivers and the container toolkit installed.
+
+## Where to Go Next
+
+Now that you understand what IDP-o does and how its pipeline is structured, follow this reading path to go deeper:
+
+1. **[Quick Start](2-quick-start)** — Run your first ensemble generation end-to-end
+2. **[Foldcomp Database Setup](3-foldcomp-database-setup)** — Download and prepare the ~1.1 TB structural database
+3. **[Architecture Overview](4-architecture-overview)** — Detailed data flow and inter-module relationships
+4. **[Fragment Generation Strategy](5-fragment-generation-strategy)** — How overlap fragmentation works and why 6 residues
+5. **[GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search)** — CuPy-based substring matching internals
+6. **[Hierarchical Fragment Joining](8-hierarchical-fragment-joining)** — The power-of-two joining algorithm and clash detection
+7. **[Batch Dataset Generation](11-batch-dataset-generation)** — Scale up to thousands of sequences with `generate_dataset.py`
+
+
+# Quick Start
+
+
+
+Get IDP-o running end-to-end in four steps: clone, build, prepare the database, and generate your first ensemble. This page walks you through each step with exact commands, explains every parameter you need, and points you toward deeper documentation when you're ready to go further.
+
+![IDP-o workflow](PeptoneLtd/IDP-o/blob/main/assets/idp-o.png?raw=true)
+
+## Prerequisites
+
+Before you begin, verify your environment meets these requirements:
+
+| Requirement | Details |
+|---|---|
+| **Docker** | Docker Engine 20+ with NVIDIA Container Toolkit installed |
+| **GPU** | NVIDIA GPU with CUDA 12 support (required for GPU-accelerated sequence search via CuPy) |
+| **Disk space** | ~1.1 TB for the `afdb_uniprot_v4` Foldcomp database (downloaded once) |
+| **Platform** | Linux x86_64 (Docker image targets `linux/amd64`) |
+
+The Docker image is built on `nvcr.io/nvidia/jax:24.10-py3`, which bundles JAX, CUDA 12, and Python 3 — so you do **not** need to install any Python dependencies on the host.
+
+Sources: [Dockerfile](/Dockerfile#L1-L9), [README.md](/README.md#L1-L76)
+
+## Quick Start Workflow
+
+The four steps below form a linear pipeline from a fresh clone to a ready-to-use ensemble. Step 2 (database preparation) is a one-time cost; subsequent ensemble generations skip it entirely.
+
+```mermaid
+flowchart LR
+    A["① Clone & Build"] --> B["② Prepare Foldcomp DB"]
+    B --> C["③ Generate Ensemble"]
+    C --> D["④ Inspect Output"]
+
+    style A fill:#4A90D9,color:#fff
+    style B fill:#7B68EE,color:#fff
+    style C fill:#2ECC71,color:#fff
+    style D fill:#F39C12,color:#fff
+```
+
+Sources: [README.md](/README.md#L16-L52), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L73-L167)
+
+## Step 1 — Clone & Build the Docker Image
+
+Clone the repository and build the container. The `--platform=linux/amd64` flag ensures compatibility even on ARM-based Docker hosts (e.g., Apple Silicon with Rosetta):
+
+```bash
+# Clone the repository
+git clone https://github.com/PeptoneLtd/IDP-o
+cd IDP-o
+
+# Build the Docker image
+docker build --platform=linux/amd64 . -t idp-o
+```
+
+The build installs six runtime dependencies inside the container: **foldcomp** (database I/O), **tables** (HDF5 support), **cupy-cuda12x** (GPU sequence search), **hirola** (hash table for amino acid lookups), **pynmrstar** (NMR STAR format), **joblib** (parallelization), and **nerfax** (JAX-accelerated coordinate reconstruction). You never install these on the host — Docker handles everything.
+
+Sources: [Dockerfile](/Dockerfile#L1-L9), [README.md](/README.md#L16-L21)
+
+## Step 2 — Prepare the Foldcomp Database
+
+IDP-o searches the **AlphaFoldDB** (distributed via Foldcomp) for structural fragments that match subsequences of your protein. The database ships as a compressed binary file, but IDP-o requires a companion FASTA file where each header encodes the **byte offset** into the Foldcomp database:
+
+```
+> {byte_offset_in_foldcomp_db}
+{amino_acid_sequence}
+```
+
+A convenience script automates both the download and the FASTA generation:
+
+```bash
+docker run -v $(pwd):/data --entrypoint python idp-o \
+  /IDP-o/scripts/prepare_foldcomp_fasta.py --workdir /data
+```
+
+This command performs three operations sequentially: (1) downloads the `afdb_uniprot_v4` Foldcomp database into your working directory (~1.1 TB), (2) extracts the raw FASTA using the Foldcomp binary, and (3) remaps each header to its byte offset in the database file, producing `afdb_uniprot_v4.fasta`. On subsequent runs, the script detects existing files and skips completed steps automatically.
+
+> [!TIP]
+> The `--workdir` flag controls where both the database and the FASTA are written. Mount that same directory (`-v $(pwd):/data`) in all future `docker run` calls so IDP-o can find the files.
+
+Sources: [scripts/prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L97-L150), [README.md](/README.md#L23-L37)
+
+## Step 3 — Generate Your First Ensemble
+
+With the database in place, generate an ensemble for a single protein sequence. The example below uses a 69-residue intrinsically disordered sequence:
+
+```bash
+docker run -v $(pwd):/data --gpus 1 \
+  idp-o \
+    --sequence DLIVERANDSANDRDANDCARLDANDMICHELEANDLDHIEANDFADIDANDSTEFANDANDISTVANANDALDERTANDDLIVERAGAINPLASDTHERS \
+    --outpath /data/example/ensemble.h5 \
+    --scratch_folder /data/example/ \
+    --foldcomp_fasta /data/afdb_uniprot_v4.fasta \
+    --foldcomp_db /data/afdb_uniprot_v4 \
+    --n_max_structures_per_fragment 100
+```
+
+The `--gpus 1` flag exposes one NVIDIA GPU to the container for the CuPy-accelerated sequence search stage. The `--sequence` argument accepts a string of **standard 20 amino acids only** — non-standard residues cause a `ValueError`.
+
+### Core Parameters
+
+| Parameter | Required | Default | Description |
+|---|---|---|---|
+| `--sequence` | **Yes** | — | Target protein sequence (standard 20 amino acids) |
+| `--outpath` | **Yes** | — | Output file path; extension determines format (`.h5`, `.xtc`, `.dcd`, `.pdb`, `.pdb.gz`) |
+| `--scratch_folder` | No | `/tmp` | Directory for intermediate fragment `.h5` files |
+| `--foldcomp_fasta` | No | `/data/afdb/afdb_uniprot_v4.fasta` | Offset-encoded FASTA from Step 2 |
+| `--foldcomp_db` | No | `/data/afdb/afdb_uniprot_v4` | Path to the Foldcomp database binary |
+| `--n_max_structures_per_fragment` | No | `1000` | Max structures to extract per 6-residue fragment from the database |
+| `--max_structures_in_ensemble` | No | `100` | Number of structures in the final output ensemble |
+| `--reduction_factor` | No | `1` | Proportion of the database to search (e.g., `10` = search 1/10th) |
+| `--exclude_cis_omega` | No | `False` | Filter out structures with cis-ω backbone angles |
+| `--rmsd_sort` | No | `False` | Sort output frames by RMSD proximity for smoother visualization |
+| `--overwrite` | No | `False` | Overwrite an existing output file |
+
+Sources: [scripts/build_ensemble.py](/scripts/build_ensemble.py#L115-L167), [README.md](/README.md#L39-L52)
+
+### What Happens Inside
+
+When you run the command above, three pipeline stages execute sequentially:
+
+```mermaid
+flowchart TB
+    S["Input Sequence"] --> F["Fragment into 6-mers<br/>(overlap = 2 residues)"]
+    F --> G1["GPU Sequence Search<br/>(CuPy on Foldcomp FASTA)"]
+    G1 --> G2["Structure Reconstruction<br/>(JAX from Foldcomp binary)"]
+    G2 --> G3["Hierarchical Fragment Joining<br/>(overlap alignment + clash detection)"]
+    G3 --> H["Hydrogen Inference<br/>(nerfax)"]
+    H --> O["Ensemble Output<br/>(.h5 / .xtc / .pdb / .dcd)"]
+
+    style G1 fill:#4A90D9,color:#fff
+    style G2 fill:#7B68EE,color:#fff
+    style G3 fill:#2ECC71,color:#fff
+    style H fill:#F39C12,color:#fff
+```
+
+1. **Fragment + Search** — The sequence is split into overlapping 6-residue fragments (2-residue overlap). Each fragment is searched against the Foldcomp database using GPU-accelerated substring matching. Hits are recorded as byte offsets for direct database access.
+2. **Extract + Reconstruct** — For each fragment, up to `n_max_structures_per_fragment` hits are loaded from the Foldcomp binary. JAX-compiled reconstruction functions decode the compressed internal coordinates (backbone angles, torsions, sidechain angles) into full 3D coordinates with all heavy atoms.
+3. **Join + Output** — Fragment ensembles are merged hierarchically (power-of-two grouping) using overlap alignment and clash detection. Surviving structures receive inferred hydrogens and are written to the specified output format.
+
+Sources: [scripts/build_ensemble.py](/scripts/build_ensemble.py#L34-L70), [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L37-L136), [scripts/extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L200-L326), [scripts/join_fragments.py](/scripts/join_fragments.py#L286-L334)
+
+## Step 4 — Inspect the Output
+
+The ensemble is saved as a multi-frame trajectory. Here's how to read it with **MDTraj** (already available inside the container):
+
+```python
+import mdtraj as md
+
+# Load the ensemble
+t = md.load("example/ensemble.h5")
+
+print(f"Frames:   {t.n_frames}")       # number of conformations
+print(f"Residues: {t.n_residues}")     # should match input sequence length
+print(f"Atoms:    {t.n_atoms}")        # heavy atoms + inferred hydrogens
+```
+
+### Supported Output Formats
+
+| Format | Extension | Notes |
+|---|---|---|
+| HDF5 | `.h5` | Recommended; native MDTraj, fast random access |
+| XTC | `.xtc` | GROMACS compressed trajectory; a companion `.pdb` topology file is auto-generated |
+| DCD | `.dcd` | CHARMM/NAMD format; a companion `.pdb` topology file is auto-generated |
+| PDB | `.pdb` | One multi-model PDB file |
+| Compressed PDB | `.pdb.gz` | Gzip-compressed PDB |
+
+Sources: [scripts/join_fragments.py](/scripts/join_fragments.py#L309-L319)
+
+## Batch Dataset Generation
+
+To process many sequences at once, use `generate_dataset.py` with a CSV or FASTA input file. The CSV must contain two columns (configurable via `--column_names`): one for the sequence name and one for the amino acid string.
+
+```bash
+docker run -v $(pwd):/data --gpus 1 --entrypoint python idp-o \
+  /IDP-o/generate_dataset.py \
+    --input /data/sequences.csv \
+    --outfolder /data/ensembles/ \
+    --max_structures_in_ensemble 100 \
+    --format h5
+```
+
+### Batch Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `--input` / `-i` | — | Input CSV or FASTA file (required) |
+| `--outfolder` / `-o` | `./ensembles` | Output directory for ensemble files |
+| `--max_structures_in_ensemble` / `-n` | `0` (no generation) | Number of frames per ensemble; must be > 0 to trigger generation |
+| `--format` | `xtc` | Output format: `h5`, `xtc`, `pdb`, `pdb.gz`, `dcd` |
+| `--shuffle` | `False` | Randomize processing order (useful for parallel runs) |
+| `--overwrite` | `False` | Overwrite existing ensemble files |
+
+> [!TIP]
+> Set `-n` to a positive integer — the default of `0` is a safety guard that logs a warning and skips ensemble generation entirely. This lets you validate your input file before committing to a long compute run.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L24-L126)
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `ValueError: Input sequence contains invalid amino acid` | Non-standard residue in `--sequence` | Remove B, Z, X, or other non-standard codes; only the 20 standard amino acids are accepted |
+| `ensemble file already exists` | Output path already has a file | Add `--overwrite` to your command |
+| `mask is all zero, retrying` | Fragment join found no clash-free alignments | Increase `--n_max_structures_per_fragment` to broaden the fragment candidate pool |
+| Docker build fails on ARM | Missing `--platform` flag | Use `docker build --platform=linux/amd64 . -t idp-o` |
+| Slow first ensemble | JAX JIT compilation on first run | Subsequent ensembles in the same container reuse compiled kernels; the cold start is one-time |
+
+Sources: [scripts/build_ensemble.py](/scripts/build_ensemble.py#L42-L48), [scripts/join_fragments.py](/scripts/join_fragments.py#L215-L223)
+
+## Where to Go Next
+
+Now that you've generated your first ensemble, explore the architecture and algorithms in depth:
+
+1. **Database setup details** — [Foldcomp Database Setup](3-foldcomp-database-setup) covers advanced configuration, alternative databases, and disk-saving strategies.
+2. **How it works** — [Architecture Overview](4-architecture-overview) explains the three-stage pipeline and data flow between scripts.
+3. **Fragment strategy** — [Fragment Generation Strategy](5-fragment-generation-strategy) details the 6-mer overlap scheme and its mathematical justification.
+4. **Output formats** — [Output Formats and Downstream Use](12-output-formats-and-downstream-use) shows how to feed ensembles into NMR, MD, or ML workflows.
+5. **Full CLI reference** — [Command-Line Configuration Reference](13-command-line-configuration-reference) documents every flag with type, default, and effect.
+
+# Foldcomp Database Setup
+
+
+
+IDP-o relies on the **Foldcomp** compressed structure database — specifically the AlphaFold DB UniProt v4 release (`afdb_uniprot_v4`) — as its source of fragment-level structural templates. However, the database alone is not sufficient. IDP-o requires a **specially formatted FASTA file** where each header contains the byte offset of the corresponding entry in the raw Foldcomp database file. This offset-encoded FASTA is what enables the GPU-accelerated byte-level sequence search that drives the entire pipeline. This page walks through why this custom format exists, what the setup script produces, and how to run it.
+
+Sources: [README.md](/README.md#L26-L42), [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L1-L30)
+
+## Why a Custom FASTA Format?
+
+The standard FASTA format uses descriptive headers (e.g., `>AF-Q9H2S5-F1-model_v4`), which are human-readable but computationally opaque. IDP-o's search engine (`fasta_search_in_foldcomp_database.py`) scans the FASTA file at the **raw byte level** using GPU-accelerated pattern matching via CuPy. When a fragment sequence is found, the engine must immediately know **where in the Foldcomp database binary file** that structure's compressed data resides — without a secondary lookup step. By embedding the byte offset directly in the FASTA header, the search engine can map a sequence hit to a database seek position in a single pass, eliminating an entire join operation from the hot path.
+
+The resulting format looks like this:
+
+```
+>677
+LPYPAHLEILVQTLRYWIRDVSSL
+>14402
+MKVILLFVGLSF...
+```
+
+Here, `677` means the Foldcomp database entry for `LPYPAHLEILVQTLRYWIRDVSSL` begins at **byte 677** in the `afdb_uniprot_v4` binary file. The downstream structure extractor opens the database file, seeks to that byte position, and reads the compressed backbone and sidechain data directly.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L40-L63), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L83-L103)
+
+## Setup Pipeline Overview
+
+The preparation script `prepare_foldcomp_fasta.py` executes a four-stage pipeline that transforms the raw Foldcomp distribution into the two artifacts IDP-o requires:
+
+```mermaid
+flowchart TD
+    A["Stage 1: Download<br/>foldcomp.setup()"] --> B["Stage 2: Compute Offsets<br/>Join .index + .lookup"]
+    B --> C["Stage 3: Extract FASTA<br/>foldcomp extract --fasta"]
+    C --> D["Stage 4: Rewrite Headers<br/>Label → Byte Offset"]
+
+    A -.->|produces| A1["afdb_uniprot_v4<br/>(~1.1 TB binary DB)"]
+    A -.->|produces| A2["afdb_uniprot_v4.index<br/>(id → start, end bytes)"]
+    A -.->|produces| A3["afdb_uniprot_v4.lookup<br/>(id → label)"]
+    C -.->|produces| C1["afdb_uniprot_v4_fasta<br/>(standard FASTA, temporary)"]
+    D -.->|produces| D1["afdb_uniprot_v4.fasta<br/>(offset-encoded FASTA)"]
+
+    style A fill:#e8f4fd,stroke:#2196F3
+    style B fill:#fff3e0,stroke:#FF9800
+    style C fill:#e8f5e9,stroke:#4CAF50
+    style D fill:#fce4ec,stroke:#E91E63
+    style D1 fill:#fce4ec,stroke:#E91E63,stroke-width:2px
+    style A1 fill:#e8f4fd,stroke:#2196F3,stroke-width:2px
+```
+
+Each stage is **idempotent** — the script checks for existing artifacts and skips completed stages, making it safe to re-run after an interruption.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L120-L150)
+
+## Stage Details
+
+### Stage 1 — Database Download
+
+The script calls `foldcomp.setup("afdb_uniprot_v4")`, which downloads the official Foldcomp database from the Foldcomp distribution servers. This produces the core binary database file alongside its companion `.index` and `.lookup` tab-separated files. The download is approximately **1.1 TB** and is the most time-consuming stage. If the database file already exists locally, the download is skipped entirely.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L133-L137)
+
+### Stage 2 — Offset Map Computation
+
+This stage builds the critical mapping from **protein label → byte offset** by joining two Foldcomp auxiliary files:
+
+| File | Columns | Purpose |
+|------|---------|---------|
+| `afdb_uniprot_v4.index` | `id`, `start`, `end` | Maps internal numeric ID to byte range in the DB binary |
+| `afdb_uniprot_v4.lookup` | `id`, `label`, `other` | Maps internal numeric ID to human-readable label (e.g., UniProt accession) |
+
+The join proceeds as: `lookup.join(index)` on the shared `id` column, then re-indexes by `label` and extracts the `start` column into a dictionary. This produces a `dict[str, int]` where each key is a protein label and each value is its byte start position in the database file.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L33-L49)
+
+### Stage 3 — FASTA Extraction
+
+The script invokes the **foldcomp CLI binary** with the `extract --fasta` subcommand to decompress all sequences from the database into a standard FASTA file (`afdb_uniprot_v4_fasta`). If the `foldcomp` binary is not found on `PATH` or in the current directory, the script **automatically downloads** the appropriate platform binary:
+
+| Platform | Architecture | Download URL Pattern |
+|----------|-------------|---------------------|
+| Linux | x86_64 | `foldcomp-linux-x86_64.tar.gz` |
+| Linux | arm64 | `foldcomp-linux-arm64.tar.gz` |
+| macOS | universal | `foldcomp-macos-universal.tar.gz` |
+| Windows | x64 | `foldcomp-windows-x64.zip` |
+
+The extracted FASTA uses standard headers (protein labels), which is the input for Stage 4's rewriting step. If the `_fasta` file already exists, extraction is skipped.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L52-L103)
+
+### Stage 4 — Header Rewriting
+
+The final stage reads the standard FASTA from Stage 3 line-by-line and rewrites it to the output file (`afdb_uniprot_v4.fasta`). For each header line, the protein label is looked up in the offset map from Stage 2, and the label is replaced with its corresponding byte offset. Sequence lines are passed through unchanged. The result is the offset-encoded FASTA that IDP-o's search engine consumes.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L106-L117)
+
+## Running the Setup
+
+### Quick Command
+
+The recommended approach uses the IDP-o Docker image, which already includes the `foldcomp` Python package and all dependencies:
+
+```bash
+docker run -v $(pwd):/data \
+  --entrypoint python idp-o \
+  /IDP-o/scripts/prepare_foldcomp_fasta.py \
+  --workdir /data
+```
+
+This downloads the database into the current working directory and produces both required artifacts.
+
+Sources: [README.md](/README.md#L34-L42)
+
+### CLI Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--foldcomp-db` | `afdb_uniprot_v4` | Name of the Foldcomp database to download and process |
+| `--threads` | `8` | Number of threads for the `foldcomp extract` operation |
+| `--workdir` | `/data/foldcomp_db` | Working directory for all downloaded and generated files |
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L120-L128)
+
+### Custom Database Names
+
+If you have a different Foldcomp database (e.g., a custom subset), specify its name via `--foldcomp-db`. The script expects `foldcomp.setup()` to be able to download it, and the resulting files will follow the naming pattern `{db_name}` and `{db_name}.fasta`.
+
+### Disk Space and Time Estimates
+
+| Stage | Disk Space | Typical Duration |
+|-------|-----------|-----------------|
+| Database download | ~1.1 TB | Hours (network-dependent) |
+| Offset map computation | ~negligible (in-memory) | Minutes |
+| FASTA extraction | ~tens of GB (temporary) | Tens of minutes |
+| Header rewriting | ~tens of GB (output FASTA) | Minutes |
+| **Total** | **~1.1 TB+** | **Hours** |
+
+The temporary `_fasta` file from Stage 3 occupies the same order of magnitude as the final `.fasta` output. You may safely delete `afdb_uniprot_v4_fasta` after the script completes — only the binary database (`afdb_uniprot_v4`) and the offset-encoded FASTA (`afdb_uniprot_v4.fasta`) are required at runtime.
+
+> [!TIP]
+> Plan for at least **1.5 TB** of free disk space to accommodate the database, intermediate, and output files simultaneously. The script's idempotent design means you can safely interrupt and resume — completed stages are detected and skipped on re-run.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L133-L149), [README.md](/README.md#L34-L42)
+
+## Output Artifacts and Their Downstream Use
+
+After setup completes, two files are consumed by the IDP-o pipeline:
+
+| Artifact | Consumer | Purpose |
+|----------|----------|---------|
+| `afdb_uniprot_v4` (binary DB) | `extract_structures_from_foldcomp_database.py` | Source of compressed backbone/sidechain coordinates; entries are accessed by byte-offset seek |
+| `afdb_uniprot_v4.fasta` (offset FASTA) | `fasta_search_in_foldcomp_database.py` | GPU-accelerated byte-level search surface; headers encode byte offsets for direct DB seeks |
+
+When invoking the ensemble builder, both paths must be provided:
+
+```bash
+docker run -v $(pwd):/data --gpus 1 idp-o \
+  --sequence YOUR_SEQUENCE \
+  --outpath /data/output/ensemble.h5 \
+  --scratch_folder /data/output/ \
+  --foldcomp_fasta /data/afdb_uniprot_v4.fasta \
+  --foldcomp_db /data/afdb_uniprot_v4 \
+  --n_max_structures_per_fragment 100
+```
+
+Sources: [build_ensemble.py](/scripts/build_ensemble.py#L91-L108), [README.md](/README.md#L44-L54)
+
+## Verifying Your Setup
+
+You can confirm the setup succeeded by checking for the two required artifacts and inspect the offset encoding:
+
+```bash
+# Verify both files exist
+ls -lh afdb_uniprot_v4 afdb_uniprot_v4.fasta
+
+# Inspect first few entries of the offset-encoded FASTA
+head -4 afdb_uniprot_v4.fasta
+```
+
+Expected output should show numeric headers followed by amino acid sequences — **not** protein names or accessions:
+
+```
+>0
+MEN...
+>577
+MKL...
+```
+
+If headers contain alphabetic identifiers (e.g., `>AF-Q9H2S5-F1`), Stage 4 did not complete correctly. Re-run the script — it will skip Stages 1–3 and only re-execute the header rewriting.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L106-L117)
+
+## Next Steps
+
+With the Foldcomp database and offset-encoded FASTA in place, you're ready to run the IDP-o pipeline. The next page provides a bird's-eye view of the architecture, while subsequent deep dives cover each pipeline stage in detail:
+
+- **[Architecture Overview](4-architecture-overview)** — understand how the database artifacts flow through the three-stage pipeline
+- **[GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search)** — how the offset-encoded FASTA enables byte-level fragment matching
+- **[Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp)** — how byte offsets are used to decompress and reconstruct 3D coordinates
+
+# Architecture Overview
+
+
+
+IDP-o is a **fragment-based ensemble generator** for intrinsically disordered proteins (IDPs). Its architecture follows a deterministic three-stage pipeline — **Search → Reconstruct → Join** — that transforms a single amino acid sequence into a diverse ensemble of 3D structural configurations, complete with inferred hydrogens. The system is engineered around two key performance principles: GPU-accelerated subsequence matching via CuPy, and JAX-compiled vectorized coordinate reconstruction and fragment joining. This page maps the complete architectural topology: entry points, data flow, stage responsibilities, and the technology stack that binds them together.
+
+![IDP-o workflow](https://github.com/PeptoneLtd/IDP-o/blob/main/assets/idp-o.png?raw=true)
+
+Sources: [README.md](/README.md#L1-L11), [Dockerfile](/Dockerfile#L1-L9)
+
+## Project Structure
+
+The repository is compact by design — a single orchestrator script, three pipeline stage modules, one batch wrapper, and one database preparation utility. All pipeline logic lives under `scripts/`, with `generate_dataset.py` serving as a thin batch driver at the repository root.
+
+```
+IDP-o/
+├── Dockerfile                          # NVIDIA JAX base image, entrypoint → build_ensemble.py
+├── generate_dataset.py                 # Batch wrapper: iterates CSV/FASTA → calls build_ensemble.py
+├── scripts/
+│   ├── build_ensemble.py               # Pipeline orchestrator (entry point)
+│   ├── fasta_search_in_foldcomp_database.py   # Stage 1: GPU-accelerated sequence search
+│   ├── extract_structures_from_foldcomp_database.py  # Stage 2: JAX structure reconstruction
+│   ├── join_fragments.py               # Stage 3: hierarchical fragment joining
+│   └── prepare_foldcomp_fasta.py       # Pre-processing: builds offset-annotated FASTA
+└── assets/
+    └── idp-o.png                       # Workflow diagram
+```
+
+Sources: [Dockerfile](/Dockerfile#L1-L9), [generate_dataset.py](/generate_dataset.py#L1-L20), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L15-L23)
+
+## Pipeline Architecture
+
+The core pipeline is orchestrated by `build_ensemble.py`, which executes three stages in strict sequential order. Each stage produces a well-defined intermediate artifact consumed by the next stage. The pipeline is stateless between runs — all intermediates are written to a scratch folder and the final ensemble is written to the specified output path.
+
+```mermaid
+flowchart TD
+    SEQ["Protein Sequence"] --> FRAG["Fragment Generation<br/>(overlap=2, length=6)"]
+    
+    subgraph Stage1["Stage 1: GPU Sequence Search"]
+        FRAG --> GPU["CuPy Vectorized Matching<br/>against Foldcomp FASTA"]
+        GPU --> PKL["byte_starts.pkl<br/>(offsets per fragment)"]
+    end
+
+    subgraph Stage2["Stage 2: Structure Reconstruction"]
+        PKL --> FCZ["Foldcomp Binary DB<br/>(compressed structures)"]
+        FCZ --> RECON["JAX JIT-Compiled<br/>Internal → Cartesian Reconstruction"]
+        RECON --> H5["Per-Fragment .h5 Files<br/>(3D coordinate ensembles)"]
+    end
+
+    subgraph Stage3["Stage 3: Hierarchical Joining"]
+        H5 --> ALIGN["Overlap Alignment +<br/>Clash Detection (JAX vmap)"]
+        ALIGN --> HJOIN["Hierarchical Power-of-2<br/>Fragment Joining"]
+        HJOIN --> HADD["Hydrogen Inference<br/>(nerfax)"]
+        HADD --> OUT["Ensemble Output<br/>(.h5 / .xtc / .dcd / .pdb)"]
+    end
+
+    style Stage1 fill:#e8f4e8,stroke:#2d7d2d
+    style Stage2 fill:#e8e8f4,stroke:#2d2d7d
+    style Stage3 fill:#f4e8e8,stroke:#7d2d2d
+```
+
+The orchestrator's `main()` function encodes this exact call sequence: it first validates the input sequence against standard amino acids, then invokes each stage module's `main()` in order — `fasta_search_in_foldcomp_database.main()`, `extract_structures_from_foldcomp_database.main()`, and `join_fragments.main()` — passing the outputs of each stage as inputs to the next.
+
+Sources: [scripts/build_ensemble.py](/scripts/build_ensemble.py#L25-L80)
+
+## Stage Responsibilities
+
+Each pipeline stage has a sharply defined contract. The table below summarizes the input/output contract and the dominant computational technology for each stage.
+
+| Stage | Module | Input | Output | Core Technology | Computational Character |
+|-------|--------|-------|--------|-----------------|----------------------|
+| **1. Sequence Search** | `fasta_search_in_foldcomp_database` | Protein sequence + foldcomp FASTA | `byte_starts.pkl` (hit offsets per fragment) | **CuPy** (GPU) | Embarrassingly parallel substring matching across ~1.1 TB FASTA |
+| **2. Structure Reconstruction** | `extract_structures_from_foldcomp_database` | Hit offsets + foldcomp binary DB | Per-fragment `.h5` files (3D ensembles) | **JAX** `jit` + `vmap` | JIT-compiled internal→Cartesian coordinate reconstruction |
+| **3. Fragment Joining** | `join_fragments` | Per-fragment `.h5` ensembles + sequence | Final ensemble file (h5/xtc/dcd/pdb) | **JAX** `vmap` + `lax.scan` | Vectorized alignment, clash detection, hierarchical reduction |
+
+Sources: [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L40-L144), [scripts/extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L240-L268), [scripts/join_fragments.py](/scripts/join_fragments.py#L195-L249)
+
+## Data Flow and Intermediate Artifacts
+
+Understanding the data contracts between stages is essential for debugging and for potential integration with external tools. The pipeline produces two intermediate artifacts on disk:
+
+**Fragment generation** is the first operation, performed inside `fasta_search_in_foldcomp_database.main()`. Given a protein sequence, it generates overlapping 6-residue fragments with a 2-residue overlap using the `generate_fragments()` function. For a sequence of length *L*, this produces approximately ⌈(*L* − 6) / (6 − 2)⌉ + 1 fragments. The final fragment may be shorter than 6 residues depending on sequence length.
+
+**Stage 1 → Stage 2 contract**: The pickle file `byte_starts.pkl` contains a dictionary keyed by fragment sequence string, where each value is a 3-tuple of NumPy arrays — `(hit_idxs, byte_starts, aa_start_index)`. These three arrays jointly specify: the byte position of each hit in the FASTA file, the byte offset of the corresponding entry in the foldcomp binary database, and the residue index within that database entry where the fragment match begins.
+
+**Stage 2 → Stage 3 contract**: Each fragment's structural ensemble is written as an mdtraj HDF5 file (`{fragment_sequence}.h5`) into the scratch fragments directory. These files contain the full 3D coordinates (backbone + sidechain) for all reconstructed structures matching that fragment.
+
+**Stage 3 → Output**: The final joined ensemble is written via mdtraj to the user-specified output path. Hydrogen atoms are inferred by `nerfax.reduce_utils.reconstruct_from_mdtraj` before writing. For trajectory formats (.xtc, .dcd), a companion .pdb file containing the first frame is also emitted for topology reference.
+
+Sources: [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L164), [scripts/extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L271-L274), [scripts/join_fragments.py](/scripts/join_fragments.py#L277-L320)
+
+## Technology Stack and Runtime Environment
+
+IDP-o runs inside a Docker container built from NVIDIA's JAX base image (`nvcr.io/nvidia/jax:24.10-py3`), ensuring GPU access for both CuPy and JAX computations. The container's entrypoint is `build_ensemble.py`, making the pipeline directly invocable via `docker run`.
+
+| Layer | Technology | Role in Pipeline |
+|-------|-----------|-----------------|
+| **GPU Compute** | CuPy (CUDA 12.x) | Stage 1: vectorized byte-level sequence matching on GPU |
+| **Autodiff/Vectorization** | JAX (XLA compiler) | Stages 2–3: JIT-compiled reconstruction, `vmap`-ed alignment & clash detection |
+| **Structure DB** | foldcomp (~0.1.0) | Compressed AlphaFold DB storage and binary format parsing |
+| **Coordinate Math** | nerfax | Internal→Cartesian reconstruction, sidechain placement, hydrogen inference, topology building |
+| **Trajectory I/O** | mdtraj | Reading/writing .h5, .xtc, .dcd, .pdb formats; topology management |
+| **Hash Table** | hirola (~0.3.0) | Fast amino acid lookup during reconstruction |
+| **Parallelism** | joblib (~1.5.2) | Available for batch-level parallelism in dataset generation |
+| **NMR Star** | pynmrstar (~3.3.6) | Downstream NMR format compatibility |
+
+> [!TIP]
+> The `XLA_PYTHON_CLIENT_MEM_FRACTION=".96"` environment variable set in `join_fragments.py` reserves 96% of GPU memory for JAX, which is critical for the vectorized joining stage. If you encounter OOM errors during joining, reducing `--joins_to_attempt_per_pairing` is more effective than adjusting this fraction.
+
+Sources: [Dockerfile](/Dockerfile#L1-L3), [scripts/join_fragments.py](/scripts/join_fragments.py#L22-L23)
+
+## Entry Points and Execution Modes
+
+IDP-o supports two distinct execution modes, each with its own entry point:
+
+**Single-sequence mode** — invoked directly through the Docker container (entrypoint: `build_ensemble.py`). This is the primary mode for generating an ensemble for one protein sequence at a time. All pipeline parameters are exposed as CLI arguments.
+
+**Batch mode** — invoked via `generate_dataset.py`, which reads a CSV or FASTA file containing multiple sequences and iterates over them, calling `build_ensemble.py` as a subprocess for each. It supports shuffled generation order for parallelization across independent runs, deduplication of input sequences, and configurable output formats. Error handling is per-sequence: failures are logged to a companion `.txt` file without halting the entire batch.
+
+```mermaid
+flowchart LR
+    subgraph SingleMode["Single-Sequence Mode"]
+        S1["docker run idp-o<br/>--sequence SEQ ..."] --> BE1["build_ensemble.py"]
+    end
+
+    subgraph BatchMode["Batch Mode"]
+        S2["python generate_dataset.py<br/>--input sequences.csv"] --> GD["generate_dataset.py"]
+        GD -->|"subprocess per sequence"| BE2["build_ensemble.py"]
+        BE2 -->|"repeat"| BE3["build_ensemble.py"]
+    end
+
+    style SingleMode fill:#e8f4e8,stroke:#2d7d2d
+    style BatchMode fill:#e8e8f4,stroke:#2d2d7d
+```
+
+Sources: [scripts/build_ensemble.py](/scripts/build_ensemble.py#L83-L166), [generate_dataset.py](/generate_dataset.py#L89-L125)
+
+## Pre-Processing: Foldcomp Database Preparation
+
+Before the pipeline can run, the foldcomp database must be prepared in a specific format. The `prepare_foldcomp_fasta.py` script automates this: it downloads the `afdb_uniprot_v4` foldcomp database (~1.1 TB), extracts its FASTA representation using the foldcomp binary, and rewrites the FASTA headers to contain the **byte offset** of each entry in the compressed binary database file rather than the sequence label. This offset-annotated FASTA is what Stage 1 searches against — the byte offsets discovered during search are used directly by Stage 2 to seek into the binary database and extract structural data without any index lookup overhead.
+
+Sources: [scripts/prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L33-L149)
+
+## Architectural Constraints and Design Rationale
+
+Several architectural decisions are hardcoded and worth understanding explicitly:
+
+**Fragment overlap is fixed at 2 residues.** The `join_fragments.py` module contains `overlap = 2` as a hardcoded assertion inside both `pre_join_fragments()` and `_join_fragments()`. This overlap defines the "peptide bond" region used for alignment when joining adjacent fragments — the two overlapping residues provide four backbone atoms (N, CA, C, O) that serve as the alignment reference.
+
+**Fragment length defaults to 6 residues** but the final fragment may be shorter. This value balances search specificity (longer fragments have fewer database hits) against coverage (shorter fragments are more likely to find matches in the database).
+
+**Hierarchical joining uses a power-of-2 reduction.** The `build_ensemble()` function decomposes the number of fragments into a sum of powers of two, joins pairs within each power-of-2 subset hierarchically (log₂ rounds per subset), then linearly joins the subset results. This strategy minimizes the total number of joining operations while keeping intermediate ensemble sizes manageable.
+
+**RMSD threshold for valid joins is 0.6 Å** (hardcoded as `rmsds < 0.06` in nm, since mdtraj uses nanometers internally). Pairs exceeding this threshold or exhibiting steric clashes (any non-bonded interatomic distance < 1.0 Å) are rejected.
+
+> [!TIP]
+> The hierarchical joining strategy means that ensemble diversity is highest for the initial fragments and progressively narrows as fragments are joined, since each joining step filters out configurations that fail alignment or clash checks. This is by design — it naturally produces ensembles that are structurally plausible at both local and global scales.
+
+Sources: [scripts/join_fragments.py](/scripts/join_fragments.py#L76-L123), [scripts/join_fragments.py](/scripts/join_fragments.py#L195-L249), [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152)
+
+## Where to Go Next
+
+The architecture overview establishes the pipeline's shape. The following pages descend into each stage's implementation detail and the algorithms that power them:
+
+- **[Fragment Generation Strategy](5-fragment-generation-strategy)** — how sequences are decomposed into overlapping fragments and why 6/2 is the default
+- **[GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search)** — Stage 1 internals: CuPy byte-level matching and chunk processing
+- **[Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp)** — Stage 2 internals: foldcomp binary format parsing and JAX coordinate reconstruction
+- **[Hierarchical Fragment Joining](8-hierarchical-fragment-joining)** — Stage 3 internals: alignment, clash detection, and the power-of-2 reduction strategy
+
+# Fragment Generation Strategy
+
+
+
+IDP-o's core innovation is a **fragment-based decomposition** of intrinsically disordered protein (IDP) sequences into short overlapping sub-sequences, each of which is independently resolved against a massive structural database (AlphaFold DB via Foldcomp). These fragment-level structural ensembles are then hierarchically reassembled under geometric constraints — overlap alignment and clash rejection — to produce a full-length conformational ensemble. This page explains the *strategy* by which a protein sequence is cut into fragments, why those parameters were chosen, and how the fragment vocabulary feeds the downstream pipeline.
+
+Sources: [README.md](/README.md#L8-L8), [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152)
+
+## Sequence Decomposition into Overlapping Fragments
+
+The fragment generation function `generate_fragments` implements a **fixed-length sliding window with configurable overlap**. Given a protein sequence *s*, a fragment length `seq_len`, and an overlap `overlap`, the stride (shift) between successive fragment start positions is:
+
+> **shift = seq_len − overlap**
+
+Each fragment is extracted as `s[i × shift : i × shift + seq_len]` for incrementing *i*, and the process continues until the entire sequence is covered. The number of fragments is determined by `((len(s) − seq_len) // shift) + 2`, with two edge-case corrections: (1) the **final fragment may be shorter** than `seq_len` — it simply takes whatever residues remain, and (2) if the last fragment degenerates to exactly the overlap length, it is **removed** since it carries no unique residue information.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152)
+
+### Default Parameters and Rationale
+
+| Parameter | Default | Role |
+|-----------|---------|------|
+| `seq_len` | 6 | Fragment length in residues |
+| `overlap` | 2 | Shared residues between consecutive fragments |
+| `shift` | 4 (derived) | Stride between fragment start positions |
+
+The **6-residue fragment length** strikes a balance between two competing demands. Shorter fragments (e.g., 3–4 residues) would produce excessive combinatorial explosion during the joining stage, while longer fragments (e.g., 10+ residues) would yield too few hits in the Foldcomp database — particularly for disordered sequences whose local structure is under-represented in AlphaFold DB. The **2-residue overlap** is the minimum that provides sufficient geometric constraint for robust pairwise alignment during fragment joining (the overlap must span at least one complete peptide bond, which requires ≥ 2 residues for backbone N–CA–C–O registration).
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L155-L156), [join_fragments.py](/scripts/join_fragments.py#L76-L77), [join_fragments.py](/scripts/join_fragments.py#L286-L287)
+
+### Worked Example
+
+Consider the sequence `DLIVERANDSANDR` (14 residues). With `seq_len=6` and `overlap=2`:
+
+| Fragment Index | Start | End | Subsequence | Overlap with Previous |
+|:-:|:-:|:-:|:--|:--|
+| 0 | 0 | 6 | `DLIVER` | — |
+| 1 | 4 | 10 | `ERANDS` | `ER` |
+| 2 | 8 | 14 | `NDSANDR` | `ND` |
+
+Fragment 2 is only 6 residues (exact fit). If the sequence were 15 residues long, the final fragment would be 7 residues — the algorithm gracefully handles this asymmetry. The overlap residues (`ER`, `ND`) serve as the **geometric stitching region** during hierarchical joining.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152)
+
+### Fragment Count Formula
+
+For a sequence of length *L* with fragment length *F* and overlap *O*, the number of fragments *N* is approximately:
+
+> **N ≈ ⌈(L − O) / (F − O)⌉**
+
+This means a 100-residue IDP produces ~25 fragments, each of which is independently searched against the ~200 million structures in the Foldcomp database. The fragment count directly controls the depth of the hierarchical joining tree (see [Hierarchical Fragment Joining](8-hierarchical-fragment-joining)).
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152)
+
+## From Fragments to Structural Ensembles
+
+Once the sequence is decomposed, each fragment follows a three-stage path through the pipeline before joining can occur. The diagram below shows how the fragment vocabulary produced by `generate_fragments` flows into the downstream stages:
+
+```mermaid
+flowchart TD
+    A["Input Sequence<br/>(e.g. 100 residues)"] --> B["generate_fragments()<br/>seq_len=6, overlap=2"]
+    B --> C["Fragment List<br/>~25 overlapping 6-mers"]
+    C --> D["GPU Sequence Search<br/>against Foldcomp DB"]
+    D --> E["Hit Index per Fragment<br/>(byte_start, aa_start_index)"]
+    E --> F["Structure Reconstruction<br/>from Foldcomp binary"]
+    F --> G["Per-Fragment Ensemble<br/>(.h5 files on disk)"]
+    G --> H["Hierarchical Joining<br/>overlap alignment + clash check"]
+    H --> I["Full-Length Ensemble<br/>with inferred hydrogens"]
+
+    style B fill:#4a90d9,color:#fff
+    style C fill:#4a90d9,color:#fff
+    style H fill:#2d7d46,color:#fff
+    style I fill:#2d7d46,color:#fff
+```
+
+**Stage 1 — Sequence Search**: Each fragment string is scanned against the specially-formatted Foldcomp FASTA using GPU-accelerated exact matching (CuPy). The search returns the byte offset in the Foldcomp database and the residue index within each hit protein where the fragment match begins. This is detailed in [GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search).
+
+**Stage 2 — Structure Reconstruction**: For each fragment, up to `n_max_structures_per_fragment` hits are loaded from the Foldcomp binary database. Internal coordinates (backbone angles, torsions, sidechain angles) are decoded and converted to Cartesian coordinates via JAX-compiled reconstruction functions. Optionally, structures with *cis*-ω peptide bonds are excluded. This is covered in [Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp).
+
+**Stage 3 — Hierarchical Joining**: Fragment ensembles are reassembled into a full-length ensemble using a divide-and-conquer tree that performs pairwise overlap alignment and clash detection at each level. This is the subject of [Hierarchical Fragment Joining](8-hierarchical-fragment-joining).
+
+Sources: [build_ensemble.py](/scripts/build_ensemble.py#L60-L80), [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L40-L144), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L240-L268)
+
+## Overlap as Geometric Constraint
+
+The 2-residue overlap is not merely a bookkeeping convention — it is the **geometric anchor** that makes fragment joining well-posed. During pairwise joining, the overlap region provides two complete backbone units (each comprising N, Cα, C, O atoms), which is sufficient to compute a unique rigid-body alignment between the left and right fragment via SVD decomposition.
+
+The alignment procedure extracts the **trailing overlap** from the left fragment and the **leading overlap** from the right fragment, then:
+
+1. **Affine alignment** — An SVD-based optimal rotation and translation is computed to superimpose the right fragment's overlap atoms onto the left fragment's overlap atoms
+2. **RMSD validation** — The root-mean-square deviation of the overlap is checked against a threshold of **0.06 nm (0.6 Å)**; pairs exceeding this are rejected
+3. **Clash detection** — After alignment, all inter-atomic distances in the merged structure are checked; any non-bonded pair closer than **0.1 nm** triggers rejection
+
+These thresholds are hard-coded and reflect the physical tolerances of peptide bond geometry: a 0.6 Å RMSD over 2 residues indicates the two fragments agree on local backbone conformation, while the 0.1 nm clash cutoff prevents steric violations that would be physically unrealistic.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L38-L50), [join_fragments.py](/scripts/join_fragments.py#L96-L123), [join_fragments.py](/scripts/join_fragments.py#L112-L119)
+
+> [!TIP]
+> The overlap of 2 residues is explicitly asserted and assumed throughout the codebase — the `pre_join_fragments` function hard-codes `overlap = 2` regardless of input, and the `_join_fragments` function extracts backbone indices as `bb_indices[indexing].ravel()[2:-2]` where the `[2:-2]` slicing selects the (C, O) atoms of the left overlap residue and the (N, Cα) atoms of the right overlap residue — the peptide bond junction. Changing the overlap would require coordinated changes to this slicing logic.
+
+## Fragment Vocabulary and Database Coverage
+
+The fragment strategy implicitly defines a **vocabulary problem**: each 6-residue fragment must have sufficient structural representatives in the AlphaFold DB to populate a meaningful ensemble. This is why IDP-o uses the full `afdb_uniprot_v4` database (~200 million structures, ~1.1 TB compressed) rather than a smaller curated set.
+
+For **ordered regions**, most 6-mers will have abundant hits (thousands to millions of structures). For **disordered regions**, coverage is sparser because AlphaFold DB is biased toward well-folded proteins. The `n_max_structures_per_fragment` parameter (default 1000 in the build script) caps the ensemble size per fragment — when a fragment has more hits than this limit, structures are randomly subsampled to control memory and compute costs during joining.
+
+| Fragment Type | Typical Hit Count | Ensemble Behavior |
+|---------------|-------------------|-------------------|
+| Well-structured 6-mer | 10³ – 10⁶+ | Subsampled to `n_max_structures_per_fragment` |
+| Partially disordered 6-mer | 10² – 10³ | Fully retained |
+| Rarely observed 6-mer | < 10² | May produce sparse ensembles |
+| No hits found | 0 | Pipeline will fail for this fragment |
+
+The `reduction_factor` parameter provides a debug/performance knob that proportionally reduces the fraction of the database searched — a value of 10 means only one-tenth of the FASTA is scanned, trading coverage for speed.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L252-L256), [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L64-L65), [build_ensemble.py](/scripts/build_ensemble.py#L125-L127)
+
+## End-to-End Fragment Flow in the Pipeline
+
+The `build_ensemble.py` script orchestrates the complete fragment lifecycle. The fragment generation parameters (`overlap=2`, `seq_len=6`) are set in the `join_fragments.main` entry point and propagated to `generate_fragments` at the start of the joining stage. The following table summarizes how each pipeline stage interacts with the fragment decomposition:
+
+| Pipeline Stage | Script | Fragment Interaction |
+|----------------|--------|---------------------|
+| Sequence Search | `fasta_search_in_foldcomp_database.py` | Calls `generate_fragments()` to produce the fragment list; searches each fragment against Foldcomp FASTA |
+| Structure Extraction | `extract_structures_from_foldcomp_database.py` | Reads hit indices per fragment; reconstructs 3D coordinates; saves per-fragment `.h5` ensembles |
+| Fragment Joining | `join_fragments.py` | Calls `generate_fragments()` again to reconstruct fragment list; loads per-fragment `.h5` files; performs hierarchical joining |
+
+Note that `generate_fragments()` is called **twice** — once during search (to determine which fragments to look up) and once during joining (to reconstruct the fragment ordering for hierarchical assembly). This is a stateless design: the fragment list is always derived from the input sequence and the fixed parameters, avoiding any need to serialize the fragment list itself.
+
+Sources: [build_ensemble.py](/scripts/build_ensemble.py#L60-L80), [join_fragments.py](/scripts/join_fragments.py#L286-L287)
+
+> [!TIP]
+> The `generate_dataset.py` wrapper exposes `--fragments_overlap` as a configurable parameter (default 1), but this value is **not propagated** to `build_ensemble.py` in the current code — the ensemble builder always uses the hard-coded default of `overlap=2`. The `--fragments_overlap` parameter in `generate_dataset.py` appears to be a placeholder for future configurability.
+
+## Design Trade-offs
+
+The fragment generation strategy embodies several deliberate trade-offs that are worth understanding when interpreting ensemble outputs:
+
+**Fixed vs. adaptive fragment length** — IDP-o uses a fixed 6-residue window. An alternative design would use variable-length fragments adapted to local disorder propensity (e.g., longer fragments for helical regions, shorter for highly disordered regions). The fixed-length approach simplifies the pipeline and ensures uniform overlap geometry, but may under-represent local structural preferences in semi-ordered regions.
+
+**Exact vs. approximate sequence search** — Fragments are matched by exact substring search in the Foldcomp FASTA. No sequence similarity or fuzzy matching is performed. This means a fragment with a single rare mutation may return zero hits even if a close homolog exists in the database. The trade-off favors speed (GPU exact matching is extremely fast) over sensitivity.
+
+**Overlap size vs. joining flexibility** — A larger overlap (e.g., 3–4 residues) would provide more geometric constraints and potentially higher-quality joins, but would also reduce the stride between fragments, increasing the number of fragments and thus the depth of the joining tree. The 2-residue overlap is the minimum viable choice and maximizes computational efficiency.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152), [join_fragments.py](/scripts/join_fragments.py#L76-L77)
+
+## Where to Go Next
+
+The fragment generation strategy sets the stage for every downstream computation. To understand how fragments are searched against the database, see [GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search). To understand how 3D coordinates are recovered from Foldcomp binary data, see [Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp). To understand how fragment ensembles are stitched together under geometric constraints, see [Hierarchical Fragment Joining](8-hierarchical-fragment-joining). For the mathematical details of overlap alignment and clash detection, see [Overlap Alignment and Clash Detection](9-overlap-alignment-and-clash-detection).
+
+# GPU-Accelerated Sequence Search
+
+
+
+The GPU-accelerated sequence search is the first computational stage in the IDP-o pipeline, responsible for locating short protein fragments within a massive Foldcomp structure database. It transforms a full-length protein sequence into a set of overlapping 6-residue fragments, then uses **CuPy-based CUDA parallelism** to perform byte-level pattern matching directly against the raw bytes of a specially formatted FASTA file — achieving search throughput that would be impractical on CPU alone. The output is a dictionary of hit locations that enables downstream structure extraction at precise byte offsets within the compressed Foldcomp database, without ever decompressing the full archive.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L1-L194), [build_ensemble.py](/scripts/build_ensemble.py#L60-L61)
+
+## Algorithm Architecture
+
+The search operates on a fundamental insight: rather than parsing a FASTA file into a sequence database and performing BLAST-style alignment, it treats the file as a **flat byte array** and performs exact substring matching at the raw byte level. This eliminates all parsing overhead and maps naturally to GPU-wide SIMD execution. The specially formatted FASTA file — produced by [Foldcomp Database Setup](3-foldcomp-database-setup) — encodes the byte offset of each entry in the Foldcomp database directly into the FASTA header, so that a single search pass yields both the sequence match and the structural data location.
+
+```mermaid
+flowchart TD
+    A["Input Sequence<br/>(e.g. 100 residues)"] --> B["Fragment Generation<br/>6-residue windows,<br/>2-residue overlap"]
+    B --> C["Fragment Set<br/>(~24 fragments)"]
+    
+    D["Offset FASTA File<br/>(~1.1 TB raw bytes)"] --> E["Chunked Loading<br/>GPU memory-sized<br/>byte arrays"]
+    
+    C --> F["GPU Byte-Level Search<br/>CuPy SIMD matching"]
+    E --> F
+    
+    F --> G["Hit Detection<br/>per fragment per chunk"]
+    G --> H["Header Parsing<br/>Extract byte offsets<br/>from FASTA headers"]
+    H --> I["Hit Aggregation<br/>Across chunks"]
+    I --> J["Pickle Output<br/>fragment → (hit_idxs,<br/>byte_starts,<br/>aa_start_index)"]
+    
+    J --> K["Structure Extraction<br/>[Structure Reconstruction](7-structure-reconstruction-from-foldcomp)"]
+```
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L40-L144), [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152)
+
+## Fragment Generation Strategy
+
+The input protein sequence is decomposed into overlapping 6-residue fragments via `generate_fragments`, which implements a sliding window with configurable overlap. With the default parameters (`seq_len=6`, `overlap=2`), each fragment shares 2 residues with its neighbor, ensuring structural continuity when fragments are later reassembled by [Hierarchical Fragment Joining](8-hierarchical-fragment-joining). The shift between consecutive fragment start positions is `seq_len - overlap = 4` residues, yielding approximately `⌈(N - 6) / 4⌉ + 2` fragments for a sequence of length N. A terminal fragment whose length equals the overlap size is discarded, since it carries no independent structural information beyond what the preceding fragment already encodes.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152)
+
+## Byte-Level GPU Matching: `extract_all_byte_starts`
+
+This is the computational core of the search stage. The function processes the offset FASTA file in **chunks** sized to fit within GPU memory (default: 320 MB), performing three operations per chunk for each fragment simultaneously.
+
+### Chunk Loading and Header Indexing
+
+Each chunk is read as raw bytes via `f.read(chunk_size)` and immediately cast to a CuPy `uint8` array — no string parsing occurs. The positions of all `>` characters (FASTA headers) are located in a single GPU pass using `cp.flatnonzero`, producing the `start_bytes` index that partitions the byte stream into sequence records. The final chunk is zero-padded to a multiple of 8 bytes, satisfying GPU memory alignment requirements.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L64-L86)
+
+### Exact Substring Matching via Boolean Convolution
+
+For each fragment, the encoded sequence (also `uint8`) is matched against the chunk through a **parallel element-wise comparison across all positions simultaneously**. A boolean accumulator `energies` is initialized to all-true, then each residue position `j` in the fragment narrows the accumulator with an AND-reduction:
+
+```python
+energies &= indexs[j : chunk_size - (ncoeff - j)] == sequence_encoded[j]
+```
+
+This evaluates to `True` only at byte positions where **every residue in the fragment matches contiguously** — an O(L × C) operation where L is fragment length and C is chunk size, executed entirely on GPU with no branching or loop overhead. The `flatnonzero` of the resulting boolean mask yields the hit positions within the chunk.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L88-L99)
+
+### Offset Extraction and Amino Acid Indexing
+
+For each hit, the preceding FASTA header is identified via `searchsorted` on the `start_bytes` array. The numeric byte offset stored in that header (e.g., `>677`) is decoded from its ASCII digit representation using a vectorized base-10 decomposition: the digit characters are masked, shifted by their positional power of 10, and summed — all on GPU. Simultaneously, the **amino acid start index** within the matched sequence is computed as the offset from the header's `>` sign, accounting for the variable-length byte offset string. This three-part tuple — `(hit_idxs, byte_starts, aa_start_index)` — is transferred back to CPU via `.get()` and stored per fragment per chunk.
+
+Sources: [fasta_search_in_detail_from_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L101-L121)
+
+### Cross-Chunk Aggregation
+
+Hits where a fragment sequence straddles a chunk boundary are **intentionally dropped** (line 102: `hit_idxs = hit_idxs[hit_idxs > start_bytes[0]]`). This is a deliberate design choice: partial matches across chunk boundaries would require cross-chunk coordination that defeats the embarrassingly-parallel chunk processing model. After all chunks are processed, hits for each fragment are concatenated across chunks via `np.concatenate`, with empty arrays substituted for fragments that produced no hits in a given chunk. The result is a dictionary mapping each fragment string to a 3-tuple of concatenated NumPy arrays.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L101-L143)
+
+## CuPy vs. NumPy: Why GPU Acceleration Matters
+
+The entire matching pipeline is implemented in CuPy — a drop-in GPU replacement for NumPy — because the search operates on the **raw bytes of a ~1.1 TB FASTA file**. On CPU, the element-wise comparison loop for a single 6-residue fragment across a 320 MB chunk would require ~2.4 billion comparisons, repeated for each of the ~24 fragments. CuPy executes these as massively parallel CUDA kernels, exploiting the GPU's thousands of cores and coalesced memory access patterns. The only CPU-GPU transfers occur at the boundary: chunk bytes are uploaded once, and the final hit tuples (typically tiny — a few hundred entries) are downloaded via `.get()`.
+
+| Aspect | CPU (NumPy) | GPU (CuPy) |
+|--------|-------------|------------|
+| Comparison execution | Sequential per fragment position | Massively parallel across all positions |
+| Memory model | Host RAM, no alignment constraint | Device VRAM, 8-byte aligned chunks |
+| Data transfer | None (native) | Upload chunk once, download hits only |
+| Throughput bottleneck | Single-core scalar ops | Saturated memory bandwidth |
+| Typical chunk processing | Minutes per fragment | Sub-second per fragment |
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L20-L21), [Dockerfile](/Dockerfile#L1-L3)
+
+## Output Format and Pipeline Integration
+
+The search stage outputs a **pickle file** containing a dictionary keyed by fragment string, with each value being a 3-tuple of `np.int64` arrays:
+
+| Tuple Index | Name | Meaning |
+|-------------|------|---------|
+| 0 | `hit_idxs` | Byte position in the FASTA file where the match begins |
+| 1 | `byte_starts` | Byte offset in the Foldcomp database file where the matching entry's structural data begins |
+| 2 | `aa_start_index` | Residue index within the matched database sequence where the fragment match starts (enables sub-extraction of specific residue ranges) |
+
+This pickle file is consumed directly by the [Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp) stage, which uses `byte_starts` to seek into the compressed Foldcomp database and `aa_start_index` to extract only the relevant residue subrange — avoiding decompression of the entire entry. The orchestration is handled by `build_ensemble.py`, which calls the search, extraction, and joining stages in sequence.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L155-L164), [build_ensemble.py](/scripts/build_ensemble.py#L60-L61)
+
+## Configuration Parameters
+
+The search stage exposes two parameters that control the search scope and precision:
+
+| Parameter | CLI Flag | Default | Effect |
+|-----------|----------|---------|--------|
+| `chunk_size` | — | 320,000,000 bytes | GPU memory chunk size. Auto-reduced when the file is smaller than one chunk, rounded down to a multiple of 8. Not exposed via CLI. |
+| `reduction_factor` | `--reduction_factor` | 1 | Divisor applied to the file size estimate. A value of 10 searches only ~1/10th of the database — useful for rapid iteration during development or when search completeness is not required. |
+| `overlap` | — | 2 | Overlapping residues between consecutive fragments. Hard-coded to 2 throughout the pipeline. Not exposed via CLI. |
+| `seq_len` | — | 6 | Fragment length in residues. Not exposed via CLI — altering this would require corresponding changes in [Overlap Alignment and Clash Detection](9-overlap-alignment-and-clash-detection). |
+
+> [!TIP]
+> The `reduction_factor` parameter does **not** subsample the sequences — it subsamples the **byte range** of the FASTA file. This means a reduction factor of 10 doesn't search every 10th sequence; it searches the first 1/10th of the file by byte offset. For statistically uniform sampling, this is acceptable since the AlphaFoldDB entries are not ordered by sequence content.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L40-L46), [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L167-L193)
+
+## Runtime Environment
+
+The search stage requires a CUDA-capable GPU with the CuPy CUDA 12x runtime, as specified in the Dockerfile base image `nvcr.io/nvidia/jax:24.10-py3` and the `cupy-cuda12x~=13.6.0` dependency. The entire IDP-o pipeline is orchestrated through this Docker image, which bundles both the CuPy-based search and the JAX-based downstream computation within a single container. The search is invoked as the first step of `build_ensemble.py`, writing its pickle output to a scratch directory before control passes to structure extraction.
+
+
+# Structure Reconstruction from Foldcomp
+
+
+
+The **Structure Reconstruction** stage is the computational heart of IDP-o: it transforms compressed Foldcomp database entries—stored as quantized internal coordinates—back into full 3D Cartesian atomic coordinates. This stage sits between the [GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search) (which identifies fragment hits and their byte positions) and the [Hierarchical Fragment Joining](8-hierarchical-fragment-joining) (which stitches overlapping fragment ensembles into a complete chain). The entire reconstruction pipeline is implemented in `extract_structures_from_foldcomp_database.py` and orchestrated by `build_ensemble.py`, which calls it as the second of three sequential stages.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L1-L326), [build_ensemble.py](/scripts/build_ensemble.py#L60-L70)
+
+## Architectural Overview
+
+The reconstruction stage decomposes into four tightly coupled phases: **binary deserialization** (parsing the Foldcomp FCMP entry format), **dequantization** (converting discrete integer codes back to continuous angles in radians), **backbone reconstruction** (sequential internal-to-Cartesian coordinate transformation via Nerfax), and **sidechain reconstruction** (placing sidechain atoms relative to the reconstructed backbone). The entire pipeline is JAX-accelerated, with a JIT-compiled specialization path that can achieve up to ~2000× speedup for repeated reconstructions of the same amino acid sequence.
+
+```mermaid
+flowchart TD
+    A["Search Hits<br/>(byte_starts.pkl)"] --> B["Binary Deserialization<br/>FCMP entry parsing"]
+    B --> C["Dequantization<br/>discrete → continuous angles"]
+    C --> D["Backbone Reconstruction<br/>internal → Cartesian coords"]
+    D --> E["Sidechain Reconstruction<br/>rotamer placement"]
+    E --> F{"exclude_cis_omega?"}
+    F -->|Yes| G["Cis-Omega Filter<br/>|ω| > 90°"]
+    F -->|No| H["Ensemble Subsampling<br/>≤ n_max structures"]
+    G --> H
+    H --> I["Fragment Ensemble<br/>(fragment.h5)"]
+
+    style A fill:#2d3748,color:#fff
+    style I fill:#2d3748,color:#fff
+    style D fill:#4a5568,color:#fff
+    style E fill:#4a5568,color:#fff
+```
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L217-L268)
+
+## Foldcomp Binary Format — FCMP Entry Layout
+
+Each protein structure in the Foldcomp database is stored as a single FCMP entry. The reconstruction stage must navigate this binary layout with byte-precise offsets derived from the search hit metadata (`fasta_byte_start`, `byte_start`, `aa_start_index`). The entry begins with a `b"FCMP"` magic tag, followed by header fields that encode the residue count, anchor points, and—critically—the **discretizer matrix** that governs dequantization.
+
+| Field | Offset (relative) | Size | Type | Description |
+|---|---|---|---|---|
+| Magic tag | `byte_start` | 4 B | `@4s` | Must equal `b"FCMP"` |
+| `nResidue` | `+4` | 2 B | `H` (uint16) | Total residues in entry |
+| `nAnchor` | `+12` | 1 B | `B` (uint8) | Number of anchor points |
+| `lenTitle` | `+24` | 4 B | `I` (uint32) | Title string length |
+| Discretizers | `+28` | 48 B | `float32[2,6]` | Min values + configuration scales |
+| Backbone data | `+89 + 40·nAnchor + lenTitle` | 8·nRes B | `uint8[nRes, 8]` | Packed angles/torsions per residue |
+| Sidechain data | After backbone | Variable | `uint8[]` | Per-residue sidechain angles |
+
+The backbone data section starts at a computed offset: `byte_start + 89 + 40 * nAnchor + lenTitle`. The first 8 bytes of the backbone section are dummy padding; actual per-residue data follows at `(l - 1) * 8` bytes from that start, where `l` is the residue start index of the fragment hit.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L83-L103)
+
+## Binary Deserialization — Bitwise Backbone Decoding
+
+The `load_backbone_data` function performs a **bitwise unpacking** of 8 bytes per residue into six internal coordinate values and one amino acid identifier. Each residue's 8-byte row is first upcast to `uint16` to enable 12-bit field extraction. The most significant 5 bits of byte 0 encode the amino acid index (`(d[:,0] & 0xF8) >> 3`). The remaining bits are reassembled across byte boundaries into three 12-bit torsion/angle values (omega, psi, phi) through shift-and-mask operations, while the last three bytes provide the bond angles (n_ca_c, ca_c_n, c_n_ca) directly.
+
+```python
+# Amino acid from top 5 bits
+aas = (d[:, 0] & 0xF8) >> 3
+# 12-bit reconstruction across byte boundaries
+d[:, 0] = ((d[:, 0] & 0x0007) << 8) | (d[:, 1] & 0x00FF)   # omega
+d[:, 1] = ((d[:, 2] & 0x00FF) << 4) | (d[:, 3] & 0x00FF) >> 4  # psi
+d[:, 2] = ((d[:, 3] & 0x000F) << 8) | (d[:, 4] & 0x00FF)   # phi
+# Reorder to canonical: [phi, psi, omega, n_ca_c_angle, ca_c_n_angle, c_n_ca_angle]
+mainChainAnglesTorsions = d[:, [2, 1, 0, 7, 5, 6]]
+```
+
+The column reordering `d[:, [2, 1, 0, 7, 5, 6]]` maps from the storage layout `(omega, psi, phi, ..., ca_c_n, c_n_ca, n_ca_c)` to the canonical internal-coordinate ordering `(phi, psi, omega, n_ca_c_angle, ca_c_n_angle, c_n_ca_angle)` expected by the downstream reconstruction functions.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L66-L77)
+
+## Dequantization — From Discrete Codes to Radians
+
+The discretized integer values must be **linearly dequantized** back to continuous angles using the per-entry discretizer matrix. This 2×6 `float32` matrix contains min values (`mins`) and configuration scales (`conf_fs`), one pair per internal coordinate channel. The dequantization formula applied in `reconstruct_backbone` is:
+
+```
+continuous = (discrete × conf_fs + mins) × (π / 180)
+```
+
+The multiplication by `π/180` converts from degrees to radians. After dequantization, the angles undergo two further transformations before coordinate reconstruction: the **torsion reordering** `[..., [1, 2, 0]]` reorganizes from `(phi, psi, omega)` to `(psi, omega, phi)` to match the N→CA→C chain-walk convention, and the **bond angle complement** `π - angle` is applied, accounting for the historical SCNet convention where stored angles are supplementary to the internal coordinate bond angles.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L137-L163)
+
+## Backbone Reconstruction — Internal-to-Cartesian Transformation
+
+With dequantized and reordered angles, torsions, and the fixed backbone bond lengths from `BACKBONE_BOND_LENGTHS`, the `reconstruct_backbone` function performs **sequential internal-to-Cartesian coordinate reconstruction**. Three initial anchor positions are placed at `[-1, -1, 0], [-1, 0, 0], [0, 0, 0]` in 3D space, and the `reconstruct_from_internal_coordinates_pure_sequential` function from Nerfax walks along the chain, placing each successive atom using the N-CA-C peptide backbone geometry defined by the bond lengths, bond angles, and dihedral torsions. The output `bb_pos` contains the full backbone Cartesian coordinates (N, CA, C, O) for every residue in the fragment.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L137-L163)
+
+## Sidechain Reconstruction
+
+The `reconstruct` function extends backbone reconstruction with **sidechain atom placement** via `reconstruct_sidechains` from Nerfax. Sidechain data is loaded separately from the Foldcomp entry: each residue's sidechain is encoded as a variable number of `uint8` values, where the count per residue is determined by the amino acid type through the `AA_N_SC_ATOMS` lookup table. A prefix cumulative sum over `AA_N_SC_ATOMS` values computes byte offsets into the sidechain data section, enabling selective extraction of only the fragment's residues rather than the entire entry. The sidechain angles are then used to place rotamers relative to their reconstructed backbone anchors.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L116-L134), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L166-L169)
+
+## JAX JIT Compilation — Sequence-Specialized Reconstruction
+
+The most significant performance optimization in this stage is the **JAX JIT-compiled specialization** via `build_reconstruct_fn`. Rather than reconstructing structures one at a time through the generic `reconstruct` path, this function captures the amino acid sequence as a compile-time constant using `jax.ensure_compile_time_eval()`, producing a specialized XLA-compiled function that eliminates all amino-acid-dependent branching at runtime.
+
+```mermaid
+flowchart LR
+    A["reconstruct()"] -->|Generic path| B["~1× baseline"]
+    C["build_reconstruct_fn()"] -->|"jit + ensure_compile_time_eval"| D["~2000× faster"]
+    E["build_parallel_reconstruct_fn()"] -->|"jit + vmap over batch"| F["Batch parallel<br/>~2000× per structure"]
+```
+
+The `build_parallel_reconstruct_fn` variant wraps `reconstruct` in `vmap` with `in_axes=(0, 0, None, 0)`—batching over discretizers, backbone angles, and sidechain angles while keeping the amino acid array constant (since all structures in a fragment ensemble share the same sequence). This batch-vmapped function is then JIT-compiled, enabling the entire ensemble reconstruction for a fragment to execute as a single XLA-compiled computation.
+
+> [!TIP]
+> JAX is explicitly forced onto the CPU backend (`os.environ["JAX_PLATFORMS"] = "cpu"`) at module import time. The GPU is reserved for the preceding sequence search stage, and reconstruction is compute-bound in a way that benefits more from XLA's CPU compilation and memory locality than from GPU transfer overhead.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L15-L17), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L189-L206)
+
+## Cis-Omega Filtering
+
+The optional `--exclude_cis_omega` flag filters out structures with **cis peptide bonds**, which are rare in natural proteins (< 0.1% of non-proline peptide bonds). The filter operates on the dequantized omega dihedral angle before full reconstruction: structures are retained only if **all** omega angles in the fragment satisfy `|ω| > 90°` (i.e., all peptide bonds are in the trans conformation). This filter is applied inside `extract_data` at the raw angle level, avoiding the computational cost of full coordinate reconstruction for structures that would be discarded.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L230-L235)
+
+## Orchestration — `compute_ensembles` and `extract_data`
+
+The top-level `compute_ensembles` function drives the full per-fragment pipeline. For each fragment key in the search results dictionary, it: (1) reads the fragment ensemble from the Foldcomp database via `extract_data`, which iterates over all hits `(fasta_byte_start, byte_start, aa_start_index)` and loads reconstruction data for the residue range `[l, l+nres)`, stacking results via `join_list_of_identical_pytrees`; (2) subsamples if the number of structures exceeds `n_max_structures_per_fragment` using random index selection; (3) reconstructs the full ensemble in one batched call via the JIT-compiled `build_parallel_reconstruct_fn`; and (4) converts the coordinates from Ångströms to nanometers (÷10.0) and saves the trajectory as an HDF5 file using mdtraj, with topology built from the fragment sequence via `build_mdtraj_top`.
+
+| Step | Function | Key Operation |
+|---|---|---|
+| 1 | `extract_data` | Load & stack reconstruction data from all hits |
+| 2 | Random subsampling | Cap to `n_max_structures_per_fragment` |
+| 3 | `build_parallel_reconstruct_fn` → `jit_fn(...)` | Batch-reconstruct all structures |
+| 4 | `md.Trajectory(...)` + `.save_hdf5(...)` | Serialize to HDF5 with mdtraj topology |
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L217-L268)
+
+## CLI Interface
+
+The script is invoked as a standalone command after the search stage has produced `byte_starts.pkl`:
+
+```bash
+python3 scripts/extract_structures_from_foldcomp_database.py \
+  --byte_starts_path /tmp/byte_starts.pkl \
+  --foldcomp_fasta /data/afdb_uniprot_v4.fasta \
+  --foldcomp_db /data/afdb_uniprot_v4 \
+  --outfolder /tmp/fragment_ensembles \
+  --n_max_structures_per_fragment 1000 \
+  --exclude_cis_omega
+```
+
+| Argument | Default | Description |
+|---|---|---|
+| `--byte_starts_path` | (required) | Pickle file from search stage with hit metadata |
+| `--foldcomp_fasta` | `/data/afdb_uniprot_v4.fasta` | Offset-annotated FASTA for the Foldcomp database |
+| `--foldcomp_db` | `/data/afdb_uniprot_v4` | Path to the binary Foldcomp database file |
+| `--outfolder` | (required) | Output directory for per-fragment `.h5` ensemble files |
+| `--n_max_structures_per_fragment` | `1000` | Maximum structures to extract per fragment |
+| `--exclude_cis_omega` | `False` | Exclude structures with cis peptide bonds |
+
+When invoked through `build_ensemble.py`, these arguments are populated automatically from the ensemble builder's CLI arguments, and the stage runs as the second step between `fasta_search_in_foldcomp_database.main()` and `join_fragments.main()`.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L277-L326), [build_ensemble.py](/scripts/build_ensemble.py#L60-L70)
+
+## Data Flow Across Pipeline Stages
+
+```mermaid
+flowchart LR
+    subgraph Search ["Stage 1: Sequence Search"]
+        S1["foldcomp.fasta"] --> S2["byte_starts.pkl"]
+    end
+    subgraph Reconstruct ["Stage 2: Structure Reconstruction"]
+        R1["byte_starts.pkl"] --> R2["Foldcomp DB<br/>[binary]"]
+        R2 --> R3["Fragment Ensembles<br/>(.h5 per fragment)"]
+    end
+    subgraph Join ["Stage 3: Fragment Joining"]
+        J1["Fragment Ensembles"] --> J2["Full-chain Ensemble<br/>(.h5/.xtc/.pdb)"]
+    end
+
+    S2 --> R1
+    R3 --> J1
+
+    style Reconstruct fill:#2d3748,color:#fff
+```
+
+The reconstruction stage consumes the `byte_starts.pkl` pickle file produced by [GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search), which maps each fragment sequence to a tuple of three arrays: `hit_idxs` (byte positions in the FASTA file), `byte_starts` (byte positions in the Foldcomp database), and `aa_start_index` (residue offset within the matched entry). It produces one `.h5` file per fragment containing an mdtraj-compatible trajectory of all reconstructed conformations, which is then consumed by [Hierarchical Fragment Joining](8-hierarchical-fragment-joining).
+
+> [!TIP]
+> The `join_list_of_identical_pytrees` utility function uses JAX's pytree flattening/unflattening to stack heterogeneous reconstruction data tuples across multiple hits into batched arrays. This enables the subsequent single-call batched JIT reconstruction, which is far more efficient than per-structure reconstruction loops.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L209-L214), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L240-L268)
+
+## Next Steps
+
+With fragment ensembles reconstructed and saved as `.h5` files, the pipeline proceeds to [Hierarchical Fragment Joining](8-hierarchical-fragment-joining), where overlapping fragment pairs are aligned on their shared residues, validated for steric clashes, and progressively merged into a complete-chain ensemble. For the full end-to-end invocation, see [Quick Start](2-quick-start); for parameter tuning of the reconstruction stage specifically, consult [Command-Line Configuration Reference](13-command-line-configuration-reference).
+
+# Hierarchical Fragment Joining
+
+
+
+The hierarchical fragment joining stage is the combinatorial core of the IDP-o pipeline — it transforms per-fragment structural ensembles (reconstructed from Foldcomp) into a globally consistent ensemble for the full target sequence. Rather than joining fragments linearly from left to right, the system decomposes the fragment list into **power-of-two segments**, joins each segment via a **balanced binary tree**, then **linearly combines** the resulting super-fragments. This hierarchy minimizes the accumulation of alignment error and distributes clash probability more evenly across the join graph, producing ensembles with superior structural coherence compared to naïve sequential joining.
+
+## From Fragments to Full Sequence
+
+The joining process operates on the output of the fragment generation strategy, which partitions a target sequence of length *L* into overlapping fragments of `seq_len=6` residues with an `overlap=2` residue window. With a stride of 4 (`seq_len - overlap`), a sequence of length *L* yields approximately ⌈(*L* − 4) / 4⌉ + 1 fragments. Each fragment carries an ensemble of conformations (coordinates, backbone indices, and uniform or derived probability weights) loaded from per-fragment `.h5` files produced by [Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp).
+
+The `generate_fragments` function implements this partitioning: it shifts a sliding window by `seq_len - overlap` residues at each step, ensuring every adjacent pair shares exactly 2 residues in common — the **join interface** upon which structural alignment is performed. A degenerate trailing fragment of length equal to the overlap is discarded, since it carries no new structural information.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L147-L152), [join_fragments.py](/scripts/join_fragments.py#L286-L288)
+
+## The Pairwise Join: Alignment, Validation, and Acceptance
+
+At the atomic level, every join in the hierarchy is a **pairwise operation** combining a left fragment *l* and a right fragment *r* that share a 2-residue overlap. The `join_fragments` function orchestrates this as a Monte Carlo-style sampling procedure:
+
+1. **Weighted conformation sampling** — `n` conformation indices are drawn independently from each fragment's ensemble according to their probability distributions (`lprobs`, `rprobs`), producing `n` candidate left-right pairs.
+2. **Vectorized alignment and validation** — for each pair, the right fragment is superimposed onto the left via the overlap backbone atoms, then the merged structure is checked for steric clashes.
+3. **Filtering** — only pairs satisfying both an **RMSD threshold** (< 0.06 nm = 0.6 Å on the overlap backbone) and a **clash-free condition** survive the filter mask.
+4. **Retry with resampling** — if no valid pairs are found, new random indices are drawn up to 5 attempts before falling back to a single random selection.
+
+The number of samples `n` is rounded up to a multiple of the chunk size, which is itself computed from a memory-budget heuristic: `batch_size = target_GB / (1e-5 × nres²)`, where `nres` is the total number of residues in the joined sequence. This ensures GPU memory utilization stays within the 96% XLA allocation cap set at module import.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L147-L192)
+
+### Overlap Alignment via SVD
+
+The alignment of the right fragment onto the left is performed by `affine_alignment`, which computes the **optimal rigid-body transformation** (rotation + translation) minimizing RMSD between the two overlap regions. This is the classical Kabsch algorithm implemented in JAX:
+
+- **Center** both coordinate sets by subtracting their centroids.
+- **Compute** the cross-covariance matrix *R* = (*x* − *x̄*)<sup>T</sup>(*y* − *ȳ*).
+- **Decompose** *R* via SVD: *R* = *USV*<sup>T</sup>.
+- **Correct** for reflection: if det(*UV*<sup>T</sup>) < 0, flip the sign of the last row of *V*<sup>T</sup>.
+- **Compose** the rotation *Q* = *UV*<sup>T</sup>.
+
+The `align` function then applies this transformation to the entire mobile (right) coordinate set, not just the overlap — this is what positions the non-overlapping portion of the right fragment correctly in the merged frame.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L38-L57)
+
+### Clash Detection
+
+After alignment, the merged coordinate array is tested by `check_interactions`, which computes the full pairwise distance matrix and flags any non-bonded atom pair closer than `cutoff=0.1` nm (1.0 Å). Bonded pairs (from the mdtraj topology) are excluded from the check. The function returns a boolean mask over upper-triangular pairs, and `_join_fragments` reduces this to a single `no_clash_mask = ~mask.any()` per candidate. This extremely tight cutoff filters out only the most severe steric violations — appropriate for the intrinsically disordered context where moderate van der Waals overlap is expected and tolerable.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L60-L69), [join_fragments.py](/scripts/join_fragments.py#L112-L123)
+
+### The Core Join Kernel
+
+The `_join_fragments` function is the JAX-compiled inner loop that processes a single pair of sampled conformations. Its logic is:
+
+- Extract the **overlap backbone atom indices** from each fragment: for the left fragment, the last `overlap=2` residues supply their `(C, O)` atoms; for the right, the first 2 residues supply `(N, CA)`. These four atoms per side (8 total) form the peptide bond join interface.
+- **Vectorize** over the batch via `vmap(align_and_validate)`, producing aligned positions, clash masks, and RMSDs for all `n` candidates simultaneously.
+- **Combine** the quality criteria: `mask = (rmsds < 0.06) & no_clash_mask`.
+
+The `static_context` tuple `(lhs, rhs)` marks the atom index boundary between the left and right fragments in the merged coordinate array — `lhs` is the first atom index after the left fragment's contribution, `rhs` is the first atom index of the right fragment's non-overlap region. The merged position array is constructed as `concat([lpos[:lhs], rpos_aligned[rhs:]])`, discarding the redundant overlap coordinates from the right fragment.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L96-L123)
+
+## Hierarchical Joining Strategy
+
+The `build_ensemble` function implements the **hierarchical decomposition** that distinguishes IDP-o's joining from simple left-to-right accumulation. The algorithm proceeds in two phases:
+
+**Phase 1 — Power-of-two binary tree joins.** The fragment count *N* is decomposed into its binary representation (up to 16 bits). Each set bit at position *k* produces a segment of 2<sup>*k*</sup> fragments. Within each segment, joining proceeds in ⌊log₂(segment_size)⌋ rounds: in round *i*, adjacent pairs from round *i*−1 are joined pairwise, halving the number of super-fragments each round until a single super-fragment remains. Smaller segments are joined first (the `segments[::-1]` reversal), which ensures that the join tree is balanced within each power-of-two block.
+
+**Phase 2 — Linear combination of super-fragments.** The super-fragments from each power-of-two segment are joined sequentially from left to right. This phase is only needed when *N* is not itself a power of two.
+
+```mermaid
+graph TD
+    subgraph "Phase 1: Binary Tree (example: N=6 → 4+2)"
+        direction TB
+        F1["f₁"] --> J12["Join"]
+        F2["f₂"] --> J12
+        F3["f₃"] --> J34["Join"]
+        F4["f₄"] --> J34
+        J12 --> J1234["Join"]
+        J34 --> J1234
+        F5["f₅"] --> J56["Join"]
+        F6["f₆"] --> J56
+    end
+    subgraph "Phase 2: Linear Combine"
+        J1234 --> Jfinal["Join"]
+        J56 --> Jfinal
+    end
+    Jfinal --> Full["Full Sequence Ensemble"]
+```
+
+For the example above with 6 fragments, the 4-fragment segment is joined in a balanced tree (2 rounds), the 2-fragment segment in one round, and the two resulting super-fragments are combined linearly.
+
+> [!TIP]
+> The binary decomposition ensures that the maximum depth of any join chain is ⌊log₂(N)⌋ + (number_of_set_bits − 1), compared to N−1 for naïve linear joining. This dramatically reduces cumulative alignment error propagation.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L195-L249)
+
+### Probability Propagation
+
+After each successful join, the resulting super-fragment is stored in the shared `data` dictionary with **product probabilities** derived from the source conformation indices. The `get_probs` function computes the inverse-frequency weight for each unique conformation index in the source array (implementing importance weighting for non-uniform fragment ensembles), and the joined ensemble's probability is the element-wise product of the left and right source probabilities via `jax.tree.map(jnp.multiply, ...)`. This ensures that conformations drawn from high-probability regions of both fragments are favored in the joined ensemble.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L126-L129), [join_fragments.py](/scripts/join_fragments.py#L218-L223)
+
+### Memory Management
+
+GPU device memory is reclaimed aggressively between hierarchy levels. Once a join round completes (when `i > 1`), all `jax.Array` objects from two levels prior are explicitly deleted via `.delete()`. This is critical because the coordinate arrays for intermediate super-fragments grow proportionally to the number of residues, and without cleanup the device would exhaust its 96% allocation well before the final join. The XLA backend's `live_buffers()` are also purged at the start of the `main` function before any joining begins.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L228-L234), [join_fragments.py](/scripts/join_fragments.py#L289-L292)
+
+## JAX Vectorization and Chunked Execution
+
+The `jit_chunked_vmap` function is the bridge between JAX's compile-time vectorization and runtime memory constraints. Rather than applying `vmap` across the full batch of `n` candidates (which would materialize an *n × n_atoms × 3* coordinate tensor and an *n × n_atoms × n_atoms* distance tensor simultaneously), it reshapes the input arrays into chunks of `chunk_size`, then uses `jax.lax.scan` to iterate over chunks sequentially within a single compiled computation. This preserves the performance benefits of XLA optimization within each chunk while keeping peak memory bounded by the chunk size rather than the total batch size.
+
+The chunk size is determined by the `batch_size` lambda, which targets approximately 10 GB of device memory and scales inversely with the square of the residue count (reflecting the *O(n²)* cost of the pairwise distance computation in `check_interactions`).
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L132-L144), [join_fragments.py](/scripts/join_fragments.py#L150-L151)
+
+## Post-Join Processing: RMSD Sorting and Hydrogen Insertion
+
+After the full ensemble is assembled, two optional transformations are applied:
+
+1. **RMSD-based trajectory sorting** — when `--rmsd_sort` is enabled, `sort_trajectory` superposes all frames to frame 0, computes the full RMSD matrix, then orders frames by greedy nearest-neighbor in RMSD space. This produces a trajectory that varies smoothly frame-to-frame, which is essential for visual inspection in molecular viewers.
+
+2. **Hydrogen atom insertion** — the `infer_and_insert_hydrogens` function from `nerfax.reduce_utils` reconstructs hydrogen atom positions from the heavy-atom backbone and sidechain coordinates, producing a complete all-atom trajectory suitable for downstream MD or analysis workflows.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L252-L274), [join_fragments.py](/scripts/join_fragments.py#L308-L319)
+
+## Command-Line Interface
+
+The `join_fragments.py` script exposes the following arguments for controlling the joining process:
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `--sequence` | str | *(required)* | Target amino acid sequence |
+| `--fragments_folder` | str | *(required)* | Path to per-fragment `.h5` ensemble files |
+| `--outpath` | str | *(required)* | Output trajectory path (`.h5`, `.xtc`, `.dcd`, `.pdb`) |
+| `--joins_to_attempt_per_pairing` | int | 500000 | Number of candidate conformation pairs to sample per join |
+| `--max_structures_in_ensemble` | int | 500000 | Maximum number of conformations in the final output ensemble |
+| `--rmsd_sort` | flag | False | Sort trajectory by RMSD for smooth visualization |
+| `--overwrite` | flag | False | Overwrite existing output file |
+
+Note that `join_fragments.py` is typically invoked indirectly through `build_ensemble.py`, which orchestrates the full pipeline (search → extract → join). The standalone invocation is useful when fragment ensembles have already been extracted and only the joining step needs to be rerun or tuned.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L323-L347), [build_ensemble.py](/scripts/build_ensemble.py#L71-L80)
+
+## Architectural Summary
+
+The following table summarizes the key computational components and their roles within the hierarchical joining stage:
+
+| Component | Role | Complexity Class |
+|---|---|---|
+| `affine_alignment` | Optimal rigid-body superposition via SVD | *O(n)* per alignment |
+| `align` | Apply rotation/translation to full mobile coords | *O(n)* per alignment |
+| `check_interactions` | Pairwise steric clash detection | *O(n²)* per candidate |
+| `_join_fragments` | Vectorized align + validate + filter | *O(batch × n²)* |
+| `jit_chunked_vmap` | Memory-batched XLA-compiled scan | *O((n/chunks) × chunk × n²)* |
+| `join_fragments` | Sample, join, retry loop for one pair | *O(attempts × n_joins × nres²)* |
+| `build_ensemble` | Hierarchical tree + linear combine | *O(log N)* depth of joins |
+
+> [!TIP]
+> The 2-residue overlap is hardcoded throughout the pipeline (`overlap = 2` in both `pre_join_fragments` and `_join_fragments`). Modifying this value requires coordinated changes to `generate_fragments`, the backbone index extraction logic, and the overlap atom selection in `_join_fragments` — it is not a simple parameter change.
+
+The hierarchical fragment joining stage produces the complete conformational ensemble that feeds into [JAX Vectorized Ensemble Computation](10-jax-vectorized-ensemble-computation) for downstream analysis. For a deeper treatment of the alignment mathematics and clash criteria, see [Overlap Alignment and Clash Detection](9-overlap-alignment-and-clash-detection). To understand how this stage fits into the full pipeline orchestration, consult [Architecture Overview](4-architecture-overview).
+
+# Overlap Alignment and Clash Detection
+
+
+
+When two structural fragments share a common residue sequence, their 3D coordinates almost never agree — the fragments originate from different database entries with different backbone conformations. The **overlap alignment** algorithm resolves this by computing the rigid-body transformation that best superimposes the shared backbone atoms, while **clash detection** rejects any resulting conformation where non-bonded atoms are driven into physically impossible proximity. Together, these two gates form the quality filter at the core of IDP-o's fragment joining pipeline, deciding which candidate joins survive into the final ensemble.
+
+## The Overlap Region: Peptide-Bond Anchoring
+
+IDP-o fragments each have a length of 6 residues with a **2-residue overlap** between adjacent fragments. This overlap is not arbitrary — it provides just enough backbone atoms to uniquely determine the relative orientation of two fragments. The `generate_fragments` function produces fragments by shifting a window of `seq_len=6` along the sequence with a stride of `seq_len - overlap = 4`, so that each pair of consecutive fragments shares residues at positions `[i-2, i-1]` and `[i-2, i-1]` respectively.
+
+```python
+fragments = [s[i * shift : i * shift + seq_len] for i in range((len(s) - seq_len) // shift + 2)]
+```
+
+The assertion `l[-overlap:] == r[:overlap]` in `pre_join_fragments` guarantees that the overlapping residues match at the sequence level before any structural comparison is attempted. The merged sequence is then constructed as `l + r[overlap:]`, avoiding duplication of the shared residues.
+
+Sources: [fasta_search_in_foldcomp_database.py](scripts/fasta_search_in_foldcomp_database.py#L146-L150), [join_fragments.py](scripts/join_fragments.py#L88-L93)
+
+## Selecting Alignment Anchor Atoms
+
+Rather than aligning on all 8 backbone atoms (N, CA, C, O × 2 residues) in the overlap, IDP-o selects a **4-atom subset** that straddles the peptide bond between the two overlap residues:
+
+| Fragment | Overlap Residues | `.ravel()` (8 atoms) | `[2:-2]` slice (4 atoms) |
+|----------|-----------------|----------------------|---------------------------|
+| Left (last 2 residues) | i−1, i | N,CA,C,O,N,CA,C,O | **C**₍ᵢ₋₁₎, **O**₍ᵢ₋₁₎, **N**₍ᵢ₎, **CA**₍ᵢ₎ |
+| Right (first 2 residues) | i−1, i | N,CA,C,O,N,CA,C,O | **C**₍ᵢ₋₁₎, **O**₍ᵢ₋₁₎, **N**₍ᵢ₎, **CA**₍ᵢ₎ |
+
+```python
+l_indices, r_indices = (
+    bb_indices[indexing].ravel()[2:-2]  # (C, O)_i, (N, CA)_(iplus1), join on peptide bond
+    for bb_indices, indexing in [
+        (l_bb_indices, jnp.arange(-overlap, 0)),
+        (r_bb_indices, jnp.arange(overlap)),
+    ]
+)
+```
+
+This is a deliberate design choice: the C–N peptide bond is the most geometrically constrained feature of the polypeptide backbone (partial double-bond character restricts rotation around it). By anchoring the alignment on the atoms flanking this bond — C and O of the upstream residue, N and CA of the downstream residue — the algorithm targets the most physically informative reference frame. Dropping the outer atoms (N, CA of the upstream residue and C, O of the downstream residue) avoids diluting the alignment signal with atoms that are more conformationally variable.
+
+> [!TIP]
+> The `[2:-2]` slice is not trimming outliers — it is extracting the 4 atoms that physically define the peptide-bond junction. This is why the overlap must be exactly 2 residues: fewer residues would not provide enough backbone atoms to anchor the alignment.
+
+Sources: [join_fragments.py](scripts/join_fragments.py#L106-L115)
+
+## Kabsch Alignment: The Affine Registration
+
+The `affine_alignment` function implements the **Kabsch algorithm** — the closed-form solution for the optimal rotation matrix that minimizes the RMSD between two paired point sets. Given a mobile point set **P** and a reference point set **Q**, the algorithm proceeds in three stages:
+
+```mermaid
+flowchart TD
+    A["Center both point sets<br/>P̄ = P − mean(P)<br/>Q̄ = Q − mean(Q)"] --> B["Compute cross-covariance<br/>R = P̄ᵀ · Q̄"]
+    B --> C["Singular Value Decomposition<br/>R = U · S · Vᵀ"]
+    C --> D{"det(U · Vᵀ) < 0?"}
+    D -- Yes --> E["Flip last row of Vᵀ<br/>(prevent reflection)"]
+    D -- No --> F["Keep Vᵀ unchanged"]
+    E --> G["Optimal rotation<br/>R* = U · Vᵀ"]
+    F --> G
+    G --> H["Apply transform<br/>P_aligned = R* · P̄ + mean(Q)"]
+```
+
+**Step 1 — Centering:** Both point sets are translated so that their centroids lie at the origin. The translation vectors are `translation_geom = geom.mean(0)` and `translation_ref_geom = ref_geom.mean(0)`. Centering decouples the rotational and translational components of the alignment, reducing the problem to a pure rotation.
+
+**Step 2 — Cross-covariance and SVD:** The 3×3 cross-covariance matrix `R = (P − P̄)ᵀ · (Q − Q̄)` encodes the rotational relationship between the two point sets. Its singular value decomposition `R = U · S · Vᵀ` factorizes this relationship into orthogonal matrices U and V that span the rotational degrees of freedom.
+
+**Step 3 — Reflection handling:** If `det(U · Vᵀ) < 0`, the decomposition has produced an improper rotation (a reflection). The algorithm corrects this by negating the last row of Vᵀ, ensuring the resulting rotation is proper (det = +1). Without this correction, pathological input geometries could produce mirrored coordinates.
+
+**Step 4 — Transform application:** The `align` function assembles the full affine transform. The mobile structure is centered (`mobile_pos - pre_trans`), rotated via Einstein summation (`jnp.einsum("ij,bj", rot, ...)`), then translated to the reference centroid (`+ post_trans`). The einsum notation efficiently applies the 3×3 rotation matrix to every atom in the structure in a single vectorized operation.
+
+```python
+def align(mobile_pos, ref_pos, mobile_indices, ref_indices):
+    l_bb, r_bb = ref_pos[ref_indices], mobile_pos[mobile_indices]
+    rot, pre_trans, post_trans = affine_alignment(r_bb, l_bb)
+    mobile_pos_aligned = jnp.einsum("ij,bj", rot, mobile_pos - pre_trans) + post_trans
+    return mobile_pos_aligned
+```
+
+Sources: [join_fragments.py](scripts/join_fragments.py#L35-L50), [join_fragments.py](scripts/join_fragments.py#L52-L57)
+
+## Clash Detection: Steric Violation Filtering
+
+After alignment, the merged structure may contain atoms that were pushed into physically impossible proximity — a **steric clash**. The `check_interactions` function detects these violations through exhaustive pairwise distance computation:
+
+```python
+def check_interactions(xyz, bonds=None, cutoff=0.1):
+    distances = jnp.sqrt(((xyz[:, None] - xyz[None, :]) ** 2).sum(-1))
+    mask = distances < cutoff
+    mask = mask.at[tuple(bonds.T)].set(False)   # exclude bonded pairs
+    mask = jnp.triu(mask, k=1)                   # upper triangle only (j > i)
+    return mask
+```
+
+The algorithm operates in three passes:
+
+| Pass | Operation | Rationale |
+|------|-----------|-----------|
+| **Distance matrix** | `√(Σ(xᵢ - xⱼ)²)` for all pairs | Complete pairwise distance field |
+| **Bond exclusion** | Set `mask[bonded_pairs] = False` | Bonded atoms are expected to be close; they must not trigger violations |
+| **Upper triangle** | `jnp.triu(mask, k=1)` | Each pair appears once; avoids double-counting and excludes self-distances (k=1 skips diagonal) |
+
+The **cutoff of 0.1 nm (1.0 Å)** is well below the van der Waals radii of any atom pair. At this threshold, a flagged interaction does not represent a marginal steric overlap — it signals a catastrophic geometric violation where two non-bonded atoms occupy nearly the same point in space. Such configurations are physically impossible and must be rejected.
+
+The bond table is derived from MDTraj's `top.create_standard_bonds()`, which generates standard covalent bonds for the merged topology. This ensures that legitimate 1–2 and 1–3 bonded interactions (which naturally have short distances) are never misidentified as clashes.
+
+Sources: [join_fragments.py](scripts/join_fragments.py#L60-L68), [join_fragments.py](scripts/join_fragments.py#L88-L97)
+
+## The Combined Validation Gate
+
+The `_join_fragments` function unifies alignment and clash detection into a single vectorized validation pipeline. For each candidate pair of fragment structures drawn from the left and right ensembles, it performs four operations in sequence:
+
+```mermaid
+flowchart LR
+    A["Sample random<br/>structure indices"] --> B["Align right fragment<br/>onto left fragment"]
+    B --> C["Compute RMSD<br/>over overlap atoms"]
+    C --> D["Check steric<br/>clashes"]
+    D --> E{"RMSD < 0.6 Å<br/>AND<br/>no clashes?"}
+    E -- Pass --> F["Accept joined<br/>conformation"]
+    E -- Fail --> G["Reject<br/>conformation"]
+```
+
+```python
+def align_and_validate(rpos, lpos, r_indices, l_indices):
+    rpos_aligned = align(rpos, lpos, r_indices, l_indices)
+    rmsd = compute_rmsd(rpos_aligned[r_indices], lpos[l_indices])
+    pos = jnp.concatenate([lpos[:lhs], rpos_aligned[rhs:]])
+    mask = check_interactions(pos, bonds)
+    no_clash_mask = ~mask.any()
+    return pos, no_clash_mask, rmsd
+```
+
+**Alignment** produces the optimally superimposed right fragment. **RMSD** is computed over the 4 peptide-bond anchor atoms to quantify residual misalignment — even after optimal rotation, the two fragments' overlap atoms will not perfectly coincide because they come from different database structures with different backbone conformations. **Structure assembly** concatenates the left fragment's atoms up to the overlap boundary (`lpos[:lhs]`) with the aligned right fragment's atoms beyond the overlap (`rpos_aligned[rhs:]`), producing the full merged coordinate array. **Clash detection** then scans this merged structure for steric violations.
+
+The final acceptance mask requires **both** criteria to be satisfied simultaneously:
+
+```python
+mask = (rmsds < 0.06) & no_clash_mask  # 0.6 Angstrom RMSD threshold
+```
+
+| Criterion | Threshold | Physical Interpretation |
+|-----------|-----------|------------------------|
+| Overlap RMSD | < 0.06 nm (0.6 Å) | Backbone atoms at the junction agree to sub-Ångström precision |
+| No steric clash | 0 non-bonded pairs < 0.1 nm | No catastrophic atomic overlaps exist in the merged structure |
+
+The 0.6 Å RMSD threshold is exceptionally stringent. For reference, the typical coordinate uncertainty in X-ray crystallography at 2.0 Å resolution is ~0.2 Å, and NMR ensemble members routinely differ by 1–2 Å RMSD on local backbone segments. The tight threshold ensures that only joins where the two fragments are nearly indistinguishable in the overlap region are accepted, preserving local structural integrity at the junction.
+
+> [!TIP]
+> When no candidate pairs pass both filters after 5 retry attempts with different random samples, the algorithm falls back to accepting a single random join (with a logged warning). This prevents pipeline failure for sequences where the fragment database provides only poorly overlapping structures.
+
+Sources: [join_fragments.py](scripts/join_fragments.py#L100-L127)
+
+## JAX Vectorization: Batch Validation at Scale
+
+The validation gate is executed not once but **tens to hundreds of thousands of times** per fragment pair — the `joins_to_attempt_per_pairing` parameter defaults to 500,000. This is made feasible by JAX's `vmap`, which transforms the per-pair `align_and_validate` function into a batched operation that runs on GPU in a single compiled XLA kernel:
+
+```python
+pos, no_clash_mask, rmsds = vmap(align_and_validate, in_axes=(0, 0, None, None))(
+    rpos, lpos, r_indices, l_indices
+)
+```
+
+The `in_axes=(0, 0, None, None)` specification indicates that `rpos` and `lpos` are batched along their first axis (different structure samples), while `r_indices` and `l_indices` are shared constants (the same overlap atoms are used for all pairs). This avoids redundant index computation and reduces memory traffic.
+
+To prevent GPU out-of-memory errors on large merged structures, the `jit_chunked_vmap` function decomposes the full batch into chunks sized according to an estimated memory budget:
+
+```python
+batch_size = lambda nres, target=10: target / (1e-5 * (nres**2))  # target in GB
+```
+
+The O(n²) scaling accounts for the pairwise distance matrix in `check_interactions`, which dominates memory usage. Each chunk is processed via `jax.lax.scan`, and the results are reassembled into a flat output array. This ensures that the algorithm scales to arbitrarily long sequences without exceeding available GPU memory.
+
+Sources: [join_fragments.py](scripts/join_fragments.py#L123-L126), [join_fragments.py](scripts/join_fragments.py#L140-L156), [join_fragments.py](scripts/join_fragments.py#L158-L197)
+
+## Probability-Weighted Sampling and Retry Logic
+
+Not all structure candidates in a fragment ensemble are equally likely. The `join_fragments` function uses **probability-weighted random sampling** to preferentially select structures with higher statistical weight when drawing candidate pairs for joining:
+
+```python
+random_indices = tuple(
+    random.choice(key, jnp.arange(len(pos)), shape=(n,), p=probs)
+    for key, pos, probs in ((lkey, lpos, lprobs), (rkey, rpos, rprobs))
+)
+```
+
+The probability vectors (`probs`) are derived from the frequency of each structure's source fragment in the database — structures that appear as hits in multiple database entries receive higher weight via the `get_probs` function, which computes inverse-count weights from unique value frequencies. After each successful join, the output ensemble's probabilities are set to the element-wise product of the source fragment probabilities, propagating statistical confidence through the hierarchical joining process.
+
+If the combined RMSD + clash filter rejects all candidates in a batch, the algorithm resamples with a new PRNG key up to **5 attempts** before falling back to a single random join. This graceful degradation ensures that even sequences with sparse or low-quality database coverage produce an ensemble rather than failing entirely.
+
+Sources: [join_fragments.py](scripts/join_fragments.py#L158-L197), [join_fragments.py](scripts/join_fragments.py#L130-L138)
+
+## Algorithmic Complexity and Performance Profile
+
+The computational cost of the overlap alignment and clash detection pipeline is dominated by two operations per candidate pair:
+
+| Operation | Complexity per pair | Notes |
+|-----------|-------------------|-------|
+| Kabsch alignment (SVD) | O(1) | Fixed 4×3 point sets → 3×3 SVD |
+| RMSD computation | O(1) | Fixed 4 overlap atoms |
+| Pairwise distance matrix | O(n²) | n = total atoms in merged structure |
+| Bond exclusion | O(b) | b = number of bonds |
+
+The **O(n²) distance matrix** is the bottleneck, which is why the chunk size formula scales inversely with n². For a typical IDP of 100 residues (~1,600 heavy atoms before hydrogen inference), the distance matrix requires ~20M entries — well within GPU memory for batch sizes of ~400 candidates per chunk. The entire validation pipeline for 500,000 candidates compiles to a single XLA kernel that executes in seconds on a modern GPU.
+
+Sources: [join_fragments.py](scripts/join_fragments.py#L60-L68), [join_fragments.py](scripts/join_fragments.py#L159-L162)
+
+---
+
+Understanding how fragments are geometrically validated is essential context for the next algorithm in the pipeline: [JAX Vectorized Ensemble Computation](10-jax-vectorized-ensemble-computation) covers how the full ensemble is assembled and stored after all joins have been filtered. For the upstream mechanism that produces the fragment pairs entering this algorithm, see [Hierarchical Fragment Joining](8-hierarchical-fragment-joining).
+
+# JAX Vectorized Ensemble Computation
+
+
+
+IDP-o leverages JAX's functional array programming model—specifically `vmap`, `jit`, and `jax.lax.scan`—to transform what would otherwise be an O(N²) serial fragment-joining loop into a **GPU-accelerated, batch-vectorized ensemble construction pipeline**. The core computational kernel aligns, validates, and filters thousands of candidate fragment joins per pairing in a single compiled XLA graph, eliminating Python-level loop overhead and achieving throughput on the order of hundreds of thousands of join attempts per second. This page dissects the three JAX kernels that power the ensemble builder: the **SVD alignment kernel**, the **vectorized clash-detection kernel**, and the **memory-adaptive chunked vmap scheduler**.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L1-L348), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L1-L326)
+
+## GPU Memory Reservation and Runtime Configuration
+
+Before any JAX computation begins, the runtime is configured to reserve **96% of available GPU memory** for the XLA compiler via the `XLA_PYTHON_CLIENT_MEM_FRACTION` environment variable. This aggressive allocation ensures that the large batch tensors produced during vectorized joining—particularly the N×N distance matrices in clash detection—can be resident in GPU memory without triggering on-demand allocation stalls. The Docker image builds on `nvcr.io/nvidia/jax:24.10-py3`, which ships the JAX/XLA runtime with CUDA 12 support and the `nerfax` library for internal-coordinate reconstruction and hydrogen inference.
+
+```python
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".96"
+```
+
+After the hierarchical ensemble build completes, the main entry point performs an explicit cleanup of live XLA buffers to release GPU memory before writing the final trajectory to disk:
+
+```python
+backend = jax.lib.xla_bridge.get_backend()
+for buf in backend.live_buffers():
+    buf.delete()
+```
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L22-L22), [join_fragments.py](/scripts/join_fragments.py#L289-L292)
+
+## The SVD Alignment Kernel
+
+The alignment kernel implements the **Kabsch algorithm** in pure `jnp` operations, making it fully differentiable and `vmap`-compatible. Given a mobile geometry and a reference geometry (both as N×3 coordinate arrays), the kernel computes the optimal rigid-body rotation that minimizes RMSD between the two point sets.
+
+```mermaid
+flowchart TD
+    A["Mobile Geometry (N×3)"] --> B["Center both point sets"]
+    C["Reference Geometry (N×3)"] --> B
+    B --> D["Cross-covariance: R = (geom - t_geom)ᵀ · (ref - t_ref)"]
+    D --> E["SVD: R = U·S·Vᵀ"]
+    E --> F{"det(U·Vᵀ) < 0?"}
+    F -- Yes --> G["Flip last row of Vᵀ"]
+    F -- No --> H["Keep Vᵀ"]
+    G --> I["Rotation = U · Vᵀ"]
+    H --> I
+    I --> J["Return (rotation, pre_translation, post_translation)"]
+```
+
+The implementation uses `jnp.linalg.svd` with `full_matrices=False` for the thin decomposition, then applies a **reflection correction**: if the determinant of U·Vᵀ is negative, the last row of Vᵀ is negated to ensure a proper rotation (det = +1) rather than an improper reflection. This correction is implemented as a `jnp.where` conditional, which remains traceable under `jit` compilation.
+
+The `align` function then applies the affine transformation to the full mobile structure (not just the overlap residues) using `jnp.einsum("ij,bj", rot, mobile_pos - pre_trans) + post_trans`, where the Einstein summation convention efficiently expresses the batch rotation application.
+
+| Component | JAX Operation | Shape | Purpose |
+|-----------|--------------|-------|---------|
+| Cross-covariance | `jnp.dot((geom - t).T, (ref - t))` | (3, 3) | Optimal rotation target |
+| Thin SVD | `jnp.linalg.svd(R, full_matrices=False)` | U,S,Vᵀ each (3,3) | Decompose rotation |
+| Reflection fix | `jnp.where(det < 0, Vt.at[-1].multiply(-1), Vt)` | (3, 3) | Ensure proper rotation |
+| Batch rotation | `jnp.einsum("ij,bj", rot, pos)` | (N, 3) | Apply to all atoms |
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L38-L57)
+
+## Vectorized Clash Detection
+
+The `check_interactions` function computes a full pairwise distance matrix and identifies steric clashes—atoms closer than a configurable cutoff distance (default 0.1 nm = 1.0 Å) that are not connected by a covalent bond. This is the most memory-intensive operation in the join pipeline because it materializes an N×N distance matrix.
+
+```python
+distances = jnp.sqrt(((xyz[:, None] - xyz[None, :]) ** 2).sum(-1))
+mask = distances < cutoff
+mask = mask.at[tuple(bonds.T)].set(False)   # exclude bonded pairs
+mask = jnp.triu(mask, k=1)                   # upper triangle only (j > i)
+```
+
+The broadcasting `xyz[:, None] - xyz[None, :]` creates the pairwise difference tensor without an explicit Python loop. Bonded atom pairs are explicitly excluded by indexing into the mask with the bond table transposed as a tuple of index arrays. The `jnp.triu` with `k=1` ensures each violation is counted exactly once. The resulting boolean mask is then reduced with `.any()` in the join kernel to produce a single `no_clash_mask` per candidate join.
+
+> [!TIP]
+> The N×N distance matrix is the primary memory bottleneck. The `batch_size` function in `join_fragments` dynamically computes the chunk size as `target_GB / (1e-5 × nres²)`, where `target_GB = 10` GB. For a 100-residue protein, this yields a chunk size of ~100, keeping peak memory within the 96% GPU reservation.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L60-L69)
+
+## The Vectorized Join Kernel: `_join_fragments`
+
+The `_join_fragments` function is the **inner computational loop** of the ensemble builder. It receives pairs of randomly sampled left and right fragment conformations and, for each pair, performs overlap alignment, RMSD computation, clash checking, and produces a merged coordinate array—all within a single `vmap`-decorated function.
+
+```mermaid
+flowchart LR
+    subgraph "Per-pair (vmap axis)"
+        A["Sample L_pos, R_pos"] --> B["Extract overlap indices"]
+        B --> C["Align R to L on overlap"]
+        C --> D["Compute overlap RMSD"]
+        D --> E["Concatenate: L[:lhs] ++ R_aligned[rhs:]"]
+        E --> F["Clash detection on merged structure"]
+        F --> G["Mask = (RMSD < 0.06 Å) AND no_clash"]
+    end
+```
+
+The key architectural insight is that `vmap` is applied **only over the batch dimension** of the sampled conformations, while the overlap indices (`l_indices`, `r_indices`) are broadcast as `None` in `in_axes`. This means the SVD alignment and clash detection are compiled once for a specific overlap pattern and reused across all N candidates in the batch:
+
+```python
+pos, no_clash_mask, rmsds = vmap(align_and_validate, in_axes=(0, 0, None, None))(
+    rpos, lpos, r_indices, l_indices
+)
+mask = (rmsds < 0.06) & no_clash_mask   # 0.6 Å overlap RMSD threshold
+```
+
+The **acceptance mask** combines two criteria: the overlap RMSD must be below 0.06 nm (0.6 Å), and the merged structure must have no steric clashes. This dual filter ensures both geometric consistency at the join seam and physical plausibility of the full conformation.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L96-L123)
+
+## Memory-Adaptive Chunked vmap: `jit_chunked_vmap`
+
+Direct `vmap` over hundreds of thousands of candidates would exceed GPU memory for the N×N distance matrices. The `jit_chunked_vmap` scheduler solves this by **splitting the batch into memory-safe chunks** and iterating over them using `jax.lax.scan`, which maintains a fixed memory footprint per iteration.
+
+```python
+def jit_chunked_vmap(f, args, chunk_size):
+    lengths = jax.tree.flatten(jax.tree.map(lambda x: jnp.shape(x)[0], args))[0]
+    assert len(set(lengths)) == 1
+
+    def _body(_, args):
+        return (None, f(*args))
+
+    _, outputs = jax.lax.scan(
+        _body,
+        init=None,
+        xs=jax.tree.map(lambda x: x.reshape((-1, chunk_size) + x.shape[1:]), args),
+    )
+    return jax.tree.map(lambda x: x.reshape((-1,) + x.shape[2:]), outputs)
+```
+
+The function operates in three phases: **(1)** reshape all input pytrees from `(N, ...)` to `(N/chunk_size, chunk_size, ...)`, **(2)** scan over the leading dimension applying `f` to each chunk (where `f` itself contains the `vmap` over the chunk's batch dimension), and **(3)** reshape the output back to `(N, ...)`. Because `jax.lax.scan` reuses the same XLA buffer across iterations, peak memory is bounded by the cost of a single chunk rather than the full batch.
+
+| Parameter | Formula | Example (100 residues) |
+|-----------|---------|----------------------|
+| Target memory | 10 GB | 10 GB |
+| Chunk size | `10 / (1e-5 × nres²)` | 100 |
+| Total attempts | Rounded up to multiple of chunk_size | 500,000 → 500,000 |
+| Peak memory per chunk | O(chunk_size × nres²) | ~10 GB |
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L132-L144), [join_fragments.py](/scripts/join_fragments.py#L150-L152)
+
+## Probabilistic Sampling and Join Orchestration
+
+The `join_fragments` function implements an **importance-weighted stochastic join**. Rather than exhaustively testing all pairs of left and right conformations (which would be O(M²) where M is the number of conformations per fragment), it samples indices from each fragment's conformation pool using `jax.random.choice` with per-structure probability weights:
+
+```python
+random_indices = tuple(
+    random.choice(key, jnp.arange(len(pos)), shape=(n,), p=probs)
+    for key, pos, probs in ((lkey, lpos, lprobs), (rkey, rpos, rprobs))
+)
+```
+
+The probability weights (`probs`) are computed by the `get_probs` function, which assigns **inverse-frequency weights** based on how many times each structure's source indices appear in the pool. This deduplicates overrepresented conformations that arise from multiple fragment sources mapping to the same Foldcomp entry:
+
+```python
+def get_probs(x):
+    _, indices, counts = jnp.unique(x, return_counts=True, return_inverse=True, size=x.shape[0])
+    probs = (1 / counts)[indices]
+    return probs
+```
+
+When joining two fragments, the output probabilities are the **element-wise product** of the left and right probability arrays, computed via `jax.tree.map(jnp.multiply, *map(get_probs, sources))`. This multiplicative combination reflects the independence assumption between fragment conformation selections.
+
+If no joins pass the acceptance mask after sampling, the function **retries up to 5 times** with new random keys, issuing a warning on each attempt. After 5 failures, it falls back to selecting a single random structure, ensuring the pipeline always produces output rather than crashing.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L147-L192), [join_fragments.py](/scripts/join_fragments.py#L126-L129)
+
+## Hierarchical Ensemble Assembly: `build_ensemble`
+
+The `build_ensemble` function orchestrates the **tree-reduction pattern** for combining N fragments into a single ensemble. Rather than joining fragments linearly (which would accumulate alignment errors), it decomposes N into a sum of powers of two and performs pairwise joins in a hierarchical tree:
+
+```mermaid
+flowchart TD
+    subgraph "Power-of-2 decomposition for N=7"
+        F1["f₁"] --> J1["Join"]
+        F2["f₂"] --> J1
+        F3["f₃"] --> J2["Join"]
+        F4["f₄"] --> J2
+        F5["f₅"] --> J3["Join"]
+        F6["f₆"] --> J3
+        J1 --> J4["Join"]
+        J2 --> J4
+        J3 --> J5["Join (linear)"]
+        F7["f₇"] --> J5
+        J4 --> J6["Join (linear)"]
+        J5 --> J6
+    end
+```
+
+The decomposition uses `np.unpackbits` on a 32-bit unsigned integer representation of the fragment count to extract the binary representation, then `2 ** np.arange(16)[::-1]` masked by the bit array to yield the power-of-two segments. For N=7, this produces segments [4, 2, 1], which are joined in order: first the 4-fragment block (two levels of pairwise joining), then the 2-fragment block (one level), then the 1-fragment singleton.
+
+After all power-of-two subsets are independently assembled, they are **linearly combined** in a final sequential pass. This hybrid strategy minimizes the depth of the join tree (reducing error propagation) while handling arbitrary fragment counts without padding.
+
+**Memory management** is integrated into the hierarchy: after each level of joining completes (i.e., when `i > 1`), the intermediate fragment data from two levels prior is explicitly deleted from the `data` dictionary using `jax.tree.map` to call `.delete()` on any `jax.Array` objects, freeing GPU memory for the next level of joins.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L195-L249)
+
+## JAX in Structure Reconstruction (CPU Mode)
+
+While the join pipeline runs on GPU, the structure reconstruction stage in `extract_structures_from_foldcomp_database.py` explicitly forces **CPU execution** via `os.environ["JAX_PLATFORMS"] = "cpu"`. This separation exists because the reconstruction kernel (`reconstruct_from_internal_coordinates_pure_sequential`) is inherently sequential—each residue's position depends on the preceding residue's computed coordinates—and does not benefit from GPU parallelism for individual structures.
+
+Instead, JAX's `vmap` is applied **across the batch dimension** to reconstruct multiple structures in parallel:
+
+```python
+def build_parallel_reconstruct_fn(sequence):
+    return build_reconstruct_fn(sequence, reconstruct_fn=vmap(reconstruct, in_axes=(0, 0, None, 0)))
+```
+
+The `in_axes=(0, 0, None, 0)` specification vectorizes over the discretizer parameters, angle/torsion arrays, and sidechain angles, while keeping the amino acid sequence (axis `None`) constant—since all structures in a fragment ensemble share the same sequence. The `@jit` decorator on the inner function, combined with `jax.ensure_compile_time_eval()`, locks the amino acid indices as compile-time constants, enabling the XLA compiler to unroll sidechain reconstruction logic specific to that sequence. This specialization can yield **~2000× speedup** compared to the non-specialized path.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L17-L17), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L189-L206)
+
+## JAX Pattern Summary
+
+The following table consolidates all JAX patterns used across the ensemble computation pipeline, their locations, and their specific roles:
+
+| JAX Pattern | Location | Role | Hardware |
+|-------------|----------|------|----------|
+| `vmap` (batch alignment) | `join_fragments.py#L121` | Vectorize alignment+validation over N candidate pairs | GPU |
+| `vmap` (batch reconstruction) | `extract_structures...py#L206` | Vectorize structure reconstruction over M structures | CPU |
+| `jax.lax.scan` (chunked vmap) | `join_fragments.py#L139` | Memory-bounded iteration over chunked batches | GPU |
+| `jnp.linalg.svd` | `join_fragments.py#L43` | Kabsch alignment rotation | GPU |
+| `jnp.einsum` | `join_fragments.py#L56` | Batch rotation application | GPU |
+| `random.choice` | `join_fragments.py#L166` | Importance-weighted stochastic sampling | GPU |
+| `jax.tree.map` | `join_fragments.py#L222,L231` | Pytree manipulation for probability weights and cleanup | GPU |
+| `@jit` + `ensure_compile_time_eval` | `extract_structures...py#L192-L199` | Compile-time sequence specialization | CPU |
+| `jnp.where` (reflection fix) | `join_fragments.py#L44-L48` | Traceable conditional for proper rotation | GPU |
+
+> [!TIP]
+> The dual-hardware strategy (GPU for joins, CPU for reconstruction) is not accidental. The join kernel's N×N distance matrix and batch SVD decompositions are highly parallelizable and benefit enormously from GPU throughput. The reconstruction kernel's sequential dependency chain (residue i+1 depends on residue i) makes it latency-bound on GPU but bandwidth-efficient on CPU, where XLA's CPU backend avoids PCIe transfer overhead for the ~1 GB Foldcomp database reads.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L28-L33), [join_fragments.py](/scripts/join_fragments.py#L38-L72), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L28-L29)
+
+## Computational Complexity and Scaling
+
+The computational cost of the ensemble build is dominated by the clash detection step within each chunked vmap iteration. For a single join attempt on a structure with `nres` residues:
+
+- **Alignment**: O(nres) — SVD on a 3×3 matrix is constant; einsum is O(nres)
+- **Distance matrix**: O(nres²) — pairwise broadcasting creates nres×nres×3 tensor
+- **Clash mask**: O(nres²) — comparison + bond exclusion + triu
+
+For `N` total join attempts with chunk size `C`, the total cost is O(N/C × C × nres²) = O(N × nres²). The chunk size `C = 10 / (1e-5 × nres²)` is chosen precisely so that each chunk's O(C × nres²) memory footprint fits within ~10 GB, making the algorithm **memory-scalable**: larger proteins automatically reduce the chunk size to stay within the GPU memory budget.
+
+| Residues | Chunk Size | Memory per Chunk | Attempts | Total Cost |
+|----------|-----------|-----------------|----------|------------|
+| 50 | 400 | ~10 GB | 500K | O(500K × 2500) |
+| 100 | 100 | ~10 GB | 500K | O(500K × 10000) |
+| 200 | 25 | ~10 GB | 500K | O(500K × 40000) |
+| 500 | 4 | ~10 GB | 500K | O(500K × 250000) |
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L150-L152), [join_fragments.py](/scripts/join_fragments.py#L60-L69)
+
+## Relationship to Adjacent Pipeline Stages
+
+The JAX vectorized ensemble computation sits at the convergence point of two upstream data flows and feeds one downstream consumer. The [Overlap Alignment and Clash Detection](9-overlap-alignment-and-clash-detection) page covers the mathematical foundations of the SVD alignment and distance-based clash criteria that this JAX kernel implements. The [Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp) page describes the CPU-side `vmap`-batched reconstruction that produces the fragment coordinate pools consumed by the join kernel. The [Hierarchical Fragment Joining](8-hierarchical-fragment-joining) page explains the tree-reduction strategy that orchestrates when and how the JAX kernel is invoked across the fragment hierarchy.
+
+For the complete pipeline configuration options that control the JAX kernel's behavior (chunk sizes, attempt counts, ensemble sizes), see [Command-Line Configuration Reference](13-command-line-configuration-reference).
+
+# Batch Dataset Generation
+
+
+
+IDP-o's batch dataset generation system transforms a collection of protein sequences—provided as either a CSV or FASTA file—into a complete dataset of structural ensembles. The orchestrator script `generate_dataset.py` iterates over every sequence in the input, dispatching each one to the full three-stage pipeline (GPU-accelerated search → structure reconstruction → fragment joining) via a subprocess call to `build_ensemble.py`. This design separates **batch-level concerns** (input parsing, deduplication, parallelization, error resilience) from **sequence-level concerns** (the actual ensemble computation), enabling scalable dataset generation across thousands of intrinsically disordered proteins.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L1-L126), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L1-L167)
+
+## Batch Orchestrator Architecture
+
+The batch system is driven entirely by `generate_dataset.py`, which acts as a lightweight coordinator. It does not import the pipeline stages directly—instead, it invokes `build_ensemble.py` as a subprocess via `subprocess.check_call`. This architectural choice provides **process isolation**: a crash or GPU memory leak in one ensemble computation cannot corrupt the state of the orchestrator or subsequent sequences.
+
+```mermaid
+flowchart TD
+    A["Input File<br/>(.csv or .fasta)"] --> B["Parse & Deduplicate"]
+    B --> C{"--shuffle?"}
+    C -- Yes --> D["Randomize Row Order"]
+    C -- No --> E["Preserve Input Order"]
+    D --> F["Iterate Sequences"]
+    E --> F
+    F --> G["Spawn build_ensemble.py<br/>subprocess per sequence"]
+    G --> H{"Success?"}
+    H -- Yes --> I["Increment Counter"]
+    H -- No --> J["Log Error to .txt File"]
+    I --> K{"More Sequences?"}
+    J --> K
+    K -- Yes --> F
+    K -- No --> L["Report Total Ensembles Generated"]
+```
+
+The orchestrator reads the input file, deduplicates rows, optionally shuffles the processing order, then loops through each sequence dispatching it to `build_ensemble.py`. On failure, it captures the full traceback and writes it to a companion `.txt` file alongside the expected output path, allowing the batch to continue uninterrupted.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L67-L125)
+
+## Input Format Handling
+
+The batch generator accepts two input formats, each with specific column-mapping semantics controlled by the `--column_names` flag:
+
+| Format | Detection Rule | Parsing Method | Required Columns |
+|--------|---------------|----------------|-----------------|
+| **FASTA** (`.fasta`) | Filename ends with `.fasta` | Line-by-line: header stripped of `>` prefix → sequence on next line | Implicit: `>name` then `sequence` |
+| **CSV** (`.csv`) | Filename ends with `.csv` | `pandas.read_csv` with `usecols` for selective loading | Configurable via `--column_names` |
+
+The `--column_names` parameter defaults to `seq_name,fasta` and is split on the comma to identify the sequence identifier column and the amino acid sequence column. For FASTA files, these column names are assigned to the internally constructed DataFrame. For CSV files, only the two specified columns are loaded into memory, minimizing I/O for wide tables.
+
+**Deduplication** is performed on both columns independently. If duplicate sequence names or duplicate FASTA strings are detected, a warning is logged and duplicates are dropped with `pandas.drop_duplicates`, retaining only the first occurrence.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L67-L87)
+
+## Subprocess Dispatch and Error Resilience
+
+For each sequence row, the orchestrator constructs a command list that invokes `build_ensemble.py` with the following arguments:
+
+| Argument | Value Source | Description |
+|----------|-------------|-------------|
+| `--sequence` | `row[fasta]` | The amino acid sequence string |
+| `--outpath` | `{outfolder}/{seq_name}.{format}` | Output file path derived from sequence name and format |
+| `--scratch_folder` | `/tmp/tmp-{seq_name}` | Isolated scratch directory per sequence |
+| `--max_structures_in_ensemble` | CLI argument `--max_structures_in_ensemble` | Frames to retain in final ensemble |
+| `--overwrite` | CLI flag | Passed through if specified |
+
+> [!TIP]
+> Each sequence receives an **isolated scratch directory** under `/tmp/tmp-{seq_name}`. This prevents intermediate files (fragment ensembles, byte-start pickles) from colliding when running multiple batch processes concurrently against the same input file.
+
+When a subprocess fails, the exception is caught, the full traceback is formatted, and both the command that was attempted and the error are written to `{seq_name}.txt` in the output folder. The batch then proceeds to the next sequence. This **fail-open** strategy ensures that a single problematic sequence (e.g., one with non-standard amino acids) does not halt dataset generation for the remaining entries.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L97-L125)
+
+## Shuffle-Based Parallelization
+
+The `--shuffle` flag randomizes the processing order of sequences using `pandas.sample(frac=1)`. This is not merely cosmetic—it is the **primary mechanism for distributed parallelization**. Since each sequence is processed independently (no shared mutable state between iterations), multiple workers can independently run `generate_dataset.py` against the **same input file** with `--shuffle` enabled. By statistical expectation, each worker will process a different random subset first, naturally distributing the workload without any central coordinator or queue system.
+
+In practice, you would partition work by launching N containers or processes, each reading the same input file with `--shuffle`. The `--overwrite` flag should be omitted so that completed ensembles (whose output files already exist) are skipped by `build_ensemble.py`, providing implicit **idempotent checkpointing**.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L94-L96), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L40-L45)
+
+## Per-Sequence Pipeline Integration
+
+Each subprocess invocation triggers the full three-stage pipeline inside `build_ensemble.py`, which chains the three core scripts as module-level function calls:
+
+```mermaid
+flowchart LR
+    A["fasta_search_in_foldcomp_database<br/>.main()"] -->|"byte_starts.pkl"| B["extract_structures_from_foldcomp_database<br/>.main()"]
+    B -->|"fragment_ensembles/*.h5"| C["join_fragments<br/>.main()"]
+    C --> D["Final Ensemble<br/>(.h5 / .xtc / .pdb / .dcd)"]
+```
+
+| Stage | Script | Input | Output | Key Parameters Passed |
+|-------|--------|-------|--------|----------------------|
+| **1. Search** | `fasta_search_in_foldcomp_database` | Sequence, foldcomp FASTA | `byte_starts.pkl` | `sequence`, `foldcomp_fasta`, `reduction_factor` |
+| **2. Reconstruct** | `extract_structures_from_foldcomp_database` | Foldcomp DB, byte starts | Fragment `.h5` files | `foldcomp_fasta`, `foldcomp_db`, `n_max_structures_per_fragment`, `exclude_cis_omega` |
+| **3. Join** | `join_fragments` | Fragment `.h5` files | Final ensemble | `joins_to_attempt_per_pairing`, `max_structures_in_ensemble`, `rmsd_sort` |
+
+The batch orchestrator only exposes `--max_structures_in_ensemble` and `--overwrite` to the subprocess; all other pipeline parameters (`foldcomp_fasta`, `foldcomp_db`, `reduction_factor`, `n_max_structures_per_fragment`, `joins_to_attempt_per_pairing`, `exclude_cis_omega`, `rmsd_sort`) fall back to their defaults inside `build_ensemble.py`. This keeps the batch interface simple while relying on sensible per-sequence defaults.
+
+Sources: [scripts/build_ensemble.py](/scripts/build_ensemble.py#L60-L80), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L91-L142)
+
+## Output File Organization
+
+The batch generator writes one ensemble file per input sequence into the specified `--outfolder` directory. The naming convention is `{sequence_name}.{format}`, where the format extension is determined by the `--format` flag:
+
+| Format | Extension | Trajectory Topology File | Notes |
+|--------|-----------|--------------------------|-------|
+| **HDF5** | `.h5` | Embedded | Native MDTraj format; most efficient for I/O |
+| **XTC** | `.xtc` | Companion `.pdb` | GROMACS compressed format; `.pdb` written for first frame |
+| **DCD** | `.dcd` | Companion `.pdb` | CHARMM format; `.pdb` written for first frame |
+| **PDB** | `.pdb` | N/A | Single-frame; only last conformation retained |
+| **PDB.GZ** | `.pdb.gz` | N/A | Gzip-compressed PDB |
+
+> [!TIP]
+> For trajectory formats (`.xtc`, `.dcd`), `join_fragments.py` automatically writes a companion `.pdb` file containing the topology from the first frame. This is required because these binary formats store only coordinates—the `.pdb` provides the atom names, residue information, and bond connectivity needed by downstream tools.
+
+Failed sequences produce a `.txt` error log instead of a structure file, making it straightforward to identify and retry failed entries.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L100-L124), [scripts/join_fragments.py](/scripts/join_fragments.py#L317-L319)
+
+## Safety Guard and Dry-Run Mode
+
+When `--max_structures_in_ensemble` is omitted or set to `0` (the default), the orchestrator loads and deduplicates the input file but **does not spawn any subprocesses**. Instead, it logs a warning: `"set '--max_structures_in_ensemble' to actually generate the ensembles"`. This serves as a **safety guard** against accidental full-dataset runs (which could take hours or days) and doubles as a **dry-run/validation mode**—you can confirm that your input file parses correctly and check the deduplication warnings before committing to the full computation.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L91-L93)
+
+## CLI Reference Summary
+
+The following table summarizes all arguments accepted by `generate_dataset.py`:
+
+| Argument | Short | Type | Default | Required | Description |
+|----------|-------|------|---------|----------|-------------|
+| `--input` | `-i` | `str` | — | **Yes** | Path to input CSV or FASTA file |
+| `--outfolder` | `-o` | `str` | `./ensembles` | No | Output directory for ensemble files |
+| `--max_structures_in_ensemble` | `-n` | `int` | `0` | No | Frames per ensemble; `0` = dry run |
+| `--fragments_overlap` | — | `int` | `1` | No | Overlapping residues between fragments |
+| `--column_names` | — | `str` | `seq_name,fasta` | No | Column names in CSV (comma-separated) |
+| `--shuffle` | — | flag | `False` | No | Randomize processing order for parallelization |
+| `--format` | — | `str` | `xtc` | No | Output format: `h5`, `xtc`, `pdb`, `pdb.gz`, `dcd` |
+| `--overwrite` | — | flag | `False` | No | Overwrite existing ensemble files |
+
+Sources: [generate_dataset.py](/generate_dataset.py#L24-L59)
+
+## Typical Usage Patterns
+
+**Single-machine batch generation** from a CSV file with 500 sequences:
+
+```bash
+docker run -v $(pwd):/data --gpus 1 idp-o \
+  python /IDP-o/generate_dataset.py \
+    --input /data/sequences.csv \
+    --outfolder /data/ensembles \
+    --max_structures_in_ensemble 100 \
+    --format h5
+```
+
+**Distributed parallelization** across 4 GPUs on separate machines, all reading the same input:
+
+```bash
+# On each machine (runs 1-4):
+docker run -v $(pwd):/data --gpus 1 idp-o \
+  python /IDP-o/generate_dataset.py \
+    --input /data/sequences.csv \
+    --outfolder /data/ensembles \
+    --max_structures_in_ensemble 100 \
+    --shuffle \
+    --format xtc
+```
+
+Each worker independently shuffles and processes sequences; already-completed ensembles are skipped due to the absence of `--overwrite`, providing natural work-stealing behavior.
+
+**Validation dry run** to check input parsing before a long batch:
+
+```bash
+python generate_dataset.py \
+  --input sequences.fasta \
+  --outfolder ./ensembles
+# Leaves -n at default 0 → logs count and duplicates, no computation
+```
+
+Sources: [generate_dataset.py](/generate_dataset.py#L23-L59)
+
+## Next Steps
+
+- For the per-sequence pipeline that each batch invocation triggers, see [Architecture Overview](4-architecture-overview) and the individual pipeline stage pages: [GPU-Accelerated Sequence Search](6-gpu-accelerated-sequence-search), [Structure Reconstruction from Foldcomp](7-structure-reconstruction-from-foldcomp), and [Hierarchical Fragment Joining](8-hierarchical-fragment-joining).
+- For details on the output file formats and how to consume them in downstream analyses, see [Output Formats and Downstream Use](12-output-formats-and-downstream-use).
+- For the complete set of CLI arguments across all scripts (including per-sequence parameters not exposed by the batch wrapper), see [Command-Line Configuration Reference](13-command-line-configuration-reference).
+
+# Output Formats and Downstream Use
+
+
+
+IDP-o produces **structurally complete, multi-frame protein ensembles** — trajectory files where each frame represents one plausible conformation of an intrinsically disordered protein. The output is deliberately designed to be immediately consumable by standard molecular dynamics (MD) analysis toolkits, visualization software, and downstream simulation engines, with no post-processing required. This page details every format IDP-o can emit, the auxiliary files it generates alongside the primary output, and concrete patterns for integrating those outputs into common downstream workflows.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L1-L126), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L1-L167), [scripts/join_fragments.py](/scripts/join_fragments.py#L1-L348)
+
+## Supported Output Formats
+
+IDP-o supports five trajectory formats, selectable via the `--format` flag in `generate_dataset.py` or inferred from the `--outpath` extension in `build_ensemble.py`. All formats are written through **MDTraj's** I/O layer, guaranteeing byte-level compatibility with every tool that reads these standards.
+
+| Format | Extension | Topology Storage | Compression | Best For |
+|---|---|---|---|---|
+| **HDF5** | `.h5` | Embedded in file | Lossless | Single-file portability, Python-native analysis |
+| **XTC** | `.xtc` | Companion `.pdb` | Lossy (GROMACS) | GROMACS pipelines, large trajectories |
+| **PDB** | `.pdb` | Embedded per model | None | Visual inspection, small ensembles |
+| **Gzipped PDB** | `.pdb.gz` | Embedded per model | gzip | Archival, reduced disk footprint |
+| **DCD** | `.dcd` | Companion `.pdb` | None | CHARMM/OpenMM pipelines |
+
+> [!TIP]
+> Choose **XTC** for production-scale datasets (hundreds of sequences × hundreds of frames) — its lossy compression achieves ~3× smaller files than DCD while preserving sub-angstrom precision, and GROMACS tools read it natively. Choose **HDF5** when your downstream analysis is entirely Python-based and you want topology + coordinates in a single file with no companion artifacts.
+
+The format is specified at the batch level in `generate_dataset.py` through the `--format` argument, which defaults to `xtc`. Each sequence in the input CSV/FASTA produces one output file named `{sequence_name}.{format}` in the output folder.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L74-L78), [scripts/join_fragments.py](/scripts/join_fragments.py#L321-L326)
+
+## Companion Files and Auxiliary Outputs
+
+### Topology Sidecar for Binary Formats
+
+Binary trajectory formats (`.xtc`, `.dcd`) store only coordinate arrays — they lack the atom names, residue identities, and bonding information needed to interpret the coordinates. IDP-o automatically writes a **companion PDB file** containing the topology from frame 0 whenever these formats are selected:
+
+```python
+t.save(outpath)
+if outpath.endswith((".xtc", ".dcd")):
+    t[0].save(outpath[:-3] + "pdb")
+```
+
+This produces a file pair such as `P53_TAD.xtc` + `P53_TAD.pdb`. The companion PDB is a **single-frame file** (frame 0 of the ensemble) that serves as the topology reference for all downstream tools that require separate coordinate + topology inputs.
+
+Sources: [scripts/join_fragments.py](/scripts/join_fragments.py#L324-L326)
+
+### Error Logs on Generation Failure
+
+When batch generation encounters a per-sequence failure, IDP-o does not halt the entire dataset. Instead, it writes a **plain-text error log** named `{sequence_name}.txt` alongside the expected output path, containing both the failed command and the full traceback:
+
+```python
+with open(os.path.splitext(outpath)[0] + ".txt", "w") as f:
+    f.write(cmd + "\n" + error_msg + "\n")
+```
+
+This allows bulk dataset generation to continue past individual failures while preserving full diagnostic information for debugging.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L114-L116)
+
+### Intermediate Scratch Artifacts
+
+During ensemble construction, IDP-o writes two categories of intermediate files to the `--scratch_folder`:
+
+| Artifact | Path Pattern | Purpose | Lifecycle |
+|---|---|---|---|
+| **Byte-start index** | `scratch_folder/byte_starts.pkl` | Pickled dictionary mapping each fragment to its hit positions in the Foldcomp database | Written by sequence search; consumed by structure extraction |
+| **Fragment ensembles** | `scratch_folder/fragment_ensembles/{fragment}.h5` | Per-fragment HDF5 trajectories from Foldcomp reconstruction | Written by structure extraction; consumed by fragment joining |
+| **Fragment ensembles (cis-excluded)** | `scratch_folder/fragment_ensembles-exclude_cis_omega/{fragment}.h5` | Same as above, but filtered for trans-ω only | Used when `--exclude_cis_omega` is active |
+
+These intermediates are **not automatically cleaned up** after ensemble generation completes. For large batch runs, you should periodically clear the scratch directory or mount it on fast ephemeral storage.
+
+Sources: [scripts/fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L170-L173), [scripts/extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L300-L305), [scripts/build_ensemble.py](/scripts/build_ensemble.py#L50-L55)
+
+## Ensemble Structure and Completeness
+
+### All-Atom Output with Inferred Hydrogens
+
+The final ensemble returned by the joining pipeline undergoes a critical post-processing step: **hydrogen atom inference and insertion**. The Foldcomp database stores only heavy-atom coordinates (backbone N/CA/C/O and sidechain atoms). Before writing the output file, IDP-o calls:
+
+```python
+t = infer_and_insert_hydrogens(t)
+```
+
+This function (from the `nerfax` library) reconstructs all hydrogen positions from the heavy-atom geometry using standard bond lengths and angles, producing a **fully all-atom trajectory**. This means the output is immediately suitable for force field evaluations, NMR chemical shift predictors, and any computation that requires hydrogen positions — no external protonation step is needed.
+
+Sources: [scripts/join_fragments.py](/scripts/join_fragments.py#L317-L318)
+
+### Frame Count and Selection
+
+The number of conformations in the final ensemble is controlled by `--max_structures_in_ensemble` (default: 100 in `build_ensemble.py`). This parameter acts as a **hard ceiling** on the number of frames written to disk:
+
+```python
+t = md.Trajectory(
+    data[seq]["coords"][:max_structures_in_ensemble],
+    md.Topology.from_dataframe(build_mdtraj_top(seq)),
+)
+```
+
+The frames are taken as the first *N* structures produced by the hierarchical joining process. When `--rmsd_sort` is enabled, these frames are **reordered** by greedy nearest-neighbor RMSD before the ceiling is applied, ensuring the selected frames form a smooth conformational path through structure space.
+
+Sources: [scripts/join_fragments.py](/scripts/join_fragments.py#L311-L319)
+
+### Optional RMSD-Based Sorting
+
+The `--rmsd_sort` flag triggers a two-step post-processing pipeline:
+
+1. **Superposition**: All frames are aligned to frame 0 via `trajectory.superpose(trajectory, frame=0)`.
+2. **Greedy RMSD ordering**: A nearest-neighbor sort through the RMSD matrix arranges frames so that consecutive frames have minimal structural deviation, producing a visually smooth trajectory when animated.
+
+```mermaid
+flowchart LR
+    A["Raw Joined\nEnsemble"] --> B{"--rmsd_sort?"}
+    B -- No --> C["Write Output\n(original join order)"]
+    B -- Yes --> D["Superpose all\nframes to frame 0"]
+    D --> E["Compute pairwise\nRMSD matrix"]
+    E --> F["Greedy nearest-\nneighbor sort"]
+    F --> G["Infer & insert\nhydrogens"]
+    G --> H["Write Output\n(RMSD-sorted order)"]
+    C --> G2["Infer & insert\nhydrogens"]
+    G2 --> C2["Write Output"]
+```
+
+This sorting is primarily a **visualization aid** — it does not alter the ensemble's statistical properties, only the frame ordering.
+
+Sources: [scripts/join_fragments.py](/scripts/join_fragments.py#L259-L275), [scripts/join_fragments.py](/scripts/join_fragments.py#L315-L319)
+
+## Downstream Integration Patterns
+
+### Loading Ensembles with MDTraj (Python)
+
+Since IDP-o writes standard MDTraj-compatible formats, the simplest loading pattern is:
+
+```python
+import mdtraj as md
+
+# HDF5 — topology embedded
+ensemble = md.load_hdf5("P53_TAD.h5")
+
+# XTC — topology from companion PDB
+ensemble = md.load("P53_TAD.xtc", top="P53_TAD.pdb")
+
+# DCD — topology from companion PDB
+ensemble = md.load("P53_TAD.dcd", top="P53_TAD.pdb")
+
+# Multi-model PDB
+ensemble = md.load("P53_TAD.pdb")
+```
+
+All four calls return an `md.Trajectory` object with `n_frames` equal to `--max_structures_in_ensemble` and `n_atoms` including all inferred hydrogens.
+
+### Computing Ensemble-Averaged Properties
+
+IDP-o ensembles are designed for direct computation of IDP-relevant observables:
+
+```python
+# Radius of gyration distribution
+rg = md.compute_rg(ensemble)
+print(f"Rg: {rg.mean():.2f} ± {rg.std():.2f} Å")
+
+# Per-residue RMSF (requires reference = mean structure)
+rmsf = md.rmsf(ensemble, ensemble[0])
+
+# Inter-residue distance distributions
+pairs = ensemble.topology.select_pairs("resid 0", "resid 50")
+dists = md.compute_distances(ensemble, pairs)
+```
+
+### Integration with GROMACS / CHARMM Pipelines
+
+For `.xtc` output, GROMACS tools accept the file pair directly:
+
+```bash
+# Compute RMSD against a reference
+gmx rms -s ref.tpr -f ensemble.xtc -o rmsd.xvg
+
+# Cluster conformations
+gmx cluster -f ensemble.xtc -s topol.tpr -method gromos -c clusters.pdb
+```
+
+For `.dcd` output, VMD and CHARMM tools consume the trajectory + PDB topology pair natively.
+
+### NMR Chemical Shift Prediction
+
+Because IDP-o ensembles include all hydrogen positions, they can be fed directly to chemical shift predictors such as **SPARTA+** or **ShiftX2** without any protonation step:
+
+```python
+# Export frame as PDB for SPARTA+ input
+ensemble[0].save("frame_0.pdb")
+# SPARTA+ reads all-atom PDB directly
+```
+
+### Batch Dataset Integration
+
+The `generate_dataset.py` wrapper produces one ensemble per input sequence, making the output folder directly usable as a **dataset**. The naming convention `{sequence_name}.{format}` preserves the identifier from the input CSV/FASTA, enabling programmatic cross-referencing between input sequences and their ensembles. Failed sequences produce `.txt` error logs rather than ensemble files, so the presence of the ensemble file itself serves as a success indicator.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L95-L116), [scripts/join_fragments.py](/scripts/join_fragments.py#L306-L326)
+
+## Output Format Comparison: Decision Matrix
+
+The following matrix summarizes trade-offs to guide format selection for specific downstream scenarios:
+
+| Downstream Use Case | Recommended Format | Rationale |
+|---|---|---|
+| Python-only analysis (MDTraj, PyEMMA) | `.h5` | Single-file, topology embedded, fastest random frame access |
+| GROMACS MD refinement | `.xtc` | Native format, lossy compression saves disk, companion PDB auto-generated |
+| CHARMM/OpenMM MD refinement | `.dcd` | Native format for these engines, companion PDB auto-generated |
+| Visual inspection (PyMOL, ChimeraX) | `.pdb` | Directly openable, multi-model PDB, no companion files needed |
+| Long-term archival or transfer | `.pdb.gz` | Smallest standalone file, universally readable after decompression |
+| Machine learning datasets | `.h5` | Efficient vectorized reads via h5py, metadata attachable |
+| NMR back-calculation | `.h5` or `.xtc` | Hydrogens present; format choice depends on predictor's input API |
+
+> [!TIP]
+> When building a large-scale dataset (e.g., thousands of IDP sequences), use `.xtc` for storage efficiency and archive the companion `.pdb` files separately — they are identical for all frames of a given sequence, so you need only one per sequence. For ML training pipelines that iterate over frames repeatedly, `.h5` avoids the overhead of repeated topology parsing.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L74-L78), [scripts/join_fragments.py](/scripts/join_fragments.py#L321-L326)
+
+## What to Read Next
+
+- For the batch generation workflow that produces these outputs at scale, see [Batch Dataset Generation](11-batch-dataset-generation).
+- For the full set of CLI flags that control output format, frame count, and sorting behavior, see [Command-Line Configuration Reference](13-command-line-configuration-reference).
+- For the hydrogen inference algorithm and structural completeness guarantees, see [JAX Vectorized Ensemble Computation](10-jax-vectorized-ensemble-computation).
+
+# Command-Line Configuration Reference
+
+
+
+IDP-o exposes **six command-line interfaces** spanning a single batch orchestrator, one core pipeline entry point, three internal pipeline stages, and a database preparation utility. The two primary user-facing entry points are `generate_dataset.py` (batch processing) and `scripts/build_ensemble.py` (single-sequence ensemble construction), while the remaining scripts are invoked internally by the pipeline but can also be run independently for advanced workflows. Every interface uses Python's `argparse` with `ArgumentDefaultsHelpFormatter`, meaning `--help` output always includes default values. This reference documents all flags, their types, defaults, constraints, and inter-script configuration propagation.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L24-L59), [build_ensemble.py](/scripts/build_ensemble.py#L87-L143), [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L121-L128)
+
+## Entry Point Hierarchy
+
+The following diagram clarifies which scripts are directly invoked by the user versus those called internally by the pipeline. When using `generate_dataset.py`, most configuration is mediated through its own flags and propagated to `build_ensemble.py` via subprocess construction — only a subset of `build_ensemble.py` parameters are exposed at the batch level.
+
+```mermaid
+graph TD
+    subgraph "User-Facing Entry Points"
+        G["generate_dataset.py<br/>(Batch Orchestrator)"]
+        B["scripts/build_ensemble.py<br/>(Single-Sequence Builder)"]
+        P["scripts/prepare_foldcomp_fasta.py<br/>(Database Prep)"]
+    end
+    subgraph "Internal Pipeline Stages"
+        F["scripts/fasta_search_in_foldcomp_database.py<br/>(Stage 1: Sequence Search)"]
+        E["scripts/extract_structures_from_foldcomp_database.py<br/>(Stage 2: Structure Extraction)"]
+        J["scripts/join_fragments.py<br/>(Stage 3: Fragment Joining)"]
+    end
+    G -->|"subprocess per sequence"| B
+    B -->|"calls main()"| F
+    B -->|"calls main()"| E
+    B -->|"calls main()"| J
+    P -.->|"produces .fasta + DB"| F
+    P -.->|"produces DB"| E
+
+    style G fill:#4a90d9,color:#fff
+    style B fill:#4a90d9,color:#fff
+    style P fill:#4a90d9,color:#fff
+    style F fill:#7b8a9e,color:#fff
+    style E fill:#7b8a9e,color:#fff
+    style J fill:#7b8a9e,color:#fff
+```
+
+The **Docker container** sets `scripts/build_ensemble.py` as its `ENTRYPOINT`, so all Docker invocations pass flags directly to that script. The `PYTHONPATH` is set to `/IDP-o/` to enable internal module imports across the `scripts/` directory.
+
+Sources: [Dockerfile](/Dockerfile#L1-L9), [build_ensemble.py](/scripts/build_ensemble.py#L25-L80)
+
+## `generate_dataset.py` — Batch Orchestrator
+
+This is the top-level script for generating ensembles across an entire dataset (CSV or FASTA). It iterates over input sequences, launching `build_ensemble.py` as a subprocess for each one. The critical design constraint is that **only a subset of `build_ensemble.py` parameters are propagated** from this level — advanced tuning of `--foldcomp_fasta`, `--foldcomp_db`, `--n_max_structures_per_fragment`, `--reduction_factor`, `--joins_to_attempt_per_pairing`, `--exclude_cis_omega`, and `--rmsd_sort` requires invoking `build_ensemble.py` directly.
+
+| Flag | Short | Type | Default | Required | Description |
+|------|-------|------|---------|----------|-------------|
+| `--input` | `-i` | `str` | — | **Yes** | Input file path (`.csv` or `.fasta`) |
+| `--outfolder` | `-o` | `str` | `./ensembles` | No | Output directory for generated ensembles |
+| `--max_structures_in_ensemble` | `-n` | `int` | `0` | No | Frames per ensemble; `0` = dry run (no ensembles generated) |
+| `--fragments_overlap` | | `int` | `1` | No | Overlapping residues between fragments |
+| `--column_names` | | `str` | `seq_name,fasta` | No | Comma-separated column names in the CSV |
+| `--shuffle` | | flag | `False` | No | Shuffle processing order (for parallelization) |
+| `--format` | | `str` | `xtc` | No | Output format: `h5`, `xtc`, `pdb`, `pdb.gz`, `dcd` |
+| `--overwrite` | | flag | `False` | No | Overwrite existing ensemble files |
+
+> [!TIP]
+> The `--max_structures_in_ensemble` default of `0` is intentionally a dry-run mode — the script logs a warning and exits without generating anything. You **must** set this to a positive integer to produce output.
+
+**Input format handling**: When `--input` ends with `.fasta`, the parser reads `>`-prefixed headers as sequence names and the following lines as sequences. When it ends with `.csv`, only the columns specified by `--column_names` are loaded. Duplicated sequence names or sequences are dropped with a warning. The output file for each sequence is named `{seq_name}.{format}` within `--outfolder`.
+
+**Subprocess propagation**: For each sequence, the script constructs a command invoking `build_ensemble.py` with `--sequence`, `--outpath`, `--scratch_folder` (set to `/tmp/tmp-{seq_name}`), `--max_structures_in_ensemble`, and conditionally `--overwrite`. No other `build_ensemble.py` parameters are forwarded, meaning the Foldcomp paths, reduction factor, join attempts, and quality filters all use their own defaults.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L67-L125)
+
+## `scripts/build_ensemble.py` — Single-Sequence Ensemble Builder
+
+This is the **core pipeline entry point** and the Docker `ENTRYPOINT`. It orchestrates all three pipeline stages — sequence search, structure extraction, and fragment joining — in sequence. It accepts the richest set of configuration flags and is the script you invoke directly for single-protein work or when you need fine-grained control over every pipeline parameter.
+
+| Flag | Type | Default | Required | Description |
+|------|------|---------|----------|-------------|
+| `--sequence` | `str` | — | **Yes** | Amino acid sequence (single-letter code) |
+| `--foldcomp_fasta` | `str` | `/data/afdb/afdb_uniprot_v4.fasta` | No | Offset-annotated FASTA for the Foldcomp database |
+| `--foldcomp_db` | `str` | `/data/afdb/afdb_uniprot_v4` | No | Path to the Foldcomp database file |
+| `--n_max_structures_per_fragment` | `int` | `1000` | No | Max structures extracted per fragment |
+| `--outpath` | `str` | — | **Yes** | Output path; extension determines format (`.h5`, `.xtc`, `.dcd`, `.pdb`, `.pdb.gz`) |
+| `--scratch_folder` | `str` | `/tmp` | No | Directory for intermediate files |
+| `--reduction_factor` | `int` | `1` | No | Database search reduction (e.g., `10` = search 1/10th) |
+| `--joins_to_attempt_per_pairing` | `int` | `500000` | No | Join attempts per fragment pair |
+| `--max_structures_in_ensemble` | `int` | `100` | No | Maximum frames in the final ensemble |
+| `--exclude_cis_omega` | flag | `False` | No | Exclude structures with cis-ω backbone angles |
+| `--rmsd_sort` | flag | `False` | No | RMSD-sort and superpose frames for visualization |
+| `--overwrite` | flag | `False` | No | Overwrite existing output file |
+
+**Sequence validation**: The `main()` function validates that every character in `--sequence` belongs to the standard 20 amino acid alphabet (`ACDEFGHIKLMNPQRSTVWY`). Non-standard residues (including `B`, `Z`, `X`, `*`) raise a `ValueError`.
+
+**Scratch directory structure**: The scratch folder receives two artifacts: a `byte_starts.pkl` file (search results from Stage 1) and a `fragment_ensembles/` subdirectory containing per-fragment `.h5` files from Stage 2. When `--exclude_cis_omega` is active, the fragment directory is suffixed with `-exclude_cis_omega` to avoid collision with unfiltered results.
+
+Sources: [build_ensemble.py](/scripts/build_ensemble.py#L25-L80), [build_ensemble.py](/scripts/build_ensemble.py#L87-L166)
+
+## `scripts/prepare_foldcomp_fasta.py` — Database Preparation Utility
+
+This one-time setup script downloads a Foldcomp database, extracts its FASTA, and rewrites headers to contain byte offsets instead of protein labels — producing the specially formatted `.fasta` file that the search stage requires. It is the only script that does **not** participate in the ensemble generation pipeline itself.
+
+| Flag | Type | Default | Required | Description |
+|------|------|---------|----------|-------------|
+| `--foldcomp-db` | `str` | `afdb_uniprot_v4` | No | Foldcomp database name (for `foldcomp.setup()`) |
+| `--threads` | `int` | `8` | No | Threads for `foldcomp extract` |
+| `--workdir` | `str` | `/data/foldcomp_db` | No | Working directory for download and extraction |
+
+**Behavior details**: The script first changes into `--workdir`, then checks if the database file exists locally — if not, it calls `foldcomp.setup()` to download it (the `afdb_uniprot_v4` database is approximately 1.1 TB). It then computes a byte-offset map from the `.index` and `.lookup` sidecar files, extracts the raw FASTA using the `foldcomp` binary (auto-downloading the binary if not found on `PATH`), and finally rewrites the FASTA headers from `>protein_label` to `>byte_offset`.
+
+> [!TIP]
+> The `foldcomp` binary is auto-detected via `shutil.which()`, falling back to `./foldcomp` in the current directory, and finally auto-downloaded from `mmseqs.com` for Windows (x64), macOS (universal), and Linux (x86_64 / arm64). Ensure network access if the binary is not pre-installed.
+
+Sources: [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L33-L149)
+
+## `scripts/fasta_search_in_foldcomp_database.py` — Stage 1: Sequence Search
+
+This GPU-accelerated stage searches the offset-annotated FASTA for all instances of each fragment sequence. It is invoked internally by `build_ensemble.py` but can also be run standalone for debugging or pre-computing search results.
+
+| Flag | Type | Default | Required | Description |
+|------|------|---------|----------|-------------|
+| `--sequence` | `str` | — | **Yes** | Full protein sequence to fragment and search |
+| `--foldcomp_fasta` | `str` | `/data/afdb_uniprot_v4.fasta` | No | Offset-annotated FASTA path |
+| `--pkl_outpath` | `str` | — | **Yes** | Output `.pkl` path for search hit data |
+| `--reduction_factor` | `int` | `1` | No | Proportion reduction (e.g., `10` = search 1/10th of DB) |
+
+**Internal fragment generation**: The `main()` function fragments the input sequence using hardcoded parameters `overlap=2` and `seq_len=6` (producing 6-residue fragments with 2-residue overlap). These are not exposed as CLI flags. The `--reduction_factor` controls how much of the FASTA file is scanned — a value of `N` means only `1/N` of the file (by byte size) is searched, trading recall for speed.
+
+**Output format**: The pickled output is a dictionary mapping each fragment string to a 3-tuple of NumPy arrays: `(hit_idxs, byte_starts, aa_start_index)`, where `byte_starts` are the byte offsets into the Foldcomp database file and `aa_start_index` is the residue index where the match begins within the hit protein.
+
+Sources: [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L155-L193)
+
+## `scripts/extract_structures_from_foldcomp_database.py` — Stage 2: Structure Extraction
+
+This stage reads the search hits, seeks into the Foldcomp database, reconstructs 3D coordinates from compressed internal coordinate representations using JAX-compiled functions, and writes per-fragment HDF5 trajectory files.
+
+| Flag | Type | Default | Required | Description |
+|------|------|---------|----------|-------------|
+| `--byte_starts_path` | `str` | `example/byte_starts.pkl` | **Yes** | Pickled search hits from Stage 1 |
+| `--foldcomp_fasta` | `str` | `/data/afdb_uniprot_v4.fasta` | No | Offset-annotated FASTA path |
+| `--foldcomp_db` | `str` | `/data/afdb_uniprot_v4` | No | Foldcomp database file path |
+| `--outfolder` | `str` | — | **Yes** | Output directory for per-fragment `.h5` files |
+| `--n_max_structures_per_fragment` | `int` | `1000` | No | Max structures to extract per fragment |
+| `--exclude_cis_omega` | flag | `False` | No | Filter out structures with cis-ω angles (|ω| ≤ 90°) |
+
+**Cis-omega filtering**: When `--exclude_cis_omega` is active, the extraction step checks each candidate structure's omega backbone angles. Structures where **all** omega angles satisfy `|ω| > 90°` (i.e., are trans-like) are retained; any structure with at least one cis-like omega is discarded. This is a conservative filter — it requires every omega in the fragment to be trans-like, not just the majority.
+
+**JAX compilation**: The module sets `JAX_PLATFORMS=cpu` at import time, forcing all JAX computation onto CPU even if GPUs are available. This is intentional — Stage 2 is compute-light but memory-intensive, and the GPU is reserved for Stage 1's CuPy-based search.
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L17-L18), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L277-L325)
+
+## `scripts/join_fragments.py` — Stage 3: Fragment Joining
+
+This stage loads the per-fragment HDF5 files, performs hierarchical pairwise joining with overlap alignment and clash detection, and writes the final ensemble trajectory.
+
+| Flag | Type | Default | Required | Description |
+|------|------|---------|----------|-------------|
+| `--sequence` | `str` | — | **Yes** | Full protein sequence |
+| `--fragments_folder` | `str` | — | **Yes** | Directory containing per-fragment `.h5` files |
+| `--outpath` | `str` | — | **Yes** | Output trajectory path |
+| `--joins_to_attempt_per_pairing` | `int` | `500000` | No | Random join attempts per fragment pair |
+| `--max_structures_in_ensemble` | `int` | `500000` | No | Maximum frames in the final ensemble |
+| `--rmsd_sort` | flag | `False` | No | RMSD-sort and superpose frames |
+| `--overwrite` | flag | `False` | No | Overwrite existing output file |
+
+**Note on default divergence**: When invoked standalone, `--max_structures_in_ensemble` defaults to `500000`, but when called from `build_ensemble.py` it receives `100` as the default. This means the standalone default is effectively "keep all valid joins," while the pipeline default is much more selective. Be aware of this discrepancy when running Stage 3 independently.
+
+**XLA memory configuration**: The module sets `XLA_PYTHON_CLIENT_MEM_FRACTION=.96` at import time, reserving 96% of available accelerator memory for JAX compilation. This is critical for the vectorized join operations and cannot be configured via CLI — it must be changed in source if needed.
+
+**RMSD sorting**: When `--rmsd_sort` is active, the final trajectory is superposed to frame 0, then frames are reordered by greedy nearest-neighbor in RMSD space. This produces smoother visualizations but adds significant compute for large ensembles.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L22-L23), [join_fragments.py](/scripts/join_fragments.py#L323-L347)
+
+## Environment Variables
+
+The pipeline relies on two environment variables set at import time within the source code. These are **not** exposed as CLI flags and require source modification or Docker `ENV` overrides to change.
+
+| Variable | Set In | Value | Purpose |
+|----------|--------|-------|---------|
+| `JAX_PLATFORMS` | `extract_structures_from_foldcomp_database.py` | `cpu` | Forces Stage 2 JAX computation onto CPU |
+| `XLA_PYTHON_CLIENT_MEM_FRACTION` | `join_fragments.py` | `.96` | Reserves 96% of accelerator memory for Stage 3 |
+| `PYTHONPATH` | `Dockerfile` | `/IDP-o/` | Enables cross-module imports in `scripts/` |
+
+Sources: [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L17), [join_fragments.py](/scripts/join_fragments.py#L22), [Dockerfile](/Dockerfile#L6)
+
+## Output Format Reference
+
+The `--format` flag (in `generate_dataset.py`) and the `--outpath` extension (in `build_ensemble.py` and `join_fragments.py`) determine the output trajectory format. All formats include hydrogen atoms inferred by `nerfax.reduce_utils.reconstruct_from_mdtraj`.
+
+| Format | Extension | Notes |
+|--------|-----------|-------|
+| HDF5 | `.h5` | MDTraj HDF5; native round-trip; recommended for large ensembles |
+| XTC | `.xtc` | Gromacs XTC; companion `.pdb` topology file auto-generated |
+| DCD | `.dcd` | CHARMM DCD; companion `.pdb` topology file auto-generated |
+| PDB | `.pdb` | One PDB file per frame (multi-model) |
+| Compressed PDB | `.pdb.gz` | Gzip-compressed multi-model PDB |
+
+For XTC and DCD formats, `join_fragments.py` automatically saves a single-frame `.pdb` file alongside the trajectory to provide the topology reference required by downstream tools.
+
+Sources: [join_fragments.py](/scripts/join_fragments.py#L318-L319), [generate_dataset.py](/generate_dataset.py#L52-L57)
+
+## Configuration Propagation Map
+
+When using `generate_dataset.py`, the following table shows exactly which `build_ensemble.py` parameters receive values from the orchestrator versus which fall through to their built-in defaults. This is essential for understanding which tuning knobs are available at each invocation level.
+
+| `build_ensemble.py` Parameter | Set by `generate_dataset.py` | Value Source | Default if Not Propagated |
+|-------------------------------|------------------------------|--------------|---------------------------|
+| `--sequence` | ✅ Yes | Input CSV/FASTA row | — |
+| `--outpath` | ✅ Yes | `{outfolder}/{seq_name}.{format}` | — |
+| `--scratch_folder` | ✅ Yes | `/tmp/tmp-{seq_name}` | — |
+| `--max_structures_in_ensemble` | ✅ Yes | `-n` flag value | — |
+| `--overwrite` | ✅ Yes | `--overwrite` flag | — |
+| `--foldcomp_fasta` | ❌ No | Built-in default | `/data/afdb/afdb_uniprot_v4.fasta` |
+| `--foldcomp_db` | ❌ No | Built-in default | `/data/afdb/afdb_uniprot_v4` |
+| `--n_max_structures_per_fragment` | ❌ No | Built-in default | `1000` |
+| `--reduction_factor` | ❌ No | Built-in default | `1` |
+| `--joins_to_attempt_per_pairing` | ❌ No | Built-in default | `500000` |
+| `--exclude_cis_omega` | ❌ No | Built-in default | `False` |
+| `--rmsd_sort` | ❌ No | Built-in default | `False` |
+
+The six unpropagated parameters represent the **advanced tuning surface** — to control them, invoke `build_ensemble.py` directly (or via Docker) rather than through the batch orchestrator.
+
+Sources: [generate_dataset.py](/generate_dataset.py#L103-L118), [build_ensemble.py](/scripts/build_ensemble.py#L87-L143)
+
+## Docker Invocation Patterns
+
+The Docker image uses `scripts/build_ensemble.py` as its `ENTRYPOINT`, so all flags after the image name map directly to that script's argument parser. The following patterns cover the most common workflows.
+
+**Single-sequence ensemble generation** (GPU-accelerated search + CPU reconstruction):
+```bash
+docker run -v $(pwd):/data --gpus 1 \
+  idp-o \
+    --sequence DLIVERANDSANDRDANDCARLDANDMICHELEANDLDHIEANDFADIDANDSTEFANDANDISTVANANDALDERTANDDLIVERAGAINPLASDTHERS \
+    --outpath /data/output/ensemble.xtc \
+    --scratch_folder /data/output/scratch \
+    --foldcomp_fasta /data/afdb_uniprot_v4.fasta \
+    --foldcomp_db /data/afdb_uniprot_v4 \
+    --n_max_structures_per_fragment 100 \
+    --max_structures_in_ensemble 50
+```
+
+**Database preparation** (overrides ENTRYPOINT):
+```bash
+docker run -v $(pwd):/data --entrypoint python idp-o \
+  /IDP-o/scripts/prepare_foldcomp_fasta.py --workdir /data
+```
+
+**Batch generation** (overrides ENTRYPOINT):
+```bash
+docker run -v $(pwd):/data --gpus 1 --entrypoint python idp-o \
+  /IDP-o/generate_dataset.py \
+    --input /data/sequences.csv \
+    --outfolder /data/ensembles \
+    --max_structures_in_ensemble 50 \
+    --format xtc
+```
+
+Sources: [Dockerfile](/Dockerfile#L1-L9), [README.md](/README.md#L44-L52)
+
+## Quick-Reference: All Flags Across All Scripts
+
+For rapid lookup, the following consolidated table lists every CLI flag across all six scripts with its type and default value.
+
+| Script | Flag | Type | Default | Required |
+|--------|------|------|---------|----------|
+| `generate_dataset.py` | `--input` / `-i` | `str` | — | Yes |
+| `generate_dataset.py` | `--outfolder` / `-o` | `str` | `./ensembles` | No |
+| `generate_dataset.py` | `--max_structures_in_ensemble` / `-n` | `int` | `0` | No |
+| `generate_dataset.py` | `--fragments_overlap` | `int` | `1` | No |
+| `generate_dataset.py` | `--column_names` | `str` | `seq_name,fasta` | No |
+| `generate_dataset.py` | `--shuffle` | flag | `False` | No |
+| `generate_dataset.py` | `--format` | `str` | `xtc` | No |
+| `generate_dataset.py` | `--overwrite` | flag | `False` | No |
+| `build_ensemble.py` | `--sequence` | `str` | — | Yes |
+| `build_ensemble.py` | `--foldcomp_fasta` | `str` | `/data/afdb/afdb_uniprot_v4.fasta` | No |
+| `build_ensemble.py` | `--foldcomp_db` | `str` | `/data/afdb/afdb_uniprot_v4` | No |
+| `build_ensemble.py` | `--n_max_structures_per_fragment` | `int` | `1000` | No |
+| `build_ensemble.py` | `--outpath` | `str` | — | Yes |
+| `build_ensemble.py` | `--scratch_folder` | `str` | `/tmp` | No |
+| `build_ensemble.py` | `--reduction_factor` | `int` | `1` | No |
+| `build_ensemble.py` | `--joins_to_attempt_per_pairing` | `int` | `500000` | No |
+| `build_ensemble.py` | `--max_structures_in_ensemble` | `int` | `100` | No |
+| `build_ensemble.py` | `--exclude_cis_omega` | flag | `False` | No |
+| `build_ensemble.py` | `--rmsd_sort` | flag | `False` | No |
+| `build_ensemble.py` | `--overwrite` | flag | `False` | No |
+| `prepare_foldcomp_fasta.py` | `--foldcomp-db` | `str` | `afdb_uniprot_v4` | No |
+| `prepare_foldcomp_fasta.py` | `--threads` | `int` | `8` | No |
+| `prepare_foldcomp_fasta.py` | `--workdir` | `str` | `/data/foldcomp_db` | No |
+| `fasta_search_in_foldcomp_database.py` | `--sequence` | `str` | — | Yes |
+| `fasta_search_in_foldcomp_database.py` | `--foldcomp_fasta` | `str` | `/data/afdb_uniprot_v4.fasta` | No |
+| `fasta_search_in_foldcomp_database.py` | `--pkl_outpath` | `str` | — | Yes |
+| `fasta_search_in_foldcomp_database.py` | `--reduction_factor` | `int` | `1` | No |
+| `extract_structures_from_foldcomp_database.py` | `--byte_starts_path` | `str` | `example/byte_starts.pkl` | Yes |
+| `extract_structures_from_foldcomp_database.py` | `--foldcomp_fasta` | `str` | `/data/afdb_uniprot_v4.fasta` | No |
+| `extract_structures_from_foldcomp_database.py` | `--foldcomp_db` | `str` | `/data/afdb_uniprot_v4` | No |
+| `extract_structures_from_foldcomp_database.py` | `--outfolder` | `str` | — | Yes |
+| `extract_structures_from_foldcomp_database.py` | `--n_max_structures_per_fragment` | `int` | `1000` | No |
+| `extract_structures_from_foldcomp_database.py` | `--exclude_cis_omega` | flag | `False` | No |
+| `join_fragments.py` | `--sequence` | `str` | — | Yes |
+| `join_fragments.py` | `--fragments_folder` | `str` | — | Yes |
+| `join_fragments.py` | `--outpath` | `str` | — | Yes |
+| `join_fragments.py` | `--joins_to_attempt_per_pairing` | `int` | `500000` | No |
+| `join_fragments.py` | `--max_structures_in_ensemble` | `int` | `500000` | No |
+| `join_fragments.py` | `--rmsd_sort` | flag | `False` | No |
+| `join_fragments.py` | `--overwrite` | flag | `False` | No |
+
+Sources: [generate_dataset.py](/generate_dataset.py#L24-L59), [build_ensemble.py](/scripts/build_ensemble.py#L87-L143), [prepare_foldcomp_fasta.py](/scripts/prepare_foldcomp_fasta.py#L121-L128), [fasta_search_in_foldcomp_database.py](/scripts/fasta_search_in_foldcomp_database.py#L168-L193), [extract_structures_from_foldcomp_database.py](/scripts/extract_structures_from_foldcomp_database.py#L277-L316), [join_fragments.py](/scripts/join_fragments.py#L323-L337)
+
+## Next Steps
+
+For the architectural rationale behind these parameters — particularly why fragment length is fixed at 6, overlap at 2, and how the hierarchical joining strategy determines `--joins_to_attempt_per_pairing` — see [Fragment Generation Strategy](5-fragment-generation-strategy) and [Hierarchical Fragment Joining](8-hierarchical-fragment-joining). For output format details and downstream consumption patterns, see [Output Formats and Downstream Use](12-output-formats-and-downstream-use).

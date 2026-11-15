@@ -1,0 +1,21 @@
+name: enzywizard-batch
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - numpy=1.23.5
+  - biopython=1.86
+  - rdkit=2026.3.1
+  - openmm=8.5.0
+  - prody=2.6.1
+  - dssp=4.6.0
+  - fair-esm=2.0.0
+  - bio-pyvol=1.7.8
+  - msms=2.6.1
+  - hmmer=3.4
+  - vina=1.2.6
+  - meeko=0.7.1
+  - pdbfixer=1.12
+  - requests=2.33.0
+prefix: /home/wmk/miniconda3/envs/enzywizard-batch

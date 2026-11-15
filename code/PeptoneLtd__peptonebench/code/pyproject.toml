@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "peptonebench"
+version = "0.1.0"
+description = "Benchmarking protein ensembles across the order-disorder continuum"
+authors = []
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = [
+    # "git+https://github.com/MarkusHaak/trizod.git",
+    "joblib~=1.5.1",
+    "matplotlib~=3.10.7",
+    "mdtraj~=1.10.3",
+    "nglview~=3.1.4",
+    "numpy~=2.3.3",
+    "pandas~=2.3.3",
+    "pynmrstar~=3.3.6",
+    "scipy~=1.16.2",
+    "statsmodels~=0.14.5",
+    "tqdm~=4.67.1",
+    "pypalettes~=0.1.6"
+    ]
+
+[project.scripts]
+PeptoneBench = "peptonebench.scripts.run_benchmark:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120

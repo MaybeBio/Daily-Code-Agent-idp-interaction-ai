@@ -34,9 +34,10 @@
 #include "numpy/ndarrayobject.h"
 #include "numpy/ndarraytypes.h"
 #include "numpy/npy_common.h"
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/memory/memory.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -108,6 +109,23 @@ struct AtomSiteLoop {
                        "len(atom_id)=", atom_id.size(), ", ",              //
                        "len(label_alt_id)=", alt_id.size(), ", ",          //
                        "len(occupancy)=", occupancy.size()));
+    }
+    // Note: `_atom_site.label_atom_id` is intentionally omitted here because
+    // SMILES ligand placeholder atoms use an empty atom name (`""`).
+    const std::pair<absl::string_view, StringArrayRef> non_empty_columns[] = {
+        {"_atom_site.id", id},
+        {"_atom_site.pdbx_PDB_model_num", model_id},
+        {"_atom_site.label_asym_id", chain_id},
+        {"_atom_site.label_seq_id", seq_id},
+        {"_atom_site.label_comp_id", comp_id},
+        {"_atom_site.label_alt_id", alt_id},
+        {"_atom_site.occupancy", occupancy},
+    };
+    for (const auto& [column_name, values] : non_empty_columns) {
+      if (absl::c_linear_search(values, "")) {
+        throw py::value_error(absl::StrCat("Invalid '", column_name,
+                                           "': contains empty string."));
+      }
     }
   }
   StringArrayRef id;
@@ -191,7 +209,11 @@ absl::flat_hash_set<absl::string_view> SelectChains(const CifDict& mmcif,
 
   StringArrayRef chain_ids = mmcif["_struct_asym.id"];
   StringArrayRef entity_ids = mmcif["_struct_asym.entity_id"];
-  Indexer chain_index = MakeIndex(chain_ids);
+  if (!AreSameSize(chain_ids, entity_ids)) {
+    throw py::value_error(absl::StrCat("Invalid '_struct_asym.' loop. ",    //
+                                       "len(id)=", chain_ids.size(), ", ",  //
+                                       "len(entity_id)=", entity_ids.size()));
+  }
   Indexer entity_poly_index = MakeIndex(entity_poly.entity_id);
   Indexer entity_id_to_index = MakeIndex(entity_loop.id);
 
@@ -199,8 +221,16 @@ absl::flat_hash_set<absl::string_view> SelectChains(const CifDict& mmcif,
   for (std::size_t i = 0; i < chain_ids.size(); ++i) {
     absl::string_view chain_id = chain_ids[i];
     absl::string_view entity_id = entity_ids[i];
-    if (entity_id_to_index.empty() ||
-        entity_loop.type[entity_id_to_index[entity_id]] == "polymer") {
+    absl::string_view entity_type = "polymer";
+    if (!entity_id_to_index.empty()) {
+      auto entity_it = entity_id_to_index.find(entity_id);
+      if (entity_it == entity_id_to_index.end()) {
+        throw py::value_error(
+            absl::StrCat("Unknown '_struct_asym.entity_id': ", entity_id));
+      }
+      entity_type = entity_loop.type[entity_it->second];
+    }
+    if (entity_type == "polymer") {
       if (auto it = entity_poly_index.find(entity_id);
           it != entity_poly_index.end()) {
         absl::string_view poly_type = entity_poly.type[it->second];
@@ -215,8 +245,6 @@ absl::flat_hash_set<absl::string_view> SelectChains(const CifDict& mmcif,
         }
       }
     } else {
-      absl::string_view entity_type =
-          entity_loop.type[entity_id_to_index[entity_id]];
       if (include_other) {
         if (!forbidden_nonpoly_entity_types.contains(entity_type)) {
           keep_chain_id.insert(chain_id);
@@ -264,9 +292,6 @@ py::tuple MmcifFilter(         //
     bool include_water,        //
     bool include_other,        //
     absl::string_view model_id) {
-  if (_import_array() < 0) {
-    throw py::import_error("Failed to import NumPy.");
-  }
   auto layout = ReadMmcifLayout(mmcif, model_id);
   std::unique_ptr<std::vector<std::uint64_t>> keep_indices;
   size_t new_num_atoms;
@@ -289,15 +314,19 @@ py::tuple MmcifFilter(         //
       }
     }
 
+    auto resolved = ResolveMmcifAltLocs(layout, atom_site.comp_id,
+                                        atom_site.atom_id, atom_site.alt_id,
+                                        atom_site.occupancy, chain_indices);
+    if (!resolved.ok()) {
+      throw py::value_error(std::string(resolved.status().message()));
+    }
     keep_indices =
-        absl::WrapUnique(new std::vector<std::uint64_t>(ResolveMmcifAltLocs(
-            layout, atom_site.comp_id, atom_site.atom_id, atom_site.alt_id,
-            atom_site.occupancy, chain_indices)));
+        std::make_unique<std::vector<std::uint64_t>>(*std::move(resolved));
     new_num_atoms = keep_indices->size();
 
     if (layout.num_models() > 1) {
       keep_indices->reserve(layout.num_models() * new_num_atoms);
-      std::uint64_t* start = &(*keep_indices->begin());
+      std::uint64_t* start = keep_indices->data();
       std::size_t num_atom = keep_indices->size();
       // Copy first model indices into all model indices offsetting each copy.
       for (std::size_t i = 1; i < layout.num_models(); ++i) {
@@ -315,14 +344,26 @@ py::tuple MmcifFilter(         //
                       static_cast<npy_intp>(new_num_atoms)};
   PyObject* arr =
       PyArray_SimpleNewFromData(2, shape, NPY_INT64, keep_indices->data());
+  if (arr == nullptr) {
+    throw py::error_already_set();
+  }
   // Create a capsule to hold the memory of the buffer so NumPy knows how to
   // delete it when done with it.
   PyObject* capsule = PyCapsule_New(
-      keep_indices.release(), nullptr, +[](PyObject* capsule_cleanup) {
+      keep_indices.get(), nullptr, +[](PyObject* capsule_cleanup) {
         void* memory = PyCapsule_GetPointer(capsule_cleanup, nullptr);
-        delete static_cast<std::vector<std::size_t>*>(memory);
+        delete static_cast<std::vector<std::uint64_t>*>(memory);
       });
-  PyArray_SetBaseObject(reinterpret_cast<PyArrayObject*>(arr), capsule);
+  if (capsule == nullptr) {
+    Py_DECREF(arr);
+    throw py::error_already_set();
+  }
+  keep_indices.release();
+  if (PyArray_SetBaseObject(reinterpret_cast<PyArrayObject*>(arr), capsule) <
+      0) {
+    Py_DECREF(arr);
+    throw py::error_already_set();
+  }
 
   return py::make_tuple(py::reinterpret_steal<py::object>(arr), keep_chain_ids,
                         std::move(layout));
@@ -750,6 +791,9 @@ Returns:
 }  // namespace
 
 void RegisterModuleMmcifUtils(pybind11::module m) {
+  if (_import_array() < 0) {
+    throw py::error_already_set();
+  }
   m.def("read_layout", ReadMmcifLayout,
         py::arg("mmcif"),              //
         py::arg("model_id") = "",      //

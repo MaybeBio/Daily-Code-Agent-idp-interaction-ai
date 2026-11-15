@@ -1,0 +1,16 @@
+# Gold dataset: curated disorder annotations from DisProt/MobiDB
+name: gold_curated
+# Fetch proteins that have curated disorder annotations
+query_filter: "curated-disorder-merge"
+# Also fetch proteins with these additional curated features (union)
+additional_filters:
+  - "curated-lip-merge"
+  - "curated-phase_separation-merge"
+  - "curated-binding_mode_disorder_to_disorder-fuzdb"
+max_length: 1022
+# Split: 50/50 valid/test (no train — curated data is for evaluation only)
+split_mode: eval_only
+test_fraction: 0.5
+# Train/eval dedup: drop any eval protein present in this training corpus
+# (fetch full_swissprot first so this parquet exists). Prevents memorization leakage.
+dedup_against: full_swissprot

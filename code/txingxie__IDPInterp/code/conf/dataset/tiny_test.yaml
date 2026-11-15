@@ -1,0 +1,6 @@
+name: tiny_test
+query_filter: null
+reviewed_only: true
+max_proteins: 10
+max_length: 1022
+split_mode: train_only
