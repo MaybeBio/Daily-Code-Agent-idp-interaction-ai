@@ -1,0 +1,115 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 255809,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "NeroJ7",
+      "Yunseo-Lab",
+      "iDylazZ",
+      "marionlxy"
+    ],
+    "event": "mixed",
+    "stars": 18072,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/acme",
+    "who": [
+      "patpolzin"
+    ],
+    "event": "star",
+    "stars": 4087,
+    "language": "Python",
+    "description": "A library of reinforcement learning components and agents",
+    "url": "https://github.com/google-deepmind/acme"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "ohora23"
+    ],
+    "event": "issue",
+    "stars": 1634,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/synthid-text",
+    "who": [
+      "el-varquez"
+    ],
+    "event": "star",
+    "stars": 1256,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/synthid-text"
+  },
+  {
+    "full_name": "google-deepmind/clrs",
+    "who": [
+      "akrentsel"
+    ],
+    "event": "star",
+    "stars": 553,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/clrs"
+  },
+  {
+    "full_name": "THGLab/CSpred",
+    "who": [
+      "CharlesWangCW123"
+    ],
+    "event": "star",
+    "stars": 31,
+    "language": "Python",
+    "description": "UCBShift is a program for predicting chemical shifts for backbone atoms and β-carbon of a protein in solution. It utilizes a machine learning module that makes predictions from features extracted from the 3D structures of the proteins.",
+    "url": "https://github.com/THGLab/CSpred"
+  },
+  {
+    "full_name": "THGLab/IDPForge",
+    "who": [
+      "CharlesWangCW123"
+    ],
+    "event": "star",
+    "stars": 23,
+    "language": "Python",
+    "description": "Disordered protein ensemble prediction",
+    "url": "https://github.com/THGLab/IDPForge"
+  },
+  {
+    "full_name": "THGLab/X-EISD",
+    "who": [
+      "CharlesWangCW123"
+    ],
+    "event": "star",
+    "stars": 4,
+    "language": "Python",
+    "description": "X-EISD – Extended Experimental Inferential Structure Determination",
+    "url": "https://github.com/THGLab/X-EISD"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  }
+]
