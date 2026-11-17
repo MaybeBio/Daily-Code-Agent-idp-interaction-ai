@@ -1,0 +1,81 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "ChangWencai",
+      "cjt0313",
+      "phuchungbhutia"
+    ],
+    "event": "mixed",
+    "stars": 18193,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/weathernext",
+    "who": [
+      "su1phurd"
+    ],
+    "event": "star",
+    "stars": 7747,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/weathernext"
+  },
+  {
+    "full_name": "jeroen/curl",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 235,
+    "language": "C",
+    "description": "A Modern and Flexible Web Client for R",
+    "url": "https://github.com/jeroen/curl"
+  },
+  {
+    "full_name": "KULL-Centre/CALVADOS",
+    "who": [
+      "aozalevsky"
+    ],
+    "event": "star",
+    "stars": 108,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/CALVADOS"
+  },
+  {
+    "full_name": "yehlincho/absolute-stability-predictor",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 92,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/yehlincho/absolute-stability-predictor"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "justog220"
+    ],
+    "event": "star",
+    "stars": 82,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "bindresearch/pkasso",
+    "who": [
+      "sobuelow"
+    ],
+    "event": "issue",
+    "stars": 11,
+    "language": "Python",
+    "description": "pKasso",
+    "url": "https://github.com/bindresearch/pkasso"
+  }
+]
