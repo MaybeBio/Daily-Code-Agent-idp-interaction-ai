@@ -1,0 +1,178 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 256236,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "NicolasChicunque",
+      "TianqiTang1117",
+      "storm-riley"
+    ],
+    "event": "mixed",
+    "stars": 18251,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/deepmind-research",
+    "who": [
+      "paulohjeronim0"
+    ],
+    "event": "star",
+    "stars": 15281,
+    "language": "Jupyter Notebook",
+    "description": "This repository contains implementations and illustrative code to accompany DeepMind publications",
+    "url": "https://github.com/google-deepmind/deepmind-research"
+  },
+  {
+    "full_name": "google-deepmind/alphafold",
+    "who": [
+      "paulohjeronim0"
+    ],
+    "event": "star",
+    "stars": 14946,
+    "language": "Python",
+    "description": "Open source code for AlphaFold 2.",
+    "url": "https://github.com/google-deepmind/alphafold"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "Codnay",
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1638,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Lxsoftroxs",
+      "felixpernegger",
+      "github-actions",
+      "google-cla"
+    ],
+    "event": "mixed",
+    "stars": 1363,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "rstudio/pins-r",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 337,
+    "language": "R",
+    "description": "Pin, discover, and share resources",
+    "url": "https://github.com/rstudio/pins-r"
+  },
+  {
+    "full_name": "r-lib/httr2",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 274,
+    "language": "R",
+    "description": "Make HTTP requests and process their responses. A modern reimagining of httr.",
+    "url": "https://github.com/r-lib/httr2"
+  },
+  {
+    "full_name": "KULL-Centre/CALVADOS",
+    "who": [
+      "aozalevsky"
+    ],
+    "event": "star",
+    "stars": 108,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/CALVADOS"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "justog220"
+    ],
+    "event": "star",
+    "stars": 82,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "google-deepmind/robotics-antigravity-plugin",
+    "who": [
+      "CheolMin-Yoon",
+      "Ericcsr",
+      "J-Oyasumi",
+      "JiahuiLS",
+      "sg6290a-creator",
+      "zihanwang0422"
+    ],
+    "event": "star",
+    "stars": 31,
+    "language": "Python",
+    "description": "GDM Robotics Skills for agentic robotics workflows across simulation and real robots.",
+    "url": "https://github.com/google-deepmind/robotics-antigravity-plugin"
+  },
+  {
+    "full_name": "bindresearch/pkasso",
+    "who": [
+      "sobuelow"
+    ],
+    "event": "pr",
+    "stars": 16,
+    "language": "Python",
+    "description": "pKasso",
+    "url": "https://github.com/bindresearch/pkasso"
+  },
+  {
+    "full_name": "evo-design/antiGen",
+    "who": [
+      "rhyschappell"
+    ],
+    "event": "star",
+    "stars": 12,
+    "language": "Python",
+    "description": "Codebase for: Forecasting viral antigenic evolution from phylogenetic trees (Specht et al., 2026)",
+    "url": "https://github.com/evo-design/antiGen"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "bindresearch/unipkainfer",
+    "who": [
+      "sobuelow"
+    ],
+    "event": "pr",
+    "stars": 0,
+    "language": "Python",
+    "description": "Inference-only package of Uni-pKa, Uni-Mol, and a minimal Uni-Core runtime",
+    "url": "https://github.com/bindresearch/unipkainfer"
+  }
+]

@@ -1,0 +1,49 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-18 10:36:03 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-18 10:36:03 | 💬 google-cla created issue 'fix(OEIS/114216): conjecture is false (a(78493252) = 1)' in google-deepmind/formal-conjectures
+2026-11-18 10:35:57 | 🔀 Lxsoftroxs opened PR in google-deepmind/formal-conjectures
+2026-11-18 10:35:27 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-18 10:35:27 | 💬 google-cla created issue 'fix(OEIS/108864): conjecture is false (815634435 is an odd term)' in google-deepmind/formal-conjectures
+2026-11-18 10:35:21 | 🔀 Lxsoftroxs opened PR in google-deepmind/formal-conjectures
+2026-11-18 10:35:11 | 🐛 Lxsoftroxs opened issue in google-deepmind/formal-conjectures: 'OEIS A108864: `conjecture` is false (815634435 is an odd member after 1155)'
+2026-11-18 10:32:16 | 🐛 thowell closed issue in google-deepmind/mujoco_warp: '`ray` misses meshes and misplaces heightfield hits when `vec` is not unit length'
+2026-11-18 10:31:53 | 🍴 Lxsoftroxs forked google-deepmind/formal-conjectures
+2026-11-18 10:29:36 | 🔀 Codnay opened PR in google-deepmind/mujoco_warp
+2026-11-18 10:27:01 | ⭐️ CheolMin-Yoon starred google-deepmind/robotics-antigravity-plugin
+2026-11-18 10:25:22 | ⭐️ sg6290a-creator starred google-deepmind/robotics-antigravity-plugin
+2026-11-18 10:13:35 | ⭐️ storm-riley starred google-deepmind/mujoco
+2026-11-18 10:12:39 | 🔀 TianqiTang1117 opened PR in google-deepmind/mujoco
+2026-11-18 10:10:48 | ⭐️ JiahuiLS starred google-deepmind/robotics-antigravity-plugin
+2026-11-18 10:10:40 | ⭐️ NicolasChicunque starred google-deepmind/mujoco
+2026-11-18 10:07:36 | ⭐️ rhyschappell starred evo-design/antiGen
+2026-11-18 10:06:56 | ⭐️ J-Oyasumi starred google-deepmind/robotics-antigravity-plugin
+2026-11-18 10:06:56 | ⭐️ zihanwang0422 starred google-deepmind/robotics-antigravity-plugin
+2026-11-18 10:04:29 | 🍴 TianqiTang1117 forked google-deepmind/mujoco
+2026-11-18 10:00:41 | ⭐️ Ericcsr starred google-deepmind/robotics-antigravity-plugin
+2026-11-18 09:55:27 | 💬 TianqiTang1117 created issue 'USD decoder: PhysicsFilteredPairsAPI fails or is ignored for collider endpoints, and newton:selfCollisionEnabled is not read' in google-deepmind/mujoco
+2026-11-18 09:52:32 | ⭐️ paulohjeronim0 starred google-deepmind/alphafold
+2026-11-18 09:45:49 | ⭐️ paulohjeronim0 starred google-deepmind/deepmind-research
+2026-11-18 07:49:32 | 🔹 hadley performed PullRequestReviewCommentEvent on rstudio/pins-r
+2026-11-18 03:04:51 | 🔀 sobuelow merged PR in bindresearch/pkasso
+2026-11-18 03:02:10 | 🔀 sobuelow merged PR in bindresearch/unipkainfer
+2026-11-18 02:55:03 | 🔀 sobuelow opened PR in bindresearch/pkasso
+2026-11-18 02:29:38 | 🔀 sobuelow opened PR in bindresearch/unipkainfer
+2026-11-18 02:17:11 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-18 02:12:11 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-18 01:52:53 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-18 01:42:52 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-18 01:29:19 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-18 01:27:11 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-17 22:34:21 | 💬 hadley created issue 'Redact more secrets by default' in r-lib/httr2
+2026-11-17 22:34:21 | 🐛 hadley closed issue in r-lib/httr2: 'Redact more secrets by default'
+2026-11-17 21:35:44 | 💬 hadley created issue 'Support asynchronous opening of streaming connections' in r-lib/httr2
+2026-11-17 21:35:27 | 🐛 hadley closed issue in r-lib/httr2: 'Support asynchronous opening of streaming connections'
+2026-11-17 21:35:23 | 🔀 hadley merged PR in r-lib/httr2
+2026-11-17 09:17:00 | 🚀 torvalds pushed to torvalds/linux
+    - [666539e] (expanded) Merge tag 'assoc-array-fixes-v2'
+2026-11-17 04:05:15 | ⭐️ aozalevsky starred KULL-Centre/CALVADOS
+2026-11-17 02:30:02 | 🚀 hadley pushed to r-lib/httr2
+    - [51cd1d2] (expanded) Speed up slow tests (#911)
+2026-11-17 02:01:06 | 🚀 hadley pushed to r-lib/httr2
+    - [1b617c0] (expanded) Drive shared stream app from the request URL
