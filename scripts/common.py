@@ -42,6 +42,19 @@ def data_dir(*parts: str) -> str:
     os.makedirs(d, exist_ok=True)
     return os.path.join(d, parts[-1])
 
+def sources(row) -> list[str]:
+    """统一 source 的读法:老数据可能是字符串,新数据是列表。"""
+    s = row.get("source")
+    if isinstance(s, str):
+        return [s] if s else []
+    if isinstance(s, (list, tuple)):
+        return [str(x) for x in s if x]
+    return []
+
+def has_source(row, name: str) -> bool:
+    """仓库是否来自某个来源;两者都命中时 source 会是 ["watchlist", "search"]。"""
+    return name in sources(row)
+
 def load_json(path: str):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)

@@ -46,10 +46,11 @@ def test_run_tags_source_watchlist_vs_search(monkeypatch, tmp_path):
                         lambda fn: {"pushed_at": "2026-10-03", "stars": 1,
                                     "language": "", "description": "", "url": "u"})
     out = merge.run({"window_days": 7}, "2026-10-04")
-    assert {r["full_name"]: r["source"] for r in out} == {"wl/a": "watchlist", "srch/b": "search"}
+    assert {r["full_name"]: r["source"] for r in out} == {
+        "wl/a": ["watchlist"], "srch/b": ["search"]}
 
 
-def test_run_overlap_stays_watchlist(monkeypatch, tmp_path):
+def test_run_overlap_unions_sources(monkeypatch, tmp_path):
     monkeypatch.setattr(merge.common, "ROOT", str(tmp_path))
     monkeypatch.setattr(merge.common, "today", lambda: "2026-10-04")
     (tmp_path / "data" / "daily").mkdir(parents=True)
@@ -58,4 +59,4 @@ def test_run_overlap_stays_watchlist(monkeypatch, tmp_path):
     merge.common.dump_json(str(tmp_path / "data" / "search" / "2026-10-04.json"),
                            [{"full_name": "a/b", "pushed_at": "2026-10-03"}])
     out = merge.run({"window_days": 7}, "2026-10-04")
-    assert out[0]["source"] == "watchlist"    # daily 先入池,source 保持 watchlist
+    assert out[0]["source"] == ["watchlist", "search"]   # 两边都命中,source 取并集

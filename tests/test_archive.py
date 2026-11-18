@@ -575,3 +575,65 @@ def test_run_noagent_archives_only_watchlist(monkeypatch, tmp_path):
                       wiki=lambda s, fn, d: True)
     assert [r["full_name"] for r in out] == ["wl/a", "wl/c"]    # watchlist 按 stars 降序
     assert set(copy_calls) == {"wl/a", "wl/c"}                  # 并发下 copy 顺序不保证,只断言集合
+
+
+# ── wiki 错误分类 / 超时(2026-11 修复) ──────────────────────────────
+
+def test_zread_no_wiki_id_is_not_indexed_and_submits(monkeypatch):
+    """zread 未索引时文案是 "no wiki_id for X",必须识别为 not_indexed 并触发 submit。"""
+    calls = []
+
+    def fake(cmd, **kw):
+        calls.append(cmd)
+        if "cp" in cmd:
+            raise subprocess.CalledProcessError(1, cmd, stderr="no wiki_id for a/b")
+        return None  # submit 成功
+
+    monkeypatch.setattr(archive.subprocess, "run", fake)
+    monkeypatch.setattr(archive.time, "sleep", lambda s: None)
+    monkeypatch.setenv("ZREAD_TOKEN", "tok")
+    assert archive.export_wiki("zread", "a/b", "/d") == "submitted"
+    assert [c[1:3] for c in calls] == [["zread", "cp"], ["zread", "submit"]]
+
+
+def test_codewiki_missing_container_is_not_indexed(monkeypatch):
+    """codewiki 未索引文案是 "missing wiki container",应判 not_indexed 且只试一次。"""
+    calls = []
+
+    def fake(cmd, **kw):
+        calls.append(cmd)
+        raise subprocess.CalledProcessError(1, cmd, stderr="missing wiki container")
+
+    monkeypatch.setattr(archive.subprocess, "run", fake)
+    monkeypatch.setattr(archive.time, "sleep", lambda s: None)
+    assert archive.export_wiki("codewiki", "a/b", "/d") == "not_indexed"
+    assert len(calls) == 1          # 永久失败不重试
+
+
+def test_run_retry_timeout_breaks_immediately(monkeypatch):
+    """超时要中止重试,否则 5 次 × 300s 会把 weekly 预算吃光。"""
+    calls = []
+
+    def fake(cmd, **kw):
+        calls.append(cmd)
+        raise subprocess.TimeoutExpired(cmd, kw.get("timeout"))
+
+    monkeypatch.setattr(archive.subprocess, "run", fake)
+    monkeypatch.setattr(archive.time, "sleep", lambda s: None)
+    ok, err = archive._run_retry(["repowiki-cli", "deepwiki", "cp", "a/b", "/d"],
+                                 "wiki:deepwiki", classify=archive._wiki_kind)
+    assert ok is False and isinstance(err, subprocess.TimeoutExpired)
+    assert len(calls) == 1
+
+
+def test_run_retry_logs_stdout_stderr(monkeypatch, capsys):
+    """日志必须带原始 stderr,而不是只有 'returned non-zero exit status'。"""
+    def fake(cmd, **kw):
+        raise subprocess.CalledProcessError(1, cmd, stderr="Error: real reason here")
+
+    monkeypatch.setattr(archive.subprocess, "run", fake)
+    monkeypatch.setattr(archive.time, "sleep", lambda s: None)
+    archive._run_retry(["cmd"], "wiki:deepwiki", classify=archive._wiki_kind)
+    err = capsys.readouterr().err
+    assert "real reason here" in err
+    assert "not-indexed" not in err    # 这条是普通 failed,不是未索引

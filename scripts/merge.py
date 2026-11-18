@@ -34,13 +34,17 @@ def run(cfg: dict, date: str, *, window_days: int | None = None,
     for f in _recent_daily(date, wd, include_run_day):
         for r in common.load_json(f):
             r = dict(r)
-            r["source"] = "watchlist"   # 每日 feed 来源:noagent 时归档/wiki 只留它
+            # source 是列表:一个仓库可能同时来自关注清单和搜索。
+            r["source"] = ["watchlist"]
             pool.setdefault(r["full_name"], r)
     search_path = common.data_dir("search", f"{search_date or date}.json")
     if os.path.exists(search_path):
         for r in common.load_json(search_path):
-            cur = pool.setdefault(r["full_name"], dict(r))
-            cur.setdefault("source", "search")
+            cur = pool.setdefault(r["full_name"], {**r, "source": []})
+            srcs = common.sources(cur)
+            if "search" not in srcs:
+                srcs.append("search")
+            cur["source"] = srcs
             # 盲搜带 pushed_at,优先补全
             for k in ("pushed_at", "stars", "language", "description", "url"):
                 cur[k] = r.get(k) or cur.get(k, "")

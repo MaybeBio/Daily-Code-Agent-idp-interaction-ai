@@ -78,7 +78,7 @@ def run(cfg, date, client=None, fetch=None, fetch_tree=None, fetch_deps=None, ca
         keepers = archive.threshold(scored, min_score)
     else:
         # noagent:不生成 Code Card,只抓 README 喂站点;范围与归档一致(仅 watchlist)。
-        keepers = [r for r in scored if r.get("source") == "watchlist"]
+        keepers = [r for r in scored if common.has_source(r, "watchlist")]
         keepers.sort(key=lambda r: r.get("stars") or 0, reverse=True)
 
     def work(row):

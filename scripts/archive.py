@@ -83,15 +83,27 @@ _PLAIN_EXTS = frozenset({"", ".md", ".markdown", ".rst", ".txt",
 _CLASS_LABEL = {"source": "源码", "build": "构建/配置", "docs": "文档",
                 "readme": "README", "tree": "目录树"}
 
-# 仓库在该 wiki 源上尚未被索引(404/not indexed),与瞬时网络故障区分。
+# 仓库在该 wiki 源上尚未被索引,与瞬时网络故障区分。
+# 三个源的真实文案(repowiki-cli 0.2.x):
+#   deepwiki  → "Repository not found. Visit ... to index it."
+#   codewiki  → "missing wiki container"
+#   zread     → "no wiki_id for owner/repo"
+# 后两条以前没进 marker 表,被误判成 failed 白重试 5 次,zread 也因此永远
+# 不会触发 submit。这里补齐。
 _NOT_INDEXED_MARKERS = (
-    "404", "not found", "not indexed", "no pages", "no wiki",
+    "404", "not found", "not indexed", "not_indexed", "no pages", "no wiki",
+    "no wiki_id", "no repo_id", "missing wiki container",
     "no documentation", "does not exist", "is empty", "empty repository",
 )
 # 永久性失败(索引缺失 + 认证/配置错误):重试也救不回,直接放弃。
 _PERMANENT_MARKERS = _NOT_INDEXED_MARKERS + (
     "invalid", "authentication failed", "bad credentials", "requires authentication",
 )
+
+# 单次外部命令上限。repowiki-cli 导出大仓库合法地要 2 分钟以上
+# (实测 codewiki facebook/react >120s),所以不能设太紧;但必须设,
+# 否则一个挂住的调用会占死线程直到整个 weekly 撞 timeout-minutes。
+NET_TIMEOUT_SECONDS = 300
 
 def threshold(scored, min_score):
     keep = [r for r in scored if r.get("score") is not None and r["score"] >= min_score]
@@ -119,27 +131,51 @@ def _has_snapshot(base, source):
 def _error_text(err):
     if isinstance(err, subprocess.CalledProcessError):
         return f"{err.stderr or ''} {err.stdout or ''}".lower()
+    if isinstance(err, subprocess.TimeoutExpired):
+        return "timeout"
     return str(err).lower()
+
+def _error_detail(err) -> str:
+    """日志里显示的原始错误文本(保留大小写,优先 stderr)。"""
+    if isinstance(err, subprocess.TimeoutExpired):
+        return f"timeout after {err.timeout}s"
+    if isinstance(err, subprocess.CalledProcessError):
+        text = (err.stderr or err.stdout or "").strip()
+        return text or f"exit {err.returncode}"
+    return str(err)
 
 def _is_not_indexed(err):
     return any(m in _error_text(err) for m in _NOT_INDEXED_MARKERS)
 
 def _is_permanent(err):
-    return any(m in _error_text(err) for m in _PERMANENT_MARKERS)
+    # 超时也不重试:慢到 NET_TIMEOUT_SECONDS 的仓库再试一次只会再等一遍。
+    return isinstance(err, subprocess.TimeoutExpired) or any(
+        m in _error_text(err) for m in _PERMANENT_MARKERS)
 
-def _run_retry(cmd, tag, attempts=5, env=None):
+def _wiki_kind(err) -> str:
+    """日志标签:区分「未索引」和「真失败」,避免整屏 failed 误导。"""
+    if isinstance(err, subprocess.TimeoutExpired):
+        return "timeout"
+    return "not-indexed" if _is_not_indexed(err) else "failed"
+
+def _run_retry(cmd, tag, attempts=5, env=None, timeout=NET_TIMEOUT_SECONDS,
+               classify=None):
     last = None
     for i in range(attempts):
         try:
-            subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
+            subprocess.run(cmd, capture_output=True, text=True, check=True,
+                           env=env, timeout=timeout)
             return True, None
         except Exception as e:
             last = e
-            if _is_permanent(e):      # 404/无此仓库/认证错 → 别再白试
+            if _is_permanent(e):      # 404/未索引/认证错/超时 → 别再白试
                 break
             if i < attempts - 1:
                 time.sleep(2 ** (i + 2) + random.random())
-    print(f"[{tag} failed] {' '.join(cmd)}: {last}", file=sys.stderr)
+    kind = classify(last) if classify else "failed"
+    # 打印 stderr 正文,而不是只给 "returned non-zero exit status N"。
+    print(f"[{tag} {kind}] {' '.join(cmd)}: {_error_detail(last)[:300]}",
+          file=sys.stderr)
     return False, last
 
 def _strip_lfs_attrs(dest):
@@ -674,7 +710,7 @@ def run(cfg, date, copy=None, wiki=None, stat_date=None, in_week=None):
         keep = threshold(scored, min_score)
     else:
         # noagent:没有打分,归档/wiki 只留 watchlist 来源;搜索仓库不进站点/wiki。
-        keep = [r for r in scored if r.get("source") == "watchlist"]
+        keep = [r for r in scored if common.has_source(r, "watchlist")]
         keep.sort(key=lambda r: r.get("stars") or 0, reverse=True)
     # 低并发:网络工具(tree API/degit/repowiki-cli)串行太慢,但太高会触发 repowiki 限流。
     workers = max(1, int(cfg.get("archive", {}).get("concurrency", 4)))
@@ -705,13 +741,15 @@ def main():
     print("; ".join(parts))
 
 def _run_json(cmd):
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True,
+                       timeout=NET_TIMEOUT_SECONDS)
     if r.returncode != 0:
         raise RuntimeError(f"cmd failed ({r.returncode}): {' '.join(cmd)}")
     return json.loads(r.stdout)
 
 def _run_text(cmd):
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True,
+                       timeout=NET_TIMEOUT_SECONDS)
     if r.returncode != 0:
         raise RuntimeError(f"cmd failed ({r.returncode}): {' '.join(cmd)}")
     return r.stdout.strip()
@@ -772,7 +810,8 @@ def _in_week(d, run_date):
     return monday <= d <= monday + dt.timedelta(days=6)
 
 def export_wiki(source, full_name, dest):
-    ok, err = _run_retry(["repowiki-cli", source, "cp", full_name, dest], f"wiki:{source}")
+    ok, err = _run_retry(["repowiki-cli", source, "cp", full_name, dest],
+                         f"wiki:{source}", classify=_wiki_kind)
     if ok:
         return "ok"
     if source == "zread" and _is_not_indexed(err):
