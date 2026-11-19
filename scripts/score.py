@@ -11,12 +11,12 @@ def _score_one(row, client, prompts, model, fetch, fetch_tree):
     return agent.score_repo(client, model, prompts, text)
 
 def _wanted(row, cfg):
-    """该仓库是否参与打分:llm.score_sources = all(默认) | search | watchlist。
+    """该仓库是否参与打分:llm.score_sources = search(默认) | all | watchlist。
 
     两者都命中的仓库 source 是 ["watchlist","search"],任一模式都会选中。
     老数据没有 source 字段时保守处理为参与打分,避免静默丢仓库。
     """
-    mode = str((cfg.get("llm") or {}).get("score_sources", "all") or "all").lower()
+    mode = str((cfg.get("llm") or {}).get("score_sources", "search") or "search").lower()
     if mode in ("all", "any"):
         return True
     srcs = common.sources(row)

@@ -139,8 +139,16 @@ def test_run_scores_only_search_when_configured(monkeypatch, tmp_path):
     assert [r["full_name"] for r in rows] == ["s/1", "w/2", "b/3"]   # 顺序不变
 
 
-def test_run_scores_all_by_default(monkeypatch, tmp_path):
+def test_run_default_is_search(monkeypatch, tmp_path):
     by, seen, _ = _run_sources(monkeypatch, tmp_path)
+    assert by["s/1"]["score"] == 8
+    assert by["b/3"]["score"] == 8       # 含 search
+    assert by["w/2"]["score"] is None    # 默认不打量仅 watchlist 的
+    assert len(seen) == 2
+
+
+def test_run_scores_all_when_configured(monkeypatch, tmp_path):
+    by, seen, _ = _run_sources(monkeypatch, tmp_path, "all")
     assert all(by[n]["score"] == 8 for n in ("s/1", "w/2", "b/3"))
     assert len(seen) == 3
 

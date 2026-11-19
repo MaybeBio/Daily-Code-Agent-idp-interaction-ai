@@ -18,15 +18,17 @@ github_repo: MaybeBio/Daily-Code-Agent-idp-interaction-ai
 github_branch: main
 search_placeholder: 如 相分离、intrinsically disordered、Python
 llm:
+  # 并发只决定同时等待的线程数;真正的吞吐由 agent.py 的全局 8 次/分钟限速封顶。
+  # 不要调很低:请求耗时 5~15s,线程太少反而喂不满限速。
   concurrency: 8
   min_score: 5
   # noagent 降级开关:false 时跳过 LLM(打分/Code Card)。issue 仍全量列仓库,
   # 但站点/归档/wiki 只留 watchlist 来源;配合 archive.repo_copy: readme 一起用。
   # api 欠费/不可用时手动切 false,重跑该周 action 即可。
   enabled: true
-  # 参与 LLM 打分的来源:all(默认)|search|watchlist。
-  # search 只打搜索命中的仓库,watchlist 只打关注流。
-  score_sources: all
+  # 参与 LLM 打分的来源:search(默认)|all|watchlist。
+  # search 只打搜索命中的仓库,避免给关注流噪声白花配额。
+  score_sources: search
 issue:
   # 周报 Issue 的显示范围:
   #   all  = 列出全部候选(默认)
