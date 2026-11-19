@@ -1,0 +1,59 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-19 10:09:13 | ⭐️ newtwent starred google-deepmind/alphagenome_research
+2026-11-19 10:08:39 | ⭐️ hushuguo starred google-deepmind/robotics-antigravity-plugin
+2026-11-19 10:07:19 | ⭐️ sweet00000 starred google-deepmind/language_modeling_is_compression
+2026-11-19 09:56:04 | ⭐️ ljh2026 starred google-deepmind/mujoco
+2026-11-19 09:52:41 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-19 09:52:41 | 🔀 MichalKwiatkowskiUniBonn opened PR in google-deepmind/formal-conjectures
+2026-11-19 09:52:25 | ⭐️ royalrexwang starred google-deepmind/robotics-antigravity-plugin
+2026-11-19 09:44:33 | 🍴 MichalKwiatkowskiUniBonn forked google-deepmind/formal-conjectures
+2026-11-19 09:44:13 | ⭐️ magnusdtd starred google-deepmind/mujoco
+2026-11-19 09:20:40 | ⭐️ wrh2048470785 starred google-deepmind/mujoco
+2026-11-19 09:01:41 | ⭐️ joon-stack starred google-deepmind/robotics-antigravity-plugin
+2026-11-19 08:56:18 | ⭐️ rky0930 starred google-deepmind/robotics-antigravity-plugin
+2026-11-19 08:55:24 | 🍴 b2nhbg9v4r-oss forked google-deepmind/weathernext
+2026-11-19 08:55:15 | ⭐️ b2nhbg9v4r-oss starred google-deepmind/weathernext
+2026-11-19 08:54:40 | 🐛 kepano closed issue in kepano/defuddle: '[Bug] Multi-line text inside double quotes breaks YAML frontmatter parsing in Obsidian'
+2026-11-19 08:54:39 | 💬 kepano created issue '[Bug] Multi-line text inside double quotes breaks YAML frontmatter parsing in Obsidian' in kepano/defuddle
+2026-11-19 08:54:39 | 🐛 kepano opened issue in obsidianmd/obsidian-clipper: 'Multi-line text inside double quotes breaks YAML frontmatter'
+2026-11-19 08:54:12 | ⭐️ pinkbubblebubble starred google-deepmind/mujoco
+2026-11-19 08:33:45 | 💬 kepano created issue 'Missing images on figure tag' in kepano/defuddle
+2026-11-19 08:33:30 | 💬 kepano created issue 'Bug: Line breaks are missing/swallowed when clipping posts from x.com (Twitter)' in kepano/defuddle
+2026-11-19 08:33:26 | 💬 kepano created issue '`<picture>` handling sets `img src` to the smallest srcset candidate in HTML output' in kepano/defuddle
+2026-11-19 08:25:27 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-19 08:23:28 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-19 08:21:41 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-19 08:16:42 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-19 08:15:54 | 🔹 felixpernegger performed PullRequestReviewCommentEvent on google-deepmind/formal-conjectures
+2026-11-19 00:46:57 | 🔹 hadley performed PullRequestReviewEvent on RConsortium/S7
+2026-11-19 00:46:54 | 🔹 hadley performed PullRequestReviewCommentEvent on RConsortium/S7
+2026-11-19 00:15:14 | 🔹 hadley performed PullRequestReviewEvent on rstudio/pins-r
+2026-11-19 00:12:18 | 🔹 hadley performed PullRequestReviewCommentEvent on rstudio/pins-r
+2026-11-19 00:09:59 | 🏷️  sobuelow published release v0.6.5 in bindresearch/pkasso
+2026-11-19 00:08:26 | 🔹 hadley performed PullRequestReviewCommentEvent on rstudio/pins-r
+2026-11-19 00:02:32 | 💬 sobuelow created issue 'question about the model weights' in bindresearch/pkasso
+2026-11-18 23:17:37 | 💬 hadley created issue 'LHS of property assignment evaluates twice' in RConsortium/S7
+2026-11-18 23:14:04 | 💬 hadley created issue 'LHS of property assignment evaluates twice' in RConsortium/S7
+2026-11-18 20:26:07 | 🔀 sobuelow merged PR in bindresearch/pkasso
+2026-11-18 20:25:41 | 🔀 sobuelow opened PR in bindresearch/pkasso
+2026-11-18 18:56:29 | 🔹 adenzler-nvidia performed PullRequestReviewCommentEvent on google-deepmind/mujoco_warp
+2026-11-18 18:56:29 | 🔹 adenzler-nvidia performed PullRequestReviewCommentEvent on google-deepmind/mujoco_warp
+2026-11-18 18:56:29 | 🔹 adenzler-nvidia performed PullRequestReviewCommentEvent on google-deepmind/mujoco_warp
+2026-11-18 18:56:29 | 🔹 adenzler-nvidia performed PullRequestReviewCommentEvent on google-deepmind/mujoco_warp
+2026-11-18 03:05:59 | 🔹 sobuelow performed DeleteEvent on bindresearch/unipkainfer
+2026-11-18 03:04:57 | 🔹 sobuelow performed DeleteEvent on bindresearch/pkasso
+2026-11-18 03:04:53 | 🚀 sobuelow pushed to bindresearch/pkasso
+    - [0a8e804] (expanded) Merge pull request #65 from bindresearch/patch
+2026-11-18 03:04:51 | 🔀 sobuelow merged PR in bindresearch/pkasso
+2026-11-18 03:02:10 | 🔀 sobuelow merged PR in bindresearch/unipkainfer
+2026-11-18 02:58:28 | 🚀 ryanemenecker pushed to idptools/parrot
+    - [38b0072] (expanded) added conditioned kernels and conditioned blending as well as nested cross validation support
+2026-11-18 02:55:03 | 🔀 sobuelow opened PR in bindresearch/pkasso
+2026-11-18 02:54:18 | 🚀 sobuelow pushed to bindresearch/unipkainfer
+    - [237b826] (expanded) Download discplaimer
+2026-11-18 02:50:29 | 🆕 sobuelow created branch 'patch' at bindresearch/pkasso
+2026-11-18 02:32:03 | 🚀 sobuelow pushed to bindresearch/unipkainfer
+    - [9aca07f] (expanded) Update version
+2026-11-18 02:29:38 | 🔀 sobuelow opened PR in bindresearch/unipkainfer
+2026-11-18 02:29:32 | 🆕 sobuelow created branch 'sobuelow-patch-1' at bindresearch/unipkainfer

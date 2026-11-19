@@ -1,0 +1,219 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "ljh2026",
+      "magnusdtd",
+      "pinkbubblebubble",
+      "wrh2048470785"
+    ],
+    "event": "star",
+    "stars": 18294,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "kepano/defuddle",
+    "who": [
+      "kepano"
+    ],
+    "event": "issue",
+    "stars": 10106,
+    "language": "TypeScript",
+    "description": "Get the main content of any page as Markdown.",
+    "url": "https://github.com/kepano/defuddle"
+  },
+  {
+    "full_name": "google-deepmind/weathernext",
+    "who": [
+      "b2nhbg9v4r-oss"
+    ],
+    "event": "mixed",
+    "stars": 7752,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/weathernext"
+  },
+  {
+    "full_name": "obsidianmd/obsidian-clipper",
+    "who": [
+      "kepano"
+    ],
+    "event": "issue",
+    "stars": 5618,
+    "language": "TypeScript",
+    "description": "Highlight and capture the web in your favorite browser. The official Web Clipper extension for Obsidian.",
+    "url": "https://github.com/obsidianmd/obsidian-clipper"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "adenzler-nvidia"
+    ],
+    "event": "other",
+    "stars": 1640,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "MichalKwiatkowskiUniBonn",
+      "felixpernegger",
+      "github-actions"
+    ],
+    "event": "mixed",
+    "stars": 1365,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/alphagenome_research",
+    "who": [
+      "newtwent"
+    ],
+    "event": "star",
+    "stars": 931,
+    "language": "Python",
+    "description": "Research code accompanying AlphaGenome ",
+    "url": "https://github.com/google-deepmind/alphagenome_research"
+  },
+  {
+    "full_name": "RConsortium/S7",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 497,
+    "language": "R",
+    "description": "S7: a new OO system for R",
+    "url": "https://github.com/RConsortium/S7"
+  },
+  {
+    "full_name": "rstudio/pins-r",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 337,
+    "language": "R",
+    "description": "Pin, discover, and share resources",
+    "url": "https://github.com/rstudio/pins-r"
+  },
+  {
+    "full_name": "google-deepmind/language_modeling_is_compression",
+    "who": [
+      "sweet00000"
+    ],
+    "event": "star",
+    "stars": 208,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/language_modeling_is_compression"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "sakana-yang"
+    ],
+    "event": "star",
+    "stars": 83,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "google-deepmind/robotics-antigravity-plugin",
+    "who": [
+      "hushuguo",
+      "joon-stack",
+      "rky0930",
+      "royalrexwang"
+    ],
+    "event": "star",
+    "stars": 72,
+    "language": "Python",
+    "description": "GDM Robotics Skills for agentic robotics workflows across simulation and real robots.",
+    "url": "https://github.com/google-deepmind/robotics-antigravity-plugin"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "push",
+    "stars": 22,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "bindresearch/pkasso",
+    "who": [
+      "sobuelow"
+    ],
+    "event": "mixed",
+    "stars": 20,
+    "language": "Python",
+    "description": "pKasso",
+    "url": "https://github.com/bindresearch/pkasso"
+  },
+  {
+    "full_name": "holehouse-lab/soursop",
+    "who": [
+      "Shi30"
+    ],
+    "event": "fork",
+    "stars": 13,
+    "language": "Jupyter Notebook",
+    "description": "SOURSOP is an analysis suite for molecular simulations of intrinsically disordered proteins",
+    "url": "https://github.com/holehouse-lab/soursop"
+  },
+  {
+    "full_name": "tiwarylab/mahler",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 9,
+    "language": "Python",
+    "description": "MAHLER: Metadynamics-Anchored Hybrid Learning for Engineering off-Rates",
+    "url": "https://github.com/tiwarylab/mahler"
+  },
+  {
+    "full_name": "holehouse-lab/PIMMS",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 1,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/holehouse-lab/PIMMS"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "bindresearch/unipkainfer",
+    "who": [
+      "sobuelow"
+    ],
+    "event": "mixed",
+    "stars": 0,
+    "language": "Python",
+    "description": "Inference-only package of Uni-pKa, Uni-Mol, and a minimal Uni-Core runtime",
+    "url": "https://github.com/bindresearch/unipkainfer"
+  }
+]
