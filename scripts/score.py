@@ -10,6 +10,18 @@ def _score_one(row, client, prompts, model, fetch, fetch_tree):
         return {"score": 0, "one_liner": "无 README/描述/目录树,跳过"}
     return agent.score_repo(client, model, prompts, text)
 
+def _wanted(row, cfg):
+    """该仓库是否参与打分:llm.score_sources = all(默认) | search | watchlist。
+
+    两者都命中的仓库 source 是 ["watchlist","search"],任一模式都会选中。
+    老数据没有 source 字段时保守处理为参与打分,避免静默丢仓库。
+    """
+    mode = str((cfg.get("llm") or {}).get("score_sources", "all") or "all").lower()
+    if mode in ("all", "any"):
+        return True
+    srcs = common.sources(row)
+    return (mode in srcs) if srcs else True
+
 def run(cfg, date, client=None, fetch=None, fetch_tree=None):
     fetch = fetch or gh.fetch_readme
     fetch_tree = fetch_tree or gh.fetch_tree
@@ -22,11 +34,18 @@ def run(cfg, date, client=None, fetch=None, fetch_tree=None):
                for row in candidates]
         common.dump_json(common.data_dir("scored", f"{date}.json"), out)
         return out
+    to_score = [r for r in candidates if _wanted(r, cfg)]
+    if not to_score:
+        out = [{**row, "score": None,
+                "one_liner": (row.get("description") or "").strip()}
+               for row in candidates]
+        common.dump_json(common.data_dir("scored", f"{date}.json"), out)
+        return out
     client = client if client is not None else agent.make_client()
     prompts = load_prompts(os.path.join(common.ROOT, "prompts.yaml"))
     model = agent.model_name()
-    out = []
     done, lock = 0, threading.Lock()
+    total = len(to_score)
     def work(row):
         nonlocal done
         try:
@@ -39,11 +58,20 @@ def run(cfg, date, client=None, fetch=None, fetch_tree=None):
             res = {"score": None, "one_liner": "[llm failed]"}
         with lock:
             done += 1
-            if done % 100 == 0 or done == len(candidates):
-                print(f"[score] {done}/{len(candidates)}", flush=True)
+            if done % 100 == 0 or done == total:
+                print(f"[score] {done}/{total}", flush=True)
         return {**row, **res}
     with ThreadPoolExecutor(max_workers=int(cfg.get("llm", {}).get("concurrency", 8))) as ex:
-        out = list(ex.map(work, candidates))
+        scored_rows = list(ex.map(work, to_score))
+    # 未入选来源的仓库保留在 scored 里(score=None),下游 threshold 会自动排除;
+    # 输出顺序仍与 candidates 一致。
+    by_name = {r["full_name"]: r for r in scored_rows}
+    out = []
+    for row in candidates:
+        hit = by_name.get(row["full_name"])
+        out.append(hit if hit is not None else {
+            **row, "score": None,
+            "one_liner": (row.get("description") or "").strip()})
     common.dump_json(common.data_dir("scored", f"{date}.json"), out)
     return out
 

@@ -102,3 +102,52 @@ def test_run_noagent_passthrough(monkeypatch, tmp_path):
     assert rows[1]["one_liner"] == ""
     saved = score.common.load_json(str(tmp_path / "data" / "scored" / "2026-10-04.json"))
     assert saved[0]["score"] is None
+
+
+def _cand(name, source):
+    return {"full_name": name, "url": "u", "pushed_at": "t", "stars": 1,
+            "language": "", "description": "", "source": source}
+
+
+def _run_sources(monkeypatch, tmp_path, score_sources=None):
+    monkeypatch.setattr(score.common, "ROOT", str(tmp_path))
+    score.common.dump_json(str(tmp_path / "data" / "candidates" / "2026-10-04.json"),
+                           [_cand("s/1", ["search"]),
+                            _cand("w/2", ["watchlist"]),
+                            _cand("b/3", ["watchlist", "search"])])
+    monkeypatch.setattr(score, "load_prompts", lambda p: PROMPTS)
+    seen = []
+
+    def fake(client, model, prompts, text):
+        seen.append(text)
+        return {"score": 8, "one_liner": "n"}
+
+    monkeypatch.setattr(score.agent, "score_repo", fake)
+    cfg = {**CFG, "llm": dict(CFG["llm"])}
+    if score_sources:
+        cfg["llm"]["score_sources"] = score_sources
+    rows = score.run(cfg, "2026-10-04", client=object(), fetch=lambda fn: fn)
+    return {r["full_name"]: r for r in rows}, seen, rows
+
+
+def test_run_scores_only_search_when_configured(monkeypatch, tmp_path):
+    by, seen, rows = _run_sources(monkeypatch, tmp_path, "search")
+    assert by["s/1"]["score"] == 8
+    assert by["b/3"]["score"] == 8       # 两边都命中,含 search 照样打
+    assert by["w/2"]["score"] is None    # 仅 watchlist 被跳过
+    assert len(seen) == 2
+    assert [r["full_name"] for r in rows] == ["s/1", "w/2", "b/3"]   # 顺序不变
+
+
+def test_run_scores_all_by_default(monkeypatch, tmp_path):
+    by, seen, _ = _run_sources(monkeypatch, tmp_path)
+    assert all(by[n]["score"] == 8 for n in ("s/1", "w/2", "b/3"))
+    assert len(seen) == 3
+
+
+def test_run_scores_only_watchlist_when_configured(monkeypatch, tmp_path):
+    by, seen, _ = _run_sources(monkeypatch, tmp_path, "watchlist")
+    assert by["w/2"]["score"] == 8
+    assert by["b/3"]["score"] == 8
+    assert by["s/1"]["score"] is None
+    assert len(seen) == 2

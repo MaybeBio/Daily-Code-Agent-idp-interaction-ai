@@ -24,6 +24,9 @@ llm:
   # 但站点/归档/wiki 只留 watchlist 来源;配合 archive.repo_copy: readme 一起用。
   # api 欠费/不可用时手动切 false,重跑该周 action 即可。
   enabled: true
+  # 参与 LLM 打分的来源:all(默认)|search|watchlist。
+  # search 只打搜索命中的仓库,watchlist 只打关注流。
+  score_sources: all
 issue:
   # 周报 Issue 的显示范围:
   #   all  = 列出全部候选(默认)
