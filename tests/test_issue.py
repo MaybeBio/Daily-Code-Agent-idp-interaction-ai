@@ -57,3 +57,42 @@ def test_csv_noagent_drops_ai_columns(tmp_path):
     issue.write_csv(scored, str(p), enabled=False)
     rows = list(csv.DictReader(open(p)))
     assert list(rows[0].keys()) == ["repo", "url", "language", "stars", "last_commit"]
+
+
+_MIXED = [
+    {"full_name": "hi/a", "url": "u", "language": "Py", "stars": 1,
+     "pushed_at": "t", "score": 9, "one_liner": "x"},
+    {"full_name": "edge/b", "url": "u", "language": "Py", "stars": 1,
+     "pushed_at": "t", "score": 5, "one_liner": "x"},
+    {"full_name": "lo/c", "url": "u", "language": "Py", "stars": 1,
+     "pushed_at": "t", "score": 4, "one_liner": "x"},
+    {"full_name": "none/d", "url": "u", "language": "Py", "stars": 1,
+     "pushed_at": "t", "score": None, "one_liner": "x"},
+]
+
+
+def test_issue_show_high_filters_by_min_score():
+    cfg = {"topic": "t", "llm": {"min_score": 5}, "issue": {"show": "high"}}
+    title, body = issue.build_weekly_issue(_MIXED, cfg, "2026-09-27", "2026-10-04")
+    assert "2 个" in title                        # 9 和 5
+    assert "hi/a" in body and "edge/b" in body
+    assert "lo/c" not in body and "none/d" not in body
+
+
+def test_issue_show_all_is_default():
+    title, body = issue.build_weekly_issue(_MIXED, {"topic": "t"}, "2026-09-27", "2026-10-04")
+    assert "4 个" in title
+    for name in ("hi/a", "edge/b", "lo/c", "none/d"):
+        assert name in body
+
+
+def test_issue_show_high_is_noop_when_noagent():
+    """noagent 没有分数,high 过滤不能把 Issue 变成空的。"""
+    scored = [{"full_name": "a/b", "url": "u", "language": "Py", "stars": 2,
+               "pushed_at": "t", "score": None, "one_liner": "d"},
+              {"full_name": "c/d", "url": "u", "language": "R", "stars": 1,
+               "pushed_at": "t", "score": None, "one_liner": "d"}]
+    cfg = {"topic": "t", "issue": {"show": "high"}}
+    title, body = issue.build_weekly_issue(scored, cfg, "2026-09-27", "2026-10-04",
+                                           enabled=False)
+    assert "2 个" in title and "a/b" in body and "c/d" in body

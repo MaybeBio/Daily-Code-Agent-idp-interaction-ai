@@ -33,7 +33,13 @@ jobs:
         run: |
           : > data/latest_issue.txt
           if [ -s /tmp/issue.md ]; then
-            url=$(gh issue create --title "$(cat /tmp/issue.title)" --body-file /tmp/issue.md) && echo "$url" > data/latest_issue.txt || true
+            if url=$(gh issue create --title "$(cat /tmp/issue.title)" --body-file /tmp/issue.md); then
+              echo "$url" > data/latest_issue.txt
+            else
+              echo "::error::weekly issue 创建失败,见上方 gh 报错"
+            fi
+          else
+            echo "::warning::/tmp/issue.md 为空,未创建周报 Issue"
           fi
       - name: commit
         run: |

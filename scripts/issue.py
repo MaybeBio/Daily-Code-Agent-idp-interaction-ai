@@ -59,6 +59,12 @@ def _section(heading, rows, cols):
 
 def build_weekly_issue(scored, cfg, start, end, enabled=True):
     cols = _cols(enabled, md=True)
+    # issue.show=high 时只列高分仓库(与 archive/cards 的 threshold 同口径);
+    # 默认 all 保持原行为。
+    if enabled and str((cfg.get("issue") or {}).get("show", "all")).lower() == "high":
+        min_score = int(cfg.get("llm", {}).get("min_score", 5))
+        scored = [r for r in scored
+                  if r.get("score") is not None and r["score"] >= min_score]
     if enabled:
         rows = sorted(scored, key=lambda r: (r["score"] is not None, r["score"] or 0), reverse=True)
     else:
