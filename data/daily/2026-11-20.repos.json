@@ -1,0 +1,172 @@
+[
+  {
+    "full_name": "obsidianmd/obsidian-clipper",
+    "who": [
+      "kepano"
+    ],
+    "event": "issue",
+    "stars": 5621,
+    "language": "TypeScript",
+    "description": "Highlight and capture the web in your favorite browser. The official Web Clipper extension for Obsidian.",
+    "url": "https://github.com/obsidianmd/obsidian-clipper"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "thowell"
+    ],
+    "event": "mixed",
+    "stars": 1643,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "BoltonBailey",
+      "bocowgill",
+      "felixpernegger",
+      "github-actions"
+    ],
+    "event": "mixed",
+    "stars": 1365,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/torax",
+    "who": [
+      "chuanheyuanyuan"
+    ],
+    "event": "star",
+    "stars": 758,
+    "language": "Python",
+    "description": "TORAX: Tokamak transport simulation in JAX",
+    "url": "https://github.com/google-deepmind/torax"
+  },
+  {
+    "full_name": "RConsortium/S7",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 497,
+    "language": "R",
+    "description": "S7: a new OO system for R",
+    "url": "https://github.com/RConsortium/S7"
+  },
+  {
+    "full_name": "google-deepmind/robotics-antigravity-plugin",
+    "who": [
+      "superboySB",
+      "tomeberhard"
+    ],
+    "event": "star",
+    "stars": 138,
+    "language": "Python",
+    "description": "GDM Robotics Skills for agentic robotics workflows across simulation and real robots.",
+    "url": "https://github.com/google-deepmind/robotics-antigravity-plugin"
+  },
+  {
+    "full_name": "idptools/starling",
+    "who": [
+      "Qiaozhen-Chen"
+    ],
+    "event": "fork",
+    "stars": 83,
+    "language": "Jupyter Notebook",
+    "description": "STARLING - conSTruction of intrinsicAlly disoRdered proteins ensembles efficientLy vIa multi-dimeNsional Generative models",
+    "url": "https://github.com/idptools/starling"
+  },
+  {
+    "full_name": "posit-dev/open-source-website",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 67,
+    "language": "HTML",
+    "description": "Posit Open Source Website",
+    "url": "https://github.com/posit-dev/open-source-website"
+  },
+  {
+    "full_name": "google-deepmind/fusion_surrogates",
+    "who": [
+      "chuanheyuanyuan"
+    ],
+    "event": "star",
+    "stars": 45,
+    "language": "Python",
+    "description": "A library of surrogate transport models for tokamak fusion.",
+    "url": "https://github.com/google-deepmind/fusion_surrogates"
+  },
+  {
+    "full_name": "hadley/data-diff",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 35,
+    "language": "Rust",
+    "description": "",
+    "url": "https://github.com/hadley/data-diff"
+  },
+  {
+    "full_name": "THGLab/IDPForge",
+    "who": [
+      "Qiaozhen-Chen",
+      "zormanmarlo"
+    ],
+    "event": "mixed",
+    "stars": 24,
+    "language": "Python",
+    "description": "Disordered protein ensemble prediction",
+    "url": "https://github.com/THGLab/IDPForge"
+  },
+  {
+    "full_name": "holehouse-lab/soursop",
+    "who": [
+      "Shi30"
+    ],
+    "event": "fork",
+    "stars": 13,
+    "language": "Jupyter Notebook",
+    "description": "SOURSOP is an analysis suite for molecular simulations of intrinsically disordered proteins",
+    "url": "https://github.com/holehouse-lab/soursop"
+  },
+  {
+    "full_name": "emarcos/AF-MPNN",
+    "who": [
+      "Junjie-Zhu"
+    ],
+    "event": "star",
+    "stars": 5,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/emarcos/AF-MPNN"
+  },
+  {
+    "full_name": "THGLab/GeomLlama",
+    "who": [
+      "effes3"
+    ],
+    "event": "star",
+    "stars": 1,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/THGLab/GeomLlama"
+  },
+  {
+    "full_name": "hadley/iah-wait-time",
+    "who": [
+      "hadley"
+    ],
+    "event": "star",
+    "stars": 1,
+    "language": "HTML",
+    "description": "Scraping IAH security wait times",
+    "url": "https://github.com/hadley/iah-wait-time"
+  }
+]
