@@ -1,0 +1,216 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "Daniel-Osman",
+      "FJR-Data",
+      "Sorin-42",
+      "jeongseok-meta",
+      "juchengshen"
+    ],
+    "event": "mixed",
+    "stars": 18356,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/deepmind-research",
+    "who": [
+      "LegatronX",
+      "gi-dellav"
+    ],
+    "event": "star",
+    "stars": 15285,
+    "language": "Jupyter Notebook",
+    "description": "This repository contains implementations and illustrative code to accompany DeepMind publications",
+    "url": "https://github.com/google-deepmind/deepmind-research"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "dominichon93",
+      "ndcroos"
+    ],
+    "event": "star",
+    "stars": 8793,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "google-deepmind/gemma",
+    "who": [
+      "lxq2t"
+    ],
+    "event": "star",
+    "stars": 5866,
+    "language": "Python",
+    "description": "Gemma open-weight LLM library, from Google DeepMind",
+    "url": "https://github.com/google-deepmind/gemma"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "Daniel-Osman",
+      "tofunori"
+    ],
+    "event": "star",
+    "stars": 3509,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_playground",
+    "who": [
+      "majianmajian"
+    ],
+    "event": "fork",
+    "stars": 2324,
+    "language": "Python",
+    "description": "An open-source library for sim and real robot demos on top of MuJoCo.",
+    "url": "https://github.com/google-deepmind/mujoco_playground"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "jeongseok-meta"
+    ],
+    "event": "mixed",
+    "stars": 1646,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "bocowgill",
+      "felixpernegger",
+      "galyavin",
+      "jeangud",
+      "stalex444"
+    ],
+    "event": "mixed",
+    "stars": 1368,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "RConsortium/S7",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 497,
+    "language": "R",
+    "description": "S7: a new OO system for R",
+    "url": "https://github.com/RConsortium/S7"
+  },
+  {
+    "full_name": "google-deepmind/code-verification",
+    "who": [
+      "q-qp-p",
+      "youweizhong"
+    ],
+    "event": "fork",
+    "stars": 289,
+    "language": "Lean",
+    "description": "Verifying Signal's security at the machine-code level",
+    "url": "https://github.com/google-deepmind/code-verification"
+  },
+  {
+    "full_name": "google-deepmind/onetwo",
+    "who": [
+      "NullLabTests",
+      "lordtiva"
+    ],
+    "event": "mixed",
+    "stars": 276,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/onetwo"
+  },
+  {
+    "full_name": "google-deepmind/robotics-antigravity-plugin",
+    "who": [
+      "DelinQu",
+      "jecyxyf",
+      "lxiaolx9",
+      "sky-lzy"
+    ],
+    "event": "star",
+    "stars": 174,
+    "language": "Python",
+    "description": "GDM Robotics Skills for agentic robotics workflows across simulation and real robots.",
+    "url": "https://github.com/google-deepmind/robotics-antigravity-plugin"
+  },
+  {
+    "full_name": "tidyverse/data-dict",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 116,
+    "language": "Rust",
+    "description": "",
+    "url": "https://github.com/tidyverse/data-dict"
+  },
+  {
+    "full_name": "kennethreitz/RetroVault",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "issue",
+    "stars": 25,
+    "language": "Swift",
+    "description": "A native macOS client for RomM.",
+    "url": "https://github.com/kennethreitz/RetroVault"
+  },
+  {
+    "full_name": "THGLab/IDPForge",
+    "who": [
+      "zormanmarlo"
+    ],
+    "event": "star",
+    "stars": 24,
+    "language": "Python",
+    "description": "Disordered protein ensemble prediction",
+    "url": "https://github.com/THGLab/IDPForge"
+  },
+  {
+    "full_name": "THGLab/torchff-lib",
+    "who": [
+      "jgreener64"
+    ],
+    "event": "star",
+    "stars": 16,
+    "language": "Cuda",
+    "description": "High-performance Differentiable Molecular Mechanics Force Field Library ",
+    "url": "https://github.com/THGLab/torchff-lib"
+  },
+  {
+    "full_name": "kennethreitz/onyx",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 2,
+    "language": "Swift",
+    "description": "A native macOS notes app for plain Markdown. Obsidian-compatible, quiet, and fast. Your vault stays yours.",
+    "url": "https://github.com/kennethreitz/onyx"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  }
+]
