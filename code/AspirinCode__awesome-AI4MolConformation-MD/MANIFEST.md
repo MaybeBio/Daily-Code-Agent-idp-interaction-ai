@@ -1,18 +1,18 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/AspirinCode/awesome-AI4MolConformation-MD
-- 快照日期: 2026-11-15
-- 快照 commit: [`90a8bf430afe`](https://github.com/AspirinCode/awesome-AI4MolConformation-MD/commit/90a8bf430afe10b10fd04519095d20561d052749)
+- 快照日期: 2026-11-22
+- 快照 commit: [`6dfaa273814f`](https://github.com/AspirinCode/awesome-AI4MolConformation-MD/commit/6dfaa273814f99172c1b12f0d238e89e553669d9)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (3 个文件, 325.6 KB)
+## 保留 (3 个文件, 328.8 KB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| README | 2 | 291.3 KB |
+| README | 2 | 294.5 KB |
 | 文档 | 1 | 34.3 KB |
 
-按后缀: `.md` 1 (291.2 KB)、`无后缀` 2 (34.4 KB)
+按后缀: `.md` 1 (294.5 KB)、`无后缀` 2 (34.4 KB)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 

@@ -1,0 +1,269 @@
+
+# PrionPredictorDB
+![Stars](https://img.shields.io/github/stars/hydraharish123/PrionPredictorDB?style=social)
+![Forks](https://img.shields.io/github/forks/hydraharish123/PrionPredictorDB?style=social)
+![Issues](https://img.shields.io/github/issues/hydraharish123/PrionPredictorDB)
+![License](https://img.shields.io/github/license/hydraharish123/PrionPredictorDB)
+
+![Homepage](https://github.com/hydraharish123/PrionPredictorDB/raw/HEAD/assets/PPDB_Homepage.png)
+
+
+**PrionPredictorDB** is a scalable and organism-independent pipeline and database for the prediction of prion-like, aggregation-prone proteins using both **sequence** and **structure-based** methods. This project integrates tools like **PLAAC**, **AlphaFold**, **Aggrescan3D**, and **DBSCAN** to identify and cluster potentially pathogenic prion-like domains (PRDs) across the human proteome.
+
+---
+
+
+## Workflow Overview
+
+![Workflow](https://github.com/hydraharish123/PrionPredictorDB/raw/HEAD/assets/workflow.png)
+
+### 1. **PRD Detection (PLAAC)**
+- **Tool:** [PLAAC](http://plaac.wi.mit.edu/) A Command Line and web-based tool to accurately detect proline-rich domains based on input FASTA sequence and refernece genome 
+- Input: Human proteome FASTA (UniProt)
+- Output: 195 proteins with valid prion-like domains (PRDs)
+
+### 2. **Structure Retrieval and Filtering**
+- Tool: [AlphaFold Protein Structure Database](https://alphafold.ebi.ac.uk/)
+- Filters:
+  - **SASA > 1000 Å²**
+  - **Average pLDDT < 50**
+- Result: 188 proteins passed structure availability and thresholding
+
+### 3. Aggregation Propensity and 3D Clustering
+
+I used aggrescan3d to identify realistic aggregation hotspots within prion-like domains (PRDs),
+
+#### Steps:
+
+* **Tool:** [Aggrescan3D](http://biocomp.chem.uw.edu.pl/A3D/) computes per-residue aggregation propensity scores using AlphaFold structures.
+* For each protein:
+
+  * **Select residues within the PRD** that have **Aggrescan3D score > 0.5**
+  * Apply **DBSCAN (Density-Based Spatial Clustering)** to identify **3D clusters** of spatially close, aggregation-prone residues.
+
+#### Biological Rationale for 3D Clustering:
+
+Aggregation is a **structural phenomenon**, not just a sequence-level one. Simply having aggregation-prone residues is not enough — they must be **spatially close in the folded protein** to nucleate aggregation. Here's why clustering is important:
+
+* **Spatial Proximity Matters:**
+  Aggregation typically starts at **hotspots** where multiple aggregation-prone residues come **together in 3D**, forming a nucleation seed. These hotspots are more predictive of **actual aggregation** than isolated high-scoring residues.
+
+* **Filters Out False Positives:**
+  Some residues may score high individually but be buried inside the protein or far apart. 3D clustering ensures only **physically plausible aggregation regions** are considered.
+
+* **Mimics Real Prion Nucleation:**
+  Structural studies of prions (e.g., Tau, α-synuclein) show that **small structured cores** initiate fibril formation. DBSCAN helps emulate this by identifying **compact residue clusters** within PRDs.
+
+* **Therapeutic Relevance:**
+  3D clusters can be **targeted** by small molecules or antibodies. Identifying these clusters helps in **rational drug design** aimed at blocking aggregation.
+
+> 📌 In summary: DBSCAN-based 3D clustering enables a **more biologically accurate**, **structurally informed**, and **therapeutically useful** prediction of aggregation hotspots.
+
+
+
+### 4. **Annotation & Storage**
+- Data stored in MongoDB in the following structure:
+
+```json
+{
+  "uniprot_id": "Q6P3W7",
+  "Protein Name": "SCY1-like protein 2",
+  "Organism": "Homo sapiens",
+  "Length": 929,
+  "Sequence": "MESMLN...",
+  "PRDstart": 852,
+  "PRDend": 922,
+  "PRDlen": 71,
+  "PRDaa": "SMNQLSQQKPNQWLN...",
+  "AlphaFold Model": "AF-Q6P3W7-F1-model_v4.pdb",
+  "SASA": 622.85,
+  "Average_pLDDT": 31.81,
+  "Aggregating-like": "No",
+}
+````
+
+![O15162 metadata](https://github.com/hydraharish123/PrionPredictorDB/raw/HEAD/assets/Example.png)
+
+![Analysis of O15162](https://github.com/hydraharish123/PrionPredictorDB/raw/HEAD/assets/Screenshot%202025-07-31%20045227.png)
+![O15162 PRD](https://github.com/hydraharish123/PrionPredictorDB/raw/HEAD/assets/PRD_Example.png)
+
+---
+
+## Tech Stack
+
+| Component       | Technology                 |
+| --------------- | -------------------------- |
+| **Backend**     | Node.js + Express          |
+| **Database**    | MongoDB                    |
+| **Frontend**    | ReactJS, NGLViewer, Plotly |
+| **CLI Tool**    | Python                     |
+| **Aggregation** | Aggrescan3D, DBSCAN        |
+| **Structure Information**   | AlphaFold + Biopython      |
+| **PRD Finder**  | PLAAC                      |
+
+---
+
+## Command Line Tool
+
+A CLI-based standalone pipeline to process **any organism's proteome**.
+
+### Install Requirements
+
+```bash
+cd pipeline/
+pip install -r requirements.txt
+```
+
+### Usage
+
+```bash
+python cli.py <sample_fasta> <reference_fasta> -o <output_dir>
+```
+
+**Arguments:**
+
+* `sample_fasta`: FASTA file 
+* `reference_fasta`: genome reference 
+* `-o, --output`: Output directory to store:
+
+  * Filtered PRD list
+  * AlphaFold models
+  * Aggregation plots
+  * PyMOL visualization scripts
+
+---
+
+## User Interface Dashboard
+
+### Features:
+
+* Search and browse predicted prion-like proteins
+* View AlphaFold structures in 3D using **NGLViewer**
+* Interactive aggregation cluster plots with **Plotly.js**
+* Export sequences and visualizations
+
+---
+
+## Biological Relevance
+
+* **Prion-like domains (PLDs)** are disordered regions enriched in Q/N residues and implicated in **neurodegenerative diseases** like ALS and Alzheimer’s.
+* Aggregation-prone PLDs are often overlooked due to structural disorder. Combining **PLAAC**, **structure-based filtering**, and **residue clustering** helps refine high-confidence candidates.
+
+---
+
+## Folder Structure
+
+```
+PrionPredictorDB/
+├── server/             # Node.js API
+├── client/             # React frontend
+├── scripts/            # Python scripts (PLAAC, A3D, DBSCAN, AlphaFold parsers)
+├── data/               # Raw and processed data
+├── pipeline/           # Command line interface
+└── README.md
+```
+
+---
+
+## Systems-Level Network Analysis
+
+To investigate the cellular organization of these proteins, we extended the database with a systems-level protein interaction network analysis.
+
+![](https://github.com/hydraharish123/PrionPredictorDB/raw/HEAD/data/pathway_discovery/string_confidence_network_171_nodes.png)
+
+I then asked the question, are proteins predicted to exhibit aggregation-like properties randomly distributed across cellular protein-interaction networks, or do they preferentially occupy highly connected regions of the network?
+
+The main workflow is as follows:
+1. **Protein-Protein Interaction Network**
+   - The 180 proteins in the PrionPredictorDB analysis set were mapped to STRING
+   - 171 proteins were successfully mapped
+   - The resulting high-confidence network contained 384 interactions
+   - Isolated proteins were retained as nodes so that network statistics were not biased toward connected proteins
+
+2. **Network Topology**
+   Aggregation-like and non-aggregating proteins were compared using:
+   - degree centrality
+   - betweenness centrality
+   - hub enrichment
+     
+3. **Community Structure**
+   - Louvain community detection was applied to the interaction network
+   - Communities were subsequently characterized using functional enrichment analysis (gprofiler)
+
+### Observations
+1. **Aggregation-like proteins are more highly connected** - Aggregation-like proteins showed substantially greater network connectivity than non-aggregating proteins
+   There were 80 aggregating-like proteins and 91 non-aggregating proteins. Further analyses revealed that that median degree was 4 compared to 1 and mean degree was approximately 6.70 compared to just 2.55, respecitively.
+
+   Performing a Mann-Whitney U test showed a significant difference in degree: **U = 4972**, **p = 2.93 x 10^-5**. The association remained strong in a logistic regression using log-transformed degree with **beta = 0.735** and **p < 0.0001**. This indicates that aggregating-like proteins are disproportionately represented among highly connect proteins.
+
+2. **Aggregation-like proteins are enriched among network hubs** - Using 90th percentile of degree as threshold (degree >= 16):
+   - 19 proteins were classified as hubs
+   - 16/19 (84.2%) were aggregation-like
+   - Fisher's exact test: Odds Ratio = 7.33, p = 5.30 × 10⁻⁴
+
+  Thus, highly connected proteins are strongly enriched for proteins predicted to exhibit aggregation-like properties.
+
+3. **An RNA-processing-associated interaction community was identified** - Louvain community detection identified a major interaction module containing 26 proteins. 19/26 proteins in this community were aggregation-like. This module was strongly enriched for RNA-associated functions, including RNA processing, RNA splicing, RNA binding, mRNA metabolism, mRNA processing, spliceosomal mRNA splicing.
+
+
+| Gene | UniProt ID | Aggregating-like | Node Degree | Betweenness |
+| :--- | :---: | :---: | :---: | :---: |
+| HNRNPU | Q00839 | Yes | 23 | 0.018518 |
+| HNRNPA1 | P09651 | Yes | 21 | 0.004692 |
+| EWSR1 | Q01844 | Yes | 20 | 0.088803 |
+| FUS | P35637 | Yes | 20 | 0.017584 |
+| HNRNPA2B1 | P22626 | Yes | 20 | 0.008363 |
+| HNRNPA3 | P51991 | Yes | 19 | 0.006163 |
+| ILF3 | Q12906 | Yes | 19 | 0.004065 |
+| DHX9 | Q08211 | Yes | 18 | 0.006024 |
+| TAF15 | Q92804 | Yes | 18 | 0.013093 |
+| TARDBP | Q13148 | Yes | 17 | 0.009724 |
+| DDX17 | Q92841 | Yes | 16 | 0.008369 |
+| HNRNPA0 | Q13151 | Yes | 16 | 0.000636 |
+| HNRNPD | Q14103 | Yes | 16 | 0.000778 |
+| HNRNPDL | O14979 | Yes | 16 | 0.000805 |
+| HNRNPH3 | P31942 | Yes | 14 | 0.000369 |
+| HNRNPAB | Q99729 | Yes | 13 | 0.000278 |
+| RBM14 | Q96PK6 | Yes | 13 | 0.007816 |
+| HNRNPUL1 | Q9BUJ2 | Yes | 11 | 0.004605 |
+| HNRNPA1L2 | Q32P51 | Yes | 6 | 0.000000 |
+| HNRNPH1 | P31943 | No | 24 | 0.016778 |
+| DDX5 | P17844 | No | 18 | 0.014507 |
+| HNRNPH2 | P55795 | No | 11 | 0.000139 |
+| HNRNPUL2 | Q1KMD3 | No | 3 | 0.000013 |
+| SMG6 | Q86US8 | No | 2 | 0.000000 |
+| SMG7 | Q92540 | No | 2 | 0.000000 |
+| UBQLN1 | Q9UMX0 | No | 1 | 0.000000 |
+
+
+This provides a systems-level connection between aggregation-prone proteins and RNA-processing-associated cellular networks.
+
+**Important Statistical Control** 
+Because aggregation-like proteins were already found to have higher network degree, community enrichment cannot automatically be interpreted as an independent aggregation-specific effect. A degree-stratified permutation analysis was therefore performed for the 26-member RNA-processing community.
+
+The observed number of aggregation-like proteins was: 19/26
+
+while the degree-matched null distribution had:
+- mean = 17.27
+- 95th percentile = 20
+- 99th percentile = 21
+- **empirical p = 0.224**
+
+Therefore, the community-level aggregation enrichment is not statistically significant after approximately controlling for network degree. The RNA-processing community represents a biologically coherent high-connectivity module containing many aggregation-like proteins, but its enrichment should not be interpreted as independent of the broader degree–aggregation relationship.
+
+
+## Interpretation
+The network analysis suggests that aggregation-like proteins are not randomly distributed throughout the cellular protein-protein interaction network. Instead, they are disproportionately represented among highly connected proteins and network hubs.
+
+We found a community that highly contains aggregation-rich proteins and associated with RNA processing and RNA binding. This result provides a potential systems-level link between protein aggregation and RNA metabolism. 
+
+This analysis does not yet establish that protein aggregation causes disruption of RNA processing or that network connectivity causes aggregation. The results identify statistical associations and functional organisation that can be investigated experimentally. 
+   
+## References
+
+* **PLAAC**: Lancaster et al., 2014 – [DOI:10.1016/j.cell.2014.07.046](https://doi.org/10.1016/j.cell.2014.07.046)
+* **AlphaFold**: Jumper et al., 2021 – Nature
+* **Aggrescan3D**: Kuriata et al., 2019 – [DOI:10.1093/bioinformatics/btz810](https://doi.org/10.1093/bioinformatics/btz810)
+* **DBSCAN**: Ester et al., 1996 – KDD
+
+

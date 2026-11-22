@@ -54,12 +54,19 @@ parser.add_argument('-orst', metavar='RSTFILE', dest='orst', help='Output restar
 parser.add_argument('-ochk', metavar='CHKFILE', dest='ochk', help='Output checkpoint file (optional)')
 parser.add_argument('-odcd', metavar='DCDFILE', dest='odcd', help='Output trajectory file (optional)')
 parser.add_argument('-rewrap', dest='rewrap', help='Re-wrap the coordinates in a molecular basis (optional)', action='store_true', default=False)
+parser.add_argument('--faster', dest='faster', action='store_true', default=False,
+                    help='Use NVIDIA cuPotential for nonbonded forces, LangevinMiddle integrator and '
+                         'barostat (~2.5x faster). Needs the openmm_faster environment, see '
+                         'Installation_readme.md. Without it: the classic OpenMM engine.')
 parser.add_argument('-gpu', dest='gpu', help='Indices of GPUs for computation (comma separated, e.g. 0,1). If left unspecified, defaults to GPU 0', default='0')
 args = parser.parse_args()
 
 # Load parameters
 print("Loading parameters")
 inputs = read_inputs(args.inpfile)
+if args.faster:  # refuse unsupported settings before building anything
+    from omm_cupotential import validate
+    validate(inputs, args.fftype)
 
 top = read_top(args.topfile, args.fftype.upper())
 crd = read_crd(args.crdfile, args.fftype.upper())
@@ -103,15 +110,21 @@ if inputs.e14scale != 1.0:
 
 if inputs.pcouple == 'yes':      system = barostat(system, inputs)
 if inputs.rest == 'yes':         system = restraints(system, crd, inputs)
-if inputs.integrator == 'langevin_middle':
+if args.faster:
+    from omm_cupotential import faster, PRECISION
+    print("Engine: faster (NVIDIA cuPotential)")
+    integrator = faster(system, inputs, args.fftype)
+elif inputs.integrator == 'langevin_middle':
     integrator = LangevinMiddleIntegrator(inputs.temp*kelvin, inputs.fric_coeff/picosecond, inputs.dt*picoseconds)
 else:
     integrator = LangevinIntegrator(inputs.temp*kelvin, inputs.fric_coeff/picosecond, inputs.dt*picoseconds)
+if not args.faster: print("Engine: classic (stock OpenMM)")
 print("Integrator: %s, dt = %s ps" % (integrator.__class__.__name__, inputs.dt))
 
 # Set platform
 platform = Platform.getPlatformByName('CUDA')
-prop = {'DeviceIndex': args.gpu, 'CudaPrecision':'single'}
+prop = {'DeviceIndex': args.gpu, 'CudaPrecision': PRECISION if args.faster else 'single'}
+print("Platform: CUDA, precision %s" % prop['CudaPrecision'])
 
 # Build simulation context
 simulation = Simulation(top.topology, system, integrator, platform, prop)

@@ -1,0 +1,14 @@
+# Everything noodle-md needs. setup.sh (in the noodle-md folder) builds this into ./env
+# (CPU build of HOOMD; on a GPU workstation change "cpu*" to "gpu*").
+name: noodle-md
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - hoomd>=7.2,<8=cpu*
+  - gsd
+  - numpy
+  - pyyaml
+  - scipy         # observables.py: contacts between the chains of a brush
+  - pandas        # ./noodle analyze
+  - mdanalysis    # not used by noodle-md itself: there for your own analysis of the trajectories

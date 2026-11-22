@@ -1,0 +1,15 @@
+[package]
+name = "opendna-app-protocol"
+description = "Messages exchanged between the OpenDNA desktop backend and its UI over Tauri IPC"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+
+[lints]
+workspace = true

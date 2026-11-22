@@ -1,0 +1,95 @@
+# Deploy multi-version Sphinx documentation to GitHub Pages.
+# Required: In the repo go to Settings → Pages → Build and deployment,
+# and set "Source" to "GitHub Actions". Otherwise this workflow will fail with "Get Pages site failed".
+#
+# sphinx-polyversion (docs/poly.py) builds every whitelisted branch/tag of docs/
+# into its own subfolder of docs/_build/html (e.g. /main/, /translation/) plus a
+# root index.html redirect and a versions.json manifest; that whole tree is
+# uploaded so the deployed site hosts all versions with an in-page switcher.
+#
+# NOTE: the running workflow is the copy on the branch that triggered it, so these
+# multi-version changes must reach `main` for the live site to become multi-version.
+name: Deploy docs to Pages
+
+on:
+  push:
+    # Any branch may trigger a deploy; every run rebuilds the WHOLE multi-version
+    # site (poly.py enumerates every branch), so each branch is published as its
+    # own version subfolder.
+    # REQUIRED repo setting: Settings -> Environments -> github-pages ->
+    # "Deployment branches and tags" must be set to "No restriction", otherwise
+    # non-default branches are rejected with an environment-protection error.
+    branches: ["**"]
+    tags: ["*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          # Full history + all branches/tags so sphinx-polyversion can enumerate
+          # and check out every published version.
+          fetch-depth: 0
+          fetch-tags: true
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r docs/requirements.txt
+          # Runtime deps for autodoc (Sphinx imports topo; topo needs these)
+          pip install "numpy>=1.22" "openmm>=7.7" "parmed>=3.4" "MDAnalysis>=2.2" "pandas>=1.4" "pyyaml"
+
+      - name: Build all documentation versions
+        run: |
+          # Compute the docs version once here (real checkout: .git + tags) and export
+          # it as SETUPTOOLS_SCM_PRETEND_VERSION. sphinx-polyversion checks each ref out
+          # with `git archive` (no .git), so setuptools-scm in conf.py can't read git
+          # there; the pretend var makes it resolve anyway. Inject the last RELEASED
+          # CalVer tag (e.g. "2026.1"), matching conf.py's display choice -- between
+          # tags the docs label the last release, not the guessed-next "2026.2.devN".
+          SETUPTOOLS_SCM_PRETEND_VERSION="$(git describe --tags --abbrev=0)"
+          export SETUPTOOLS_SCM_PRETEND_VERSION
+          echo "docs version -> $SETUPTOOLS_SCM_PRETEND_VERSION"
+          # poly.py enumerates LOCAL branches (sphinx-polyversion 2.0.0 mis-parses
+          # remote refs), so materialize a local branch for each origin branch.
+          # `git branch -f` can't touch the currently checked-out branch -> `|| true`.
+          git for-each-ref --format='%(refname:short)' refs/remotes/origin \
+            | sed 's#^origin/##' | grep -v '^HEAD$' \
+            | while read -r b; do git branch -f "$b" "origin/$b" 2>/dev/null || true; done
+          sphinx-polyversion docs/poly.py docs/_build/html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

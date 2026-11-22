@@ -1,0 +1,22 @@
+[package]
+name = "opendna-ui"
+description = "OpenDNA desktop UI (Leptos, compiled to WebAssembly)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+opendna-app-protocol.workspace = true
+serde.workspace = true
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+leptos = { version = "0.8", features = ["csr"] }
+serde-wasm-bindgen = "0.6"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["HtmlElement", "HtmlDivElement"] }
+
+[lints]
+workspace = true

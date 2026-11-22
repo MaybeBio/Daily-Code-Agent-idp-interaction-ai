@@ -1,0 +1,17 @@
+# antepontem/DARUMA-binding
+
+- [Overview](1-overview.md)
+- [Quick Start](2-quick-start.md)
+- [Output Format Reference](3-output-format-reference.md)
+- [Docker and CAID Usage](4-docker-and-caid-usage.md)
+- [Prediction Pipeline Architecture](5-prediction-pipeline-architecture.md)
+- [Convolutional Backbone: FEU and PU](6-convolutional-backbone-feu-and-pu.md)
+- [Auxiliary Structural Feature Heads](7-auxiliary-structural-feature-heads.md)
+- [Multi-Kernel Conv Binding Head](8-multi-kernel-conv-binding-head.md)
+- [ProtT5 Embedding Chunking Strategy](9-prott5-embedding-chunking-strategy.md)
+- [Inference Orchestration and Decision Threshold](10-inference-orchestration-and-decision-threshold.md)
+- [CAID Benchmark Datasets](11-caid-benchmark-datasets.md)
+- [Training Data and Zenodo Archive](12-training-data-and-zenodo-archive.md)
+- [Reproducing Paper Figures and Tables](13-reproducing-paper-figures-and-tables.md)
+- [Evaluation Metrics: AUC, APS, Fmax](14-evaluation-metrics-auc-aps-fmax.md)
+- [Occlusion-Based Feature Attribution](15-occlusion-based-feature-attribution.md)

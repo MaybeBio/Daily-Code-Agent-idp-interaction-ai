@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# absolute path to this script
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+EXPERIMENT_DIR="src/experiments/saprot"
+
+# script's parent directory
+SCRIPT_DIR="$SCRIPT_PATH"
+
+# get the project main directory
+for i in $(seq 1 4);
+do
+    SCRIPT_DIR="$(dirname "$SCRIPT_DIR")"
+done
+
+# change directory to project main directory
+cd $SCRIPT_DIR
+
+# create logging directory
+LOGGING_DIR="${EXPERIMENT_DIR}/logging"
+if [ ! -d $LOGGING_DIR ]; then
+    mkdir $LOGGING_DIR
+fi
+
+# create score directory
+SCORE_DIR="${EXPERIMENT_DIR}/output"
+if [ ! -d $SCORE_DIR ]; then
+    mkdir $SCORE_DIR
+fi
+
+# run script
+python -m src.scripts.test \
+    --config $EXPERIMENT_DIR/test_config.yml \
+    --data_path data/test/llps_vs_non_llps_test.csv \
+    --score_path $EXPERIMENT_DIR/output/saprot_650m_baseline_h4_l1_test_score.csv \
+    > $EXPERIMENT_DIR/logging/saprot_650m_baseline_h4_l1_test.log

@@ -1,0 +1,36 @@
+[project]
+name = "madrigal-predictor"
+version = "0.1.1"
+dependencies = [
+   "idptools-parrot>=1.7.5",
+   "numpy>=2.0",
+   "torch>=2.0",
+]
+authors = [
+  { name="Claire Josephine LeBlanc", email="claire.leblanc@berkeley.edu" },
+  { name="Marissa Ann Zintel", email="marissa.zintel@berkeley.edu" },
+  { name="Sanjana R. Kotha", email="sanjana.kotha@berkeley.edu"},
+  { name="Rishaan Jayce Bansal", email="ruhi.bansal@berkeley.edu" },
+]
+description = "MADRIGAL predicts transcriptional activation domains in protein sequences, reproducing the consensus of six published activation-domain predictors in a single fast pass."
+readme = "README.md"
+requires-python = ">=3.9, <3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/staller-lab/consensus_model_package"
+Issues = "https://github.com/staller-lab/consensus_model_package/issues"
+
+[tool.setuptools.package-data]
+madrigal_predictor = ["*.pt"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/madrigal_predictor"]
+artifacts = ["src/madrigal_predictor/*.pt"]

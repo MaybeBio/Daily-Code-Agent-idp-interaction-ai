@@ -1,0 +1,29 @@
+"""
+Load dihedral parameters from CSV for the TOPO model.
+
+Returns a dict keyed by the tuple (res1, res2, period) with values
+[period, delta, k_D] as expected by topo.core.system.addPeriodicTorsionForce().
+"""
+import csv
+from pathlib import Path
+
+
+def load_dihedral_params():
+    """Load dihedral_params from topo/parameters/data/dihedral_params.csv."""
+    data_dir = Path(__file__).resolve().parent / "data"
+    csv_path = data_dir / "dihedral_params.csv"
+    result = {}
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        # Skip full-line comments (first non-blank char '#') so the file can
+        # carry a unit/provenance header. The CSV column header must be the
+        # first non-comment line.
+        data_lines = (ln for ln in f if not ln.lstrip().startswith("#"))
+        reader = csv.DictReader(data_lines)
+        for row in reader:
+            res1 = row["res1"]
+            res2 = row["res2"]
+            period = int(row["period"])
+            delta = float(row["delta"])
+            k_D = float(row["k_D"])*0.756  # dihedral force constant scaled by 0.756 (calibration factor)
+            result[(res1, res2, period)] = [period, delta, k_D]
+    return result

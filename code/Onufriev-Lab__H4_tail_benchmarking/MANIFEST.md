@@ -1,8 +1,8 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/Onufriev-Lab/H4_tail_benchmarking
-- 快照日期: 2026-11-15
-- 快照 commit: [`28ea7e1c84b5`](https://github.com/Onufriev-Lab/H4_tail_benchmarking/commit/28ea7e1c84b5b5742a7f5be19a3199276f1d06f6)
+- 快照日期: 2026-11-22
+- 快照 commit: [`01f23e697197`](https://github.com/Onufriev-Lab/H4_tail_benchmarking/commit/01f23e6971977ada6c671c7e4c13e39a12cd984d)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
 ## 保留 (7 个文件, 31.8 KB)
@@ -17,11 +17,11 @@
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 
-## 省略 (134 个文件, 154.4 MB)
+## 省略 (136 个文件, 154.4 MB)
 
 | 原因 | 文件数 | 大小 |
 |---|---:|---:|
-| 后缀不在白名单 | 134 | 154.4 MB |
+| 后缀不在白名单 | 136 | 154.4 MB |
 
 体积最大的省略文件:
 

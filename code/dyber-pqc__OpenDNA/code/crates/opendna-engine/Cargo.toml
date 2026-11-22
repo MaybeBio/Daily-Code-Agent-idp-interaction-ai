@@ -1,0 +1,18 @@
+[package]
+name = "opendna-engine"
+description = "Discover, identify and pin external scientific tools OpenDNA drives"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+opendna-core.workspace = true
+opendna-io.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

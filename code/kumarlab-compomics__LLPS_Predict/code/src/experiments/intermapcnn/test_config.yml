@@ -1,0 +1,33 @@
+# configuration file
+# use this configuration if no command line arguments are passed
+
+##########
+# dataset
+##########
+data_path: data/test/llps_vs_non_llps_disjoint_test.csv
+sqn_column: Sequence
+label_column: Label
+
+##########
+# model
+##########
+img_size: 320
+n_layer: 1
+n_head: 4
+feedforward_dim: 1280
+
+##########
+# configuration
+##########
+batch_size: 16
+# DROPOUT applies to the multi-head self attetion layer and cross attention layer
+# after the language model
+dropout: 0.6
+# THRESHOLD: classification cutoff
+threshold: 0.5
+
+##########
+# output
+##########
+checkpoint_path: checkpoints/trained_models/intermapcnn_baseline_h4_l1.pth
+score_path: src/experiments/intermap/output/intermapcnn_baseline_h4_l1_test_score.csv

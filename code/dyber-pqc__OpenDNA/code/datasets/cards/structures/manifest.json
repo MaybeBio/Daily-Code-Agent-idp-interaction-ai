@@ -1,0 +1,85 @@
+{
+  "dataset": "structures",
+  "pipeline": "opendna-data",
+  "pipeline_version": "0.1.0",
+  "seed": 20261114,
+  "clustering": "mmseqs easy-cluster --min-seq-id 0.3 -c 0.8 --cov-mode 0 --cluster-mode 0 -s 7.5",
+  "fractions": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.1
+  },
+  "sources": {
+    "cath-4_4_0-domain-list-s100": "9a202046a68c80436f76a3631fe0f84fc4f027a89c53657a5dcd4c97231cf562",
+    "cath-4_4_0-domain-seqs-s100": "d7d1efdf9a169456ad762faca0dc80b64f734ddeaf31481c69eb68ce5a77cd83",
+    "wwpdb-entries-idx": "b9d6b90c4b1c4bdfbccb61210276e199aecfdefe73ed754fb6792468e174e55f"
+  },
+  "files": [
+    {
+      "path": "data/train.parquet",
+      "rows": 85325,
+      "bytes": 7494882,
+      "sha256": "b71dc7b4d5f9e9c1937dc46904f4ca797b99aaafb988b248577ae7f9039e7497"
+    },
+    {
+      "path": "data/validation.parquet",
+      "rows": 10500,
+      "bytes": 1035810,
+      "sha256": "dc8441f2afe5ba6b94543c266bf8393341487a64e54d2395a5a5aba0a1e30f26"
+    },
+    {
+      "path": "data/test.parquet",
+      "rows": 11085,
+      "bytes": 1030656,
+      "sha256": "e0bee5cdf095020861bfebc2a62780aba287e2ccad51c788532fe88d5f7e42dc"
+    }
+  ],
+  "splits": {
+    "train": {
+      "rows": 85325,
+      "groups": 1006
+    },
+    "validation": {
+      "rows": 10500,
+      "groups": 169
+    },
+    "test": {
+      "rows": 11085,
+      "groups": 245
+    }
+  },
+  "statistics": [
+    [
+      "dropped: no CATH sequence",
+      "0"
+    ],
+    [
+      "dropped: non-standard residue",
+      "16341"
+    ],
+    [
+      "kept without wwPDB metadata (entry obsolete or missing)",
+      "1165"
+    ],
+    [
+      "final domains",
+      "106910"
+    ],
+    [
+      "CATH topologies",
+      "1465"
+    ],
+    [
+      "MMseqs2 clusters",
+      "26748"
+    ],
+    [
+      "split groups (components)",
+      "1420"
+    ],
+    [
+      "largest split group (domains)",
+      "25433"
+    ]
+  ]
+}

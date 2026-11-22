@@ -1,0 +1,107 @@
+{
+  "dataset": "stability",
+  "pipeline": "opendna-data",
+  "pipeline_version": "0.1.0",
+  "seed": 20261114,
+  "clustering": "mmseqs easy-cluster --min-seq-id 0.3 -c 0.8 --cov-mode 0 --cluster-mode 0 -s 7.5",
+  "fractions": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.1
+  },
+  "sources": {
+    "tsuboyama2023": "e1c52e14d27b18b846cd87c719eb3f3adae6f736e700962bb7da82fd031488e9"
+  },
+  "files": [
+    {
+      "path": "data/train.parquet",
+      "rows": 314716,
+      "bytes": 3721296,
+      "sha256": "4a0c7015c3aa9e1167d9c510e459fdb52017df464ffc31329239f01d89e5591c"
+    },
+    {
+      "path": "data/validation.parquet",
+      "rows": 37983,
+      "bytes": 456421,
+      "sha256": "85d4ba0fd20da5818b3336210de78c04f028e291373f864b449afb4f7f56f9b0"
+    },
+    {
+      "path": "data/test.parquet",
+      "rows": 36369,
+      "bytes": 439871,
+      "sha256": "8d2c38d7a943d8e12127c79c0d92512325e51d38b53adc3ad6924eb972d74212"
+    }
+  ],
+  "splits": {
+    "train": {
+      "rows": 314716,
+      "groups": 123
+    },
+    "validation": {
+      "rows": 37983,
+      "groups": 18
+    },
+    "test": {
+      "rows": 36369,
+      "groups": 24
+    }
+  },
+  "statistics": [
+    [
+      "CSV rows read",
+      "776298"
+    ],
+    [
+      "wild-type rows",
+      "2348"
+    ],
+    [
+      "dropped: not a single substitution (double mutants, insertions, deletions)",
+      "286036"
+    ],
+    [
+      "dropped: outside Tsuboyama's ML-grade subset (ddG_ML or dG_ML not numeric)",
+      "98846"
+    ],
+    [
+      "dropped: synonymous",
+      "0"
+    ],
+    [
+      "dropped: wild type missing or ambiguous",
+      "0"
+    ],
+    [
+      "dropped: non-standard residue in wild type",
+      "0"
+    ],
+    [
+      "dropped: mutant sequence inconsistent with substitution",
+      "0"
+    ],
+    [
+      "measurements kept",
+      "389068"
+    ],
+    [
+      "duplicate substitution groups",
+      "0"
+    ],
+    [
+      "dropped: conflicting duplicate groups (spread > 1 kcal/mol)",
+      "0 groups / 0 measurements"
+    ],
+    [
+      "final rows",
+      "389068"
+    ],
+    [
+      "distinct wild-type sequences",
+      "412"
+    ],
+    [
+      "MMseqs2 clusters",
+      "165"
+    ]
+  ]
+}

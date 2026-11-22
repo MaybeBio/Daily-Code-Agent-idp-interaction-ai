@@ -1,0 +1,37 @@
+[package]
+name = "opendna-data"
+version = "0.1.0"
+description = "Download, clean, cluster, split and write the OpenDNA training datasets as Parquet"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "opendna-data"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+# Burial needs coordinates parsed and solvent accessibility computed. The
+# library crates already do both, correctly and with tests; reimplementing
+# Shrake-Rupley here to keep the workspaces apart would be the wrong trade.
+opendna-core = { path = "../../crates/opendna-core" }
+opendna-io = { path = "../../crates/opendna-io" }
+opendna-analysis = { path = "../../crates/opendna-analysis" }
+arrow = { version = "60", default-features = false }
+clap = { version = "4", features = ["derive"] }
+csv = "1"
+flate2 = "1"
+hex = "0.4"
+parquet = { version = "60", default-features = false, features = ["arrow", "zstd"] }
+reqwest = { version = "0.13", features = ["blocking"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+tempfile = "3"
+thiserror = "2"
+toml = "1"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]

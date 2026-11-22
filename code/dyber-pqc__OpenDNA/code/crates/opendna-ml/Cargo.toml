@@ -1,0 +1,32 @@
+[package]
+name = "opendna-ml"
+description = "Protein language models and prediction heads for OpenDNA, built on candle"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+opendna-core.workspace = true
+candle-core = "0.11"
+candle-nn = "0.11"
+hf-hub = { version = "1", default-features = false, features = ["blocking", "rustls-tls"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+approx.workspace = true
+serde_json.workspace = true
+
+[features]
+default = []
+# Build the CUDA backend. Requires the CUDA toolkit (<= 13.4 for candle 0.11).
+cuda = ["candle-core/cuda", "candle-nn/cuda"]
+metal = ["candle-core/metal", "candle-nn/metal"]
+
+[lints]
+workspace = true

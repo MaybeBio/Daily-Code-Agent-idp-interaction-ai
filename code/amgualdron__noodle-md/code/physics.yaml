@@ -1,0 +1,160 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Named physics settings. A run picks one or more of these by name in its run.yaml.
+#
+# A set written as `extends: <other set>` starts from every setting of <other set>
+# and only lists what it changes. When a run is launched, the sets it uses are copied
+# (fully written out) into runs/<run name>/physics.yaml, so editing this file later
+# never changes a run that already exists.
+#
+# Units: nm, kcal/mol, g/mol, elementary charge. The time unit that follows from these
+# is 0.489 ps (so dt: 0.02 is ~9.8 fs). Derived quantities (kT, Debye length, step
+# counts) are computed in src/forcefield.py and src/simulate.py.
+# ─────────────────────────────────────────────────────────────────────────────
+
+baseline:
+  description: "Single free chain in solution, HPS model, room temperature, 150 mM salt"
+  geometry: bulk                      # bulk: one chain in a large periodic box
+
+  # Thermodynamic state
+  temperature_K: 298
+  ionic_concentration_M: 0.150        # sets the Debye screening length (~0.79 nm here)
+
+  # Residue-residue force field (HPS, Dignon et al. 2018)
+  epsilon_lj: 0.1                     # LJ well depth, kcal/mol
+  lj_r_cut: 2.0                       # nm; the LJ tail beyond 2 nm is < 0.005 kT per residue,
+                                      #   and a shorter cutoff makes every run ~1.5x faster
+  yukawa_r_cut: 3.5                   # nm (~4.4 Debye lengths at 150 mM)
+  harmonic_k: 1920                    # bond stiffness, kcal/mol/nm^2
+  harmonic_r0: 0.38                   # bond length, nm
+
+  box_size: 500                       # nm; cubic box for bulk, box width (x and y) for a single
+                                      #   grafted chain (a brush's width follows from its density)
+
+  # Integration and run length
+  dt: 0.02                            # time step, in units of 0.489 ps (~10 fs, as in the
+                                      #   original HPS model; bonds vibrate over ~40 steps)
+  # steps = multiplier * N^2.2 / dt  (N = number of residues), i.e. lengths grow with
+  # the chain's relaxation time. ./noodle analyze reports how many independent samples a
+  # run really got (column independent_samples), to check them.
+  rouse_multiplier: 2                 # equilibration length
+  production_multiplier: 6            # production length. PROVISIONAL for free chains, not yet
+                                      #   measured in bulk: a free chain should relax faster than
+                                      #   a grafted one, and grafted chains measured fine at 6
+                                      #   (see grafted below)
+  equilibration_steps:                # leave empty to use the multipliers; a number overrides
+  production_steps:
+  frames: 3000                        # frames saved, evenly spaced over production (closely
+                                      #   spaced, as free chains relax faster)
+
+grafted:
+  extends: baseline
+  description: "Chain grafted by its N-terminus to a neutral, purely repulsive surface"
+  geometry: grafted
+  graft_terminus: N                   # N | C: which end is attached to the surface
+
+  # Residue-surface interaction (see wall_forces in src/forcefield.py)
+  wall_potential: lj93                # lj93: smooth continuum surface | lj126: plain 12-6 LJ
+  wall_sigma: 0.5                     # nm, combined with each residue's sigma
+  wall_epsilon: 0.1                   # kcal/mol, same strength as the residue pairs
+  wall_attraction: 0.0                # 0 = purely repulsive. 0..1 turns on an attractive well,
+                                      #   like the hydropathy lambda between residues
+  wall_attraction_scale: hydropathy   # hydropathy: well scales with each residue's lambda
+                                      # uniform: same well for every residue
+  wall_r_cut: 3.5                     # nm, range of the attractive part
+  wall_charge_density: 0.0            # e/nm^2 on the surface; screened with the same Debye
+                                      #   length as the residues. 0 = neutral surface
+  wall_headroom: 2.0                  # nm; ceiling sits at contour length + this above the surface
+
+  # Run length, measured (grafted, multiplier 6, 35 proteins, N = 22-239, Nov 2026): the Rg relaxation
+  # time is c x N^2.2 tu with c = 0.006-0.062 (median 0.021; expanded chains are the slow
+  # ones), the end-to-end time 2-4x longer. A multiplier of 8 gives every one of them 64 or
+  # more independent Rg samples (median ~190) and Rg errors of ~0.3-2.6% per replicate.
+  # For more certainty on Ree and heights, add replicates rather than length.
+  production_multiplier: 8
+  frames: 2000                        # ~5 frames per Rg relaxation time at the median c
+
+  # Brush: many chains of the same protein grafted on a square lattice (REFERENCE.md, section 3.5)
+  grafting_density: 0                 # chains per nm^2. 0 = a single chain in a box box_size wide
+  chains: 100                         # a brush's number of chains, a square number (100 = a 10 x 10
+                                      #   patch). The box is sqrt(chains / grafting_density) wide
+                                      #   (44.7 nm at 0.05/nm^2) and repeats in x and y, like an
+                                      #   infinite brush. More chains are added if the box would be
+                                      #   narrower than twice the interaction range (only above
+                                      #   ~1.6 chains/nm^2 with 100 chains)
+
+grafted_charged:
+  extends: grafted
+  description: "Chain grafted by its N-terminus to a negatively charged, otherwise repulsive surface"
+  # Negative: attracts K, R (and H, +0.5), repels D, E. Flip the sign for a positive surface.
+  # The surface is screened linearised Debye-Huckel, which is accurate while the surface
+  # potential |e psi / kT| = 4 pi l_B |sigma| / kappa stays below ~1 (it overestimates the
+  # pull beyond that). At 298 K, 150 mM: -0.1 e/nm^2 -> 0.7 kT/e; -0.2 -> 1.4.
+  # ./noodle launch prints this number for every charged set.
+  wall_charge_density: -0.1           # e/nm^2, i.e. one elementary charge per 10 nm^2
+
+grafted_reversed:
+  extends: grafted
+  description: "Chain grafted by its C-terminus to a neutral, purely repulsive surface"
+  graft_terminus: C
+
+brush:
+  extends: grafted
+  description: "10 x 10 brush of N-terminally grafted chains, 0.05 chains/nm^2, neutral repulsive surface"
+  grafting_density: 0.05              # one chain per 20 nm^2: grafting points ~4.5 nm apart
+  # PROVISIONAL run length, until it is measured how long 10 x 10 brushes take to
+  # equilibrate and relax (check the drift and independent_samples columns of the manifest).
+  # Every frame averages over all 100 chains, so a brush needs a shorter production than
+  # a single chain for the same statistics. Relaxation times measured earlier on 4 x 4
+  # brushes (~0.01-0.04 x N^2.2 up to 0.1 chains/nm^2) give this ~40-150 relaxation times
+  # per chain; at 0.3 chains/nm^2 (~0.15 x N^2.2) only ~10, so raise it there.
+  production_multiplier: 3
+  frames: 500                         # x 100 chains: 50,000 chain conformations per task
+
+brush_charged:
+  extends: brush
+  description: "10 x 10 brush of N-terminally grafted chains, 0.05 chains/nm^2, surface -0.1 e/nm^2"
+  wall_charge_density: -0.1
+
+# ── Run-length test for free chains: how long a bulk production really needs to be ──
+# The same production as baseline (multiplier 6), with frames twice as close together:
+# a free chain should relax faster than a grafted one (grafted: c = 0.006-0.062), and the
+# relaxation time is only measured well with a few frames per relaxation time. Run it on
+# varied proteins (e.g. rows: 1-50, replicates: 1, max_residues: 250), ./noodle analyze,
+# then check in the manifest that independent_samples stays at 50 or more and drift at 0.
+# tau_rg_tu / N^2.2 gives c, and a production_multiplier of 2 x c x (independent samples
+# wanted) is enough for that sample count.
+length_test_bulk:
+  extends: baseline
+  description: "Run-length test: free chain, production_multiplier 6, 6000 frames"
+  production_multiplier: 6
+  frames: 6000                        # one every 0.001 x N^2.2 tu: ~5 frames per relaxation
+                                      #   time even at c = 0.005
+
+# ── Quick tests: tiny fixed-length runs, NOT physically meaningful ────────────
+test_bulk:
+  extends: baseline
+  description: "Smoke test: a few seconds per task"
+  equilibration_steps: 2000
+  production_steps: 20000
+  frames: 20
+
+test_grafted:
+  extends: grafted
+  description: "Smoke test: a few seconds per task"
+  equilibration_steps: 2000
+  production_steps: 20000
+  frames: 20
+
+test_grafted_charged:
+  extends: grafted_charged
+  description: "Smoke test: a few seconds per task"
+  equilibration_steps: 2000
+  production_steps: 20000
+  frames: 20
+
+test_brush:
+  extends: brush
+  description: "Smoke test: a few seconds per task (100 chains, so fewer steps)"
+  equilibration_steps: 500
+  production_steps: 4000
+  frames: 20

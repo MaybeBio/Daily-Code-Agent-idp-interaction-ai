@@ -30,7 +30,6 @@ https://doi.org/10.5281/zenodo.24127965
 
 - `caid2_binding.fasta`: Test sequences for the CAID 2 Binding challenge.
 - `caid3_binding.fasta`: Test sequences for the CAID 3 Binding challenge.
-- `caid3_binding_idr.fasta`: Test sequences for the CAID 3 Binding-IDR challenge.
 
 These test datasets were obtained from the CAID Web Portal.
 

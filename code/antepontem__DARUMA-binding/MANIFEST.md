@@ -1,28 +1,28 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/antepontem/DARUMA-binding
-- 快照日期: 2026-11-15
-- 快照 commit: [`a1efeb16e2a3`](https://github.com/antepontem/DARUMA-binding/commit/a1efeb16e2a363a411d46bbb442f445dbab5c679)
+- 快照日期: 2026-11-22
+- 快照 commit: [`5356685ecafe`](https://github.com/antepontem/DARUMA-binding/commit/5356685ecafe74527755f9ad5dd6b7fa50886a2a)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (28 个文件, 66.3 KB)
+## 保留 (27 个文件, 63.5 KB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| 源码 | 18 | 56.7 KB |
-| README | 5 | 6.9 KB |
+| 源码 | 17 | 54.0 KB |
+| README | 5 | 6.8 KB |
 | 文档 | 2 | 2.2 KB |
 | 构建/配置 | 3 | 603 B |
 
-按后缀: `.py` 15 (56.1 KB)、`.md` 5 (6.9 KB)、`无后缀` 2 (2.2 KB)、`.sh` 3 (556 B)、`Dockerfile` 1 (468 B)、`.txt` 2 (135 B)
+按后缀: `.py` 14 (53.4 KB)、`.md` 5 (6.8 KB)、`无后缀` 2 (2.2 KB)、`.sh` 3 (556 B)、`Dockerfile` 1 (468 B)、`.txt` 2 (135 B)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 
-## 省略 (123 个文件, 242.8 MB)
+## 省略 (122 个文件, 242.7 MB)
 
 | 原因 | 文件数 | 大小 |
 |---|---:|---:|
-| 后缀不在白名单 | 123 | 242.8 MB |
+| 后缀不在白名单 | 122 | 242.7 MB |
 
 体积最大的省略文件:
 

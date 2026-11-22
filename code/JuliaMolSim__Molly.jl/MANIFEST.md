@@ -1,20 +1,20 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/JuliaMolSim/Molly.jl
-- 快照日期: 2026-11-15
-- 快照 commit: [`df6bdadfd612`](https://github.com/JuliaMolSim/Molly.jl/commit/df6bdadfd612a5b489b02f83e3187190433051a7)
+- 快照日期: 2026-11-22
+- 快照 commit: [`2b1390c5e8d5`](https://github.com/JuliaMolSim/Molly.jl/commit/2b1390c5e8d5ba65d95c9ef7e31fc746574716ad)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (154 个文件, 11.9 MB)
+## 保留 (160 个文件, 11.9 MB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| 源码 | 132 | 11.5 MB |
+| 源码 | 137 | 11.5 MB |
 | 文档 | 14 | 392.9 KB |
 | README | 2 | 11.8 KB |
-| 构建/配置 | 6 | 9.4 KB |
+| 构建/配置 | 7 | 10.2 KB |
 
-按后缀: `.ipynb` 2 (7.6 MB)、`.jl` 122 (3.8 MB)、`.md` 15 (404.4 KB)、`.py` 8 (51.3 KB)、`.toml` 4 (6.9 KB)、`.yml` 2 (2.5 KB)、`.bib` 1 (310 B)
+按后缀: `.ipynb` 2 (7.6 MB)、`.jl` 127 (3.9 MB)、`.md` 15 (404.4 KB)、`.py` 8 (51.3 KB)、`.toml` 5 (7.6 KB)、`.yml` 2 (2.5 KB)、`.bib` 1 (310 B)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 

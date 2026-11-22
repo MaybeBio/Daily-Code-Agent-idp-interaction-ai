@@ -1,8 +1,8 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/mb-group/mdSAM
-- 快照日期: 2026-11-15
-- 快照 commit: [`34a1d58953fe`](https://github.com/mb-group/mdSAM/commit/34a1d58953fe653e35a3ccbeed33c0280904bb23)
+- 快照日期: 2026-11-22
+- 快照 commit: [`8d3d2d68c33a`](https://github.com/mb-group/mdSAM/commit/8d3d2d68c33a80579056de73bccef784bce884c6)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
 ## 保留 (25 个文件, 2.0 MB)
@@ -10,9 +10,9 @@
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
 | 源码 | 23 | 2.0 MB |
-| README | 2 | 23.3 KB |
+| README | 2 | 23.2 KB |
 
-按后缀: `.ipynb` 23 (2.0 MB)、`.md` 2 (23.3 KB)
+按后缀: `.ipynb` 23 (2.0 MB)、`.md` 2 (23.2 KB)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 

@@ -1,0 +1,919 @@
+"""Protein synthesis through an analytic exit tunnel (``topo.csp.cylinder``).
+
+A parallel of :mod:`topo.csp.protocol` for the **cylinder ribosome model**. Instead of
+explicit rigid CG ribosome beads, the ribosome is a pure boundary condition -- an analytic
+exit tunnel (a bore of radius ``r`` in an otherwise-infinite wall,
+:func:`add_tunnel_cylinder`). There are no ribosome beads, no tRNA tether, and no A/P
+translocation, so **each residue is a single MD segment** (not the three sub-stages of the
+explicit protocol).
+
+Timing is the **same O'Brien kinetics** as :mod:`topo.csp.protocol`: each residue's MD
+length comes from its codon mean-first-passage time (:mod:`topo.csp.kinetics`), mapped to
+integration steps by the ``scale_factor`` / ``dt`` compression -- replacing any fixed
+per-residue step count. The C-terminus is held on the tunnel axis at the PTC by a harmonic
+position restraint; the bore keeps the in-tunnel segment extended and lets the finished
+chain leave only through the exit.
+
+Reused wholesale from :mod:`topo.csp.core`: the per-length MD machinery
+(``build_length_model``, build-once-subset contacts, coordinate seeding, minimize / run /
+finalize) and :class:`RunParams`. New here: the analytic tunnel force, the tunnel geometry
+(:class:`CylinderParams`), and the single-segment kinetic driver.
+
+Drive it with an INI control file (see :func:`read_cylinder_config`)::
+
+    topo-cylinder -f cylinder.ini
+    python -m topo.csp.cylinder -f cylinder.ini
+
+**Units:** OpenMM defaults -- length nm, time ps, energy kJ/mol, temperature K, force
+constants kJ/mol/nm^2. In-vivo dwell times in the kinetics are **seconds**.
+"""
+from __future__ import annotations
+
+import argparse
+import random
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional, Tuple
+
+import numpy as np
+import openmm as mm
+from openmm import unit
+
+from topo import engine
+# Reuse the *unchanged* topo.csp.core per-length building blocks -- the cylinder driver
+# swaps only the confinement (analytic tunnel) and the timing (single segment / residue).
+from topo.csp.core import (
+    CG_BOND_LENGTH_NM,
+    TUNNEL_AXIS,
+    RunParams,
+    add_cterm_restraint,
+    build_length_model,
+    cold_start_positions,
+    precompute_contacts,
+    write_subset_structure,
+    _make_cfg,
+    _write_pdb,
+)
+from topo.utils.config import read_ini, strtobool
+from topo.csp import kinetics
+from topo.csp import resume as resume_mod
+from topo.csp import synth_mrna
+
+# Default tunnel wall stiffness (kJ/mol/nm^2 = 20 kcal/mol/A^2): the radial +
+# exit-face + PTC-end "infinite wall" is a stiff finite harmonic.
+TUNNEL_CYL_K = 8368.0
+
+
+# --------------------------------------------------------------------------
+# The analytic tunnel force
+# --------------------------------------------------------------------------
+def add_tunnel_cylinder(system, nascent_indices, r_nm: float,
+                        x_lo_nm: float, x_exit_nm: float,
+                        k: float = TUNNEL_CYL_K,
+                        y0_nm: float = 0.0, z0_nm: float = 0.0,
+                        mouth_round_nm: float = 0.2) -> mm.Force:
+    """Add the analytic exit-tunnel restraint (a hole in an infinite wall).
+
+    One ``CustomExternalForce`` over every nascent bead penalising the **penetration
+    depth into the solid ribosome** ``S`` -- everything outside the bore up to the exit
+    face, plus the closed PTC end::
+
+        S = { x < x_exit AND d > r } cup { x < x_lo },   d = |(y,z) - (y0,z0)|
+
+    The bead escapes ``S`` via whichever face is nearer -- the bore wall (``d - r``, a
+    radial inward push that keeps the in-tunnel chain extended) or the exit face
+    (``x_exit - x``, a +x push so a cytosol bead can only re-enter through the bore, never
+    off-axis). The 90 deg inner corner at the mouth ``(x_exit, r)`` is rounded by a fillet
+    of radius ``rho`` so the potential is continuous (-> stable MD)::
+
+        U   = k * max(0, pen)^2 + k * min(0, x - x_lo)^2
+        pen = (rounded) min( x_exit - x , d - r )      # 0 outside S; > 0 inside S
+
+    Returns the added ``CustomExternalForce`` (already in ``system``).
+    """
+    # The wall stiffness global is named `ktun` (not `k`) so it never collides with
+    # the C-terminus position restraint's own global `k` -- OpenMM shares global
+    # parameters by name across all forces and rejects conflicting default values.
+    energy = (
+        "ktun*max(0, pen)^2 + ktun*min(0, x - xlo)^2;"
+        "pen = select(corner, pround, psharp);"
+        "corner = step(rho - qx)*step(rho - qd);"
+        "pround = rho - sqrt((rho - qx)^2 + (rho - qd)^2);"
+        "psharp = min(qx, qd);"
+        "qx = xexit - x;"
+        "qd = sqrt((y - y0)^2 + (z - z0)^2) - r"
+    )
+    force = mm.CustomExternalForce(energy)
+    force.addGlobalParameter("ktun", k)
+    force.addGlobalParameter("xlo", x_lo_nm)
+    force.addGlobalParameter("xexit", x_exit_nm)
+    force.addGlobalParameter("r", r_nm)
+    force.addGlobalParameter("y0", y0_nm)
+    force.addGlobalParameter("z0", z0_nm)
+    force.addGlobalParameter("rho", mouth_round_nm)
+    for i in nascent_indices:
+        force.addParticle(int(i), [])
+    system.addForce(force)
+    return force
+
+
+# --------------------------------------------------------------------------
+# Per-run parameters (cylinder geometry on top of the shared run params)
+# --------------------------------------------------------------------------
+@dataclass
+class CylinderParams(RunParams):
+    """:class:`~topo.csp.core.RunParams` (MD + O'Brien kinetics) + the tunnel geometry.
+
+    Subclasses :class:`topo.csp.core.RunParams`, so every MD knob (timestep, temperature,
+    restraint constant, output, ...) **and** every kinetic field (``scale_factor``,
+    ``time_stage_1``/``time_stage_2``, ``uniform_codon_time``, ``max_steps_per_stage``, ...)
+    is inherited unchanged; only the analytic-tunnel geometry fields are new.
+    """
+    tunnel_radius_nm: float = 0.9          # bore radius r (~3 CG beads wide)
+    tunnel_length_nm: float = 10.0         # bore length; x_exit = x_lo + length
+    tunnel_x_lo_nm: float = 0.0            # PTC / closed end
+    tunnel_center_nm: Tuple[float, float] = (0.0, 0.0)   # (y0, z0): tunnel axis
+    tunnel_k: float = TUNNEL_CYL_K         # wall stiffness (kJ/mol/nm^2)
+    tunnel_mouth_round_nm: float = 0.2     # mouth-corner fillet radius rho
+
+
+# --------------------------------------------------------------------------
+# Single length step (nascent-only; one MD segment)
+# --------------------------------------------------------------------------
+def run_length(L: int, *, full_pdb: str, R_full: np.ndarray, eps_full: np.ndarray,
+               prev_final: Optional[np.ndarray], out_root: Path,
+               params: CylinderParams, cterm_seed: np.ndarray,
+               x_lo: float, x_exit: float,
+               seed_point: Optional[np.ndarray] = None,
+               seed_override: Optional[np.ndarray] = None,
+               restrain: bool = True, out_subdir: Optional[str] = None,
+               n_steps_override: Optional[int] = None,
+               restart: bool = False, append: bool = False,
+               idr_full: Optional[dict] = None,
+               label: Optional[str] = None) -> np.ndarray:
+    """Build, seed, (restrain,) minimize and run one length-``L`` nascent System.
+
+    The System is the nascent chain only (no ribosome beads); the analytic tunnel
+    (:func:`add_tunnel_cylinder`) supplies all ribosome confinement. Injects the ``L x L``
+    build-once-subset contact block exactly as the shipped runner does.
+
+    The same routine drives both an elongation step and the post-synthesis phase
+    (ejection); these arguments tailor it to the latter:
+
+    - ``seed_point`` : where to place the **new** C-terminal residue ``L`` when continuing
+      from ``prev_final`` (default ``cterm_seed``). The kinetic driver passes a point one
+      equilibrium peptide bond (0.381 nm) *deeper* than ``cterm_seed`` (toward the closed
+      PTC end) so the new ``L-1<->L`` bond starts at its equilibrium length rather than
+      collapsed onto the previous C-terminus; the harmonic restraint (to ``cterm_seed``)
+      plus the tunnel wall then lift residue ``L`` back onto the PTC while the older chain
+      ratchets out. Unused for cold start / ``seed_override``.
+    - ``seed_override`` : use these ``(L, 3)`` nm coordinates directly (the fully
+      synthesized structure) instead of cold-start / new-residue placement.
+    - ``restrain`` : if False, drop the C-terminus restraint (ejection -- the finished
+      protein is released and free to diffuse out the exit).
+    - ``out_subdir`` : output folder under ``out_root`` (default ``L_<L>``); e.g.
+      ``ejection``.
+    - ``n_steps_override`` : run this many steps instead of ``params.n_steps`` (the
+      kinetic driver passes the per-residue codon-dwell step count here).
+    - ``label`` : console-banner text.
+    - ``idr_full`` : the disorder handle from :func:`precompute_contacts`, for the
+      **full** chain; sliced here to the emerged chain (``idx[idx < L]``). An empty
+      slice takes the single-force path.
+
+    Returns the final nascent ``(L, 3)`` nm coordinate array (seeds length L+1).
+    """
+    print()
+    print("#" * 66)
+    print("# " + (label or f"Nascent length L = {L}  (analytic tunnel)"))
+    print("#" * 66)
+
+    out_dir = out_root / (out_subdir or f"L_{L:03d}")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. length-L native structure (bonded terms + per-residue properties).
+    sub_pdb = str(out_dir / f"native_1_{L}.pdb")
+    write_subset_structure(full_pdb, L, sub_pdb)
+
+    # 2. build the length-L topo model, injecting the L x L contact subset
+    #    (build-once-subset: STRIDE / heavy-atom analysis are never re-run).
+    R_L = np.ascontiguousarray(R_full[:L, :L])
+    eps_L = np.ascontiguousarray(eps_full[:L, :L])
+    # Slice the full-chain disorder mask to the emerged chain: particle i (0..L-1) is
+    # native residue i+1, so a full-chain 0-based index is emerged iff it is < L.
+    idr_L = None
+    if idr_full is not None:
+        idx = np.asarray(idr_full['idx'], dtype=int)
+        idx = idx[idx < L]
+        if idx.size:
+            idr_L = {'idx': idx, 'eps_ev_kj': idr_full['eps_ev_kj']}
+    cgModel = build_length_model(sub_pdb, R_L, eps_L, constraints=params.constraints,
+                                 idr=idr_L)
+
+    # 3. seed coordinates. Post-elongation (seed_override): use the finished structure
+    #    as-is. Cold start (L == L0): lay residues 1..L0 extended along +x from the PTC
+    #    (C-terminus at cterm_seed = (x_lo, y0, z0), N-terminus toward the exit). L > L0:
+    #    keep 1..L-1 from the previous final structure and seed the new C-terminal residue
+    #    at seed_point (default cterm_seed; the driver offsets it one equilibrium bond
+    #    deeper so the new L-1<->L bond does not start collapsed -- see the docstring).
+    if seed_override is not None:
+        if seed_override.shape[0] != L:
+            raise ValueError(
+                f"seed_override has {seed_override.shape[0]} residues but L = {L}.")
+        nascent_pos = seed_override
+    elif prev_final is None:
+        nascent_pos = cold_start_positions(L, cterm_seed)
+    else:
+        if prev_final.shape[0] != L - 1:
+            raise ValueError(
+                f"prev_final has {prev_final.shape[0]} residues but L-1 = {L - 1}.")
+        new_residue = cterm_seed if seed_point is None else np.asarray(seed_point, float)
+        nascent_pos = np.vstack([prev_final, new_residue[None, :]])
+
+    # 4. output path: write a small seed PDB and feed it via init_position
+    #    (coords used as-is so the absolute tunnel frame is preserved).
+    seed_pdb = str(out_dir / "seed.pdb")
+    _write_pdb(cgModel.topology, nascent_pos, seed_pdb)
+    cfg = _make_cfg(out_dir, sub_pdb, seed_pdb, params)
+    if n_steps_override is not None:
+        cfg.md_steps = n_steps_override
+    # Restart = extend a prior ejection: setup_simulation loads traj.chk and runs only the
+    # steps remaining to reach the cumulative md_steps target (n_steps_override).
+    cfg.restart = bool(restart)
+    cgModel.dumpTopology(cfg.output_path(".psf"))
+
+    # 5. hold the current C-terminus (residue L) on the tunnel axis at the PTC with a
+    #    harmonic position restraint (no tRNA tether -- no bead in cylinder mode).
+    #    Skipped for the free runs (restrain=False -> the protein is released).
+    if restrain:
+        add_cterm_restraint(cgModel.system, L - 1, cterm_seed, params.restraint_k)
+
+    # 5b. the analytic exit tunnel over every nascent bead (replaces the planar tunnel
+    #     wall; the cylinder already includes the closed-PTC-end term). Kept on during
+    #     the free runs too, so the released protein can only leave via the exit.
+    y0, z0 = params.tunnel_center_nm
+    add_tunnel_cylinder(cgModel.system, range(L), r_nm=params.tunnel_radius_nm,
+                        x_lo_nm=x_lo, x_exit_nm=x_exit, k=params.tunnel_k,
+                        y0_nm=y0, z0_nm=z0,
+                        mouth_round_nm=params.tunnel_mouth_round_nm)
+
+    # 6. set up, minimize, run, finalize (reuse topo.engine).
+    built = engine.BuiltSystem(cgModel=cgModel, system=cgModel.system,
+                               topology=cgModel.topology,
+                               positions=cgModel.positions)
+    start = time.time()
+    ctx = engine.setup_simulation(cfg, built)
+    if params.minimize and not restart:
+        print("Minimizing seeded structure (relax placement / new bond)...")
+        ctx.simulation.minimizeEnergy()
+        ctx.simulation.context.setVelocitiesToTemperature(cfg.ref_t)
+    engine.attach_reporters(cfg, ctx.simulation, suffix="", append=append,
+                            total_steps=cfg.md_steps)
+    # On a restart, setup_simulation loaded the checkpoint (ctx.done_steps); step only the
+    # remaining steps to the cumulative md_steps target (0 = already reached -> no-op).
+    steps_to_run = (cfg.md_steps - ctx.done_steps) if restart else cfg.md_steps
+    if steps_to_run > 0:
+        ctx.simulation.step(steps_to_run)
+    elif restart:
+        print(f"  cumulative {cfg.md_steps} steps already met at checkpoint step "
+              f"{ctx.done_steps}; nothing to run.")
+    engine.finalize_simulation(cfg, ctx, built.topology, start)
+
+    # 7. final nascent coordinates seed the next length.
+    final = mm.app.PDBFile(cfg.output_path("_final.pdb")).getPositions(
+        asNumpy=True).value_in_unit(unit.nanometer)
+    return np.asarray(final)[:L]
+
+
+# --------------------------------------------------------------------------
+# The continuous-synthesis loop (single stage per residue; O'Brien kinetics)
+# --------------------------------------------------------------------------
+def run_cylinder_synthesis(full_pdb: str, *, L0: int = 1, L_max: Optional[int] = None,
+                           out_root: str = "synth_out",
+                           mrna: Optional[str] = None,
+                           codon_time_table_path: Optional[str] = None,
+                           domain_def: Optional[str] = None,
+                           stride_output_file: Optional[str] = None,
+                           params: Optional[CylinderParams] = None) -> None:
+    """Synthesize ``L = L0 .. L_max`` through the analytic tunnel, one segment per residue.
+
+    Mirrors :func:`topo.csp.protocol.run_continuous_synthesis`, but with the cylinder
+    confinement and **a single MD segment per residue** (no A/P sub-stages). Each residue's
+    segment length is its codon dwell time mapped to integration steps -- the same O'Brien
+    kinetics (:mod:`topo.csp.kinetics`) the explicit protocol uses, just not split three
+    ways. Writes per-length trajectories under ``out_root/L_<L>/``, the immutable
+    ``dwell_times.dat`` schedule and an append-only ``progress.log``. If ``params.resume``
+    is ``auto``/``yes`` and an interrupted run is present under ``out_root``, continues
+    from the last completed residue instead of restarting (see :mod:`topo.csp.resume`).
+
+    Parameters
+    ----------
+    full_pdb : str
+        Full native PDB of the target protein (the nascent chain at full length).
+    L0, L_max : int
+        First / final nascent length (``L_max=None`` -> the full residue count).
+    out_root : str
+        Root output directory; each length writes to ``<out_root>/L_<L>/``.
+    mrna : str, optional
+        mRNA sequence file (one codon per residue) for the codon-resolved kinetics.
+        Required for per-codon timing (i.e. unless ``params.uniform_codon_time`` is set).
+    codon_time_table_path : str
+        Per-codon mean-time table (required for per-codon timing; pick one under
+        ``assets/csp/codon_dwell_times/``). There is no bundled default.
+    domain_def, stride_output_file : str, optional
+        Passed to the one-time contact precompute (nscale / STRIDE).
+    params : CylinderParams, optional
+        Per-length run parameters + tunnel geometry (defaults to the dataclass defaults).
+
+    Raises
+    ------
+    ValueError
+        If the length schedule is invalid (``1 <= L0 <= L_max <= N_full`` fails), or if
+        non-uniform kinetics are requested without ``mrna`` (propagated from
+        :func:`topo.csp.kinetics.build_codon_time_lists`).
+    """
+    if params is None:
+        params = CylinderParams()
+
+    out_path = Path(out_root)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    # Analytic tunnel geometry (no ribosome PDB). x_exit = the infinite exit wall; the
+    # C-terminus rests on the axis at the PTC (cold start lays the chain on-axis from here,
+    # and the harmonic restraint holds each new residue here).
+    x_lo = params.tunnel_x_lo_nm
+    x_exit = x_lo + params.tunnel_length_nm
+    y0, z0 = params.tunnel_center_nm
+    cterm_seed = np.array([x_lo, y0, z0], dtype=float)
+    # Placement point for each *new* C-terminal residue: one equilibrium peptide bond
+    # (0.381 nm) DEEPER than the rest/restraint point (toward the closed PTC end, -x). The
+    # previous C-terminus rests at cterm_seed, so seeding the new residue here starts the
+    # new L-1<->L bond at its equilibrium length instead of collapsed onto its neighbour
+    # (the A/P-site offset the explicit protocol gets from optimal_ptc_targets, minus the
+    # ribosome). The restraint (to cterm_seed) + the tunnel wall then lift residue L back
+    # onto the PTC while the older chain ratchets outward. This equilibrium-bond seed is
+    # what lets a rigid AllBonds build stay stable in the cylinder too.
+    seed_point = cterm_seed - CG_BOND_LENGTH_NM * TUNNEL_AXIS
+
+    print(f"Analytic exit tunnel: bore radius r = {params.tunnel_radius_nm} nm, "
+          f"length {params.tunnel_length_nm} nm (x in [{x_lo:.2f}, {x_exit:.2f}]), "
+          f"axis (y,z) = ({y0}, {z0}) nm, mouth fillet {params.tunnel_mouth_round_nm} nm, "
+          f"k = {params.tunnel_k} kJ/mol/nm^2.")
+    print(f"C-terminus restrained on-axis at the PTC {np.round(cterm_seed, 3)} nm; new "
+          f"residues seeded one equilibrium bond deeper at {np.round(seed_point, 3)} nm "
+          f"(k = {params.restraint_k} kJ/mol/nm^2; no tRNA tether).")
+
+    # Build-once-subset contacts on the full native structure (STRIDE at most once).
+    R_full, eps_full, _rmin_2_full, idr_full = precompute_contacts(
+        full_pdb, domain_def, stride_output_file)
+    N_full = R_full.shape[0]
+    if L_max is None:
+        L_max = N_full
+    if not (1 <= L0 <= L_max <= N_full):
+        raise ValueError(f"require 1 <= L0 <= L_max <= N_full; got L0={L0}, "
+                         f"L_max={L_max}, N_full={N_full}.")
+
+    dwell_log = out_path / "dwell_times.dat"
+
+    # --- decide fresh vs. resume --------------------------------------------
+    # The per-residue schedule is the immutable plan: drawn once from the seeded RNG,
+    # persisted to dwell_times.dat, and re-read verbatim on resume so an interrupted run
+    # continues with a kinetic schedule identical to the uninterrupted run. The tunnel
+    # geometry is deterministic from the params (no expensive solve to persist). See
+    # topo.csp.resume and the "Resuming long synthesis runs" doc.
+    if params.resume not in ("auto", "yes", "no"):
+        raise ValueError(f"resume must be 'auto', 'yes' or 'no'; got {params.resume!r}.")
+    if params.resume == "yes":
+        if not resume_mod.progress_exists(out_path):
+            raise SystemExit(
+                f"[resume] resume = yes but no {resume_mod.PROGRESS_FILENAME} in "
+                f"{out_path}/ (nothing to resume). Use resume = no to start fresh.")
+        do_resume = True
+    elif params.resume == "auto":
+        do_resume = resume_mod.progress_exists(out_path) and dwell_log.is_file()
+    else:   # "no"
+        do_resume = False
+
+    prog = None
+    resume_L = L0
+    prev_final: Optional[np.ndarray] = None
+    if do_resume:
+        # Re-read the immutable schedule; recover progress; drop the <=1 in-flight unit.
+        schedule = resume_mod.read_cylinder_schedule(dwell_log)
+        resume_mod.schedule_covers(schedule, L0, L_max)
+        prog = resume_mod.read_progress(out_path)
+        resume_mod.verify_completed_units(out_path, prog, L0,
+                                          final_path_fn=resume_mod.cylinder_final_path)
+        dropped = resume_mod.drop_running_units(out_path, prog)
+        resume_L = max(prog.last_done_residue + 1, L0)
+        if prog.last_done_residue >= L0:
+            prev_final = resume_mod.load_final_pdb(
+                resume_mod.cylinder_final_path(out_path, prog.last_done_residue))
+        print(f"[resume] {prog.last_done_residue} length(s) complete on disk"
+              + (f"; dropped in-flight {dropped}" if dropped else "")
+              + f"; continuing from L={resume_L}.")
+    else:
+        # Fresh start: draw the full schedule from the seeded RNG, persist it + progress.
+        # Need intrinsic[L_max] valid -> at least L_max + 1 codons. Single stage -> each
+        # residue's whole codon dwell is one MD segment (the explicit protocol instead
+        # splits it three ways; the cylinder has no A/P translocation to model).
+        intrinsic, real, codons = kinetics.build_codon_time_lists(
+            L_max + 1, uniform_codon_time=params.uniform_codon_time,
+            mrna_path=mrna, codon_time_table_path=codon_time_table_path,
+            ribosome_traffic=params.ribosome_traffic,
+            initiation_rate=params.initiation_rate)
+        rng = random.Random(params.random_seed)
+        schedule = []
+        for L in range(L0, L_max + 1):
+            dwell_s = kinetics.sample_fpt(intrinsic[L], rng)
+            n_steps = kinetics.seconds_to_steps(dwell_s, params.scale_factor, params.dt_ps)
+            if params.max_steps_per_stage is not None:
+                n_steps = min(n_steps, int(params.max_steps_per_stage))
+            n_steps = max(n_steps, int(params.min_steps_per_stage))
+            codon = codons[L - 1] if codons is not None else "uniform"
+            schedule.append(resume_mod.CylSchedRow(L=L, codon=codon,
+                                                   dwell_s=dwell_s, steps=n_steps))
+        resume_mod.write_cylinder_schedule(dwell_log, schedule, params)
+        resume_mod.write_progress_header(out_path)
+
+    print()
+    print("=" * 66)
+    print("[ cylinder continuous synthesis -- kinetic schedule (single stage/residue) ]")
+    print("=" * 66)
+    print(f"  timing mode: {'uniform' if params.uniform_codon_time is not None else 'per-codon (mRNA)'}; "
+          f"scale_factor={params.scale_factor:g}; dt={params.dt_ps} ps")
+    if params.max_steps_per_stage is not None:
+        print(f"  TEST CLAMP: <= {params.max_steps_per_stage} steps/residue. "
+              f"Remove for production.")
+
+    # --- up-front cost report: exact step total, nominal wall-time ----------
+    total_steps = (sum(r.steps for r in schedule)
+                   + max(params.stall_steps, 0) + max(params.ejection_steps, 0))
+    print(f"[schedule] {L_max - L0 + 1} residues, {total_steps:,} planned MD steps"
+          f"{resume_mod.est_walltime(total_steps, params)}")
+    print(f"Per-residue dwell-time table: {dwell_log}")
+    print(f"Synthesizing {full_pdb}: L = {L0} .. {L_max} (N_full = {N_full}), analytic tunnel.")
+
+    # --- main loop: one MD segment per residue ------------------------------
+    for L in range(resume_L, L_max + 1):
+        row = schedule[L - L0]
+        n_steps, codon = row.steps, row.codon
+        print(f"L={L:>3d}  {codon:>5s}  dwell {row.dwell_s:>9.4g} s  steps {n_steps:>7d}")
+
+        resume_mod.append_progress(out_path, f"L_{L:03d}", "RUNNING")
+        prev_final = run_length(
+            L, full_pdb=full_pdb, R_full=R_full, eps_full=eps_full,
+            prev_final=prev_final, out_root=out_path, params=params,
+            cterm_seed=cterm_seed, x_lo=x_lo, x_exit=x_exit, seed_point=seed_point,
+            n_steps_override=n_steps, idr_full=idr_full,
+            label=f"L={L}  {codon}  ({n_steps} steps, analytic tunnel)")
+        resume_mod.append_progress(out_path, f"L_{L:03d}", "DONE")
+
+    print()
+    print(f"Done. Synthesized {L0} -> {L_max}. Per-length outputs under {out_path}/")
+    print(f"Per-residue dwell-time table: {dwell_log}")
+
+    # Post-synthesis stall: once the chain reaches its final length, hold it at the PTC
+    # with the C-terminus restraint still ON (ribosome stalling) before ejection releases
+    # it. It continues the length-L_max system from the previous final structure; the
+    # analytic tunnel stays on throughout. Its own progress unit (skipped on resume if
+    # already done); its final structure seeds the ejection phase.
+    if params.stall_steps > 0:
+        if do_resume and prog.is_done("stall"):
+            prev_final = resume_mod.load_final_pdb(
+                resume_mod.phase_final_path(out_path, "stall"))
+            print("[resume] stall already complete; skipping.")
+        else:
+            print()
+            print(f"=== Stall (L = {L_max}, {params.stall_steps} steps, "
+                  f"restraint ON -> held at PTC) -> {out_path / 'stall'}/ ===")
+            resume_mod.append_progress(out_path, "stall", "RUNNING")
+            prev_final = run_length(
+                L_max, full_pdb=full_pdb, R_full=R_full, eps_full=eps_full,
+                prev_final=None, out_root=out_path, params=params,
+                cterm_seed=cterm_seed, x_lo=x_lo, x_exit=x_exit,
+                seed_override=prev_final, restrain=True, out_subdir="stall",
+                n_steps_override=params.stall_steps, idr_full=idr_full,
+                label=f"stall (L = {L_max})")
+            resume_mod.append_progress(out_path, "stall", "DONE")
+            print(f"Done. Stall written to {out_path / 'stall'}/")
+
+    # Post-synthesis: once the chain reaches its final length, release the C-terminus
+    # restraint and let the finished protein move -- ejection, a free run (restraint
+    # OFF), mirroring topo.csp.protocol so the two runners share the `ejection_steps`
+    # control key. It continues the length-L_max system from the previous final
+    # structure; the analytic tunnel stays on throughout (the only way out is the exit
+    # face). The ejection phase is its own progress unit; on resume a completed phase is
+    # skipped.
+    if params.ejection_steps > 0:
+        # ejection_steps is the CUMULATIVE free-run length. Continuing a prior ejection from
+        # its checkpoint is an explicit opt-in (`restart = yes`), not implied by simply
+        # raising ejection_steps:
+        #   - restart=yes + a prior checkpoint on a resumed run -> continue from the
+        #     checkpoint (positions + velocities + step count) and append only the steps
+        #     needed to reach the cumulative ejection_steps target. If the checkpoint
+        #     already reached it, run_length reports "already met" and steps nothing.
+        #   - restart=no (default), or no checkpoint yet -> a fresh full run from step 0 to
+        #     ejection_steps (any prior ejection output is overwritten).
+        # `do_resume` is kept in the gate so a stale checkpoint from a since-overwritten
+        # synthesis can never be continued after a fresh start. Inspect ejection/traj_final.pdb
+        # yourself and raise ejection_steps (with restart=yes) until the chain has cleared the tunnel.
+        if do_resume and prog.is_done("ejection") and not params.ejection_restart:
+            # Plain resume of an already-complete ejection: skip it (like the stall phase).
+            # `restart = yes` is the escape hatch to continue/extend a completed ejection.
+            prev_final = resume_mod.load_final_pdb(
+                resume_mod.phase_final_path(out_path, "ejection"))
+            print()
+            print("[resume] ejection already complete; skipping "
+                  "(set restart = yes to continue/extend it).")
+        else:
+            restart = (params.ejection_restart and do_resume
+                       and resume_mod.phase_checkpoint_path(out_path, "ejection").is_file())
+            print()
+            if restart:
+                print(f"=== Ejection (L = {L_max}, restraint OFF; restart from checkpoint toward "
+                      f"cumulative {params.ejection_steps} steps) -> {out_path / 'ejection'}/ ===")
+            else:
+                print(f"=== Ejection (L = {L_max}, {params.ejection_steps} steps, "
+                      f"restraint OFF -> free diffusion) -> {out_path / 'ejection'}/ ===")
+            resume_mod.append_progress(out_path, "ejection", "RUNNING")
+            prev_final = run_length(
+                L_max, full_pdb=full_pdb, R_full=R_full, eps_full=eps_full,
+                prev_final=None, out_root=out_path, params=params,
+                cterm_seed=cterm_seed, x_lo=x_lo, x_exit=x_exit,
+                seed_override=prev_final, restrain=False, out_subdir="ejection",
+                n_steps_override=params.ejection_steps, idr_full=idr_full,
+                restart=restart, append=restart,
+                label=f"ejection (L = {L_max})")
+            resume_mod.append_progress(out_path, "ejection", "DONE")
+            print(f"Done. Ejection written to {out_path / 'ejection'}/")
+
+
+# --------------------------------------------------------------------------
+# INI control file
+# --------------------------------------------------------------------------
+@dataclass
+class CylinderConfig:
+    """Parsed contents of a cylinder synthesis control file (``cylinder.ini``)."""
+    pdb_file: str
+    L0: int
+    L_max: Optional[int] = None
+    outdir: str = "synth_out"
+    mrna: Optional[str] = None
+    codon_time_table_path: Optional[str] = None
+    domain_def: Optional[str] = None
+    stride_output_file: Optional[str] = None
+    params: CylinderParams = None
+    config_file: Optional[str] = None
+
+
+def read_cylinder_config(config_file: str, verbose: bool = True) -> CylinderConfig:
+    """Parse a cylinder synthesis control file (INI) into a :class:`CylinderConfig`.
+
+    A flat ``key = value`` list. Required: ``pdb_file``, ``domain_def``, and --
+    unless ``codon_times`` is a positive number (uniform timing) -- ``mrna``. No ribosome
+    PDB (the tunnel geometry comes from the params, not a structure). Recognised keys
+    (optional ones fall back to defaults):
+
+    - ``pdb_file`` -- full native PDB of the target protein (the nascent chain).
+    - ``L0`` / ``L_max`` -- start / final nascent length (blank ``L0`` -> 1, blank
+      ``L_max`` -> full).
+    - ``outdir`` -- root output directory (per-length subfolders ``L_<L>/``).
+    - ``domain_def`` -- domain YAML for contact ``nscale`` (one-time precompute).
+    - ``stride_output_file`` -- precomputed STRIDE (else STRIDE runs once if on PATH).
+    - **Kinetics** (same as CSP): ``mrna`` (per-codon sequence, or
+      ``fastest``/``slowest``/``median`` to auto-build a synonymous-codon mRNA),
+      ``codon_times`` (a codon table path for
+      per-codon timing -- required, no bundled default; pick one under
+      ``assets/csp/codon_dwell_times/`` -- or a positive number of seconds for a uniform
+      codon time), ``scale_factor``,
+      ``time_stage_1``, ``time_stage_2``, ``random_seed``, ``max_steps_per_stage``,
+      ``min_steps_per_stage``.
+    - **Integrator / MD**: ``dt``, ``ref_t``, ``tau_t``, ``nstout``, ``device``, ``ppn``,
+      ``minimize`` (yes/no), ``constraints`` ('None' flexible / 'AllBonds' rigid),
+      ``restraint_k`` (C-terminus position-restraint constant, kJ/mol/nm^2).
+    - **Tunnel geometry**: ``tunnel_radius`` (nm), ``tunnel_length`` (nm),
+      ``tunnel_x_lo`` (nm), ``tunnel_center`` (``"y0,z0"`` nm), ``tunnel_k``
+      (kJ/mol/nm^2), ``tunnel_mouth_round`` (nm).
+    - **Post-synthesis** (same keys as CSP; run in order stall -> ejection):
+      ``stall_steps`` -- hold at the PTC with the C-terminus restraint still ON
+      (ribosome stalling; 0 = skip); ``ejection_steps`` -- a free run at full length
+      that releases the C-terminus restraint so the finished protein diffuses out the
+      exit and folds in the cytosol (0 = skip).
+    - ``resume`` -- resume policy (same as CSP): ``auto`` (default; resume iff an
+      interrupted run is present under ``outdir``), ``yes`` (require a resumable run,
+      else error) or ``no`` (always fresh). See :mod:`topo.csp.resume`.
+    - ``restart`` -- ``yes`` / ``no`` (default ``no``): whether to *continue* the ejection
+      free run from its checkpoint. ``yes`` + a larger ``ejection_steps`` on a resumed run
+      extends the ejection (appending only the extra steps); if the checkpoint already
+      reached ``ejection_steps`` it reports "already met" and runs nothing. ``no`` re-runs
+      the whole ejection fresh (0 -> ``ejection_steps``).
+
+    Inline ``#``/``;`` comments are ignored. **Units:** OpenMM defaults.
+    """
+    def log(msg: str) -> None:
+        if verbose:
+            print(msg)
+
+    try:
+        cp = read_ini(config_file)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"could not read cylinder config file: {config_file!r}") from None
+    if not cp["OPTIONS"]:
+        raise ValueError(f"{config_file}: no settings found (no key = value lines).")
+    o = cp["OPTIONS"]
+
+    def opt(key: str) -> Optional[str]:
+        v = o.get(key, None)
+        if v is None:
+            return None
+        v = v.strip()
+        return v if v != "" else None
+
+    def req(key: str) -> str:
+        v = opt(key)
+        if v is None:
+            raise ValueError(f"{config_file}: required option '{key}' is missing or blank.")
+        return v
+
+    def as_int(s: str) -> int:
+        return int(str(s).replace("_", ""))
+
+    log(f"Reading cylinder synthesis parameters from {config_file} ...")
+
+    pdb_file = req("pdb_file")
+    L0 = int(opt("L0") or 1)
+    L_max = opt("L_max")
+    L_max = int(L_max) if L_max is not None else None
+    outdir = opt("outdir") or "synth_out"
+    domain_def = req("domain_def")   # required: defines the protein's contact nscales
+    stride_output_file = opt("stride_output_file")
+    mrna = opt("mrna")
+    # codon_times: a table path (per-codon) OR a positive number of seconds (uniform).
+    _uniform_codon_time, codon_time_table_path = kinetics.parse_codon_times(opt("codon_times"))
+    # mrna = "fastest"/"slowest"/"median": one-shot prep -- write the synonymous-codon
+    # mRNA next to the PDB and hand that file to the normal per-codon path. Reserved
+    # keywords, so a real mRNA filename must not be "fastest"/"slowest"/"median".
+    if mrna is not None and mrna.strip().lower() in synth_mrna.SYNTHETIC_MRNA_MODES:
+        _mode = mrna.strip().lower()
+        if _uniform_codon_time is not None:
+            raise ValueError(
+                f"{config_file}: mrna={_mode} is incompatible with a uniform "
+                f"'codon_times' (a number, {_uniform_codon_time:g} s): {_mode} "
+                f"picks a per-amino-acid synonymous codon, which needs a codon-time "
+                f"*table* (e.g. one under assets/csp/codon_dwell_times/), not a single "
+                f"uniform time.")
+        if codon_time_table_path is None:
+            raise ValueError(
+                f"{config_file}: mrna={_mode} needs a 'codon_times' table path -- it "
+                f"defines which synonymous codon is {_mode}.")
+        mrna = synth_mrna.write_synthetic_mrna(pdb_file, codon_time_table_path, _mode)
+        log(f"  mrna={_mode}: wrote synonymous-codon mRNA -> {mrna}")
+
+    p = CylinderParams()
+    # --- integrator / MD knobs ---
+    if opt("dt") is not None:
+        p.dt_ps = float(opt("dt"))
+    if opt("ref_t") is not None:
+        p.ref_t = float(opt("ref_t"))
+    if opt("tau_t") is not None:
+        p.tau_t = float(opt("tau_t"))
+    if opt("nstout") is not None:
+        p.nstout = int(opt("nstout"))
+    if opt("device") is not None:
+        p.device = opt("device")
+    if opt("ppn") is not None:
+        p.ppn = int(opt("ppn"))
+    cons = opt("constraints")
+    if cons is not None:
+        p.constraints = None if cons.strip().lower() == "none" else cons
+    if opt("restraint_k") is not None:
+        p.restraint_k = float(opt("restraint_k"))
+    if opt("minimize") is not None:
+        p.minimize = bool(strtobool(opt("minimize")))
+    # --- O'Brien kinetics ---
+    if opt("scale_factor") is not None:
+        p.scale_factor = float(opt("scale_factor"))
+    if opt("time_stage_1") is not None:
+        p.time_stage_1 = float(opt("time_stage_1"))
+    if opt("time_stage_2") is not None:
+        p.time_stage_2 = float(opt("time_stage_2"))
+    p.uniform_codon_time = _uniform_codon_time
+    # Retired keys -> point users at the single codon_times key.
+    for _legacy in ("trans_times", "uniform_ta", "uniform_mfpt"):
+        if opt(_legacy) is not None:
+            raise ValueError(
+                f"{config_file}: '{_legacy}' has been replaced by the single "
+                f"'codon_times' key -- set it to a codon-time table path (per-codon "
+                f"timing) or to a positive number of seconds (uniform codon time).")
+    if opt("ribosome_traffic") is not None:
+        p.ribosome_traffic = bool(strtobool(opt("ribosome_traffic")))
+    if opt("initiation_rate") is not None:
+        p.initiation_rate = float(opt("initiation_rate"))
+    if opt("random_seed") is not None:
+        p.random_seed = as_int(opt("random_seed"))
+    if opt("max_steps_per_stage") is not None:
+        p.max_steps_per_stage = as_int(opt("max_steps_per_stage"))
+    if opt("min_steps_per_stage") is not None:
+        p.min_steps_per_stage = as_int(opt("min_steps_per_stage"))
+    # --- tunnel geometry ---
+    if opt("tunnel_radius") is not None:
+        p.tunnel_radius_nm = float(opt("tunnel_radius"))
+    if opt("tunnel_length") is not None:
+        p.tunnel_length_nm = float(opt("tunnel_length"))
+    if opt("tunnel_x_lo") is not None:
+        p.tunnel_x_lo_nm = float(opt("tunnel_x_lo"))
+    if opt("tunnel_center") is not None:
+        parts = opt("tunnel_center").replace(",", " ").split()
+        if len(parts) != 2:
+            raise ValueError(f"{config_file}: tunnel_center must be 'y0,z0'; got "
+                             f"{opt('tunnel_center')!r}.")
+        p.tunnel_center_nm = (float(parts[0]), float(parts[1]))
+    if opt("tunnel_k") is not None:
+        p.tunnel_k = float(opt("tunnel_k"))
+    if opt("tunnel_mouth_round") is not None:
+        p.tunnel_mouth_round_nm = float(opt("tunnel_mouth_round"))
+    # --- post-synthesis phases (same keys as CSP) ---
+    if opt("stall_steps") is not None:
+        p.stall_steps = as_int(opt("stall_steps"))
+    if opt("ejection_steps") is not None:
+        p.ejection_steps = as_int(opt("ejection_steps"))
+    # Resume policy (same as CSP): auto (default) / yes / no. See topo.csp.resume.
+    if opt("resume") is not None:
+        r = opt("resume").strip().lower()
+        if r not in ("auto", "yes", "no"):
+            raise ValueError(f"{config_file}: resume must be 'auto', 'yes' or 'no', "
+                             f"got {opt('resume')!r}.")
+        p.resume = r
+    # Ejection restart policy: yes -> continue the ejection free run from its checkpoint
+    # (extend it); no (default) -> re-run the ejection fresh. See RunParams.ejection_restart.
+    if opt("restart") is not None:
+        p.ejection_restart = bool(strtobool(opt("restart")))
+
+    # Validation: per-codon timing needs both the (protein-specific) mRNA and an explicit
+    # codon-time table -- there is no bundled default (pick one under
+    # assets/csp/codon_dwell_times/).
+    if p.uniform_codon_time is None and (mrna is None or codon_time_table_path is None):
+        raise ValueError(
+            f"{config_file}: per-codon kinetics need both an 'mrna' file and a "
+            f"'codon_times' table path (e.g. one under assets/csp/codon_dwell_times/), "
+            f"or set 'codon_times' to a positive number of seconds for a uniform codon "
+            f"time.")
+
+    log(f"  inputs: pdb_file={pdb_file} (ribosome: analytic tunnel, no PDB)")
+    log(f"  contacts: domain_def={domain_def}, stride_output_file={stride_output_file}")
+    log(f"  schedule: L0={L0}, L_max={L_max if L_max is not None else 'full'}, "
+        f"constraints={p.constraints}")
+    _timing = (f"uniform (codon_time={p.uniform_codon_time:g} s)" if p.uniform_codon_time is not None
+               else f"per-codon (mrna={mrna}, codon_times={codon_time_table_path})")
+    log(f"  timing: {_timing}; scale_factor={p.scale_factor:g}, "
+        f"time_stage_1={p.time_stage_1:g} s, time_stage_2={p.time_stage_2:g} s")
+    log(f"  tunnel: r={p.tunnel_radius_nm} nm, length={p.tunnel_length_nm} nm, "
+        f"x_lo={p.tunnel_x_lo_nm} nm, center={p.tunnel_center_nm} nm, "
+        f"k={p.tunnel_k} kJ/mol/nm^2, mouth_round={p.tunnel_mouth_round_nm} nm")
+    log(f"  mechanics: restraint_k={p.restraint_k} kJ/mol/nm^2, minimize={p.minimize}")
+    if p.stall_steps:
+        log(f"  post-synthesis: stall={p.stall_steps} steps (held at PTC, restraint ON)")
+    if p.ejection_steps:
+        log(f"  post-synthesis: ejection={p.ejection_steps} steps"
+            f"{' (restart: continue from checkpoint)' if p.ejection_restart else ' (fresh run)'}")
+    if not p.stall_steps and not p.ejection_steps:
+        log("  post-synthesis: off")
+    log(f"  integrator: dt={p.dt_ps} ps, ref_t={p.ref_t} K, tau_t={p.tau_t} /ps, nstout={p.nstout}")
+    log(f"  hardware/output: device={p.device}, ppn={p.ppn}, outdir={outdir}")
+
+    return CylinderConfig(pdb_file=pdb_file, L0=L0, L_max=L_max, outdir=outdir,
+                          mrna=mrna, codon_time_table_path=codon_time_table_path, domain_def=domain_def,
+                          stride_output_file=stride_output_file,
+                          params=p, config_file=config_file)
+
+
+# --------------------------------------------------------------------------
+# Tunnel visualization (VMD scenery)
+# --------------------------------------------------------------------------
+def tunnel_tcl(config_file: str, wall_outer_nm: Optional[float] = None) -> str:
+    """Build a VMD ``graphics`` script that draws the analytic exit tunnel.
+
+    The cylinder synthesis has **no ribosome beads** -- the tunnel is a pure
+    force. To *show* it, this draws the tunnel as VMD ``graphics`` on their own
+    static molecule: the cylindrical **bore**, the closed **PTC** end cap, and
+    the semi-transparent **exit-face wall** (a flat annulus whose hole is the
+    bore). Geometry is read from the same ``cylinder.ini`` that drove the run, so
+    the drawn tunnel always matches the forces the chain actually felt; lengths
+    are converted nm -> angstrom to match the stitched DCD/PSF and VMD.
+
+    The returned string is self-contained scenery (its own ``mol new``), so it
+    can be appended to a movie ``.tcl`` (see ``topo-csp-movie --tunnel``) or fed
+    to a headless renderer via ``render_cg.py --extra-tcl``.
+
+    Parameters
+    ----------
+    config_file : str
+        The ``cylinder.ini`` used for the run (source of the tunnel geometry).
+    wall_outer_nm : float, optional
+        Outer radius (nm) of the drawn exit-face annulus. ``None`` -> ``r + 3 nm``.
+
+    Returns
+    -------
+    str
+        A VMD TCL snippet drawing the tunnel on a dedicated molecule.
+    """
+    nm_to_a = 10.0
+    p = read_cylinder_config(config_file, verbose=False).params
+    x_lo = p.tunnel_x_lo_nm * nm_to_a
+    x_exit = (p.tunnel_x_lo_nm + p.tunnel_length_nm) * nm_to_a
+    r = p.tunnel_radius_nm * nm_to_a
+    y0, z0 = (c * nm_to_a for c in p.tunnel_center_nm)
+    rout = ((p.tunnel_radius_nm + 3.0) if wall_outer_nm is None
+            else wall_outer_nm) * nm_to_a
+    cap = max(0.3 * r, 1.0)   # thin filled disk for the closed PTC end
+
+    return f"""# Analytic exit tunnel for the cylinder synthesis (drawn on its own molecule).
+# Auto-generated by topo.csp.cylinder.tunnel_tcl from the run's cylinder.ini.
+proc draw_annulus {{mol xpos cy cz rin rout n}} {{
+    set pi 3.141592653589793
+    set da [expr {{2.0 * $pi / $n}}]
+    for {{set i 0}} {{$i < $n}} {{incr i}} {{
+        set a0 [expr {{$i * $da}}]; set a1 [expr {{($i + 1) * $da}}]
+        set yi0 [expr {{$cy + $rin  * cos($a0)}}]; set zi0 [expr {{$cz + $rin  * sin($a0)}}]
+        set yi1 [expr {{$cy + $rin  * cos($a1)}}]; set zi1 [expr {{$cz + $rin  * sin($a1)}}]
+        set yo0 [expr {{$cy + $rout * cos($a0)}}]; set zo0 [expr {{$cz + $rout * sin($a0)}}]
+        set yo1 [expr {{$cy + $rout * cos($a1)}}]; set zo1 [expr {{$cz + $rout * sin($a1)}}]
+        graphics $mol triangle "$xpos $yi0 $zi0" "$xpos $yo0 $zo0" "$xpos $yo1 $zo1"
+        graphics $mol triangle "$xpos $yi0 $zi0" "$xpos $yo1 $zo1" "$xpos $yi1 $zi1"
+    }}
+}}
+
+set tun [mol new]
+mol rename $tun "tunnel"
+
+# Bore wall: hollow tube (no caps) from PTC to exit, axis along +x.
+graphics $tun material Transparent
+graphics $tun color blue
+graphics $tun cylinder "{x_lo:.3f} {y0:.3f} {z0:.3f}" "{x_exit:.3f} {y0:.3f} {z0:.3f}" \\
+    radius {r:.3f} resolution 60 filled no
+
+# Closed PTC end: thin filled disk at x_lo.
+graphics $tun color red
+graphics $tun cylinder "{x_lo - cap:.3f} {y0:.3f} {z0:.3f}" "{x_lo:.3f} {y0:.3f} {z0:.3f}" \\
+    radius {r:.3f} resolution 60 filled yes
+
+# Infinite exit-face wall at x_exit: a flat annulus (hole = bore). Transparent
+# (translucent grey) so the ejected chain stays visible as it passes the wall
+# plane; the chain leaves through the central hole (= the bore).
+graphics $tun material Transparent
+graphics $tun color gray
+draw_annulus $tun {x_exit:.3f} {y0:.3f} {z0:.3f} {r:.3f} {rout:.3f} 96
+"""
+
+
+# --------------------------------------------------------------------------
+# CLI
+# --------------------------------------------------------------------------
+def cylinder(argv: Optional[List[str]] = None) -> None:
+    """Console entry point: ``topo-cylinder -f cylinder.ini``."""
+    parser = argparse.ArgumentParser(
+        prog="topo-cylinder",
+        description="Protein synthesis through an analytic exit tunnel (the "
+                    "cylinder ribosome model). Grows the nascent chain N->C, restraining "
+                    "the C-terminus on the tunnel axis at the PTC; an analytic cylindrical "
+                    "bore (hole in an infinite wall) confines the in-tunnel segment. One MD "
+                    "segment per residue, timed by the O'Brien codon kinetics. Controlled "
+                    "by an INI file: topo-cylinder -f cylinder.ini",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-input", "-f", dest="config", type=str,
+                        help="synthesis control file (INI).")
+    parser.add_argument("-o", "--outdir", default=None,
+                        help="override the output directory from the config file.")
+    parser.add_argument("--device", default=None, choices=["CPU", "GPU"],
+                        help="override the compute device from the config file.")
+    parser.add_argument("--no-resume", "--fresh", dest="no_resume", action="store_true",
+                        help="ignore any interrupted run and start fresh "
+                             "(overrides resume in the config file).")
+
+    if argv is None and len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
+    args = parser.parse_args(argv)
+    if not args.config:
+        parser.error("a synthesis control file is required: -f cylinder.ini")
+
+    print(f"OpenMM version: {mm.__version__}")
+
+    cfg = read_cylinder_config(args.config)
+    if args.outdir:
+        cfg.outdir = args.outdir
+    if args.device:
+        cfg.params.device = args.device
+    if args.no_resume:
+        cfg.params.resume = "no"
+
+    run_cylinder_synthesis(cfg.pdb_file, L0=cfg.L0, L_max=cfg.L_max, out_root=cfg.outdir,
+                           mrna=cfg.mrna, codon_time_table_path=cfg.codon_time_table_path,
+                           domain_def=cfg.domain_def,
+                           stride_output_file=cfg.stride_output_file, params=cfg.params)
+
+
+if __name__ == "__main__":
+    cylinder()

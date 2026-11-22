@@ -19,6 +19,5 @@ This directory contains the results and scripts used to reproduce the figures an
 - `table_2.py`
 - `table_3.py`
 - `table_S1.py`
-- `table_S2.py`
 
 Each script uses the corresponding files in the `results/` directory.

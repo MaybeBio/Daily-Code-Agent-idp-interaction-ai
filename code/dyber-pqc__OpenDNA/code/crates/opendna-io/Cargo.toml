@@ -1,0 +1,19 @@
+[package]
+name = "opendna-io"
+description = "Readers and writers for PDB, mmCIF and FASTA"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+opendna-core.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

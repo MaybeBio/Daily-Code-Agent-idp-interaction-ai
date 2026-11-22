@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "topo"
+# Version is derived from the git tag (CalVer YEAR.N) by setuptools-scm; see
+# [tool.setuptools_scm] below and scripts/next_version.sh.
+dynamic = ["version"]
+description = "A unified coarse-grained model for globular and disordered proteins, built on OpenMM."
+readme = "README.md"
+requires-python = ">=3.9"
+# Runtime dependencies. Floors are the oldest versions known to work; no upper
+# caps (the package runs on current releases, e.g. numpy 2.x / openmm 8.x).
+# All are import-time requirements of `import topo`.
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.7",
+    "openmm>=7.7",
+    "parmed>=3.4",
+    "MDAnalysis>=2.2",
+    "mdtraj>=1.9.7",
+    "pandas>=1.4",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+# Console command for the simulation runner: `topo-mdrun -f md.ini`
+topo-mdrun = "topo.mdrun:mdrun"
+# Console command for the nscale optimizer: `topo-optimize -f optimize.ini`
+topo-optimize = "topo.optimize:optimize"
+# Console command for the O'Brien continuous synthesis protocol (per-codon, 3-stage
+# co-translational synthesis): `topo-csp -f csp.ini`
+topo-csp = "topo.csp.protocol:csp"
+# Console command for the cylinder ribosome model (analytic exit tunnel; one MD segment
+# per residue, same O'Brien codon kinetics): `topo-cylinder -f cylinder.ini`
+topo-cylinder = "topo.csp.cylinder:cylinder"
+# Console command to stitch the CSP per-residue/-stage trajectories into one VMD
+# movie: `topo-csp-movie -o synth_out`
+topo-csp-movie = "topo.csp.movie:main"
+# Console command to pre-generate a fastest/slowest synonymous-codon mRNA for a protein
+# (same prep the runners do for `mrna = fastest/slowest`):
+# `topo-make-mrna --pdb prot.pdb --codon-times table.txt --mode fastest`
+topo-make-mrna = "topo.csp.synth_mrna:main"
+
+[tool.setuptools_scm]
+# Version from git tags (e.g. 2026.1). Between tags, a dev version is derived.
+# Drop the "+g<hash>" local part so dev versions stay PyPI-upload-clean.
+local_scheme = "no-local-version"
+
+[tool.setuptools.packages.find]
+# Only ship the importable package (not tutorials/docs/etc. at the repo root).
+include = ["topo*"]
+
+[tool.setuptools.package-data]
+# Optional: if third-party binaries are vendored into topo/bin/ (e.g. via
+# `PREFIX=topo/bin scripts/install_deps.sh`), ship them in the wheel. This makes
+# the wheel platform-specific, so it is off by default -- the directory is
+# normally absent and this glob simply matches nothing. topo/utils/external.py
+# resolves TOPO_STRIDE/PATH first and only falls back to topo/bin/ if present.
+topo = ["bin/*"]

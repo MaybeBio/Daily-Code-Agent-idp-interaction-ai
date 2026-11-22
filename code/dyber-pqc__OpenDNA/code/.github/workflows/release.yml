@@ -1,0 +1,301 @@
+name: Release
+
+# Builds the command-line tool and the desktop application and attaches them
+# to a tag.
+#
+# It has not been executed. It only runs on a tag push, so the first real tag
+# is also its first test, and the release notes say so. What reduces the risk
+# is that the build steps mirror jobs in ci.yml, which runs on every commit:
+# the Rust build and test of the CLI, and the Trunk and WebAssembly parts of
+# the application. The parts unique to this file are `cargo tauri build`, the
+# cross-compiled macOS target, the archiving and the checksums.
+#
+# `fail-fast: false` everywhere on purpose. One platform failing should still
+# produce a release for the others, with the gap visible, rather than nothing.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  cli-build:
+    name: Command-line tool (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          # Built on the Apple Silicon runner for Intel Macs, which are still
+          # what a lot of lab machines are. Cross-compiled, so it cannot be
+          # smoke-tested on the runner that produced it.
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            archive: tar.gz
+            cross: true
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release -p opendna-cli --target ${{ matrix.target }}
+
+      # Proof that the binary runs on the platform that built it, and that the
+      # exit-code contract holds there. `models` is a report and succeeds with
+      # nothing installed; asking for a prediction with nothing installed must
+      # exit 3 and name the files it looked for. A binary that could not start
+      # would fail differently, and one that invented a number would exit 0.
+      #
+      # Neither command reaches the network: the head is missing, which is
+      # refused before the embedding model is loaded.
+      - name: Smoke test
+        if: ${{ !matrix.cross }}
+        shell: bash
+        run: |
+          BIN="target/${{ matrix.target }}/release/opendna"
+          [ -f "$BIN.exe" ] && BIN="$BIN.exe"
+          "$BIN" --version
+          mkdir -p empty
+          printf '>ubiquitin\nMQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEG\n' > smoke.fasta
+          "$BIN" --models empty models
+          set +e
+          "$BIN" --models empty predict --task disorder -i smoke.fasta
+          status=$?
+          set -e
+          if [ "$status" -ne 3 ]; then
+            echo "expected exit 3 with no heads installed, got $status"
+            exit 1
+          fi
+
+      - name: Archive
+        shell: bash
+        run: |
+          mkdir -p dist staged
+          name="opendna-${{ github.ref_name }}-${{ matrix.target }}"
+          src="target/${{ matrix.target }}/release/opendna"
+          if [ -f "$src.exe" ]; then
+            cp "$src.exe" staged/
+          else
+            cp "$src" staged/
+          fi
+          # The licence and the card travel with the binary: somebody who
+          # downloads one file should not have to find the terms separately.
+          cp LICENSE staged/
+          cp crates/opendna-cli/README.md staged/README.md
+          cp docs/CHANGELOG.md staged/
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            (cd staged && 7z a -tzip "../dist/$name.zip" .)
+          else
+            tar -czf "dist/$name.tar.gz" -C staged .
+          fi
+          ls -la dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  desktop-build:
+    name: Desktop installer (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            artifact-name: desktop-macos
+          - platform: ubuntu-22.04
+            artifact-name: desktop-linux
+          - platform: windows-latest
+            artifact-name: desktop-windows
+    runs-on: ${{ matrix.platform }}
+    # At job level rather than on the steps: a step's own `env` is not visible
+    # to that step's `if`, which is evaluated before the step environment is
+    # built, and gating on "is this secret set" is the whole point here. An
+    # unset secret is an empty string, which is what every condition tests for.
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      WINDOWS_SIGN_COMMAND: ${{ secrets.WINDOWS_SIGN_COMMAND }}
+      WINDOWS_CERT_THUMBPRINT: ${{ secrets.WINDOWS_CERT_THUMBPRINT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app
+
+      - uses: jetli/trunk-action@v0.5.1
+        with:
+          version: v0.22.1
+
+      - name: Install the Tauri CLI
+        run: cargo install tauri-cli --locked --version "^2"
+
+      # The structure viewer's assets are fetched rather than vendored, and
+      # the UI build expects them to be present.
+      - name: Fetch Mol* assets
+        working-directory: app
+        run: cargo run -p xtask -- fetch-molstar
+
+      # Apple's certificate goes into a keychain of its own, created here and
+      # thrown away with the runner. Tauri picks the identity up from the
+      # environment; nothing about signing is in the committed config.
+      - name: Import the Apple certificate
+        if: matrix.platform == 'macos-latest' && env.APPLE_CERTIFICATE != ''
+        run: |
+          keychain="$RUNNER_TEMP/opendna-signing.keychain-db"
+          password="$(openssl rand -base64 24)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
+          security list-keychain -d user -s "$keychain" login.keychain
+          rm -f "$RUNNER_TEMP/certificate.p12"
+          security find-identity -v -p codesigning "$keychain"
+
+      # tauri.conf.json runs `trunk build --release` in app/ui as its
+      # beforeBuildCommand, so the WebAssembly front end is built here too.
+      #
+      # The signing overlay is merged only when there is something to sign
+      # with. Without it the build is exactly the unsigned one that has always
+      # worked, which is what a fork and a certificate-less release both need.
+      # The Apple variables are read by Tauri itself -- it signs when
+      # APPLE_SIGNING_IDENTITY is set and notarizes when the APPLE_ID trio is
+      # -- and the Windows ones by scripts/sign-windows.ps1. Both come from the
+      # job environment above.
+      - name: Build the application
+        working-directory: app/desktop
+        shell: bash
+        run: |
+          signing=""
+          case "${{ matrix.platform }}" in
+            windows-latest)
+              if [ -n "$WINDOWS_SIGN_COMMAND$WINDOWS_CERT_THUMBPRINT" ]; then
+                signing="--config tauri.signing.conf.json"
+              fi
+              ;;
+            macos-latest)
+              # macOS needs no config: Tauri signs when APPLE_SIGNING_IDENTITY
+              # is set and notarizes when the APPLE_ID trio is.
+              ;;
+          esac
+          if [ -n "$signing" ]; then
+            echo "Building with code signing."
+          else
+            echo "Building unsigned: no signing credential is configured for this platform."
+          fi
+          cargo tauri build $signing
+
+      - name: Collect installers
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p installers
+          find app/target/release/bundle -type f \( \
+            -name "*.dmg" -o \
+            -name "*.app.tar.gz" -o \
+            -name "*.deb" -o \
+            -name "*.rpm" -o \
+            -name "*.AppImage" -o \
+            -name "*.msi" -o \
+            -name "*-setup.exe" \
+          \) -exec cp {} installers/ \;
+          ls -la installers/
+
+      - name: Upload installers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: installers/*
+          if-no-files-found: error
+
+  github-release:
+    name: GitHub release
+    needs: [cli-build, desktop-build]
+    # Not `success()`: a platform that failed to build should still produce a
+    # release for the ones that did, with the missing file visible.
+    if: ${{ always() && startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten and checksum
+        run: |
+          mkdir -p release
+          find artifacts -type f -exec cp {} release/ \;
+          cd release
+          # Checksums, because this project refuses to run weights it cannot
+          # hash and it would be odd to ship a binary nobody can check.
+          sha256sum * > SHA256SUMS
+          ls -la
+          cat SHA256SUMS
+
+      # One signature over the checksum file vouches for every artefact named
+      # in it, on every platform, and costs nothing but a key. It does not stop
+      # an operating system warning about an unsigned installer -- that needs
+      # the platform certificates -- but it is what lets somebody check that
+      # what they downloaded is what was built.
+      - name: Sign the checksums
+        if: env.GPG_SIGNING_KEY != ''
+        run: |
+          scripts/sign-release.sh release
+          scripts/sign-release.sh --verify release
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          draft: true
+          generate_release_notes: true
+          body_path: .github/release-notes.md

@@ -1,0 +1,16 @@
+# Standalone workspace for the OpenDNA dataset pipeline.
+#
+# This is intentionally separate from the root workspace: the pipeline pulls in
+# heavy dependencies (arrow, parquet, an HTTP client) that the application does
+# not need, and it is run offline by maintainers rather than shipped.
+[workspace]
+resolver = "2"
+members = ["opendna-data"]
+
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.95"
+
+[profile.release]
+debug = "line-tables-only"

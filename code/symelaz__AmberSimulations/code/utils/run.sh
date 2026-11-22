@@ -10,8 +10,29 @@
 
 # INPUTS
 # 1 --> gpus to run the simulations (default: 0)
+# --faster (anywhere) --> NVIDIA cuPotential engine (~2.5x faster; needs the
+#                         openmm_faster environment, see Installation_readme.md)
+#
+# Examples:  bash utils/run.sh 0            classic OpenMM engine
+#            bash utils/run.sh 0 --faster   cuPotential engine
 
-GPU=${1:-0}
+GPU=0; FASTER=""; ENGINE=classic
+for arg in "$@"; do
+    case "$arg" in
+        --faster) FASTER="--faster"; ENGINE=faster ;;
+        -*) echo "ERROR: unknown option $arg (only --faster)"; exit 1 ;;
+        *) GPU="$arg" ;;
+    esac
+done
+echo "Engine: $ENGINE  GPU: $GPU"
+if [ -n "$FASTER" ] && ! python -c "import nv_openmm_plugin" 2>/dev/null; then
+    echo "ERROR: --faster needs the cuPotential plugin (nv_openmm_plugin), not found in this environment."
+    echo "       conda activate openmm_faster, or install it with utils/install_faster.sh"
+    exit 1
+fi
+# A .chk checkpoint holds integrator state and only loads into the same engine;
+# the XML .rst states are portable. Remember which engine wrote the last chunk.
+PREV_ENGINE=$(cat run_engine.txt 2>/dev/null || echo "$ENGINE")
 
 # Input file prefix
 init=step3_input
@@ -42,7 +63,7 @@ do
 	else
 		input_param="-ff amber -p ${init}.parm7 -c ${init}.rst7 -irst ${pstep}.rst"
 	fi
-	python -u utils/openmm_run.py -i ${istep}.inp ${input_param} -orst ${istep}.rst -ochk ${istep}.chk -odcd ${istep}.dcd -gpu ${GPU} > ${istep}.out
+	python -u utils/openmm_run.py -i ${istep}.inp ${input_param} -orst ${istep}.rst -ochk ${istep}.chk -odcd ${istep}.dcd -gpu ${GPU} ${FASTER} > ${istep}.out
 	if [ ! -s ${istep}.rst ]; then
 		echo "ERROR: ${istep}.rst was not created. See ${istep}.out" ; exit 1
 	fi
@@ -106,7 +127,7 @@ do
     if [ $cnt == 1 ];then
        pstep=${last_eq}
        input_param="-ff amber -p ${init}.parm7 -c ${init}.rst7 -irst ${pstep}.rst"
-    elif [ -f ${pstep}.chk ]; then
+    elif [ -f ${pstep}.chk ] && [ "$PREV_ENGINE" = "$ENGINE" ]; then
         input_param="-ff amber -p ${init}.parm7 -c ${init}.rst7 -ichk ${pstep}.chk"
     elif [ -f ${pstep}.rst ]; then
         input_param="-ff amber -p ${init}.parm7 -c ${init}.rst7 -irst ${pstep}.rst"
@@ -115,7 +136,11 @@ do
     fi
 
     echo ">>> Running $istep..."
-    python -u utils/openmm_run.py -i ${prod_prefix}.inp ${input_param} -orst ${istep}.rst -ochk ${istep}.chk -odcd ${istep}.dcd -gpu ${GPU} > ${istep}.out
+    if [ "$PREV_ENGINE" != "$ENGINE" ] && [ $cnt -gt 1 ]; then
+        echo ">>> Engine changed ($PREV_ENGINE -> $ENGINE): restarting from ${pstep}.rst, not the .chk"
+    fi
+    python -u utils/openmm_run.py -i ${prod_prefix}.inp ${input_param} -orst ${istep}.rst -ochk ${istep}.chk -odcd ${istep}.dcd -gpu ${GPU} ${FASTER} > ${istep}.out
+    echo "$ENGINE" > run_engine.txt; PREV_ENGINE=$ENGINE
 
     echo ">>> Checking if ${istep}.dcd file exists"
     if [ ! -s ${istep}.dcd ]; then

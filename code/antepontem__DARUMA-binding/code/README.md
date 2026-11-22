@@ -110,4 +110,4 @@ See [`LICENSE`](https://github.com/antepontem/DARUMA-binding/blob/HEAD/LICENSE).
 
 The version of DARUMA-binding corresponding to the manuscript is archived on Zenodo:
 
-https://doi.org/10.5281/zenodo.24133355
+https://doi.org/10.5281/zenodo.24272574

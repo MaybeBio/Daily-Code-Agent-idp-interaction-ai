@@ -1,0 +1,40 @@
+[package]
+name = "opendna-cli"
+description = "Command-line interface for OpenDNA: batch predictions over FASTA files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "opendna"
+path = "src/main.rs"
+
+[dependencies]
+opendna-analysis.workspace = true
+opendna-core.workspace = true
+opendna-io.workspace = true
+opendna-engine = { path = "../opendna-engine", version = "0.6.0-rc1" }
+opendna-ml = { path = "../opendna-ml", version = "0.6.0-rc1" }
+candle-core = "0.11"
+anyhow.workspace = true
+clap = { version = "4", features = ["derive"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+# The exit-code test builds its own corrupt and swapped fixtures, which means
+# rehashing weights and rewriting metadata.
+sha2.workspace = true
+serde_json.workspace = true
+
+[features]
+cuda = ["opendna-ml/cuda"]
+metal = ["opendna-ml/metal"]
+
+[lints]
+workspace = true

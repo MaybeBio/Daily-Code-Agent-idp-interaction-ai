@@ -1,0 +1,15 @@
+# Analysis parameters. Scripts read this file; change values here, not in code.
+seed: 42
+
+network:
+  cutoff: 7.5                          # Cα–Cα contact cutoff (Å), main analysis. GR-Align default; GRAFENE Cα setting
+  cutoffs_sweep: [6.0, 7.0, 7.5, 8.0, 9.0, 10.0]
+
+graphlets:
+  orca: tools/orca/orca
+  size: 4                              # 4-node graphlets -> 15 node orbits
+
+phase0:
+  test_pdb: data/raw/1MBN.pdb          # sperm whale myoglobin
+  compare_pdb: data/raw/2HHB.pdb       # human haemoglobin
+  compare_chain: A                     # alpha chain, same globin fold

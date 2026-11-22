@@ -1,0 +1,73 @@
+{
+  "dataset": "burial",
+  "pipeline": "opendna-data",
+  "pipeline_version": "0.1.0",
+  "seed": 20261114,
+  "clustering": "mmseqs easy-cluster --min-seq-id 0.3 -c 0.8 --cov-mode 0 --cluster-mode 0 -s 7.5",
+  "fractions": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.1
+  },
+  "sources": {
+    "cath-4_4_0-domain-list-s100": "9a202046a68c80436f76a3631fe0f84fc4f027a89c53657a5dcd4c97231cf562",
+    "cath-4_4_0-domain-seqs-s100": "d7d1efdf9a169456ad762faca0dc80b64f734ddeaf31481c69eb68ce5a77cd83",
+    "wwpdb-entries-idx": "b9d6b90c4b1c4bdfbccb61210276e199aecfdefe73ed754fb6792468e174e55f"
+  },
+  "files": [
+    {
+      "path": "data/train.parquet",
+      "rows": 751,
+      "bytes": 619913,
+      "sha256": "38262915e34c7e1672d0749ad132c94736730385a1e1f0981edef0a07b51d331"
+    },
+    {
+      "path": "data/validation.parquet",
+      "rows": 95,
+      "bytes": 119223,
+      "sha256": "5537921667b8d0ab8bf91bc557bda82b42208806b16125f31ce6e13b772bdf6d"
+    },
+    {
+      "path": "data/test.parquet",
+      "rows": 93,
+      "bytes": 88926,
+      "sha256": "71ba99880182835adf37e3f784b7817617aa3639468d3286c5a40abd354b7322"
+    }
+  ],
+  "splits": {
+    "train": {
+      "rows": 751,
+      "groups": 751
+    },
+    "validation": {
+      "rows": 95,
+      "groups": 95
+    },
+    "test": {
+      "rows": 93,
+      "groups": 93
+    }
+  },
+  "statistics": [
+    [
+      "dropped: domain sequence is not contiguous in the chain",
+      "561"
+    ],
+    [
+      "domains annotated",
+      "939"
+    ],
+    [
+      "residues labelled",
+      "139794"
+    ],
+    [
+      "residues buried (rsa <= 0.25)",
+      "73742 (52.8%)"
+    ],
+    [
+      "coordinate files read",
+      "1480"
+    ]
+  ]
+}

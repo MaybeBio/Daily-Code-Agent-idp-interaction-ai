@@ -1,0 +1,91 @@
+# OpenDNA as Snakemake rules.
+#
+#   snakemake --cores 8 --config \
+#       fasta=candidates.fasta \
+#       models=/mnt/shared/opendna-models \
+#       task=disorder parts=20
+#
+# The models directory is one produced by `opendna stage`: heads, embedding
+# model, lockfile and checksums. Nothing here touches the network.
+#
+# Snakemake resumes by rebuilding only what is missing, which works here
+# because `opendna split` is deterministic — the same input and part count give
+# the same chunks byte for byte, so a resumed run continues the job it started
+# rather than a different one.
+
+import glob
+import os
+
+FASTA = config["fasta"]
+MODELS = config["models"]
+TASK = config.get("task", "disorder")
+PARTS = int(config.get("parts", 10))
+OUTDIR = config.get("outdir", "results")
+LOCKFILE = config.get("lockfile", os.path.join(MODELS, "models.lock"))
+
+# 0 means one sequence per embedding batch, which makes the output independent
+# of how the input was divided. A larger value is faster on CPU and changes the
+# last digit of a few values in ten thousand, which would make a results table
+# depend on the part count — a scheduling decision.
+BATCH_TOKENS = int(config.get("batch_tokens", 0))
+
+PART_IDS = [f"{i:04d}" for i in range(PARTS)]
+
+
+rule all:
+    input:
+        f"{OUTDIR}/{TASK}.csv",
+
+
+# Verify the installation before any work is scheduled. Discovering that the
+# models are wrong after four hundred tasks have run is discovering it too
+# late, so everything downstream depends on this.
+rule check_models:
+    input:
+        lockfile=LOCKFILE,
+    output:
+        touch(f"{OUTDIR}/.models-ok"),
+    shell:
+        """
+        opendna --models {MODELS} models --check {input.lockfile}
+        opendna --models {MODELS} selftest
+        """
+
+
+rule split:
+    input:
+        fasta=FASTA,
+        ok=f"{OUTDIR}/.models-ok",
+    output:
+        parts=expand(f"{OUTDIR}/parts/part-{{part}}.fasta", part=PART_IDS),
+    shell:
+        "opendna split -i {input.fasta} --out-dir %s/parts --parts %d" % (OUTDIR, PARTS)
+
+
+# One task per part. `--offline` is on because a compute node reaching for the
+# network either stalls or downloads 568 MB once per task; if the staged bundle
+# is incomplete this fails immediately with exit 3 instead.
+rule predict:
+    input:
+        part=f"{OUTDIR}/parts/part-{{part}}.fasta",
+    output:
+        csv=f"{OUTDIR}/parts/part-{{part}}.csv",
+        manifest=f"{OUTDIR}/parts/part-{{part}}.manifest.json",
+    shell:
+        """
+        opendna --models {MODELS} --offline --batch-tokens {BATCH_TOKENS} \
+            predict --task {TASK} -i {input.part} -o {output.csv}
+        """
+
+
+# `opendna merge` rather than `cat`: it reads each part's run manifest and
+# refuses to join parts produced on different devices or with a different head
+# build. On a cluster where nodes are upgraded one at a time, that happens.
+rule merge:
+    input:
+        csvs=expand(f"{OUTDIR}/parts/part-{{part}}.csv", part=PART_IDS),
+        manifests=expand(f"{OUTDIR}/parts/part-{{part}}.manifest.json", part=PART_IDS),
+    output:
+        merged=f"{OUTDIR}/{TASK}.csv",
+    shell:
+        "opendna merge --output {output.merged} {input.csvs}"

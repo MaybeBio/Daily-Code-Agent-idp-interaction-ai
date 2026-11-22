@@ -1,0 +1,59 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Settings for the run "RUN_NAME" (created CREATED).
+#
+#   1. Pick a sequence set below (or put your own CSV in runs/RUN_NAME/).
+#   2. Fill in the settings below.
+#   3. Start it:            noodle launch RUN_NAME    (or the run's number, or nothing
+#   4. Check on it:         noodle status RUN_NAME     when you are in this folder)
+# ─────────────────────────────────────────────────────────────────────────────
+
+description: ""                 # one line: what is this run for? (shown by noodle status)
+
+# ── Sequences ─────────────────────────────────────────────────────────────────
+# A CSV file in this run folder, or one of the shared sets in sequences/ by its name.
+# Both shared sets have the columns id and sequence, so the two column settings below
+# fit either one as they are:
+#   human_idrs_12k.csv   12,000 human IDRs and IDPs, ordered for diversity
+#                        (rows 1-N are the N most different picks)
+#   mobidb_idps_15k.csv  15,000 IDPs from MobiDB: rows 1-11273 ordered for diversity,
+#                        rows 11274-15000 picked at random
+sequences_csv: human_idrs_12k.csv
+name_column: id                 # column with a unique name for each protein
+sequence_column: sequence       # column with the one-letter amino-acid sequence
+rows: all                       # which rows of the CSV to run, counted from 1 (header not counted):
+                                #   all             every row
+                                #   7               one row
+                                #   101-200         a range: rows 101 to 200 (a dash, not a list)
+                                #   [1-50, 75]      a list in brackets means several of the above,
+                                #                   as in physics below
+max_residues: 0                 # skip proteins longer than this (0 = no limit). A brush's cost
+                                #   grows ~N^3.2, so this keeps brush runs affordable (README section 4)
+
+# ── Physics ───────────────────────────────────────────────────────────────────
+physics: baseline               # a set from physics.yaml, or several in one run, e.g.
+                                #   baseline         free chain in solution
+                                #   grafted          grafted to a neutral surface
+                                #   grafted_charged  grafted to a charged surface
+                                #   brush            a 10 x 10 patch of chains grafted at 0.05 chains/nm^2
+                                #   brush_charged    the same brush on a charged surface
+                                #   [baseline, grafted, brush]
+replicates: 1                   # independent copies (different random seeds) of each
+                                #   protein under each physics set
+
+# ── Cluster (ignored when running on your own computer) ───────────────────────
+# These can still be changed after launching; they apply from the next ./noodle launch.
+max_jobs: 1000                  # split the run into at most this many SLURM jobs (a job = one core
+                                #   running its tasks one after another), of about equal work and
+                                #   grouped by chain length: the longest proteins get a job each, the
+                                #   shortest are pooled many to a job. With fewer tasks than this,
+                                #   every task gets its own job. 0 = no limit (one job per task).
+time_limit_days: 3              # time limit per SLURM job, in days (decimals are fine: 0.5 = 12 hours).
+                                #   A task that runs out of time saves a checkpoint first:
+                                #   ./noodle launch again resumes it from there.
+max_running: 0                  # most jobs (= cores) running at the same time (0 = no limit)
+extra_sbatch: ["--constraint=cascadelake|icelake|sapphirerapids"]
+                                # anything else for sbatch, e.g. ["--partition=normal"]. The default
+                                #   runs jobs only on the cluster's faster nodes (2.4 GHz Cascade
+                                #   Lake, Ice Lake, Sapphire Rapids), not on the 2.1 GHz Skylake or
+                                #   1.8 GHz nodes, so every job runs at about the same speed. See the
+                                #   names with: sinfo -o "%30N %f". [] = any node.

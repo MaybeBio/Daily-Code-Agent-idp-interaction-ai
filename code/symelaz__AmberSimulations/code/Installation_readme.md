@@ -117,3 +117,83 @@ This guide explains how to install VMD 1.9.4a57 on the Ubelix server (Linux RHEL
 > OpenMM v7.7 and AmberTools 23 are required. Using older versions may cause errors.
 
 ---
+
+### 5. Faster engine (optional): NVIDIA cuPotential for `run.sh --faster`
+
+A separate conda environment, `openmm_faster`: OpenMM 8.4 + the cuPotential OpenMM plugin, built
+from source. The classic `openmm` environment is not touched and keeps working without `--faster`.
+
+**Requirements**
+* NVIDIA GPU with compute capability 7.5-12.0 (RTX 4090 = 8.9, A100 = 8.0, H100 = 9.0).
+* GPU driver for **CUDA 13** (`nvidia-smi -q | grep -i "cuda"` on a GPU node). A CUDA 12 driver is
+  too old: ask the cluster admins.
+* conda, git and internet access (GitHub, conda-forge, PyPI). About 10 minutes and ~8 GB.
+
+**Install** (no `module load CUDA` needed: conda provides the toolkit)
+
+```bash
+# on a GPU node (the script reads the driver and the GPU type):
+bash utils/install_faster.sh
+
+# or on a login node without GPUs: give the driver's CUDA version (from nvidia-smi on a GPU node)
+bash utils/install_faster.sh --driver-cuda 13.3
+```
+
+Options: `--env <name>` (default `openmm_faster`), `--src <dir>` (cuPotential clone, default
+`~/software/cuPotential`), `--arch "80;89;90"` (GPU types to compile for; default: the GPUs of the
+machine, or 7.5-9.0 when there are none). Re-running the script updates an existing install.
+
+The script, step by step:
+1. clones cuPotential and downloads its prebuilt runtime from the GitHub release, and **reads which
+   CUDA toolkit that runtime needs** (release 0.3.5: CUDA 13.4; NVIDIA's blog post still says 13.1);
+2. creates the env with OpenMM 8.4, that CUDA toolkit and the compilers (conda-forge);
+3. builds the plugin and installs it (`nv_openmm_plugin`);
+4. **driver check**: if the driver supports an older CUDA minor than the toolkit (e.g. driver 13.3,
+   toolkit 13.4), stock OpenMM fails with `CUDA_ERROR_UNSUPPORTED_PTX_VERSION`, because it compiles
+   its kernels at run time (NVRTC) and the driver rejects newer code. The script then installs the
+   NVRTC that matches the driver and preloads it on `conda activate openmm_faster` (hook in
+   `$CONDA_PREFIX/etc/conda/activate.d/nvrtc_driver.sh`; delete it once the driver is updated, or
+   just re-run the script). cuPotential's own kernels are precompiled and unaffected.
+
+**Check compatibility** (on a GPU node; exit code 0 = ready)
+
+```bash
+conda activate openmm_faster
+python utils/check_faster.py                                         # generated water box
+python utils/check_faster.py step3_input.parm7 step3_input.rst7      # a built system
+```
+
+It checks OpenMM/plugin versions, driver vs runtime CUDA, the NVRTC version, the GPU type, then
+compares the classic and faster engines **against a converged reference** (the faster engine must
+be at least as accurate as the classic one) and runs 1000 NPT steps at 4 fs. Expected end:
+
+```
+PASS  energy error vs converged reference          faster 6.4e-06, classic 7.8e-06 ...
+PASS  force error vs converged reference           faster 4.0e-04, classic 8.2e-04 ...
+PASS  faster engine 1000 steps NPT, 4 fs           T = 302.6 K (target 303.15), finite = True
+RESULT: READY for run.sh --faster
+```
+
+**Test the pipeline and measure the speed-up** on a system built with `build.sh` (GPU node):
+
+```bash
+bash utils/test_faster_pipeline.sh /path/to/built/system 0       # full run.sh --faster, shortened
+python utils/benchmark_faster.py step3_input.parm7 step5_1.rst    # classic vs faster on this GPU
+```
+
+`test_faster_pipeline.sh` works on a temporary copy (the system folder is not changed) and ends
+with `RESULT: run.sh --faster pipeline OK`. `benchmark_faster.py` is best given an equilibrated
+state (`step4.*_equilibration.rst` or `step5_*.rst`).
+
+**Run** (in `utils/job.sh`: `conda activate openmm_faster` and `bash utils/run.sh '0' --faster`)
+
+```bash
+conda activate openmm_faster
+bash utils/run.sh 0 --faster
+```
+
+**Use one GPU per run** (`run.sh 0 --faster`, `--gres=gpu:1`): two GPUs work but were slower in
+our test (996 vs 1,380 ns/day). On a new cluster, or after a driver update, re-run
+`check_faster.py` before submitting.
+
+---

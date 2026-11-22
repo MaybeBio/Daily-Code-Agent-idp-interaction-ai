@@ -1,0 +1,245 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  rust:
+    name: Rust (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --workspace --locked
+      # A broken intra-doc link fails nothing else: fmt, clippy and the whole
+      # test suite pass with one. This step is the only thing that catches it,
+      # so it covers every workspace rather than only the root one -- a doc
+      # error reached `datasets` precisely because this ran on the root alone.
+      - name: Docs
+        run: cargo doc --workspace --no-deps --locked
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Docs (datasets)
+        run: cargo doc --workspace --no-deps --locked
+        working-directory: datasets
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Docs (training)
+        run: cargo doc --workspace --no-deps --locked
+        working-directory: training
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  cargo-deny:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  msrv:
+    name: Minimum supported Rust (1.95)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.95
+      - uses: Swatinem/rust-cache@v2
+      # Each workspace declares the same `rust-version`, so each has to be
+      # checked: a declared MSRV that nothing builds against is a guess.
+      - run: cargo check --workspace --locked
+      - run: cargo check --workspace --locked
+        working-directory: datasets
+      - run: cargo check --workspace --locked
+        working-directory: training
+
+  desktop-app:
+    name: Desktop app (Tauri + Leptos)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - name: System packages for Tauri
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app
+      - uses: jetli/trunk-action@v0.5.1
+        with:
+          version: v0.22.1
+      - run: cargo fmt --all --check
+      - run: cargo run -p xtask -- fetch-molstar
+      - name: Build UI
+        run: trunk build --release
+        working-directory: app/ui
+      - run: cargo clippy -p opendna-desktop -p opendna-app-protocol -p xtask --all-targets --locked -- -D warnings
+      - run: cargo clippy -p opendna-ui --target wasm32-unknown-unknown --all-targets --locked -- -D warnings
+      - run: cargo test -p opendna-desktop -p opendna-app-protocol -p opendna-ui --locked
+
+  # The dataset builder and the training pipeline are separate workspaces, so
+  # the root `rust` job does not reach them. Ubuntu only: both pull in heavy
+  # dependencies (Arrow, candle) and neither contains platform-specific code,
+  # while the libraries they share are already built on three OSes above.
+  #
+  # Nothing here downloads a dataset, fetches a checkpoint or trains anything.
+  # The dataset tests run against the small fixtures in
+  # `datasets/opendna-data/tests/fixtures`, and the training tests cover the
+  # dataset readers, metrics and card rendering on synthetic reports. Both
+  # suites finish in seconds.
+  data-and-training:
+    name: Dataset builder and training
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: [datasets, training]
+    defaults:
+      run:
+        working-directory: ${{ matrix.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.workspace }}
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --workspace --locked
+
+  # The container is for a scheduler: Nextflow and Snakemake take a container
+  # per process, and every part of a split run should be the same binary. It is
+  # built here rather than only on a tag because the Dockerfile cannot be
+  # verified on the machine it was written on, where the Docker daemon is not
+  # running, and an unbuildable Dockerfile in the repository is worse than none.
+  #
+  # The smoke test is the same one the release workflow runs on each binary:
+  # `models` is a report and succeeds with nothing installed, while asking for a
+  # prediction with nothing installed must exit 3 rather than invent a number.
+  container:
+    name: Container image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -t opendna:ci .
+      - name: Smoke test
+        run: |
+          docker run --rm opendna:ci --version
+          mkdir -p empty
+          printf '>ubiquitin\nMQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEG\n' > smoke.fasta
+          docker run --rm -v "$PWD:/work" opendna:ci --models /work/empty models
+          set +e
+          docker run --rm -v "$PWD:/work" opendna:ci \
+            --models /work/empty predict --task disorder -i /work/smoke.fasta
+          status=$?
+          set -e
+          if [ "$status" -ne 3 ]; then
+            echo "expected exit 3 with no heads installed, got $status"
+            exit 1
+          fi
+
+  # The checksum-signing script is the one piece of the signing setup that
+  # needs no certificate, so it is the one piece that can be tested. This
+  # generates a key, signs a fixture, verifies it, and checks that tampering
+  # with either half is caught -- on every commit, so the script cannot rot
+  # while waiting for the certificates the other platforms need.
+  signing:
+    name: Checksum signing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Round-trip a signature
+        run: |
+          set -euo pipefail
+          export GNUPGHOME="$(mktemp -d)"
+          chmod 700 "$GNUPGHOME"
+          gpg --batch --pinentry-mode loopback --passphrase '' \
+            --quick-generate-key "OpenDNA CI <ci@invalid>" default sign never
+          fpr="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+          gpg --armor --export "$fpr" > "$RUNNER_TEMP/pub.asc"
+          key="$(gpg --armor --export-secret-keys --batch --pinentry-mode loopback --passphrase '' "$fpr")"
+
+          mkdir -p "$RUNNER_TEMP/release"
+          echo hello > "$RUNNER_TEMP/release/thing.tar.gz"
+          (cd "$RUNNER_TEMP/release" && sha256sum thing.tar.gz > SHA256SUMS)
+
+          # Unset key: not a failure, and nothing written.
+          set +e
+          GPG_SIGNING_KEY= scripts/sign-release.sh "$RUNNER_TEMP/release"
+          [ "$?" -eq 3 ] || { echo "an unset key should exit 3"; exit 1; }
+          set -e
+          [ ! -f "$RUNNER_TEMP/release/SHA256SUMS.asc" ] || { echo "it signed without a key"; exit 1; }
+
+          GPG_SIGNING_KEY="$key" scripts/sign-release.sh "$RUNNER_TEMP/release"
+          OPENDNA_SIGNING_PUBKEY="$RUNNER_TEMP/pub.asc" \
+            scripts/sign-release.sh --verify "$RUNNER_TEMP/release"
+
+          # A tampered artefact: signature still good, checksum must fail.
+          echo tampered > "$RUNNER_TEMP/release/thing.tar.gz"
+          set +e
+          OPENDNA_SIGNING_PUBKEY="$RUNNER_TEMP/pub.asc" \
+            scripts/sign-release.sh --verify "$RUNNER_TEMP/release"
+          [ "$?" -ne 0 ] || { echo "a tampered artefact verified"; exit 1; }
+          set -e
+
+          # A tampered manifest: the signature must fail.
+          echo hello > "$RUNNER_TEMP/release/thing.tar.gz"
+          echo "deadbeef  evil" >> "$RUNNER_TEMP/release/SHA256SUMS"
+          set +e
+          OPENDNA_SIGNING_PUBKEY="$RUNNER_TEMP/pub.asc" \
+            scripts/sign-release.sh --verify "$RUNNER_TEMP/release"
+          [ "$?" -ne 0 ] || { echo "a tampered manifest verified"; exit 1; }
+          set -e
+          echo "every path behaved."
+
+  # The Python bindings drive the compiled binary, so this builds it and runs
+  # the suite against it. The trained heads are not in the repository, so the
+  # prediction tests skip and the refusal tests -- a missing head, a mutation
+  # on the wrong task, a name that would corrupt the FASTA -- are what runs
+  # here. Those are the ones that encode the no-fallback rule.
+  bindings:
+    name: Python bindings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the command-line tool
+        run: cargo build --release --locked -p opendna-cli
+      - name: Install the bindings
+        run: pip install -e 'bindings/python[test,frames]'
+      - name: Test
+        env:
+          OPENDNA_BIN: ${{ github.workspace }}/target/release/opendna
+        run: pytest bindings/python -v

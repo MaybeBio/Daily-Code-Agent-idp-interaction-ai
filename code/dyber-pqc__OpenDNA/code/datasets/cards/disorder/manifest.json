@@ -1,0 +1,108 @@
+{
+  "dataset": "disorder",
+  "pipeline": "opendna-data",
+  "pipeline_version": "0.1.0",
+  "seed": 20261114,
+  "clustering": "mmseqs easy-cluster --min-seq-id 0.3 -c 0.8 --cov-mode 0 --cluster-mode 0 -s 7.5",
+  "fractions": {
+    "train": 0.9,
+    "validation": 0.1,
+    "test": 0.0
+  },
+  "sources": {
+    "caid3-disorder-pdb": "b65848395557c751a818dc38049c89d95534c05fbe6f14651e9f5bfd2bb60469",
+    "disprot-2025_12": "4dbdde980d29c95c6e14aab9eaad7eaec7cc7bd42c3668c876a1e88b4eae2981"
+  },
+  "files": [
+    {
+      "path": "data/train.parquet",
+      "rows": 2455,
+      "bytes": 839213,
+      "sha256": "d8c3205cefcb26880e59adbd1adddaaf91fe105872a69a1d69f48bd3cf8dceae"
+    },
+    {
+      "path": "data/validation.parquet",
+      "rows": 327,
+      "bytes": 104716,
+      "sha256": "68a3b3262829629725a7a505a9083e8b667875f0c261108b243fe4f27fb99164"
+    },
+    {
+      "path": "data/test.parquet",
+      "rows": 404,
+      "bytes": 126338,
+      "sha256": "8bd125077c37afb9537e46ffb8c3faf9783edc7a3685081dd9bd33cf743d09fc"
+    }
+  ],
+  "splits": {
+    "train": {
+      "rows": 2455,
+      "groups": 2031
+    },
+    "validation": {
+      "rows": 327,
+      "groups": 271
+    },
+    "test": {
+      "rows": 404,
+      "groups": 297
+    }
+  },
+  "statistics": [
+    [
+      "DisProt 2025_12 entries",
+      "3199"
+    ],
+    [
+      "dropped: non-standard residues in sequence",
+      "13"
+    ],
+    [
+      "dropped: sequence length disagrees with `length`",
+      "0"
+    ],
+    [
+      "IDPO:0000002 regions used",
+      "7100"
+    ],
+    [
+      "regions skipped: outside the sequence",
+      "0"
+    ],
+    [
+      "regions not labelled: (pre-)molten globule",
+      "152"
+    ],
+    [
+      "proteins with no IDPO:0000002 residue (kept, all zeros)",
+      "22"
+    ],
+    [
+      "final proteins",
+      "3186"
+    ],
+    [
+      "residues / labelled disordered",
+      "1847875 / 319131"
+    ],
+    [
+      "CAID3 Disorder-PDB proteins",
+      "319"
+    ],
+    [
+      "CAID3 proteins present in this DisProt release",
+      "318"
+    ],
+    [
+      "non-CAID proteins moved to test (clustered with a CAID3 protein)",
+      "86"
+    ],
+    [
+      "MMseqs2 clusters (including CAID-only)",
+      "2599"
+    ],
+    [
+      "residues train / validation / test",
+      "1469314 / 163130 / 215431"
+    ]
+  ]
+}

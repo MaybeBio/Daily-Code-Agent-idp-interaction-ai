@@ -1,3 +1,4 @@
+import re
 #!/usr/bin/env python3
 """
 UniPPI-CLI v1.8 (Layer 1 of UniPPI-OWL): Universal Structure-to-Affinity & Interface Engine
@@ -360,14 +361,22 @@ def build_residues(atoms: List[Atom]) -> Tuple[List[Residue], Dict[str, List[Res
 def parse_companion_json(struct_path: str, ordered_residues: List[Residue]) -> Dict:
     folder = os.path.dirname(os.path.abspath(struct_path))
     stem = os.path.splitext(os.path.basename(struct_path))[0]
-    base_prefix = stem.replace("_model", "").rsplit("_", 1)[0] if "_model" in stem else stem
+    import re as _re
+    m_idx_match = _re.search(r"_model_(\d+)$", stem, flags=_re.IGNORECASE) or _re.search(r"_(\d+)$", stem)
+    m_idx_str = m_idx_match.group(1) if m_idx_match else None
+    base_prefix = _re.sub(r"_model_\d+$", "", stem, flags=_re.IGNORECASE)
 
     all_jsons = [
         p for p in sorted(glob.glob(os.path.join(folder, "*.json")))
         if "job_request" not in os.path.basename(p).lower()
         and "unippi_full_report" not in os.path.basename(p).lower()
+        and "terms_of_use" not in os.path.basename(p).lower()
     ]
-    prefix_matched = [p for p in all_jsons if base_prefix.lower() in os.path.basename(p).lower()]
+    prefix_matched = [
+        p for p in all_jsons
+        if base_prefix.lower() in os.path.basename(p).lower()
+        and (m_idx_str is None or f"_{m_idx_str}.json" in os.path.basename(p).lower() or f"model_{m_idx_str}" in os.path.basename(p).lower())
+    ]
     json_candidates = prefix_matched if prefix_matched else all_jsons
 
     conf_data = {
@@ -628,21 +637,28 @@ def classify_mechanistic_pattern(
     HUNTER-inspired Mechanistic Pattern Classification (Patterns A, B, C, D).
     Uses confidence-weighted w_bsa so disordered loop decoys never masquerade as Pattern C.
     """
-    if uis >= UIS_DECISION_THRESHOLD and iptm_val >= 0.60 and dg_uni <= -6.5:
+    if uis >= UIS_DECISION_THRESHOLD and iptm_val >= 0.60 and dg_uni <= -5.8:
         return (
             "Pattern A",
             "Concordant Rigid/Coiled-Coil Interactor (Global ipTM, Local LIS, and dG_uni all support binding)"
         )
-    if (uis >= UIS_DECISION_THRESHOLD or (lis_score >= 0.50 and dg_uni <= -7.0)) and iptm_val < 0.60:
+    if (uis >= UIS_DECISION_THRESHOLD or (lis_score >= 0.50 and dg_uni <= -5.8)) and iptm_val < 0.60:
         return (
             "Pattern B",
             "IDR-Diluted Local Interactor (Strong local interface LIS & dG_uni despite low global ipTM from disordered tails)"
         )
-    if helical_prolines > 0 or n_clash >= 5 or (w_bsa >= 250.0 and dg_uni > -5.5):
-        return (
-            "Pattern C",
-            "Thermodynamically Penalized / Kink-Disrupted Interface (Geometric proximity offset by Proline kink, desolvation, or clash)"
-        )
+    if uis >= 0.5000 and iptm_val >= 0.60 and dg_uni <= -5.8 and helical_prolines == 0 and n_clash < 5:
+        return ('Pattern A', 'Concordant Rigid/Coiled-Coil or Globular Interactor (Global ipTM, Local LIS, and dG_uni support binding)')
+    elif (uis >= 0.5000 or (lis_score >= 0.50 and dg_uni <= -5.8)) and iptm_val < 0.60 and dg_uni <= -5.8 and helical_prolines == 0 and n_clash < 5:
+        return ('Pattern B', 'IDR-Diluted Local Interactor (Strong local interface LIS & dG_uni despite low global ipTM from disordered tails)')
+    elif helical_prolines > 0 or n_clash >= 5:
+        return ('Pattern C', 'Thermodynamically Penalized / Kink-Disrupted Interface (Geometric proximity offset by strained Proline kink or steric clash)')
+    elif uis >= 0.5000:
+        return ("Pattern A" if iptm_val >= 0.60 else "Pattern B", "Above-Threshold Interactor (Moderate affinity; inspect contact density & PAE)")
+    elif w_bsa >= 250.0 and dg_uni > -5.0:
+        return ('Pattern C', 'Weak / Sub-Threshold Packing (Geometric burial without sufficient stabilizing contacts)')
+    else:
+        return ('Pattern D', 'Below-Threshold Decoy or Disordered Hallucination (No physical binding support)')
     return (
         "Pattern D",
         "Below-Threshold Decoy or Disordered Hallucination (No physical binding support)"
@@ -800,11 +816,10 @@ def analyze_interface_pair(
             ca_cls = PRODIGY_CLASS.get(cna, "APOLAR" if ra.entity_type == "LIGAND" else "POLAR")
             cb_cls = PRODIGY_CLASS.get(cnb, "APOLAR" if rb.entity_type == "LIGAND" else "POLAR")
             pair_cls = "_".join(sorted([ca_cls, cb_cls]))
-            if min(len(residues_a), len(residues_b)) >= 50:
-                if pair_cls == "APOLAR_CHARGED":
-                    pair_cls = "CHARGED_APOLAR"
-                elif pair_cls == "APOLAR_POLAR":
-                    pair_cls = "POLAR_APOLAR"
+            if pair_cls == "APOLAR_CHARGED":
+                pair_cls = "CHARGED_APOLAR"
+            elif pair_cls == "APOLAR_POLAR":
+                pair_cls = "POLAR_APOLAR"
             if pair_cls in prodigy_ic:
                 prodigy_ic[pair_cls] += w_ij
 
@@ -821,12 +836,13 @@ def analyze_interface_pair(
             eff_hp_weighted = min(hp_dist_sum, 6.0)
             eff_clash = min(pair_clash, 3)
 
-            n_sb += eff_sb
-            n_hb += eff_hb
-            n_hp += eff_hp
-            n_pi += pair_pi
-            n_ss += pair_ss
-            n_clash += eff_clash
+            if w_ij >= 0.25:
+                n_sb += eff_sb
+                n_hb += eff_hb
+                n_hp += eff_hp
+                n_pi += pair_pi
+                n_ss += pair_ss
+                n_clash += eff_clash
 
             w_sb += w_ij * eff_sb
             w_hb += w_ij * eff_hb
@@ -856,6 +872,12 @@ def analyze_interface_pair(
         kd_empty = math.exp(2.10 / (R_GAS_KCAL * temp_k))
         return {
             "chain_pair": f"{chain_a_id}-{chain_b_id}",
+        "len_a": len(residues_a),
+        "len_b": len(residues_b),
+        "conf_contacts": len(conf_contact_log),
+        "raw_contacts": len(residue_contact_log),
+        "loci_a": f"{min(int(re.search(r'(\d+)$', c['res_a']).group(1)) for c in conf_contact_log)}-{max(int(re.search(r'(\d+)$', c['res_a']).group(1)) for c in conf_contact_log)}" if conf_contact_log else "None",
+        "loci_b": f"{min(int(re.search(r'(\d+)$', c['res_b']).group(1)) for c in conf_contact_log)}-{max(int(re.search(r'(\d+)$', c['res_b']).group(1)) for c in conf_contact_log)}" if conf_contact_log else "None",
             "sha256_id": pair_sha256,
             "mode": mode,
             "UIS": 0.0,
@@ -899,22 +921,49 @@ def analyze_interface_pair(
         }
 
     helical_prolines = 0
-    for chain_list, intf_set in ((residues_a, intf_res_a), (residues_b, intf_res_b)):
-        for r_idx, r in enumerate(chain_list):
-            if r.canonical_name == "PRO" and is_in_helical_segment(r_idx, chain_list):
-                near_intf = any(abs(r.res_seq - k[1]) <= 2 for k in intf_set)
-                if near_intf:
+    _conf_paes_pro = [
+        c.get("pae_A", c.get("pae", c.get("mean_pae", 3.5)))
+        for c in residue_contact_log
+        if c.get("weight_w", 0.0) >= 0.25
+    ]
+    _mean_pae_tmp = mean_list(_conf_paes_pro, mean_list(intf_pae_values, 3.5))
+    _ord_intf_a = {r.res_seq for r in residues_a if r.key in intf_res_a and residue_plateau_conf(r) >= 0.50}
+    _ord_intf_b = {r.res_seq for r in residues_b if r.key in intf_res_b and residue_plateau_conf(r) >= 0.50}
+    for chain_list, ord_seqs in ((residues_a, _ord_intf_a), (residues_b, _ord_intf_b)):
+        for idx, res in enumerate(chain_list):
+            if res.canonical_name == "PRO" and residue_plateau_conf(res) >= 0.50 and is_in_helical_segment(idx, chain_list):
+                near = any(abs(res.res_seq - s_num) <= 2 for s_num in ord_seqs)
+                is_strained = (res.mean_bfactor < 80.0) or (_mean_pae_tmp > 4.0)
+                if near and is_strained:
                     helical_prolines += 1
 
-    total_free_a = sum(sasa_free_a.values())
-    total_free_b = sum(sasa_free_b.values())
-    total_comp_ab = sum(sasa_complex.get(r.key, 0.0) for r in (residues_a + residues_b))
-    bsa = max(0.0, (total_free_a + total_free_b) - total_comp_ab)
-    mean_w_intf = mean_list(pair_weights_seen, 0.0)
+    conf_contact_log = [c for c in residue_contact_log if c["weight_w"] >= 0.25]
+    has_ordered_core = len(conf_contact_log) > 0
+    if has_ordered_core:
+        ordered_keys_a = {r.key for r in residues_a if residue_plateau_conf(r) >= 0.35} or {r.key for r in residues_a}
+        ordered_keys_b = {r.key for r in residues_b if residue_plateau_conf(r) >= 0.35} or {r.key for r in residues_b}
+        conf_contacts_core = [c for c in residue_contact_log if c["weight_w"] >= 0.25]
+        has_ord_core = len(conf_contacts_core) > 0
+        ord_keys_a = {r.key for r in residues_a if residue_plateau_conf(r) >= 0.35} if has_ord_core else {r.key for r in residues_a}
+        ord_keys_b = {r.key for r in residues_b if residue_plateau_conf(r) >= 0.35} if has_ord_core else {r.key for r in residues_b}
+        total_free_a = sum(v for k, v in sasa_free_a.items() if k in ord_keys_a)
+        total_free_b = sum(v for k, v in sasa_free_b.items() if k in ord_keys_b)
+        total_comp_ab = sum(sasa_complex.get(r.key, 0.0) for r in (residues_a + residues_b) if (r.key in ord_keys_a or r.key in ord_keys_b))
+        bsa = max(0.0, (total_free_a + total_free_b) - total_comp_ab)
+        mean_w_intf = mean_list([c["weight_w"] for c in conf_contacts_core], 0.0) if has_ord_core else mean_list(pair_weights_seen, 0.0)
+        w_bsa = mean_w_intf * bsa
+    else:
+        total_free_a = sum(sasa_free_a.values())
+        total_free_b = sum(sasa_free_b.values())
+        total_comp_ab = sum(sasa_complex.get(r.key, 0.0) for r in (residues_a + residues_b))
+        bsa = max(0.0, (total_free_a + total_free_b) - total_comp_ab)
+        mean_w_intf = mean_list(pair_weights_seen, 0.0)
     w_bsa = mean_w_intf * bsa
 
     nis_apolar_count, nis_charged_count, nis_total = 0, 0, 0
     for r in (residues_a + residues_b):
+        if has_ordered_core and residue_plateau_conf(r) < 0.35:
+            continue
         if r.key in intf_res_a or r.key in intf_res_b:
             continue
         if sasa_complex.get(r.key, 0.0) >= 10.0:
@@ -947,21 +996,23 @@ def analyze_interface_pair(
     ph_k = ((1.0 / (1.0 + 10.0**(4.2 - ph_val))) * (1.0 / (1.0 + 10.0**(ph_val - 10.4)))) / ph_ref
     s_out = 1.0 + (0.20 + 0.25 * ap_frac_pre) * (i_m - 0.15)
     dg_cratic = +2.10
-    dg_hydrophobic = -s_out * (0.110 * w_hp + 0.215 * prodigy_ic["APOLAR_APOLAR"] + 0.0026 * w_bsa + 0.0035 * max(0.0, w_bsa - 600.0))
-    dg_electrostatic = -0.765 * w_sb * debye_k * ph_k - 0.46 * w_hb - 0.615 * w_pi
-    dg_polar_desolv = +0.16 * prodigy_ic["POLAR_POLAR"]
+    e_raw = s_out * (0.110 * w_hp + 0.195 * prodigy_ic["APOLAR_APOLAR"] + 0.0032 * w_bsa) + (0.78 * w_sb * debye_k * ph_k + 0.48 * w_hb + 0.62 * w_pi)
+    e_eff = 15.5 * math.tanh(e_raw / 15.5)
+    dg_polar_desolv = +0.12 * prodigy_ic["POLAR_POLAR"]
     dg_steric_clash = +1.50 * w_clash
     dg_proline_kink = +2.20 * helical_prolines
-    dg_phys = dg_cratic + dg_hydrophobic + dg_electrostatic + dg_polar_desolv + dg_steric_clash + dg_proline_kink
+    dg_phys = dg_cratic - e_eff + dg_polar_desolv + dg_steric_clash + dg_proline_kink
 
     eff_ic_sum = sum(prodigy_ic.values())
     if eff_ic_sum < 3.0:
         contact_gate = 0.0
     else:
         contact_gate = 1.0 / (1.0 + math.exp(-0.40 * (eff_ic_sum - 11.0)))
+        nis_reliability = clamp(nis_total / 20.0, 0.0, 1.0)
+        contact_gate = contact_gate * nis_reliability
 
     apolar_frac = prodigy_ic["APOLAR_APOLAR"] / max(1.0, eff_ic_sum)
-    phys_weight = clamp(0.55 + 0.35 * apolar_frac + (0.15 if helical_prolines > 0 else 0.0), 0.55, 0.95)
+    phys_weight = clamp(0.50 + 0.20 * apolar_frac + (0.10 if helical_prolines > 0 else 0.0), 0.50, 0.70)
 
     dg_uni = clamp(
         contact_gate * ((1.0 - phys_weight) * dg_prodigy_raw + phys_weight * dg_phys)
@@ -1051,13 +1102,24 @@ def analyze_interface_pair(
 
     hotspots.sort(key=lambda x: abs(x["ddG_Ala_kcal"]), reverse=True)
 
-    intf_plddts = [
-        residue_raw_plddt(r)
-        for r in (residues_a + residues_b)
-        if (r.key in intf_res_a or r.key in intf_res_b)
-    ]
-    mean_intf_plddt = mean_list(intf_plddts, 50.0)
-    mean_intf_pae = mean_list(intf_pae_values, 8.0)
+    if has_ordered_core:
+        conf_res_labels = {c["res_a"] for c in conf_contact_log} | {c["res_b"] for c in conf_contact_log}
+        intf_plddts = [
+            residue_raw_plddt(r)
+            for r in (residues_a + residues_b)
+            if f"{r.chain_id}:{r.res_name}{r.res_seq}" in conf_res_labels
+        ]
+        mean_intf_plddt = mean_list(intf_plddts, 50.0)
+        mean_intf_pae = mean_list([c["pae_A"] for c in conf_contact_log], 3.5)
+        n_cb8 = max(len(conf_contact_log), sum(1 for w in pair_weights_seen if w >= 0.25))
+    else:
+        intf_plddts = [
+            residue_raw_plddt(r)
+            for r in (residues_a + residues_b)
+            if (r.key in intf_res_a or r.key in intf_res_b)
+        ]
+        mean_intf_plddt = mean_list(intf_plddts, 50.0)
+        mean_intf_pae = mean_list(intf_pae_values, 8.0)
 
     min_chain_len = max(1, min(len(residues_a), len(residues_b)))
     size_scale = clamp(60.0 / min_chain_len, 1.0, 2.5) if min_chain_len < 50 else 2.5
@@ -1068,7 +1130,7 @@ def analyze_interface_pair(
     if n_cb8 == 0:
         pdockq_coord = 0.0
     excess_intf_pae = max(0.0, mean_intf_pae - 3.5)
-    pdockq_pae = pdockq_coord * (1.0 / (1.0 + (excess_intf_pae / 8.0) ** 2))
+    pdockq_pae = pdockq_coord * (1.0 / (1.0 + (excess_intf_pae / 8.0) ** 2)) if mode == "MODE_A_PRED_FULL" else clamp(pdockq_coord / 0.742, 0.0, 1.0)
 
     lis_score = 0.0
     if pae_mat is not None:
@@ -1089,14 +1151,16 @@ def analyze_interface_pair(
 
     iptm_val = conf_data.get("iptm", None)
     if iptm_val is None:
-        iptm_val = pdockq_pae if mode == "MODE_A_PRED_FULL" else pdockq_coord
+        iptm_val = pdockq_pae if mode == "MODE_A_PRED_FULL" else clamp(pdockq_coord / 0.742, 0.0, 1.0)
 
     sigma_aff = clamp((-dg_uni - 5.0) / 8.5, 0.0, 1.0)
 
     if mode == "MODE_A_PRED_FULL":
-        uis = 0.25 * float(iptm_val) + 0.30 * lis_score + 0.25 * pdockq_pae + 0.20 * sigma_aff
+        raw_uis = 0.25 * float(iptm_val) + 0.30 * lis_score + 0.25 * pdockq_pae + 0.20 * sigma_aff
     else:
-        uis = 0.55 * pdockq_coord + 0.45 * sigma_aff
+        raw_uis = 0.55 * clamp(pdockq_coord / 0.742, 0.0, 1.0) + 0.45 * sigma_aff
+    thermo_gate = clamp((-dg_uni + 0.5) / 6.0, 0.10, 1.0)
+    uis = clamp(raw_uis * thermo_gate, 0.0, 1.0)
 
     uis_rounded = round(uis, 4)
     uis_margin = round(uis_rounded - UIS_DECISION_THRESHOLD, 4)
@@ -1111,6 +1175,12 @@ def analyze_interface_pair(
 
     return {
         "chain_pair": f"{chain_a_id}-{chain_b_id}",
+        "len_a": len(residues_a),
+        "len_b": len(residues_b),
+        "conf_contacts": len(conf_contact_log),
+        "raw_contacts": len(residue_contact_log),
+        "loci_a": f"{min(int(re.search(r'(\d+)$', c['res_a']).group(1)) for c in conf_contact_log)}-{max(int(re.search(r'(\d+)$', c['res_a']).group(1)) for c in conf_contact_log)}" if conf_contact_log else "None",
+        "loci_b": f"{min(int(re.search(r'(\d+)$', c['res_b']).group(1)) for c in conf_contact_log)}-{max(int(re.search(r'(\d+)$', c['res_b']).group(1)) for c in conf_contact_log)}" if conf_contact_log else "None",
         "sha256_id": pair_sha256,
         "mode": mode,
         "UIS": uis_rounded,
@@ -1133,7 +1203,7 @@ def analyze_interface_pair(
         "mean_intf_PAE_A": round(mean_intf_pae, 2),
         "BSA_A2": round(bsa, 1),
         "wBSA_A2": round(w_bsa, 1),
-        "intf_residues": len(intf_res_a) + len(intf_res_b),
+        "intf_residues": len({c["res_a"] for c in residue_contact_log if c["weight_w"] >= 0.25}) + len({c["res_b"] for c in residue_contact_log if c["weight_w"] >= 0.25}), "len_a": len(residues_a), "len_b": len(residues_b), "pct_disordered": round(100.0 * sum(1 for r in (residues_a + residues_b) if r.mean_bfactor < 70.0) / max(1, len(residues_a) + len(residues_b)), 1),
         "n_cb8_contacts": n_cb8,
         "salt_bridges": n_sb,
         "h_bonds": n_hb,
@@ -1453,7 +1523,7 @@ def process_structure_file(
                     w_b = res_pair["wBSA_A2"]
                     f_ap = res_pair["f_apolar"]
                     h_pr = res_pair["helical_prolines"]
-                    if w_b >= 800.0:
+                    if False and w_b >= 800.0:
                         pw = clamp(0.55 + 0.35 * f_ap + (0.15 if h_pr > 0 else 0.0) + 0.35, 0.55, 0.95)
                         d_u = round(clamp((1.0 - pw) * res_pair["dG_prodigy_kcal"] + pw * res_pair["dG_phys_kcal"], -22.0, 5.0), 2)
                         res_pair["dG_uni_kcal"] = d_u
@@ -1575,11 +1645,6 @@ def process_structure_file(
                 results.append(res_pair)
     all_foldx_muts.extend(res_pair["foldx_mutations"])
 
-    if all_foldx_muts:
-        fx_path = os.path.join(struct_out_dir, f"{stem}_individual_list.txt")
-        with open(fx_path, "w", encoding="utf-8") as f:
-            for mut in sorted(set(all_foldx_muts)):
-                f.write(mut + "\n")
 
     return results
 
@@ -1612,7 +1677,18 @@ def main():
     custom_mut_list = [m.strip() for m in args.mutate.split(",") if m.strip()] if args.mutate else None
 
     os.makedirs(args.output, exist_ok=True)
-    if os.path.isfile(args.input):
+    import tempfile, zipfile
+    if os.path.isfile(args.input) and args.input.lower().endswith(".zip"):
+        _tmp_zip_dir = tempfile.mkdtemp(prefix="unippi_af3_zip_")
+        with zipfile.ZipFile(args.input, "r") as zf:
+            zf.extractall(_tmp_zip_dir)
+        search_root = _tmp_zip_dir
+        struct_files = sorted(
+            glob.glob(os.path.join(search_root, "**", "*.cif"), recursive=True)
+            + glob.glob(os.path.join(search_root, "**", "*.mmcif"), recursive=True)
+            + glob.glob(os.path.join(search_root, "**", "*.pdb"), recursive=True)
+        )
+    elif os.path.isfile(args.input):
         struct_files = [args.input]
     else:
         struct_files = sorted(
@@ -1620,6 +1696,10 @@ def main():
             + glob.glob(os.path.join(args.input, "**", "*.mmcif"), recursive=True)
             + glob.glob(os.path.join(args.input, "**", "*.pdb"), recursive=True)
         )
+    struct_files = [
+        fp for fp in struct_files
+        if not any(ig in fp.replace("\\", "/").lower() for ig in ("/msas/", "/templates/", "template_hit"))
+    ]
 
     all_records: List[Dict] = []
     for fpath in struct_files:
@@ -1670,8 +1750,35 @@ def main():
                     f"| dG_mut = {cm['dG_mut_kcal']:.2f} kcal/mol | Kd_mut = " + (f"{cm['Kd_mut_nM']:.2f} nM" if cm["Kd_mut_nM"] < 1e7 else ">10mM (NB)")
                 )
     print(f"{'='*128}")
+    if len(all_records) > 1:
+        mean_uis = sum(r["UIS"] for r in all_records) / len(all_records)
+        mean_dg = sum(r["dG_uni_kcal"] for r in all_records) / len(all_records)
+        mean_lis = sum(r["LIS"] for r in all_records) / len(all_records)
+        mean_wbsa = sum(r["wBSA_A2"] for r in all_records) / len(all_records)
+        print(f"[Ensemble Summary across N={len(all_records)} models] Mean UIS = {mean_uis:.3f} | Mean dG_uni = {mean_dg:.2f} kcal/mol | Mean LIS = {mean_lis:.3f} | Mean wBSA = {mean_wbsa:.1f} A^2")
+    if all_records:
+        top = all_records[0]
+        print(f"\n[Step-by-Step Mathematical Derivation for Top Model: {top['complex_id']} ({top['chain_pair']})]")
+        _conf_c = [c for c in top.get("contacts", []) if c.get("weight_w", 0) >= 0.25]
+        def _fmt_segs(keys):
+            nums = sorted({int("".join(ch for ch in k.split(":")[-1] if ch.isdigit()) or "0") for k in keys})
+            if not nums: return "None"
+            segs, s, p = [], nums[0], nums[0]
+            for v in nums[1:]:
+                if v - p > 15:
+                    segs.append(f"{s}" if s == p else f"{s}-{p}")
+                    s = v
+                p = v
+            segs.append(f"{s}" if s == p else f"{s}-{p}")
+            return ", ".join(segs)
+        _loc_a = _fmt_segs([c["res_a"] for c in _conf_c])
+        _loc_b = _fmt_segs([c["res_b"] for c in _conf_c])
+        print(f"  1. Chain Lengths & Contacts (d_min <= 5.5 A): Chain A = {top.get('len_a','?')} aa, Chain B = {top.get('len_b','?')} aa | Ordered Core Loci (w>=0.25): A:{_loc_a} <-> B:{_loc_b} | Confident Contacts: {len(_conf_c)} ({len(top.get('contacts', []))} raw) across {top['intf_residues']} interface residues (SB={top['salt_bridges']}, HB={top['h_bonds']}, HP={top['hydrophobic_contacts']})")
+        print(f"  2. Local PAE Coherence: Mean Intf pLDDT = {top['mean_intf_pLDDT']:.1f}, Mean Contact PAE = {top['mean_intf_PAE_A']:.2f} A, Mean Weight w_intf = {top['mean_w_intf']:.3f}, Cross-Chain LIS (PAE<=12A) = {top['LIS']:.3f}")
+        print(f"  3. Ordered Buried Surface Area: 2-Chain dSASA = {top['BSA_A2']:.1f} A^2 (PISA 1/2 dSASA = {0.5*top['BSA_A2']:.1f} A^2) -> Confidence-Weighted wBSA = {top['wBSA_A2']:.1f} A^2")
+        print(f"  4. Thermodynamics (Enthalpy-Entropy Compensated): dG_PRODIGY = {top['dG_prodigy_kcal']:.2f} kcal/mol, dG_phys = {top['dG_phys_kcal']:.2f} kcal/mol (blend: {round(100*(top['dG_uni_kcal']-top['dG_phys_kcal'])/(top['dG_prodigy_kcal']-top['dG_phys_kcal'])) if abs(top['dG_prodigy_kcal']-top['dG_phys_kcal'])>1e-3 else 0}% PRODIGY / {100 - (round(100*(top['dG_uni_kcal']-top['dG_phys_kcal'])/(top['dG_prodigy_kcal']-top['dG_phys_kcal'])) if abs(top['dG_prodigy_kcal']-top['dG_phys_kcal'])>1e-3 else 0)}% phys) -> Consensus dG_uni = {top['dG_uni_kcal']:.2f} kcal/mol (Kd = {f"{top['Kd_nM']*1000:.2f} pM" if top['Kd_nM'] < 0.05 else f"{top['Kd_nM']:.2f} nM"})")
     print(f"[UniPPI-CLI] Saved Master CSV: {csv_path}")
-    print(f"[UniPPI-CLI] Saved Sanitized PDBs & FoldX lists in: {os.path.join(args.output, 'converted_structures')}")
+    print(f"[UniPPI-CLI] Saved Sanitized PDBs in: {os.path.join(args.output, 'converted_structures')}")
 
 
 

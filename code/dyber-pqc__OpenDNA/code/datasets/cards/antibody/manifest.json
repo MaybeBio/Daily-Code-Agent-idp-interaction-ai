@@ -1,0 +1,157 @@
+{
+  "dataset": "antibody",
+  "pipeline": "opendna-data",
+  "pipeline_version": "0.1.0",
+  "seed": 20261114,
+  "clustering": null,
+  "fractions": null,
+  "sources": {
+    "oas-unpaired": ""
+  },
+  "files": [
+    {
+      "path": "data/human.parquet",
+      "rows": 94923,
+      "bytes": 2067650,
+      "sha256": "0626a760e8d272b10cfc3e4d7ef056e2c91e9214e0417cbb586dd0416e79856e"
+    },
+    {
+      "path": "data/mouse.parquet",
+      "rows": 81620,
+      "bytes": 1400011,
+      "sha256": "bf8634cddcc0c6aee9fd04553bc0c44315f50e9958566f7cf8ded65ab4e750c3"
+    },
+    {
+      "path": "data/diagnostic.parquet",
+      "rows": 30000,
+      "bytes": 453395,
+      "sha256": "a069bf0a4e8ef83b983589718bec8d5fecc51f4b761399c4196cbb243eb63386"
+    },
+    {
+      "path": "data/out_of_distribution.parquet",
+      "rows": 40000,
+      "bytes": 1202124,
+      "sha256": "621094465072045d4005276702f61a75c2ce229def75f7bc01984eb7324d682d"
+    }
+  ],
+  "splits": {
+    "train": {
+      "rows": 0,
+      "groups": 0
+    },
+    "validation": {
+      "rows": 0,
+      "groups": 0
+    },
+    "test": {
+      "rows": 0,
+      "groups": 0
+    }
+  },
+  "statistics": [
+    [
+      "OAS unit catalogue (oas_units.tsv) sha256",
+      "083f7ba3a3fe00c47033a72644581ac148e526e0af94e518cb821a27af5bce4b"
+    ],
+    [
+      "data units read",
+      "54"
+    ],
+    [
+      "data units not pinned in the catalogue",
+      "0"
+    ],
+    [
+      "rows read from units",
+      "3196883"
+    ],
+    [
+      "dropped: not productive",
+      "10828"
+    ],
+    [
+      "dropped: stop codon",
+      "0"
+    ],
+    [
+      "dropped: V-J out of frame",
+      "0"
+    ],
+    [
+      "dropped: not a heavy chain",
+      "0"
+    ],
+    [
+      "dropped: empty amino-acid alignment",
+      "0"
+    ],
+    [
+      "dropped: non-standard residue or alignment gap",
+      "139505"
+    ],
+    [
+      "dropped: outside 90-200 residues",
+      "185566"
+    ],
+    [
+      "dropped: duplicate within its unit",
+      "0"
+    ],
+    [
+      "dropped: identical sequence under more than one donor",
+      "28027"
+    ],
+    [
+      "dropped: over the 5000-per-donor cap",
+      "2586414"
+    ],
+    [
+      "labelled rows (human and mouse cohorts)",
+      "176543"
+    ],
+    [
+      "  human",
+      "94923 rows, 19 donors, 19 studies"
+    ],
+    [
+      "  mouse",
+      "81620 rows, 18 donors, 12 studies"
+    ],
+    [
+      "diagnostic rows (mice with human Ig loci, unlabelled)",
+      "30000 rows, 6 donors"
+    ],
+    [
+      "out-of-distribution rows (other species, unlabelled)",
+      "40000 rows, 8 donors"
+    ],
+    [
+      "donor groups (donors joined by a shared rearrangement)",
+      "16"
+    ],
+    [
+      "  among human donors",
+      "15"
+    ],
+    [
+      "  among mouse donors",
+      "1"
+    ],
+    [
+      "largest donor group, share of labelled rows",
+      "46.23%"
+    ],
+    [
+      "V genes in human rows",
+      "56"
+    ],
+    [
+      "V genes in mouse rows",
+      "169"
+    ],
+    [
+      "V genes in both",
+      "4"
+    ]
+  ]
+}

@@ -1,20 +1,20 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/integrativemodeling/pol_ii_g
-- 快照日期: 2026-11-08
-- 快照 commit: [`952d97d2fc16`](https://github.com/integrativemodeling/pol_ii_g/commit/952d97d2fc169577017adc9f5f02bb8816b7f89c)
+- 快照日期: 2026-11-22
+- 快照 commit: [`a8989b02a921`](https://github.com/integrativemodeling/pol_ii_g/commit/a8989b02a921b70731375e27f53ac308d8908e44)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (29 个文件, 124.8 KB)
+## 保留 (29 个文件, 124.7 KB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| 源码 | 18 | 98.8 KB |
+| 源码 | 18 | 98.6 KB |
 | 文档 | 1 | 19.7 KB |
 | README | 7 | 5.0 KB |
-| 构建/配置 | 3 | 1.3 KB |
+| 构建/配置 | 3 | 1.5 KB |
 
-按后缀: `.py` 17 (98.1 KB)、`无后缀` 1 (19.7 KB)、`.md` 1 (3.9 KB)、`.yml` 2 (1.1 KB)、`.txt` 6 (1.1 KB)、`.sh` 1 (740 B)、`.yaml` 1 (170 B)
+按后缀: `.py` 17 (98.1 KB)、`无后缀` 1 (19.7 KB)、`.md` 1 (3.9 KB)、`.yml` 2 (1.3 KB)、`.txt` 6 (1.1 KB)、`.sh` 1 (448 B)、`.yaml` 1 (170 B)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 

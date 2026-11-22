@@ -1,0 +1,96 @@
+{
+  "dataset": "solubility",
+  "pipeline": "opendna-data",
+  "pipeline_version": "0.1.0",
+  "seed": 20261114,
+  "clustering": "mmseqs easy-cluster --min-seq-id 0.3 -c 0.8 --cov-mode 0 --cluster-mode 0 -s 7.5",
+  "fractions": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.1
+  },
+  "sources": {
+    "esol-nbdc": "29afdd2fa5be4947c9cbb1756197f4382e5184f8a2e4ae9162689ad74643d54b",
+    "uniprot-up000000625": "e4bd795f6189b4816b64defe36cfe708603ef2c5a4f571baa56b515b8bbf5f99"
+  },
+  "files": [
+    {
+      "path": "data/train.parquet",
+      "rows": 2501,
+      "bytes": 511361,
+      "sha256": "0a6d7555b6fcfdafed3304ae73899a6306414013b7480fd4fca0eb254dad9cb7"
+    },
+    {
+      "path": "data/validation.parquet",
+      "rows": 313,
+      "bytes": 67846,
+      "sha256": "0445c75ea8692f72142765e3443aea585ed63b1b7d079ab71699c80774c004e8"
+    },
+    {
+      "path": "data/test.parquet",
+      "rows": 313,
+      "bytes": 67295,
+      "sha256": "d857f91ceff7dd3032507b890e18444056b180649b92cf489a67cf65a1552695"
+    }
+  ],
+  "splits": {
+    "train": {
+      "rows": 2501,
+      "groups": 2144
+    },
+    "validation": {
+      "rows": 313,
+      "groups": 284
+    },
+    "test": {
+      "rows": 313,
+      "groups": 255
+    }
+  },
+  "statistics": [
+    [
+      "eSOL rows",
+      "4132"
+    ],
+    [
+      "dropped: no solubility value (not quantified)",
+      "959"
+    ],
+    [
+      "dropped: malformed b-number",
+      "0"
+    ],
+    [
+      "dropped: b-number not in UniProt UP000000625",
+      "40"
+    ],
+    [
+      "dropped: b-number maps to several UniProt entries",
+      "0"
+    ],
+    [
+      "dropped: non-standard residue",
+      "3"
+    ],
+    [
+      "sequences with more than one eSOL row",
+      "2"
+    ],
+    [
+      "dropped: conflicting duplicates (spread > 10 points)",
+      "1 groups / 2 rows"
+    ],
+    [
+      "final rows with solubility > 100%",
+      "226"
+    ],
+    [
+      "final rows",
+      "3127"
+    ],
+    [
+      "MMseqs2 clusters",
+      "2683"
+    ]
+  ]
+}

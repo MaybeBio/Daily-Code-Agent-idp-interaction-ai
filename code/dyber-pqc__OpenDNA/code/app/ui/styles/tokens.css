@@ -1,0 +1,66 @@
+/* Design tokens. Every colour, size and radius in app.css comes from here. */
+:root {
+  color-scheme: light dark;
+
+  --font-ui: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 15px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  --sidebar-width: 260px;
+  --panel-width: 340px;
+  --topbar-height: 44px;
+  --statusbar-height: 24px;
+
+  /* Light theme */
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-sunken: #eef0f3;
+  --border: #d9dde3;
+  --text: #1b1f24;
+  --text-muted: #5c6670;
+  --accent: #1f6feb;
+  --accent-text: #ffffff;
+  --accent-soft: #dbe7fd;
+  --danger: #c62828;
+  --danger-soft: #fbe4e4;
+  --ok: #1b7f4b;
+
+  /* Secondary structure (shared by the ruler and legends). */
+  --ss-helix: #c2185b;
+  --ss-strand: #b28704;
+  --ss-turn: #5c6670;
+  --ss-loop: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --surface: #181c21;
+    --surface-sunken: #0d1013;
+    --border: #2a3038;
+    --text: #e3e7ec;
+    --text-muted: #8b96a1;
+    --accent: #4c8dff;
+    --accent-text: #0b0d10;
+    --accent-soft: #1b2a44;
+    --danger: #ef6b6b;
+    --danger-soft: #3a1c1c;
+    --ok: #4cc38a;
+    --ss-helix: #f06292;
+    --ss-strand: #e6b422;
+    --ss-turn: #8b96a1;
+  }
+}

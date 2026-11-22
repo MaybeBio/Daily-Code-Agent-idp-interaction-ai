@@ -1,28 +1,28 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/EtienneReboul/NanoPulldown
-- 快照日期: 2026-11-15
-- 快照 commit: [`974a2ec944f3`](https://github.com/EtienneReboul/NanoPulldown/commit/974a2ec944f328891eac76d0f914f10214ab4470)
+- 快照日期: 2026-11-22
+- 快照 commit: [`4faeef19f4a2`](https://github.com/EtienneReboul/NanoPulldown/commit/4faeef19f4a29245aad3cc707507e66853496aab)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (139 个文件, 1.5 MB)
+## 保留 (158 个文件, 5.8 MB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| 源码 | 88 | 1.1 MB |
-| 构建/配置 | 40 | 206.7 KB |
-| 文档 | 8 | 95.6 KB |
-| README | 3 | 40.5 KB |
+| 源码 | 96 | 5.4 MB |
+| 构建/配置 | 47 | 241.5 KB |
+| 文档 | 12 | 100.3 KB |
+| README | 3 | 43.6 KB |
 
-按后缀: `.py` 76 (712.6 KB)、`.ipynb` 2 (413.6 KB)、`.yaml` 38 (130.4 KB)、`Snakefile` 1 (75.1 KB)、`.md` 5 (57.9 KB)、`.sty` 2 (47.7 KB)、`.sh` 8 (24.5 KB)、`.tex` 1 (24.2 KB)、`.css` 2 (12.7 KB)、`.rst` 2 (4.5 KB)、`.bib` 1 (1.8 KB)、`pyproject.toml` 1 (1.2 KB)
+按后缀: `.ipynb` 5 (4.6 MB)、`.py` 81 (777.3 KB)、`.yaml` 45 (157.0 KB)、`Snakefile` 1 (83.3 KB)、`.md` 5 (60.9 KB)、`.sty` 2 (47.7 KB)、`.sh` 8 (24.5 KB)、`.tex` 1 (24.2 KB)、`.css` 2 (12.7 KB)、`.rst` 6 (9.2 KB)、`.bib` 1 (1.8 KB)、`pyproject.toml` 1 (1.2 KB)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 
-## 省略 (57 个文件, 5.4 MB)
+## 省略 (66 个文件, 5.5 MB)
 
 | 原因 | 文件数 | 大小 |
 |---|---:|---:|
-| 后缀不在白名单 | 57 | 5.4 MB |
+| 后缀不在白名单 | 66 | 5.5 MB |
 
 体积最大的省略文件:
 

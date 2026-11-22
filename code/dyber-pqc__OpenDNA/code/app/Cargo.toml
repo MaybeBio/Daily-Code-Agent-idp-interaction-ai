@@ -1,0 +1,47 @@
+# Desktop application. Kept out of the root workspace so library CI doesn't
+# need WebKit/WebView2 system packages; it has its own CI job.
+[workspace]
+resolver = "2"
+members = ["protocol", "desktop", "ui", "xtask"]
+
+[workspace.package]
+version = "0.6.0-rc1"
+edition = "2021"
+rust-version = "1.95"
+license = "Apache-2.0"
+repository = "https://github.com/dyber-pqc/OpenDNA"
+authors = ["OpenDNA contributors"]
+
+[workspace.dependencies]
+opendna-core = { path = "../crates/opendna-core", version = "0.6.0-rc1" }
+opendna-io = { path = "../crates/opendna-io", version = "0.6.0-rc1" }
+opendna-analysis = { path = "../crates/opendna-analysis", version = "0.6.0-rc1" }
+opendna-store = { path = "../crates/opendna-store", version = "0.6.0-rc1" }
+opendna-ml = { path = "../crates/opendna-ml", version = "0.6.0-rc1" }
+opendna-app-protocol = { path = "protocol", version = "0.6.0-rc1" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cast_precision_loss = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_possible_wrap = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+needless_pass_by_value = "allow"   # Tauri commands and Leptos components take owned arguments
+unwrap_used = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[profile.release.package.opendna-ui]
+opt-level = "z"

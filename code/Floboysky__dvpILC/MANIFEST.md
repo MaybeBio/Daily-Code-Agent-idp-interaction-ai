@@ -1,28 +1,28 @@
 # 代码快照清单
 
 - 上游仓库: https://github.com/Floboysky/dvpILC
-- 快照日期: 2026-11-01
-- 快照 commit: [`a371b2168a00`](https://github.com/Floboysky/dvpILC/commit/a371b2168a0080a6ac4ec98f9fbdf0ae51b5bb47)
+- 快照日期: 2026-11-22
+- 快照 commit: [`9fdc4df40f6c`](https://github.com/Floboysky/dvpILC/commit/9fdc4df40f6ca033abf74a603913cb24f5c2bbe0)
 - 归档策略: `repo_copy=code` — **代码摘录,不是完整仓库**。保留源码、构建/配置文件、README、文档;数据、二进制、图片、权重不保留。
 
-## 保留 (15 个文件, 19.4 MB)
+## 保留 (15 个文件, 19.6 MB)
 
 | 类别 | 文件数 | 大小 |
 |---|---:|---:|
-| 源码 | 9 | 19.3 MB |
+| 源码 | 9 | 19.5 MB |
 | 文档 | 4 | 56.2 KB |
 | README | 1 | 5.8 KB |
 | 构建/配置 | 1 | 282 B |
 
-按后缀: `.ipynb` 3 (19.3 MB)、`无后缀` 1 (34.3 KB)、`.md` 4 (27.6 KB)、`.py` 5 (25.6 KB)、`.sh` 1 (2.6 KB)、`.yml` 1 (282 B)
+按后缀: `.ipynb` 3 (19.5 MB)、`无后缀` 1 (34.3 KB)、`.md` 4 (27.6 KB)、`.py` 5 (25.6 KB)、`.sh` 1 (2.6 KB)、`.yml` 1 (282 B)
 
 > README / 文档中的相对图片与链接已改写为 GitHub 绝对地址。
 
-## 省略 (197 个文件, 150.7 MB)
+## 省略 (197 个文件, 150.8 MB)
 
 | 原因 | 文件数 | 大小 |
 |---|---:|---:|
-| 后缀不在白名单 | 197 | 150.7 MB |
+| 后缀不在白名单 | 197 | 150.8 MB |
 
 体积最大的省略文件:
 

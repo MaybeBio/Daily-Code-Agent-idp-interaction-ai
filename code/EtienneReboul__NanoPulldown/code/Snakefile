@@ -33,6 +33,12 @@ straight into folding.
                          shuffle + background-proteome null, with controls ->
                          idr_features / idr_pair_scores.parquet + ranked CSV
                          + figures in the report dir (envs/sparrow.yaml)
+      slim_minipae       (after folding) min-iPAE short linear motifs: per
+                         residue, the min inter-chain PAE onto the other side
+                         (Omidi 2024 / AF2_MiniPAE), confident segments, a
+                         decoy p per chain, and every ELM motif's min-iPAE onto
+                         its partner domain -> results/_minipae/*.parquet +
+                         minipae_{segments,chains,elm_support}.csv in the report dir
       annotate_cdd       CDD domains + their conserved-feature sites (InterPro API
                          `?residues`, cached per sequence) of every chain ->
                          data/annotation/cdd_sites.parquet, read against PLIP
@@ -74,8 +80,9 @@ straight into folding.
                          the results table combines it with 0.8 ipTM + 0.2 pTM
                          into z-scores (Rodriguez-Lumbreras et al 2026, Eq. 1)
       + report figures (domain x domain confidence heatmaps, minimize energy,
-        PLIP contact heatmaps, PLIP contacts on CDD sites per pair and per
-        bait) and reports/report.zip (onsuccess hook; unzip -> report.html)
+        PLIP contact heatmaps, PLIP contacts on sequences of interest (CDD
+        sites, ELM motifs, SPARROW IDR pairs, min-iPAE segments) per pair,
+        CDD map per bait) and reports/report.zip (onsuccess hook; unzip -> report.html)
         -- the ONLY report this pipeline produces.
 
 Every step is a `nanopulldown` CLI command (src/nanopulldown/, run as
@@ -115,6 +122,10 @@ if (REPO / "config.local.yaml").exists():
 report: "report/folding.rst"
 
 CFG = load_config(REPO)
+# the report template (report/folding.rst) reads `snakemake.config`, which holds
+# only the configfiles above: give it the merged config, run overlay included
+# (NANOPULLDOWN_RUN_CONFIG sets e.g. fold.engine)
+config.update(CFG)
 DIRS = CFG["dirs"]
 EF = CFG["esmfold2"]
 # fold.engine: esmfold2 | colabfold -- which of the two fold rule sets below
@@ -205,19 +216,20 @@ POSITIVE_TAG = (_CTL.get("positives") or {}).get("name", "known")
 DECOY_LENGTH_BINS = int((_CTL.get("decoys") or {}).get("length_bins", 8))
 
 
-def _run_has_decoys() -> bool:
+def _decoy_pairs() -> list[str]:
     # decoys among THIS run's folded preys: runs sharing a run_name share the inputs
     # table, and one of them may fold a decoy-free pairs_file
     if not INPUTS_TABLE.exists():
-        return False
+        return []
     import pyarrow.parquet as pq
     t = pq.read_table(INPUTS_TABLE, columns=["accession", "role", "sources"]).to_pydict()
     decoys = {a for a, r, s in zip(t["accession"], t["role"], t["sources"])
               if r == "prey" and DECOY_TAG in (s or [])}
-    return any(p.split("__", 1)[-1].split("x", 1)[0] in decoys for p in PAIRS)
+    return [p for p in PAIRS if p.split("__", 1)[-1].split("x", 1)[0] in decoys]
 
 
-HAS_DECOYS = _run_has_decoys()
+DECOY_PAIRS = _decoy_pairs()
+HAS_DECOYS = bool(DECOY_PAIRS)
 
 
 def pair_report_labels(wc):
@@ -310,7 +322,9 @@ DC_ENV = DC_CFG.get("conda_env") or "envs/deepcoil.yaml"
 CCG = CFG.get("coiled_coil") or {}
 
 ELM_OUTPUTS = ([str(Path(DIRS["annotation"]) / "elm_partner_matches.parquet"),
-                str(Path(DIRS["reports"]) / "preprocessing" / "elm_partner_matches.csv")] if ELM_ON else [])
+                str(Path(DIRS["reports"]) / "preprocessing" / "elm_partner_matches.csv")]
+               + ([str(Path(DIRS["reports"]) / "preprocessing" / "elm_tables")] if DATAVZRD else [])
+               if ELM_ON else [])
 # SPARROW IDR x IDR complementarity (idr_compatibility): on unless
 # annotate.idr_pairs.enabled is false. The background sample and the control
 # sequences are fetched once (fetch_idr_reference; login node on CAIUS) into
@@ -326,7 +340,42 @@ IDR_BG = str(IDR_DIR / "background_{}_{}{}_seed{}_max{}.fasta".format(
 IDR_CTL = str(IDR_DIR / "controls_{}.fasta".format(
     hashlib.sha1(json.dumps(IDR_CFG.get("controls"), sort_keys=True).encode()).hexdigest()[:8]))
 IDR_OUTPUTS = ([str(Path(DIRS["annotation"]) / "idr_pair_scores.parquet"),
-                str(Path(DIRS["reports"]) / "preprocessing" / "idr_pair_scores.csv")] if IDR_ON else [])
+                str(Path(DIRS["reports"]) / "preprocessing" / "idr_pair_scores.csv")]
+               + ([str(Path(DIRS["reports"]) / "preprocessing" / "idr_tables")] if DATAVZRD else [])
+               if IDR_ON else [])
+# min-iPAE SLiMs of the folds (slim_minipae, after every pair is folded): on
+# unless minipae.enabled is false. Reads the ELM matches when ELM is on.
+MINIPAE_CFG = CFG.get("minipae") or {}
+MINIPAE_ON = bool(MINIPAE_CFG.get("enabled", True))
+MINIPAE_OUTPUTS = ([str(Path(DIRS["postproc"]) / "_minipae" / "minipae_segments.parquet"),
+                    str(Path(DIRS["reports"]) / "folding" / "minipae_segments.csv")]
+                   + ([str(Path(DIRS["reports"]) / "folding" / "minipae_tables")] if DATAVZRD else [])
+                   if MINIPAE_ON else [])
+# report categories of the two run-wide sequence analyses (their per-pair ELM
+# rows are in the "PLIP contacts on sequences of interest" figures)
+ELM_CAT = "Short linear motifs (ELM)"
+IDR_CAT = "IDR complementarity (SPARROW)"
+MINIPAE_CAT = "Short linear motifs (min-iPAE)"
+# PLIP contacts on the sequences of interest (fig_plip_soi, fig_bait_cdd_map):
+# one section per analysis ("PLIP contacts on CDD sites", ...), one subsection
+# per bait; the prey label filters within it. Sections sort by name, so the
+# shared prefix keeps the four together.
+SOI_SUB = {"cdd": "CDD sites", "elm": "ELM motifs", "sparrow": "SPARROW IDR pairs", "minipae": "min-iPAE segments"}
+SOI_CAT = {k: f"PLIP contacts on {v}" for k, v in SOI_SUB.items()}
+
+
+def idr_figure_labels(wc):
+    """Report labels of one idr_pairs figure (`fig`: the file stem under the
+    figure dir, "mechanism_heatmap" or "top/<NN>_<pair>_<bait IDR>_<prey IDR>")."""
+    if not wc.fig.startswith("top/"):
+        return {"figure": "mechanism heatmap", "bait": "top pairs", "prey": "top pairs"}
+    stem = wc.fig[len("top/"):]
+    num, _, rest = stem.partition("_")
+    pair = max((p for p in LABELS if rest.startswith(p + "_")), key=len, default=None)
+    if pair is None:
+        return {"figure": f"#{num} {rest}", "bait": "", "prey": ""}
+    return {"figure": f"#{num} IDR profiles {rest[len(pair) + 1:]}",
+            "bait": LABELS[pair]["bait"], "prey": LABELS[pair]["prey"]}
 
 
 rule all:
@@ -342,7 +391,7 @@ rule all:
         str(FOLD_REP / "clash_test_stats.csv"),
         str(FOLD_REP / "clash_counts.csv"),
         [str(FOLD_REP / p / "plip_contacts.svg") for p in PAIRS],
-        [str(FOLD_REP / p / "plip_cdd.svg") for p in PAIRS],
+        [str(FOLD_REP / p / "plip_soi") for p in PAIRS],
         # MSA-based engines only (ESMFold2 has no MSA)
         [str(FOLD_REP / "msa_unpaired" / f"{prot}.svg") for prot in DOMAIN_PROTEINS] if ENGINE == "colabfold" else [],
         [str(FOLD_REP / p / "msa_paired.svg") for p in PAIRS] if ENGINE == "colabfold" else [],
@@ -350,6 +399,7 @@ rule all:
         str(FOLD_REP / "minimize_failure_rate.csv"),
         ELM_OUTPUTS,
         IDR_OUTPUTS,
+        MINIPAE_OUTPUTS,
         # per-bait report sections (the run-wide pages above are on-demand targets)
         [str(BY_BAIT / b / page) for b in BAITS for page in BAIT_PAGES],
 
@@ -595,7 +645,10 @@ rule idr_compatibility:
         scores=str(ANN / "idr_pair_scores.parquet"),
         csv=str(PRE_REP / "idr_pair_scores.csv"),
         controls=str(PRE_REP / "idr_controls.csv"),
-        figs=directory(str(PRE_REP / "idr_pairs")),
+        # the SVGs only (the PDFs are the same figures): the heatmap + top/<NN>_*
+        figs=report(directory(str(PRE_REP / "idr_pairs")), patterns=["{fig}.svg"],
+                    category=IDR_CAT, subcategory="Figures", labels=idr_figure_labels,
+                    caption="report/captions/idr_pairs.rst"),
     log:
         str(PRE_LOG / "idr_compatibility.log"),
     conda:
@@ -617,6 +670,47 @@ rule idr_compatibility:
           --features {output.features} --scores {output.scores} --csv {output.csv} \
           --controls-csv {output.controls} --fig-dir {output.figs} \
           --formats {params.fmts} --threads {threads} > {log} 2>&1
+        """
+
+
+# Interactive tables of the two run-wide sequence analyses (datavzrd; the
+# configs' CSV paths resolve against PRE_REP, the bundle dir's parent).
+rule datavzrd_elm:
+    input:
+        config=str(REPO / "report" / "datavzrd" / "elm.datavzrd.yaml"),
+        css=str(REPO / "src" / "nanopulldown" / "report" / "assets" / "datavzrd-dark.css"),
+        csv=str(PRE_REP / "elm_partner_matches.csv"),
+    output:
+        report(directory(str(PRE_REP / "elm_tables")), htmlindex="index.html",
+               category=ELM_CAT, subcategory="Tables", labels={"table": "motif x partner domain matches"},
+               caption="report/captions/elm.rst"),
+    conda:
+        "envs/analysis.yaml"
+    log:
+        str(PRE_LOG / "datavzrd_elm.log"),
+    shell:
+        r"""
+        {NP} report tables --config {input.config} --outdir {output[0]} --css {input.css} > {log} 2>&1
+        """
+
+
+rule datavzrd_idr:
+    input:
+        config=str(REPO / "report" / "datavzrd" / "idr.datavzrd.yaml"),
+        css=str(REPO / "src" / "nanopulldown" / "report" / "assets" / "datavzrd-dark.css"),
+        csv=str(PRE_REP / "idr_pair_scores.csv"),
+        controls=str(PRE_REP / "idr_controls.csv"),
+    output:
+        report(directory(str(PRE_REP / "idr_tables")), htmlindex="index.html",
+               category=IDR_CAT, subcategory="Tables", labels={"table": "IDR pair scores + controls"},
+               caption="report/captions/idr_pairs.rst"),
+    conda:
+        "envs/analysis.yaml"
+    log:
+        str(PRE_LOG / "datavzrd_idr.log"),
+    shell:
+        r"""
+        {NP} report tables --config {input.config} --outdir {output[0]} --css {input.css} > {log} 2>&1
         """
 
 
@@ -984,6 +1078,69 @@ rule compute_metrics:
         """
 
 
+# Short linear motifs placed by the folds themselves: per residue, the minimum
+# inter-chain PAE onto the other side (Omidi 2024 min-iPAE / AF2_MiniPAE), the
+# confident segments, a decoy p per chain, and the min-iPAE of every ELM motif
+# onto its partner domain (nanopulldown.structure.minipae). PAE only: no GPU.
+rule slim_minipae:
+    input:
+        folds=[str(POST / p / "raw" / "fold.parquet") for p in PAIRS],
+        domains=str(ANN_CACHE / "domains.done"),
+        disorder=str(ANN_CACHE / "disorder.done"),
+        elm=[str(ANN / "elm_motifs.parquet"), str(ANN / "elm_partner_matches.parquet")] if ELM_ON else [],
+    output:
+        profiles=str(POST / "_minipae" / "minipae_profiles.parquet"),
+        segments=str(POST / "_minipae" / "minipae_segments.parquet"),
+        chains=str(POST / "_minipae" / "minipae_chains.parquet"),
+        csv=str(FOLD_REP / "minipae_segments.csv"),
+        chains_csv=str(FOLD_REP / "minipae_chains.csv"),
+        elm_csv=str(FOLD_REP / "minipae_elm_support.csv"),    # header only when ELM is off
+    log:
+        str(FOLD_LOG / "slim_minipae.log"),
+    conda:
+        "envs/analysis.yaml"
+    params:
+        pairs=ALL_PAIRS, specs=ALL_SPECS_KEY,
+        decoys=" ".join(DECOY_PAIRS),
+        cfg=json.dumps(MINIPAE_CFG, sort_keys=True),
+        elm=(f"--elm-motifs {ANN / 'elm_motifs.parquet'} --elm-matches {ANN / 'elm_partner_matches.parquet'}"
+             if ELM_ON else ""),
+    threads: 4
+    resources:
+        # ~1 s/pair (float16 parquet decode, I/O bound); the per-residue
+        # profile table is ~1.5k rows/pair in memory (3,075 pairs: a few GB)
+        mem_mb=16000,
+        runtime=240,
+    shell:
+        r"""
+        {NP} minipae --pairs {params.pairs} --results-root {POST} --threads {threads} \
+          --out-dir $(dirname {output.segments}) --csv-dir $(dirname {output.csv}) \
+          --decoy-pairs {params.decoys} {params.elm} > {log} 2>&1
+        """
+
+
+rule datavzrd_minipae:
+    input:
+        config=str(REPO / "report" / "datavzrd" / "minipae.datavzrd.yaml"),
+        css=str(REPO / "src" / "nanopulldown" / "report" / "assets" / "datavzrd-dark.css"),
+        csv=rules.slim_minipae.output.csv,
+        chains=rules.slim_minipae.output.chains_csv,
+        elm=rules.slim_minipae.output.elm_csv,
+    output:
+        report(directory(str(FOLD_REP / "minipae_tables")), htmlindex="index.html",
+               category=MINIPAE_CAT, subcategory="Tables",
+               labels={"table": "min-iPAE segments, chains, ELM support"},
+               caption="report/captions/minipae.rst"),
+    conda:
+        "envs/analysis.yaml"
+    log:
+        str(FOLD_LOG / "datavzrd_minipae.log"),
+    shell:
+        r"""
+        {NP} report tables --config {input.config} --outdir {output[0]} --css {input.css} > {log} 2>&1
+        """
+
+
 rule minimize_cif:
     input:
         cif=str(POST / "{pair}" / "raw" / "sample_{sample}.cif.gz"),
@@ -1151,17 +1308,26 @@ rule fig_plip_contacts:
 
 # PLIP contact frequency per residue of each chain against its CDD domains and
 # conserved-feature sites (nanopulldown.report.cdd).
-rule fig_plip_cdd:
+# PLIP contacts on the sequences of interest of the four sequence / PAE
+# analyses: does a predicted complex actually touch what CDD, ELM, SPARROW and
+# min-iPAE point at? One figure per analysis, drawn alike
+# (nanopulldown.report.plots.plip_cdd); elm / sparrow / minipae.svg only for
+# pairs with rows, so the report lists only those.
+rule fig_plip_soi:
     group: "pair_post"
     input:
         contacts=str(POST / "{pair}" / "plip_contacts.parquet"),
         cdd=str(ANN / "cdd_sites.parquet"),
         annotation=str(ANN / "{pair}" / "annotation.yaml"),
         elm=[str(ANN / "elm_partner_matches.parquet")] if ELM_ON else [],
+        idr=[str(ANN / "idr_pair_scores.parquet")] if IDR_ON else [],
+        minipae=[str(POST / "_minipae" / "minipae_segments.parquet")] if MINIPAE_ON else [],
         coiled=[str(POST / "{pair}" / "coiled_coil.parquet")] if CCG.get("enabled", True) else [],
     output:
-        report(str(FOLD_REP / "{pair}" / "plip_cdd.svg"),
-               category="PLIP contacts on CDD sites", subcategory=bait_subcategory, labels=pair_report_labels),
+        report(directory(str(FOLD_REP / "{pair}" / "plip_soi")), patterns=["{analysis}.svg"],
+               category=lambda wc: SOI_CAT[wc.analysis],
+               subcategory=lambda wc: BAIT_LABEL[SPECS[wc.pair]["bait"]["uniprot"]], labels=pair_report_labels,
+               caption="report/captions/plip_soi.rst"),
     conda:
         "envs/analysis.yaml"
     params:
@@ -1170,14 +1336,14 @@ rule fig_plip_cdd:
         spec=lambda wc: SPEC_KEY[wc.pair],
         curation=lambda wc: CUR_KEY[wc.pair],
         labels=lambda wc: LABEL_KEY[wc.pair],
-        elm=lambda wc, input: f"--elm {input.elm[0]}" if input.elm else "",
+        opt=lambda wc, input: " ".join(f"--{k} {input[k][0]}" for k in ("elm", "idr", "minipae") if input[k]),
         coiled=lambda wc, input: f"--coiled-coil {input.coiled[0]}" if input.coiled else "",
     shell:
         r"""
-        {NP} plot plip-cdd --pair {wildcards.pair} \
+        {NP} plot plip-soi --pair {wildcards.pair} \
           --contacts {input.contacts} --cdd {input.cdd} --annotation {input.annotation} \
-          --num-samples {params.n} --out {output[0]} --formats {params.fmts} \
-          {params.elm} {params.coiled}
+          --num-samples {params.n} --out-dir {output[0]} --formats {params.fmts} \
+          {params.opt} {params.coiled}
         """
 
 
@@ -1572,7 +1738,7 @@ rule fig_bait_cdd_map:
         cdd=str(ANN / "cdd_sites.parquet"),
     output:
         report(str(BY_BAIT / "{bait}" / "cdd_contact_map.svg"),
-               category="PLIP contacts on CDD sites", subcategory=lambda wc: BAIT_LABEL[wc.bait],
+               category=SOI_CAT["cdd"], subcategory=lambda wc: BAIT_LABEL[wc.bait],
                labels=lambda wc: {"bait": BAIT_LABEL[wc.bait], "prey": "all preys"}),
     conda:
         "envs/analysis.yaml"

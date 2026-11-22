@@ -1,0 +1,51 @@
+# configuration file
+# use this configuration if no command line arguments are passed
+
+##########
+# dataset
+##########
+data_path: data/training/llps_vs_non_llps_train.csv
+sqn_column: SaProtSeq
+label_column: Label
+
+##########
+# model
+##########
+# SQN_EMBED_MODEL options:
+# 'esmc_300m': ESMC 300M, embedding shape (sqn_length, 360)
+# 'esmc_600m': ESMC 600M, embedding shape (sqn_length, 1152)
+# 'esm3_sm': ESM3 SM, embedding shape (sqn_length, 1536)
+# 'esm2_8m': ESM2 6 Layer 8M, embedding shape (sqn_length, 320)
+# 'esm2_35m': ESM2 12 Layer 35M, embedding shape (sqn_length, 480)
+# 'esm2_150m': ESM2 30 Layer 150M, embedding shape (sqn_length, 640)
+# 'esm2_650m': ESM2 33 Layer 650M, embedding shape (sqn_length, 1280)
+# 'saprot_35m': SaProt 35M, embedding shape (sqn_length, 480)
+# 'saprot_650m': SaProt 650M, embedding shape (sqn_length, 1280)
+sqn_embed_model: saprot_650m
+# SQN_EMBED_LOAD_LOCAL: whether to load model checkpoints from local
+# True: load huggingface model checkpoints from local
+# False: load online model checkpoints, need Internet connection
+sqn_embed_load_local: True
+sqn_embed_dim: 1280
+n_layer: 1
+n_head: 4
+feedforward_dim: 1280
+
+##########
+# configuration
+##########
+resume_training: False
+seed: 1
+epochs: 4
+batch_size: 64
+lr: 0.0001
+# DROPOUT applies to the multi-head self attetion layer and cross attention layer
+# after the language model
+dropout: 0.6
+weight_decay: 0
+
+
+##########
+# output
+##########
+checkpoint_path: checkpoints/trained_models/saprot_650m_baseline_h4_l1.pth

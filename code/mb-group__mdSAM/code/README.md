@@ -25,7 +25,6 @@ An **mdSAM** (membrane-disordered Self-Assembly Motif) is a short peptide motif,
 ```
 notebooks/   the 23 analysis notebooks listed below, numbered in pipeline order (outputs cleared)
 files/       shared input tables read by the notebooks (see files/README.md)
-FIGURE_MAP.csv   machine-readable map: paper panel -> notebook -> cell
 ```
 
 ## What each notebook does

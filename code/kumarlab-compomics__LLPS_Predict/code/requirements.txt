@@ -1,0 +1,11 @@
+torch --index-url https://download.pytorch.org/whl/cu126
+torchvision --index-url https://download.pytorch.org/whl/cu126
+transformers
+scikit-learn
+esm
+httpx
+finches @ git+https://git@github.com/idptools/finches.git
+pandas
+numpy
+PyYAML
+tqdm

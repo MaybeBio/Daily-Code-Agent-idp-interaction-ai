@@ -296,7 +296,9 @@ David S. Cerutti, Rafal Wiewiora, Simon Boothroyd, Woody Sherman.
 
 
 
-
+* **SMartini: automated small molecule parametrization for Martini 3 force field** [2026]  
+Danis Yangaliev, S. Banu Ozkan.  
+[bioRxiv(2026)](https://doi.org/10.64898/2026.09.29.755481) | [code](https://github.com/DanYev/SMartini)  
 
 * **SO3LR Tauri: Generally Applicable Force Fields for Reactive (Bio)Molecular Simulations Covering the Periodic Table** [2026]  
 Adil Kabylda, Florian N. Brünig, Miguel Gallegos, J. Thorben Frank, Evgeny Moerman, Oliver T. Unke, Stefan Chmiela, Klaus-Robert Müller, Alexandre Tkatchenko.  
@@ -365,6 +367,21 @@ Wang, L., Brasnett, C., Borges-Araújo, L. et al.
 
 
 
+
+
+
+
+* **Scaling a Universal Graph Neural Network Force Field to Billions of Atoms on Desk-Side GPUs** [2026]  
+Jaehyung Lee, Kamal Choudhary.  
+[arXiv:2611.20585(2026)](https://doi.org/10.48550/arXiv.2611.20585) | [Zenodo](https://github.com/atomgptlab/scalingmat)  
+
+* **tmol: a GPU-accelerated implementation of the Rosetta energy function for machine learning** [2026]  
+Andrew Leaver-Fay, Kieran Didi, Jeff Flatten, Alex Ford, Guangfeng Zhou, Nathaniel Corley, Hahnbeom Park, Maxwell W. Kazman, Rafael I. Brent, Joseph Kleinhenz, Henry Solberg, Andrew M. Watkins, Brian Kuhlman, David Baker, Frank DiMaio.  
+[arXiv:2611.21857(2026)](https://doi.org/10.48550/arXiv.2611.21857) | [code](https://github.com/RosettaCommons/tmol)  
+
+* **Quantum-accurate vibrational and conformational dynamics from small molecules to proteins with machine-learned force fields** [2026]  
+SSuárez-Dou, S., Gallegos, M., Han, K. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-79241-x) | [Zenodo](https://doi.org/10.5281/zenodo.20315304)  
 
 * **SimPoly: Simulation of polymers with machine learning force fields derived from first principles** [2026]  
 Simm, G.N.C., Hélie, J., Schulz, H. et al.  
@@ -592,7 +609,7 @@ Gregory Fonseca, Igor Poltavsky, Valentin Vassilev-Galindo, Alexandre Tkatchenko
 * [STORMM](https://github.com/Psivant/stormm) - Structure and TOpology Replica Molecular Mechanics.
 * [multiSMD](https://github.com/kszewc/multiSMD) - A Python Toolset for Multidirectional Steered Molecular Dynamics.
 * [CCD2MD](https://github.com/keb721/CCD2MD) - A Suite of Packages for Preparing Co-Folded Outputs for Molecular Dynamics Simulations.
-
+* [cuPotential](https://github.com/nvidia/cupotential) - A CUDA-X library for efficient computation of molecular interactions found in standard forcefields for molecular dynamics.
 
 
 
@@ -742,6 +759,19 @@ https://github.com/ipudu/awesome-molecular-dynamics
 
 
 
+
+
+
+
+
+
+* **MemBack: An Equivariant Graph Neural Network for Backmapping Lipid Membranes** [2026]  
+Y. Eren Tunç, Rainer A. Böckmann.  
+[J. Chem. Theory Comput.(2026)](https://doi.org/10.1021/acs.jctc.6c01711) | [code](https://github.com/BioMemPhys-FAU/memback)  
+
+* **SMartini: automated small molecule parametrization for Martini 3 force field** [2026]  
+Danis Yangaliev, S. Banu Ozkan.  
+[bioRxiv(2026)](https://doi.org/10.64898/2026.09.29.755481) | [code](https://github.com/DanYev/SMartini)  
 
 * **A unified coarse-grained neural network potential for the dynamics of biomolecular complexes** [2026]  
 Antonio Mirarchi, Stephen E. Farr, Adrià Peréz, Gianni De Fabritiis.  
@@ -2245,6 +2275,11 @@ Pham, T.D., Tanikanti, A. & Keçeli, M.
 
 
 
+
+* **xTBloom: GPU Batching for High-Throughput GFN-xTB Calculations** [2026]  
+Zitian Lu, Shengrui Xu, Tong Zhu, Qiangqiang Gu, Jinzhe Zeng.  
+[arXiv:2611.24807(2026)](https://doi.org/10.48550/arXiv.2611.24807) | [Code](https://github.com/jinzhezenggroup/xtbloom)  
+
 * **Bond-valence theory is a general electrostatic valence rule** [2026]  
 M. L. Whittaker.  
 [arXiv:2611.05339 (2026)](https://doi.org/10.48550/arXiv.2611.05339)  
@@ -2680,6 +2715,17 @@ Do, Hung N., Jinan Wang, Apurba Bhattarai, and Yinglong Miao.
 
 
 
+
+
+
+
+* **Enhanced Sampling of Protein Conformations in AlphaFold3 with Repulsive Bias in the Diffusion Generative Model** [2026]  
+Jun Ohnuki, Kei-ichi Okazaki.  
+[JACS Au (2026)](https://doi.org/10.1021/jacsau.6c00596) | [Code](https://github.com/OkazakiLab/af3_red)  
+
+* **Leveraging sequence purification for accurate prediction of multiple conformational states with AlphaFold2** [2026]  
+Xing, E., Zhang, J., Wang, S. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-79677-1) | [Code](https://github.com/enmingxing244/AF_ClaSeq)  
 
 * **Multiobjective VHH discovery through integrated high-throughput screening and AlphaFold3-guided structural prioritization** [2026]  
 Max D. Overath et al.  
@@ -3603,6 +3649,11 @@ Xu, Minkai, Wujie Wang, Shitong Luo, Chence Shi, Yoshua Bengio, Rafael Gomez-Bom
 
 
 
+
+* **REVEAL: RNA Ensemble Validation and Exploration with AI-guided Landscapes** [2026]  
+Soumendranath Bhakat, Shray Vats.  
+[bioRxiv (2026)](https://doi.org/10.64898/2026.11.10.765771) | [Code](https://github.com/sbhakat/REVEAL)  
+
 * **Topology, Energy Landscapes and Folding Kinetics of RNA Hairpins** [2026]  
 Anjali Verma, Pratyush Tiwary, Yunrui Qiu.  
 [bioRxiv (2026)](https://doi.org/10.64898/2026.09.21.753325) | [Code](https://github.com/tiwarylab/)  
@@ -3709,7 +3760,9 @@ Grambow, Colin A., Hayley Weir, Nathaniel Diamant, Alex Tseng, Tommaso Biancalan
 
 
 
-
+* **Leveraging sequence purification for accurate prediction of multiple conformational states with AlphaFold2** [2026]  
+Xing, E., Zhang, J., Wang, S. et al.  
+[Nat Commun (2026)](https://doi.org/10.1038/s41467-026-79677-1) | [Code](https://github.com/enmingxing244/AF_ClaSeq)  
 
 * **Static Recovery Is Not Dynamic Stability: Dynamics-Aware Benchmarking of Protein Motif Scaffolding** [2026]  
 Emile de Bruyn, Moritz Schäffler, Jannik Schneider, Sebastian R. Schmidt, Chanwoong Hwang, Aleena Siji, Utkarsh Upadhyay, Stefan Bauer, Alexander Schug, Stefan Kesselheim, Artur Yakimovich, Alina Bazarova.  

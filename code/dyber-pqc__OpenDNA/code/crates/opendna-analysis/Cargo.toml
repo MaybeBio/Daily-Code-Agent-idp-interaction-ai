@@ -1,0 +1,23 @@
+[package]
+name = "opendna-analysis"
+description = "Sequence and structure analysis: physicochemical properties, DSSP, SASA, superposition"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+opendna-core.workspace = true
+nalgebra.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+approx.workspace = true
+opendna-io.workspace = true
+proptest.workspace = true
+
+[lints]
+workspace = true
