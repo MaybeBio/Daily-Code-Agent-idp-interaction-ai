@@ -1,0 +1,5 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-11-21 04:23:13 | 🚀 ryanemenecker pushed to idptools/parrot
+    - [40249b6] (expanded) small fix such that blended optimization now rejects --recover-nonfinite
+2026-11-21 00:12:41 | ⭐️ jgreener64 starred THGLab/torchff-lib

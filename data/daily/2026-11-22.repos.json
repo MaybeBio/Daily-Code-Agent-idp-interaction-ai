@@ -1,0 +1,79 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 256311,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "Abdelmouhaimen"
+    ],
+    "event": "star",
+    "stars": 18374,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_playground",
+    "who": [
+      "JetGang"
+    ],
+    "event": "fork",
+    "stars": 2327,
+    "language": "Python",
+    "description": "An open-source library for sim and real robot demos on top of MuJoCo.",
+    "url": "https://github.com/google-deepmind/mujoco_playground"
+  },
+  {
+    "full_name": "idptools/parrot",
+    "who": [
+      "ryanemenecker"
+    ],
+    "event": "push",
+    "stars": 22,
+    "language": "Python",
+    "description": "Python package for protein sequence-based bidirectional recurrent neural network. Generalizable to a variety of protein bioinformatic applications.",
+    "url": "https://github.com/idptools/parrot"
+  },
+  {
+    "full_name": "kennethreitz/onyx",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 20,
+    "language": "Swift",
+    "description": "A native macOS notes app for plain Markdown. Obsidian-compatible, quiet, and fast. Your vault stays yours.",
+    "url": "https://github.com/kennethreitz/onyx"
+  },
+  {
+    "full_name": "THGLab/torchff-lib",
+    "who": [
+      "jgreener64"
+    ],
+    "event": "star",
+    "stars": 16,
+    "language": "Cuda",
+    "description": "High-performance Differentiable Molecular Mechanics Force Field Library ",
+    "url": "https://github.com/THGLab/torchff-lib"
+  },
+  {
+    "full_name": "PDB-REDO/density-fitness",
+    "who": [
+      "aizvorski"
+    ],
+    "event": "fork",
+    "stars": 11,
+    "language": "C++",
+    "description": "Application to calculate the density statistics (RSR, SRSR, RSCCS, EDIAm and OPIA)  for x-ray structures",
+    "url": "https://github.com/PDB-REDO/density-fitness"
+  }
+]
