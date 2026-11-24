@@ -1,0 +1,304 @@
+[
+  {
+    "full_name": "torvalds/linux",
+    "who": [
+      "torvalds"
+    ],
+    "event": "push",
+    "stars": 256474,
+    "language": "C",
+    "description": "Linux kernel source tree",
+    "url": "https://github.com/torvalds/linux"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "ahmoedano",
+      "rdelian",
+      "ttktjmt"
+    ],
+    "event": "mixed",
+    "stars": 18441,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/deepmind-research",
+    "who": [
+      "PNWcoastie"
+    ],
+    "event": "star",
+    "stars": 15297,
+    "language": "Jupyter Notebook",
+    "description": "This repository contains implementations and illustrative code to accompany DeepMind publications",
+    "url": "https://github.com/google-deepmind/deepmind-research"
+  },
+  {
+    "full_name": "google-deepmind/gemma",
+    "who": [
+      "Bhupendra-glitch"
+    ],
+    "event": "issue",
+    "stars": 5872,
+    "language": "Python",
+    "description": "Gemma open-weight LLM library, from Google DeepMind",
+    "url": "https://github.com/google-deepmind/gemma"
+  },
+  {
+    "full_name": "npmx-dev/npmx.dev",
+    "who": [
+      "feross"
+    ],
+    "event": "issue",
+    "stars": 3682,
+    "language": "TypeScript",
+    "description": "a fast, modern browser for the npm registry",
+    "url": "https://github.com/npmx-dev/npmx.dev"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "pakfook80-stack"
+    ],
+    "event": "star",
+    "stars": 3523,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/mctx",
+    "who": [
+      "jeromeskiii"
+    ],
+    "event": "fork",
+    "stars": 2687,
+    "language": "Python",
+    "description": "Monte Carlo tree search in JAX",
+    "url": "https://github.com/google-deepmind/mctx"
+  },
+  {
+    "full_name": "google-deepmind/tapnet",
+    "who": [
+      "rladmstj"
+    ],
+    "event": "star",
+    "stars": 2271,
+    "language": "Jupyter Notebook",
+    "description": "Tracking Any Point (TAP)",
+    "url": "https://github.com/google-deepmind/tapnet"
+  },
+  {
+    "full_name": "google-deepmind/concordia",
+    "who": [
+      "CyberSculptor96"
+    ],
+    "event": "fork",
+    "stars": 1922,
+    "language": "Python",
+    "description": "A library for generative social simulation",
+    "url": "https://github.com/google-deepmind/concordia"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "kavyabhand"
+    ],
+    "event": "issue",
+    "stars": 1653,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Nas01010101",
+      "ronskii2",
+      "winterdrive"
+    ],
+    "event": "mixed",
+    "stars": 1396,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "r-dbi/bigrquery",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 533,
+    "language": "R",
+    "description": "An interface to Google's BigQuery from R.",
+    "url": "https://github.com/r-dbi/bigrquery"
+  },
+  {
+    "full_name": "RConsortium/S7",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 498,
+    "language": "R",
+    "description": "S7: a new OO system for R",
+    "url": "https://github.com/RConsortium/S7"
+  },
+  {
+    "full_name": "google-deepmind/representations4d",
+    "who": [
+      "FooAuto"
+    ],
+    "event": "star",
+    "stars": 433,
+    "language": "Jupyter Notebook",
+    "description": "Foundation models for 4D spatial and temporal vision tasks.",
+    "url": "https://github.com/google-deepmind/representations4d"
+  },
+  {
+    "full_name": "google-deepmind/gbench",
+    "who": [
+      "ELPilotPR",
+      "KukuEE",
+      "LifeJiggy",
+      "afterthought325",
+      "amalrn98",
+      "anthonyrussano",
+      "austinhttps",
+      "bluewowo",
+      "j1mc",
+      "manbaaaa",
+      "shoushou1106"
+    ],
+    "event": "mixed",
+    "stars": 131,
+    "language": "Python",
+    "description": "Evaluation, serving performance, and release-readiness benchmark harness for Gemma and open-weights LLMs.",
+    "url": "https://github.com/google-deepmind/gbench"
+  },
+  {
+    "full_name": "PDB-REDO/alphafill",
+    "who": [
+      "DajanaKolarova"
+    ],
+    "event": "star",
+    "stars": 127,
+    "language": "C++",
+    "description": "AlphaFill is an algorithm based on sequence and structure similarity that “transplants” missing compounds to the AlphaFold models. By adding the molecular context to the protein structures, the models can be more easily appreciated in terms of function and structure integrity.",
+    "url": "https://github.com/PDB-REDO/alphafill"
+  },
+  {
+    "full_name": "YuzheWangPKU/awesome-protein-ligand-interactions",
+    "who": [
+      "Immortals-33"
+    ],
+    "event": "star",
+    "stars": 64,
+    "language": "",
+    "description": "Official repository for the review article \"Modeling protein–ligand interactions for drug discovery in the era of deep learning.\"",
+    "url": "https://github.com/YuzheWangPKU/awesome-protein-ligand-interactions"
+  },
+  {
+    "full_name": "google-deepmind/natural-plan",
+    "who": [
+      "yakud"
+    ],
+    "event": "star",
+    "stars": 62,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/natural-plan"
+  },
+  {
+    "full_name": "PDB-REDO/AlphaBridge",
+    "who": [
+      "puzhongji-enzymedesign"
+    ],
+    "event": "star",
+    "stars": 62,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/PDB-REDO/AlphaBridge"
+  },
+  {
+    "full_name": "google-deepmind/formal-quantum-computation",
+    "who": [
+      "BryceT233",
+      "shu279",
+      "silencex1"
+    ],
+    "event": "star",
+    "stars": 49,
+    "language": "Lean",
+    "description": "A Lean 4 library for formally specifying and verifying quantum programs, grounded in quantum Hoare logic with classical variables.",
+    "url": "https://github.com/google-deepmind/formal-quantum-computation"
+  },
+  {
+    "full_name": "bwicky/oligomer_hallucination",
+    "who": [
+      "Immortals-33"
+    ],
+    "event": "star",
+    "stars": 39,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/bwicky/oligomer_hallucination"
+  },
+  {
+    "full_name": "KULL-Centre/BME",
+    "who": [
+      "carlocamilloni"
+    ],
+    "event": "fork",
+    "stars": 27,
+    "language": "Jupyter Notebook",
+    "description": "Integrating Molecular Simulation and Experimental Data",
+    "url": "https://github.com/KULL-Centre/BME"
+  },
+  {
+    "full_name": "kennethreitz/onyx",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "mixed",
+    "stars": 25,
+    "language": "Swift",
+    "description": "A native macOS notes app for plain Markdown. Obsidian-compatible, quiet, and fast. Your vault stays yours.",
+    "url": "https://github.com/kennethreitz/onyx"
+  },
+  {
+    "full_name": "enmingxing244/AF_ClaSeq",
+    "who": [
+      "Immortals-33"
+    ],
+    "event": "star",
+    "stars": 3,
+    "language": "Python",
+    "description": "This is the github repo for AF_ClaSeq, a framework to perform voting mechanism and purify sequences in MSA in order to predict specific protein structure.",
+    "url": "https://github.com/enmingxing244/AF_ClaSeq"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  }
+]
