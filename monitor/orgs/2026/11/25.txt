@@ -1,0 +1,30 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-11-25 01:31:03 | 🚀 github-actions pushed to BioComputingUP/dome-tracking
+    - [aaa5dd3] (expanded) tracker data 2026-11-24
+2026-11-24 22:55:56 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [71bd418] (expanded) monitor data 2026-11-24
+2026-11-24 22:15:40 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [9238b5d] (expanded) monitor data 2026-11-24
+2026-11-24 20:55:32 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [71e3184] (expanded) monitor data 2026-11-24
+2026-11-24 19:55:31 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [ed6d64f] (expanded) monitor data 2026-11-24
+2026-11-24 19:35:32 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [67787e6] (expanded) monitor data 2026-11-24
+2026-11-24 17:55:35 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [d81e43d] (expanded) monitor data 2026-11-24
+2026-11-24 15:52:33 | 🚀 alexholehouse pushed to holehouse-lab/vizit
+    - [ed3ca8b] (expanded) Update ahead of adding pipe support
+2026-11-24 15:06:01 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [65ac5bf] (expanded) monitor data 2026-11-24
+2026-11-24 14:15:38 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [76a59ce] (expanded) monitor data 2026-11-24
+2026-11-24 11:52:37 | 🚀 alexholehouse pushed to holehouse-lab/protfasta
+    - [38b2722] (expanded) Update so protfasta sits under src/ directory'
+2026-11-24 11:42:44 | 🚀 alexholehouse pushed to idptools/afrc
+    - [a92ed95] (expanded) Updated afrc to src/afrc
+2026-11-24 11:34:12 | 🚀 alexholehouse pushed to holehouse-lab/shephard
+    - [6df0248] (expanded) Updtae in 0.2.5 to reorgznie package so shephard code under src/shephard
+2026-11-24 03:15:42 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [a559759] (expanded) monitor data 2026-11-23

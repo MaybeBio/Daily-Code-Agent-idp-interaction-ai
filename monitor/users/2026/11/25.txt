@@ -1,0 +1,11 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-25 02:43:39 | ⭐️ Zuricho starred kevinlu4588/RumiFold
+2026-11-24 15:52:33 | 🚀 alexholehouse pushed to holehouse-lab/vizit
+    - [ed3ca8b] (expanded) Update ahead of adding pipe support
+2026-11-24 11:52:37 | 🚀 alexholehouse pushed to holehouse-lab/protfasta
+    - [38b2722] (expanded) Update so protfasta sits under src/ directory'
+2026-11-24 11:42:44 | 🚀 alexholehouse pushed to idptools/afrc
+    - [a92ed95] (expanded) Updated afrc to src/afrc
+2026-11-24 11:34:12 | 🚀 alexholehouse pushed to holehouse-lab/shephard
+    - [6df0248] (expanded) Updtae in 0.2.5 to reorgznie package so shephard code under src/shephard

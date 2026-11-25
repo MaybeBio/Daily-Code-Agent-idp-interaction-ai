@@ -1,0 +1,69 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-25 11:53:24 | 💬 caorm created issue 'so101-calibration problem' in google-deepmind/robotics-antigravity-plugin
+2026-11-25 11:52:03 | 🔀 hadley opened PR in r-dbi/bigrquery
+2026-11-25 11:48:09 | 🍴 snesan821 forked google-deepmind/formal-conjectures
+2026-11-25 11:47:05 | ⭐️ subin9 starred google-deepmind/mujoco
+2026-11-25 11:45:56 | 💬 hadley created issue 'bigrquery returns no data if there is a declared variable in the query (whether or not it is used)' in r-dbi/bigrquery
+2026-11-25 11:45:34 | 💬 WeiYoung1013 created issue 'CCD, sphere/capsule vs convex: the contact normal is float32 rounding near zero penetration (sometimes an all-zero frame)' in google-deepmind/mujoco_warp
+2026-11-25 11:44:35 | 🔀 hadley opened PR in r-dbi/bigrquery
+2026-11-25 11:44:29 | ⭐️ hu starred google-deepmind/gbench
+2026-11-25 11:40:49 | 🐛 hadley closed issue in r-dbi/bigrquery: 'BUG: bq_table_download(api="arrow") fails with RANGE types'
+2026-11-25 11:40:23 | 🐛 hadley closed issue in r-dbi/bigrquery: 'Unable to access newly created columns in BigQuery table schema'
+2026-11-25 11:40:22 | 💬 hadley created issue 'Unable to access newly created columns in BigQuery table schema' in r-dbi/bigrquery
+2026-11-25 11:34:28 | 🔀 hadley opened PR in r-dbi/bigrquery
+2026-11-25 11:32:56 | ⭐️ bwcummings1 starred google-deepmind/alphageometry
+2026-11-25 11:32:52 | ⭐️ gracefullight starred google-deepmind/science-skills
+2026-11-25 11:26:54 | 💬 hadley created issue 'Support Arrow Storage Write API in bq_table_upload()' in r-dbi/bigrquery
+2026-11-25 11:25:24 | 🐛 hadley closed issue in r-dbi/bigrquery: 'R console stuck for several minutes when api="arrow"'
+2026-11-25 11:25:23 | 💬 hadley created issue 'R console stuck for several minutes when api="arrow"' in r-dbi/bigrquery
+2026-11-25 11:22:56 | 🐛 hadley opened issue in r-dbi/bigrquery: 'Why is `cli_warn()` using `call = environment()`?'
+2026-11-25 11:15:34 | 💬 hadley created issue 'Add translation for more clock functions' in r-dbi/bigrquery
+2026-11-25 11:15:34 | 🐛 hadley closed issue in r-dbi/bigrquery: 'Add translation for more clock functions'
+2026-11-25 11:14:06 | 💬 hadley created issue 'Add support for clock functions' in r-dbi/bigrquery
+2026-11-25 11:10:36 | ⭐️ byanthny starred google-deepmind/formal-conjectures
+2026-11-25 11:02:16 | 🔀 jeongseok-meta opened PR in google-deepmind/mujoco
+2026-11-25 11:02:03 | 🐛 jeongseok-meta opened issue in google-deepmind/mujoco: 'Segfault on recursive `<model>` assets: a model file that names itself, or two that name each other'
+2026-11-25 11:00:08 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-25 11:00:08 | 🔀 laughingbear opened PR in google-deepmind/formal-conjectures
+2026-11-25 11:00:00 | ⭐️ wonder-wu starred ProteinDesignLab/protpardelle
+2026-11-25 10:59:29 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-25 10:59:29 | 🔀 laughingbear opened PR in google-deepmind/formal-conjectures
+2026-11-25 10:58:52 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-25 10:58:52 | 🔀 laughingbear opened PR in google-deepmind/formal-conjectures
+2026-11-25 10:58:37 | 💬 jblack874 created issue '3D Kakeya (Problem 6.10): lower union volumes at n = 8, 16, 32, 64 (5.8% to 56.6% below the notebook values)' in google-deepmind/alphaevolve_repository_of_problems
+2026-11-25 10:57:00 | 💬 hadley created issue 'reserve() the # of fields before push_back loop' in r-dbi/bigrquery
+2026-11-25 10:54:46 | 🍴 HITESH4577 forked google-deepmind/formal-conjectures
+2026-11-25 10:54:27 | 🐛 caorm opened issue in google-deepmind/robotics-antigravity-plugin: 'so101-calibration problem'
+2026-11-25 10:53:50 | ⭐️ gbTalin starred google-deepmind/formal-quantum-computation
+2026-11-25 10:51:35 | ⭐️ DLMP-Niu starred google-deepmind/alphaevolve
+2026-11-25 10:50:56 | 💬 hadley created issue 'Use BigQuery MAX_BY for slice_max(n=1, with_ties=FALSE)' in r-dbi/bigrquery
+2026-11-25 10:43:14 | 🔹 hadley performed PullRequestReviewEvent on tidyverse/ellmer
+2026-11-25 10:41:38 | ⭐️ maro114510 starred google-deepmind/gbench
+2026-11-25 10:39:33 | ⭐️ ZFYLeo starred google-deepmind/alphaevolve
+2026-11-25 10:37:54 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-25 10:37:54 | 🔀 mnn31 opened PR in google-deepmind/formal-conjectures
+2026-11-25 10:37:21 | 🔀 hadley merged PR in r-dbi/bigrquery
+2026-11-25 10:35:26 | ⭐️ AleNunezArroyo starred google-deepmind/gbench
+2026-11-25 10:34:51 | ⭐️ 1AB-H starred google-deepmind/open_spiel
+2026-11-25 10:32:22 | ⭐️ MentTholatum starred google-deepmind/mujoco
+2026-11-25 10:30:49 | 🔀 hadley merged PR in r-dbi/bigrquery
+2026-11-25 10:29:47 | 💬 hadley created issue 'Wake the promise poller when a request joins its pool' in r-lib/httr2
+2026-11-25 10:27:10 | ⭐️ Pashisfisuta starred google-deepmind/gbench
+2026-11-25 10:22:00 | 🔀 hadley opened PR in meztez/bigrquerystorage
+2026-11-25 02:43:39 | ⭐️ Zuricho starred kevinlu4588/RumiFold
+2026-11-24 18:30:56 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [4ebda8b] (expanded) Record sandbox capacity waits without rewriting idle leases
+2026-11-24 18:26:53 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [a965826] (expanded) Return unresolved source anchors to report authors for revision
+2026-11-24 18:13:10 | 🚀 gitesei pushed to KULL-Centre/_2026_Mahendran_suppression_amyloid
+    - [c7231f7] (expanded) Update notebook (excel files)
+2026-11-24 18:06:13 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [a68feac] (expanded) fix(researcher): revise flagged paragraphs against original source evidence
+2026-11-24 17:20:26 | 🚀 tyang816 pushed to ai4protein/VenusFactory2
+    - [d22d5e6] (expanded) fix(researcher): reuse resolved protein data and preserve revision budget
+2026-11-24 14:49:38 | ⭐️ wwqzel starred op7418/Humanizer-zh
+2026-11-24 14:49:03 | ⭐️ wwqzel starred Adkid-Zephyr/anti-defensive-writing-Skill
+2026-11-24 13:56:56 | ⭐️ wwqzel starred Zirui-Fan/DynaFold
+2026-11-24 13:49:26 | ⭐️ wwqzel starred jie-zhu-hub/HLAIIRevST
+2026-11-24 13:45:08 | ⭐️ wwqzel starred microsoft/cascadia-code

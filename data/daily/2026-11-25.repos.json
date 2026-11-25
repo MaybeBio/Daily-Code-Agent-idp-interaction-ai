@@ -1,0 +1,343 @@
+[
+  {
+    "full_name": "microsoft/cascadia-code",
+    "who": [
+      "wwqzel"
+    ],
+    "event": "star",
+    "stars": 27969,
+    "language": "Python",
+    "description": "This is a fun, new monospaced font that includes programming ligatures and is designed to enhance the modern look and feel of the Windows Terminal.",
+    "url": "https://github.com/microsoft/cascadia-code"
+  },
+  {
+    "full_name": "op7418/Humanizer-zh",
+    "who": [
+      "wwqzel"
+    ],
+    "event": "star",
+    "stars": 23727,
+    "language": "Python",
+    "description": "Humanizer 的汉化版本，Claude Code Skills，旨在消除文本中 AI 生成的痕迹。",
+    "url": "https://github.com/op7418/Humanizer-zh"
+  },
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "MentTholatum",
+      "jeongseok-meta",
+      "subin9"
+    ],
+    "event": "mixed",
+    "stars": 18469,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "Adkid-Zephyr/anti-defensive-writing-Skill",
+    "who": [
+      "wwqzel"
+    ],
+    "event": "star",
+    "stars": 7199,
+    "language": "Python",
+    "description": "极致轻量｜阻止论文的防御性写作 | Anti-defensive writing for academic papers — 学术写作原则 Skill + prompt pack (CN/EN)",
+    "url": "https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill"
+  },
+  {
+    "full_name": "google-deepmind/open_spiel",
+    "who": [
+      "1AB-H"
+    ],
+    "event": "star",
+    "stars": 5608,
+    "language": "Python",
+    "description": "OpenSpiel is a collection of environments and algorithms for research in general reinforcement learning and search/planning in games.",
+    "url": "https://github.com/google-deepmind/open_spiel"
+  },
+  {
+    "full_name": "google-deepmind/alphageometry",
+    "who": [
+      "bwcummings1"
+    ],
+    "event": "star",
+    "stars": 4907,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphageometry"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "gracefullight"
+    ],
+    "event": "star",
+    "stars": 3531,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_warp",
+    "who": [
+      "WeiYoung1013"
+    ],
+    "event": "issue",
+    "stars": 1657,
+    "language": "Python",
+    "description": "GPU-optimized version of the MuJoCo physics simulator, designed for NVIDIA hardware.",
+    "url": "https://github.com/google-deepmind/mujoco_warp"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "HITESH4577",
+      "byanthny",
+      "github-actions",
+      "laughingbear",
+      "mnn31",
+      "snesan821"
+    ],
+    "event": "mixed",
+    "stars": 1400,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "tidyverse/ellmer",
+    "who": [
+      "hadley"
+    ],
+    "event": "other",
+    "stars": 622,
+    "language": "R",
+    "description": "Call LLM APIs from R",
+    "url": "https://github.com/tidyverse/ellmer"
+  },
+  {
+    "full_name": "r-dbi/bigrquery",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 533,
+    "language": "R",
+    "description": "An interface to Google's BigQuery from R.",
+    "url": "https://github.com/r-dbi/bigrquery"
+  },
+  {
+    "full_name": "r-lib/httr2",
+    "who": [
+      "hadley"
+    ],
+    "event": "issue",
+    "stars": 274,
+    "language": "R",
+    "description": "Make HTTP requests and process their responses. A modern reimagining of httr.",
+    "url": "https://github.com/r-lib/httr2"
+  },
+  {
+    "full_name": "google-deepmind/robotics-antigravity-plugin",
+    "who": [
+      "caorm"
+    ],
+    "event": "issue",
+    "stars": 261,
+    "language": "Python",
+    "description": "GDM Robotics Skills for agentic robotics workflows across simulation and real robots.",
+    "url": "https://github.com/google-deepmind/robotics-antigravity-plugin"
+  },
+  {
+    "full_name": "ai4protein/VenusFactory2",
+    "who": [
+      "tyang816"
+    ],
+    "event": "push",
+    "stars": 253,
+    "language": "Python",
+    "description": "🏭 AI agent platform with skills for protein engineering, the noob-friendly AI tutorial tool for life science professionals. (ACL Demo2025, arXiv 2026)",
+    "url": "https://github.com/ai4protein/VenusFactory2"
+  },
+  {
+    "full_name": "google-deepmind/gbench",
+    "who": [
+      "AleNunezArroyo",
+      "Pashisfisuta",
+      "hu",
+      "maro114510"
+    ],
+    "event": "star",
+    "stars": 248,
+    "language": "Python",
+    "description": "Evaluation, serving performance, and release-readiness benchmark harness for Gemma and open-weights LLMs.",
+    "url": "https://github.com/google-deepmind/gbench"
+  },
+  {
+    "full_name": "google-deepmind/alphaevolve_repository_of_problems",
+    "who": [
+      "jblack874"
+    ],
+    "event": "issue",
+    "stars": 243,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphaevolve_repository_of_problems"
+  },
+  {
+    "full_name": "ProteinDesignLab/protpardelle",
+    "who": [
+      "wonder-wu"
+    ],
+    "event": "star",
+    "stars": 239,
+    "language": "Python",
+    "description": "Diffusion-based all-atom protein generative model.",
+    "url": "https://github.com/ProteinDesignLab/protpardelle"
+  },
+  {
+    "full_name": "google-deepmind/alphaevolve",
+    "who": [
+      "DLMP-Niu",
+      "ZFYLeo"
+    ],
+    "event": "star",
+    "stars": 87,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphaevolve"
+  },
+  {
+    "full_name": "google-deepmind/formal-quantum-computation",
+    "who": [
+      "gbTalin"
+    ],
+    "event": "star",
+    "stars": 86,
+    "language": "Lean",
+    "description": "A Lean 4 library for formally specifying and verifying quantum programs, grounded in quantum Hoare logic with classical variables.",
+    "url": "https://github.com/google-deepmind/formal-quantum-computation"
+  },
+  {
+    "full_name": "meztez/bigrquerystorage",
+    "who": [
+      "hadley"
+    ],
+    "event": "pr",
+    "stars": 26,
+    "language": "C++",
+    "description": "R Client for BigQuery Storage API",
+    "url": "https://github.com/meztez/bigrquerystorage"
+  },
+  {
+    "full_name": "Zirui-Fan/DynaFold",
+    "who": [
+      "wwqzel"
+    ],
+    "event": "star",
+    "stars": 12,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/Zirui-Fan/DynaFold"
+  },
+  {
+    "full_name": "holehouse-lab/shephard",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 7,
+    "language": "Python",
+    "description": "Sequence-based Hierarchical and Extendable Platform for High-throughput Analysis of Region of Disorder",
+    "url": "https://github.com/holehouse-lab/shephard"
+  },
+  {
+    "full_name": "kevinlu4588/RumiFold",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 3,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/kevinlu4588/RumiFold"
+  },
+  {
+    "full_name": "idptools/afrc",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 3,
+    "language": "Python",
+    "description": "Implementation of our reference polymer model for an unfolded protein as an ideal chain",
+    "url": "https://github.com/idptools/afrc"
+  },
+  {
+    "full_name": "holehouse-lab/protfasta",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 2,
+    "language": "Python",
+    "description": "Simple but robust parser for protein-based FASTA files",
+    "url": "https://github.com/holehouse-lab/protfasta"
+  },
+  {
+    "full_name": "jie-zhu-hub/HLAIIRevST",
+    "who": [
+      "wwqzel"
+    ],
+    "event": "star",
+    "stars": 1,
+    "language": "Python",
+    "description": "A sliding-attention Transformer for HLA-II-restricted peptide–TCR recognition.",
+    "url": "https://github.com/jie-zhu-hub/HLAIIRevST"
+  },
+  {
+    "full_name": "holehouse-lab/vizit",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Simple tool for data visualization from the commandline",
+    "url": "https://github.com/holehouse-lab/vizit"
+  },
+  {
+    "full_name": "BioComputingUP/dome-tracking",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and code-activity tracking for the DOME ecosystem: DOME Registry, DOME-ML, DOME Copilot, OSAI, DOME Observatory",
+    "url": "https://github.com/BioComputingUP/dome-tracking"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "KULL-Centre/_2026_Mahendran_suppression_amyloid",
+    "who": [
+      "gitesei"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/_2026_Mahendran_suppression_amyloid"
+  }
+]
