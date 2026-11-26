@@ -1,0 +1,282 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "Nuos",
+      "ieixx",
+      "yonatantussa"
+    ],
+    "event": "mixed",
+    "stars": 18488,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "google-deepmind/alphafold",
+    "who": [
+      "Nuos"
+    ],
+    "event": "fork",
+    "stars": 14957,
+    "language": "Python",
+    "description": "Open source code for AlphaFold 2.",
+    "url": "https://github.com/google-deepmind/alphafold"
+  },
+  {
+    "full_name": "google-deepmind/weathernext",
+    "who": [
+      "jafgo0"
+    ],
+    "event": "star",
+    "stars": 7759,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/weathernext"
+  },
+  {
+    "full_name": "google-deepmind/dm_control",
+    "who": [
+      "sico-09"
+    ],
+    "event": "star",
+    "stars": 4733,
+    "language": "Python",
+    "description": "Google DeepMind's software stack for physics-based simulation and Reinforcement Learning environments, using MuJoCo.",
+    "url": "https://github.com/google-deepmind/dm_control"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "lsc-00"
+    ],
+    "event": "star",
+    "stars": 4422,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "google-deepmind/science-skills",
+    "who": [
+      "Chemwzd",
+      "haihao999"
+    ],
+    "event": "star",
+    "stars": 3535,
+    "language": "Python",
+    "description": "GDM Science Skills to speed up agentic scientific workflows with better grounding and higher token efficiency. Integrate insights from AlphaGenome, AFDB, UniProt and 30+ other databases and tools.",
+    "url": "https://github.com/google-deepmind/science-skills"
+  },
+  {
+    "full_name": "google-deepmind/alphatensor",
+    "who": [
+      "yyualvin"
+    ],
+    "event": "star",
+    "stars": 2867,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphatensor"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_playground",
+    "who": [
+      "ieixx"
+    ],
+    "event": "star",
+    "stars": 2349,
+    "language": "Python",
+    "description": "An open-source library for sim and real robot demos curated by the MuJoCo team.",
+    "url": "https://github.com/google-deepmind/mujoco_playground"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Hertaspace"
+    ],
+    "event": "issue",
+    "stars": 1400,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "r-dbi/bigrquery",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 533,
+    "language": "R",
+    "description": "An interface to Google's BigQuery from R.",
+    "url": "https://github.com/r-dbi/bigrquery"
+  },
+  {
+    "full_name": "google-deepmind/alphaprotein-novo",
+    "who": [
+      "xQy5201314"
+    ],
+    "event": "star",
+    "stars": 328,
+    "language": "Python",
+    "description": "AlphaProtein Novo",
+    "url": "https://github.com/google-deepmind/alphaprotein-novo"
+  },
+  {
+    "full_name": "google-deepmind/robotics-antigravity-plugin",
+    "who": [
+      "HilbertCN",
+      "KawingwingHo",
+      "Korverf",
+      "OMG-ai",
+      "charmainejames",
+      "kdnewbee",
+      "keepgoing688",
+      "qpchung",
+      "tjc609",
+      "woertedetiankong"
+    ],
+    "event": "mixed",
+    "stars": 307,
+    "language": "Python",
+    "description": "GDM Robotics Skills for agentic robotics workflows across simulation and real robots.",
+    "url": "https://github.com/google-deepmind/robotics-antigravity-plugin"
+  },
+  {
+    "full_name": "google-deepmind/gbench",
+    "who": [
+      "greathousesh",
+      "mfang96",
+      "vamsi020",
+      "yuvarajl",
+      "zdjjj"
+    ],
+    "event": "star",
+    "stars": 292,
+    "language": "Python",
+    "description": "Evaluation, serving performance, and release-readiness benchmark harness for Gemma and open-weights LLMs.",
+    "url": "https://github.com/google-deepmind/gbench"
+  },
+  {
+    "full_name": "r-lib/conflicted",
+    "who": [
+      "hadley"
+    ],
+    "event": "mixed",
+    "stars": 254,
+    "language": "R",
+    "description": "An alternative conflict resolution strategy for R",
+    "url": "https://github.com/r-lib/conflicted"
+  },
+  {
+    "full_name": "google-deepmind/formal-quantum-computation",
+    "who": [
+      "gbennett71"
+    ],
+    "event": "star",
+    "stars": 102,
+    "language": "Lean",
+    "description": "A Lean 4 library for formally specifying and verifying quantum programs, grounded in quantum Hoare logic with classical variables.",
+    "url": "https://github.com/google-deepmind/formal-quantum-computation"
+  },
+  {
+    "full_name": "idptools/metapredict",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "pr",
+    "stars": 34,
+    "language": "Python",
+    "description": "A machine learning based protein disorder predictor.",
+    "url": "https://github.com/idptools/metapredict"
+  },
+  {
+    "full_name": "kennethreitz/onyx",
+    "who": [
+      "kennethreitz"
+    ],
+    "event": "push",
+    "stars": 33,
+    "language": "Swift",
+    "description": "A native macOS notes app for plain Markdown. Obsidian-compatible, quiet, and fast. Your vault stays yours.",
+    "url": "https://github.com/kennethreitz/onyx"
+  },
+  {
+    "full_name": "holehouse-lab/supportingdata",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 14,
+    "language": "Jupyter Notebook",
+    "description": "A general repository for additional supporting data for manuscripts published from the Holehouse lab",
+    "url": "https://github.com/holehouse-lab/supportingdata"
+  },
+  {
+    "full_name": "kevinlu4588/RumiFold",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 4,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/kevinlu4588/RumiFold"
+  },
+  {
+    "full_name": "KULL-Centre/HXEnsemble",
+    "who": [
+      "DomFico"
+    ],
+    "event": "star",
+    "stars": 1,
+    "language": "Python",
+    "description": "",
+    "url": "https://github.com/KULL-Centre/HXEnsemble"
+  },
+  {
+    "full_name": "BioComputingUP/BioComp_resource_monitor",
+    "who": [
+      "github-actions"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "Uptime and backend-API monitoring of the BioComputing UP resources (DisProt, MobiDB, RepeatsDB, PED, RING, APICURON…), every 20 minutes on GitHub Actions",
+    "url": "https://github.com/BioComputingUP/BioComp_resource_monitor"
+  },
+  {
+    "full_name": "meztez/bigrquery",
+    "who": [
+      "hadley"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "R",
+    "description": "An interface to Google's BigQuery from R.",
+    "url": "https://github.com/meztez/bigrquery"
+  },
+  {
+    "full_name": "IoannaNika/bigrquery",
+    "who": [
+      "hadley"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "R",
+    "description": "",
+    "url": "https://github.com/IoannaNika/bigrquery"
+  },
+  {
+    "full_name": "Junchao-Zhu/STRATA",
+    "who": [
+      "Junchao-Zhu"
+    ],
+    "event": "push",
+    "stars": 0,
+    "language": "Python",
+    "description": "This is code for STRATA",
+    "url": "https://github.com/Junchao-Zhu/STRATA"
+  }
+]

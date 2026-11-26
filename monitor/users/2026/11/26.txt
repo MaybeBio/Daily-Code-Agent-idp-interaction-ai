@@ -1,0 +1,6 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-25 12:02:06 | 🔀 alexholehouse opened PR in idptools/metapredict
+2026-11-25 11:47:57 | 🚀 alexholehouse pushed to holehouse-lab/supportingdata
+    - [08ff547] (expanded) Final update ahead of biorxiv update
+2026-11-25 02:43:39 | ⭐️ Zuricho starred kevinlu4588/RumiFold

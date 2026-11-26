@@ -1,0 +1,64 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-26 11:20:23 | ⭐️ xQy5201314 starred google-deepmind/alphaprotein-novo
+2026-11-26 11:20:06 | ⭐️ keepgoing688 starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 11:18:30 | ⭐️ KawingwingHo starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 11:17:59 | 🐛 hadley closed issue in r-lib/conflicted: 'Update README with box package'
+2026-11-26 11:17:57 | 💬 hadley created issue 'Update README with box package' in r-lib/conflicted
+2026-11-26 11:00:29 | ⭐️ HilbertCN starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:54:34 | 🔀 hadley merged PR in r-lib/conflicted
+2026-11-26 10:51:29 | ⭐️ Nuos starred google-deepmind/mujoco
+2026-11-26 10:50:16 | 🍴 Nuos forked google-deepmind/alphafold
+2026-11-26 10:47:38 | ⭐️ Chemwzd starred google-deepmind/science-skills
+2026-11-26 10:47:35 | ⭐️ kdnewbee starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:39:48 | ⭐️ charmainejames starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:35:30 | ⭐️ haihao999 starred google-deepmind/science-skills
+2026-11-26 10:30:04 | ⭐️ zdjjj starred google-deepmind/gbench
+2026-11-26 10:29:40 | 🔀 yonatantussa opened PR in google-deepmind/mujoco
+2026-11-26 10:29:03 | 🍴 OMG-ai forked google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:28:52 | ⭐️ OMG-ai starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:24:16 | ⭐️ Korverf starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:22:17 | 💬 Hertaspace created issue 'feat(OpenQuantumProblems/23): mark SIC-POVM existence solved and link the formal proof' in google-deepmind/formal-conjectures
+2026-11-26 10:20:50 | ⭐️ greathousesh starred google-deepmind/gbench
+2026-11-26 10:15:48 | ⭐️ tjc609 starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:09:19 | ⭐️ gbennett71 starred google-deepmind/formal-quantum-computation
+2026-11-26 10:07:15 | ⭐️ woertedetiankong starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 10:07:10 | ⭐️ sico-09 starred google-deepmind/dm_control
+2026-11-26 10:04:41 | ⭐️ mfang96 starred google-deepmind/gbench
+2026-11-26 09:59:28 | ⭐️ yyualvin starred google-deepmind/alphatensor
+2026-11-26 09:56:55 | ⭐️ qpchung starred google-deepmind/robotics-antigravity-plugin
+2026-11-26 09:55:09 | ⭐️ jafgo0 starred google-deepmind/weathernext
+2026-11-26 09:54:12 | ⭐️ lsc-00 starred google-deepmind/mujoco_menagerie
+2026-11-26 09:53:51 | ⭐️ vamsi020 starred google-deepmind/gbench
+2026-11-26 09:51:35 | ⭐️ ieixx starred google-deepmind/mujoco
+2026-11-26 09:50:59 | ⭐️ ieixx starred google-deepmind/mujoco_playground
+2026-11-26 09:48:22 | ⭐️ yuvarajl starred google-deepmind/gbench
+2026-11-26 07:14:13 | 🚀 kennethreitz pushed to kennethreitz/onyx
+    - [07984ae] (expanded) iOS: add a vault file tree as the primary Files tab
+2026-11-26 07:07:32 | ⭐️ DomFico starred KULL-Centre/HXEnsemble
+2026-11-25 12:52:20 | 🆕 hadley created branch 'emulator-host' at r-dbi/bigrquery
+2026-11-25 12:42:55 | 🚀 hadley pushed to r-dbi/bigrquery
+    - [d434dbb] (expanded) Use data frame schema when uploading to a new table (#702)
+2026-11-25 12:40:19 | 🆕 hadley created branch 'bq-table-save-format' at r-dbi/bigrquery
+2026-11-25 12:30:21 | 🔹 hadley performed DeleteEvent on r-dbi/bigrquery
+2026-11-25 12:29:56 | 🆕 hadley created branch 'json-digits-na' at r-dbi/bigrquery
+2026-11-25 11:34:26 | 🆕 hadley created branch 'lubridate-rounding' at r-dbi/bigrquery
+2026-11-25 11:21:36 | 🚀 hadley pushed to meztez/bigrquery
+    - [3bcf840] (expanded) Correct news format
+2026-11-25 11:13:49 | 🚀 hadley pushed to r-dbi/bigrquery
+    - [1da985a] (expanded) Add support for clock functions (#627)
+2026-11-25 11:13:22 | 🚀 hadley pushed to meztez/bigrquery
+    - [269ee13] (expanded) Air format
+2026-11-25 11:08:53 | 🚀 hadley pushed to r-dbi/bigrquery
+    - [d4bc242] (expanded) Avoid memcpy of invalid pointer (#634)
+2026-11-25 10:57:00 | 🚀 hadley pushed to r-dbi/bigrquery
+    - [64b7a48] (expanded) reserve() the # of fields before push_back loop (#693)
+2026-11-25 10:55:08 | 🚀 hadley pushed to IoannaNika/bigrquery
+    - [3d7ac5a] (expanded) Run air
+2026-11-25 10:37:23 | 🔹 hadley performed DeleteEvent on r-dbi/bigrquery
+2026-11-25 10:37:22 | 🚀 hadley pushed to r-dbi/bigrquery
+    - [65f4eab] (expanded) Speed up some slow tests (#697)
+2026-11-25 08:16:35 | 🚀 Junchao-Zhu pushed to Junchao-Zhu/STRATA
+    - [08e9328] (expanded) Update cross_fold.py
+2026-11-25 07:02:33 | 🚀 hadley pushed to r-dbi/bigrquery
+    - [4af7b58] (expanded) Use type instead of deprecated as_tibble in bqs_table_download()

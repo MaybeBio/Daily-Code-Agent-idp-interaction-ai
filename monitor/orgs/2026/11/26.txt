@@ -1,0 +1,21 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-11-26 07:51:32 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [9aab1d8] (expanded) monitor data 2026-11-25
+2026-11-26 07:35:35 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [cad4056] (expanded) monitor data 2026-11-25
+2026-11-25 17:35:37 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [278e532] (expanded) monitor data 2026-11-25
+2026-11-25 17:15:48 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [1ac54af] (expanded) monitor data 2026-11-25
+2026-11-25 12:02:06 | 🔀 alexholehouse opened PR in idptools/metapredict
+2026-11-25 11:55:36 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [713c9c1] (expanded) monitor data 2026-11-25
+2026-11-25 11:47:57 | 🚀 alexholehouse pushed to holehouse-lab/supportingdata
+    - [08ff547] (expanded) Final update ahead of biorxiv update
+2026-11-25 10:35:37 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [11e0c7c] (expanded) monitor data 2026-11-25
+2026-11-25 05:55:33 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [ba208cf] (expanded) monitor data 2026-11-24
+2026-11-25 05:35:35 | 🚀 github-actions pushed to BioComputingUP/BioComp_resource_monitor
+    - [a3fa5b6] (expanded) monitor data 2026-11-24
