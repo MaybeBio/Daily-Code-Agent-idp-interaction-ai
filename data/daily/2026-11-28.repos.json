@@ -1,0 +1,164 @@
+[
+  {
+    "full_name": "google-deepmind/mujoco",
+    "who": [
+      "skpanigrahy"
+    ],
+    "event": "fork",
+    "stars": 18543,
+    "language": "C++",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "url": "https://github.com/google-deepmind/mujoco"
+  },
+  {
+    "full_name": "thu-ml/tianshou",
+    "who": [
+      "Trinkle23897"
+    ],
+    "event": "push",
+    "stars": 11057,
+    "language": "Python",
+    "description": "An elegant PyTorch deep reinforcement learning library.",
+    "url": "https://github.com/thu-ml/tianshou"
+  },
+  {
+    "full_name": "google-deepmind/alphafold3",
+    "who": [
+      "Fkx2965128994"
+    ],
+    "event": "star",
+    "stars": 8819,
+    "language": "Python",
+    "description": "AlphaFold 3 inference pipeline.",
+    "url": "https://github.com/google-deepmind/alphafold3"
+  },
+  {
+    "full_name": "google-deepmind/mujoco_menagerie",
+    "who": [
+      "PixelSwin"
+    ],
+    "event": "star",
+    "stars": 4438,
+    "language": "Python",
+    "description": "A collection of high-quality models for the MuJoCo physics engine, curated by Google DeepMind.",
+    "url": "https://github.com/google-deepmind/mujoco_menagerie"
+  },
+  {
+    "full_name": "google-deepmind/formal-conjectures",
+    "who": [
+      "Bortlesboat",
+      "EulersMules",
+      "EvanHGreen23",
+      "dsillman2000",
+      "github-actions",
+      "google-cla",
+      "jaredwilder",
+      "ryananderson60"
+    ],
+    "event": "mixed",
+    "stars": 1421,
+    "language": "Lean",
+    "description": "A collection of formalized statements of conjectures in Lean.",
+    "url": "https://github.com/google-deepmind/formal-conjectures"
+  },
+  {
+    "full_name": "google-deepmind/meltingpot",
+    "who": [
+      "lyh843"
+    ],
+    "event": "star",
+    "stars": 915,
+    "language": "Python",
+    "description": "A suite of test scenarios for multi-agent reinforcement learning.",
+    "url": "https://github.com/google-deepmind/meltingpot"
+  },
+  {
+    "full_name": "google-deepmind/representations4d",
+    "who": [
+      "Yishun99"
+    ],
+    "event": "star",
+    "stars": 435,
+    "language": "Jupyter Notebook",
+    "description": "Foundation models for 4D spatial and temporal vision tasks.",
+    "url": "https://github.com/google-deepmind/representations4d"
+  },
+  {
+    "full_name": "google-deepmind/robotics-antigravity-plugin",
+    "who": [
+      "neka-nat",
+      "wuchaoyu89"
+    ],
+    "event": "mixed",
+    "stars": 417,
+    "language": "Python",
+    "description": "GDM Robotics Skills for agentic robotics workflows across simulation and real robots.",
+    "url": "https://github.com/google-deepmind/robotics-antigravity-plugin"
+  },
+  {
+    "full_name": "google-deepmind/ai-foundations",
+    "who": [
+      "palapallelokesh-lgtm"
+    ],
+    "event": "fork",
+    "stars": 339,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/ai-foundations"
+  },
+  {
+    "full_name": "google-deepmind/alphaevolve_repository_of_problems",
+    "who": [
+      "jblack874"
+    ],
+    "event": "issue",
+    "stars": 243,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphaevolve_repository_of_problems"
+  },
+  {
+    "full_name": "google-deepmind/alphaevolve",
+    "who": [
+      "xugehiho449-sketch"
+    ],
+    "event": "star",
+    "stars": 91,
+    "language": "Jupyter Notebook",
+    "description": "",
+    "url": "https://github.com/google-deepmind/alphaevolve"
+  },
+  {
+    "full_name": "idptools/sparrow",
+    "who": [
+      "alexholehouse"
+    ],
+    "event": "push",
+    "stars": 46,
+    "language": "Python",
+    "description": "Next generation sequence parameter library for proteins",
+    "url": "https://github.com/idptools/sparrow"
+  },
+  {
+    "full_name": "THGLab/BioEdaDatabase",
+    "who": [
+      "sbittrich"
+    ],
+    "event": "star",
+    "stars": 5,
+    "language": "",
+    "description": "EDA database for protein-ligand complexes",
+    "url": "https://github.com/THGLab/BioEdaDatabase"
+  },
+  {
+    "full_name": "lhallee/general_models_vs_plms",
+    "who": [
+      "Zuricho"
+    ],
+    "event": "star",
+    "stars": 2,
+    "language": "Python",
+    "description": "A general language model reading labeled protein variants in its prompt, against ridge regression on protein language models, on FLIP2",
+    "url": "https://github.com/lhallee/general_models_vs_plms"
+  }
+]

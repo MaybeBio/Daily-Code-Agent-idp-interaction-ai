@@ -1,0 +1,33 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-28 11:01:53 | ⭐️ Yishun99 starred google-deepmind/representations4d
+2026-11-28 10:51:16 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-28 10:51:16 | 🔀 EulersMules opened PR in google-deepmind/formal-conjectures
+2026-11-28 10:46:08 | 🐛 EvanHGreen23 opened issue in google-deepmind/formal-conjectures: 'Naslund's crossing problem: R-rank of the swap tensor for the partitions 12|34 and 13|24'
+2026-11-28 10:45:14 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-28 10:45:14 | 🔀 Bortlesboat opened PR in google-deepmind/formal-conjectures
+2026-11-28 10:44:22 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-28 10:44:22 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-28 10:44:22 | 🔀 dsillman2000 opened PR in google-deepmind/formal-conjectures
+2026-11-28 10:44:20 | 🍴 ryananderson60 forked google-deepmind/formal-conjectures
+2026-11-28 10:40:12 | 💬 Bortlesboat created issue 'Add five algebraic complexity conjectures and questions' in google-deepmind/formal-conjectures
+2026-11-28 10:39:05 | 🍴 palapallelokesh-lgtm forked google-deepmind/ai-foundations
+2026-11-28 10:24:03 | 🐛 dsillman2000 labeled issue in google-deepmind/formal-conjectures: 'Formalize the higher-dimensional Sylvester simplex conjecture'
+2026-11-28 10:24:03 | 🐛 dsillman2000 opened issue in google-deepmind/formal-conjectures: 'Formalize the higher-dimensional Sylvester simplex conjecture'
+2026-11-28 10:19:34 | 💬 jblack874 created issue '3D Kakeya (Problem 6.10): lower union volumes at n = 8, 16, 32, 64 (5.8% to 56.6% below the notebook values)' in google-deepmind/alphaevolve_repository_of_problems
+2026-11-28 10:12:42 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-28 10:12:42 | 🔀 jaredwilder opened PR in google-deepmind/formal-conjectures
+2026-11-28 10:05:44 | 🍴 skpanigrahy forked google-deepmind/mujoco
+2026-11-28 10:05:00 | ⭐️ xugehiho449-sketch starred google-deepmind/alphaevolve
+2026-11-28 10:03:52 | ⭐️ neka-nat starred google-deepmind/robotics-antigravity-plugin
+2026-11-28 10:00:13 | ⭐️ PixelSwin starred google-deepmind/mujoco_menagerie
+2026-11-28 09:57:05 | 🔀 github-actions labeled PR in google-deepmind/formal-conjectures
+2026-11-28 09:57:05 | 💬 google-cla created issue 'feat(Wikipedia/CongruentNumber): add not_congruentNumber_10 and link a formal proof' in google-deepmind/formal-conjectures
+2026-11-28 09:56:59 | 🔀 EulersMules opened PR in google-deepmind/formal-conjectures
+2026-11-28 09:47:31 | 🍴 wuchaoyu89 forked google-deepmind/robotics-antigravity-plugin
+2026-11-28 09:46:29 | 🍴 EulersMules forked google-deepmind/formal-conjectures
+2026-11-28 09:19:07 | ⭐️ Fkx2965128994 starred google-deepmind/alphafold3
+2026-11-28 09:14:41 | 🍴 dsillman2000 forked google-deepmind/formal-conjectures
+2026-11-28 09:11:29 | ⭐️ lyh843 starred google-deepmind/meltingpot
+2026-11-28 02:09:29 | 🚀 Trinkle23897 pushed to thu-ml/tianshou
+    - [600a571] (expanded) Document the Atari origin and units of the discrete BCQ target interval

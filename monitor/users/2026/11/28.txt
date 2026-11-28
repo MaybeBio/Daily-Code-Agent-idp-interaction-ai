@@ -1,0 +1,5 @@
+Fetching events for target(s): alexholehouse, Junjie-Zhu, Zuricho...
+
+2026-11-27 12:33:24 | 🚀 alexholehouse pushed to idptools/sparrow
+    - [6e0cdca] (expanded) Added new plddt predictor
+2026-11-27 07:15:11 | ⭐️ Zuricho starred lhallee/general_models_vs_plms

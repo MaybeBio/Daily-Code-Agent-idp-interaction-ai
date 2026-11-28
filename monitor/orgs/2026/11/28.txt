@@ -1,0 +1,5 @@
+Fetching events for target(s): holehouse-lab, Pappulab, BioComputingUP, THGLab, idptools...
+
+2026-11-27 18:28:01 | ⭐️ sbittrich starred THGLab/BioEdaDatabase
+2026-11-27 12:33:24 | 🚀 alexholehouse pushed to idptools/sparrow
+    - [6e0cdca] (expanded) Added new plddt predictor
